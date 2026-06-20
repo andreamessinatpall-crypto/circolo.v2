@@ -1,8 +1,17 @@
 import { useState, type ReactNode } from 'react'
 import RiepilogoProfilo from './RiepilogoProfilo'
 import DatiProfilo from './DatiProfilo'
+import AmiciProfilo from './amici/AmiciProfilo'
+import ClassificaProfilo from './ClassificaProfilo'
 
-type SottoScheda = 'riepilogo' | 'dati'
+type SottoScheda = 'riepilogo' | 'dati' | 'amici' | 'classifica'
+
+const SCHEDE: { id: SottoScheda; label: string }[] = [
+  { id: 'riepilogo', label: 'Riepilogo' },
+  { id: 'dati', label: 'Dati' },
+  { id: 'amici', label: 'Amici' },
+  { id: 'classifica', label: 'Classifica' },
+]
 
 export default function ProfiloPage() {
   const [scheda, setScheda] = useState<SottoScheda>('riepilogo')
@@ -13,20 +22,22 @@ export default function ProfiloPage() {
         Profilo
       </h1>
 
-      {/* Sotto-schede */}
-      <div className="mb-5 flex gap-2">
-        <BottoneScheda
-          attiva={scheda === 'riepilogo'}
-          onClick={() => setScheda('riepilogo')}
-        >
-          Riepilogo
-        </BottoneScheda>
-        <BottoneScheda attiva={scheda === 'dati'} onClick={() => setScheda('dati')}>
-          Dati
-        </BottoneScheda>
+      <div className="mb-5 flex flex-wrap gap-2">
+        {SCHEDE.map((s) => (
+          <BottoneScheda
+            key={s.id}
+            attiva={scheda === s.id}
+            onClick={() => setScheda(s.id)}
+          >
+            {s.label}
+          </BottoneScheda>
+        ))}
       </div>
 
-      {scheda === 'riepilogo' ? <RiepilogoProfilo /> : <DatiProfilo />}
+      {scheda === 'riepilogo' && <RiepilogoProfilo />}
+      {scheda === 'dati' && <DatiProfilo />}
+      {scheda === 'amici' && <AmiciProfilo />}
+      {scheda === 'classifica' && <ClassificaProfilo />}
     </div>
   )
 }

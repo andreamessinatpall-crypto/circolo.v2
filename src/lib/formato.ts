@@ -1,5 +1,13 @@
 // Piccole funzioni per mostrare i dati in modo leggibile (in italiano).
 
+// "mario rossi" -> "Mario Rossi" (gestisce spazi, apostrofi e trattini).
+export function titleCase(str: string | null): string {
+  if (str == null) return ''
+  return String(str)
+    .toLowerCase()
+    .replace(/(^|[\s'’-])([a-zàèéìòùç])/g, (_m, sep, ch) => sep + ch.toUpperCase())
+}
+
 export const ETICHETTE_GENERE: Record<string, string> = {
   M: 'Maschile',
   F: 'Femminile',
