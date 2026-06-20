@@ -21,8 +21,8 @@ export default function RiepilogoProfilo() {
       : 'Socio'
 
   return (
-    <div className="rounded-2xl border border-verde-700/10 bg-superficie p-6 shadow-sm">
-      <h2 className="mb-4 font-display text-xl uppercase tracking-wide text-verde-800">
+    <div className="card">
+      <h2 className="mb-4 text-xl">
         {profilo.nome} {profilo.cognome}
       </h2>
       <Riga etichetta="Email" valore={profilo.email ?? '—'} />

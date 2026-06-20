@@ -64,16 +64,14 @@ export default function BadgeProfilo() {
     : sportConsentiti(profilo)
 
   return (
-    <div className="rounded-2xl border border-verde-700/10 bg-superficie p-6 shadow-sm">
-      <div className="mb-4 flex items-center justify-between">
-        <h2 className="font-display text-xl uppercase tracking-wide text-verde-800">
-          I tuoi traguardi
-        </h2>
+    <div className="card">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <h2 className="text-xl">I tuoi traguardi</h2>
         {profilo.badge_profilo && (
           <button
             type="button"
             onClick={() => salvaAvatar.mutate(null)}
-            className="rounded-lg bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-100"
+            className="btn-pericolo btn-mini"
           >
             Togli immagine del profilo
           </button>
@@ -128,9 +126,5 @@ export default function BadgeProfilo() {
 }
 
 function Contenitore({ children }: { children: ReactNode }) {
-  return (
-    <div className="rounded-2xl border border-verde-700/10 bg-superficie p-6 text-ink-2 shadow-sm">
-      {children}
-    </div>
-  )
+  return <div className="card text-ink-2">{children}</div>
 }

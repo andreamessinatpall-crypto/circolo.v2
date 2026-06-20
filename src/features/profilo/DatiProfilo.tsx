@@ -82,13 +82,8 @@ export default function DatiProfilo() {
   }
 
   return (
-    <form
-      onSubmit={handleSubmit(onSubmit)}
-      className="rounded-2xl border border-verde-700/10 bg-superficie p-6 shadow-sm"
-    >
-      <h2 className="mb-4 font-display text-xl uppercase tracking-wide text-verde-800">
-        I tuoi dati
-      </h2>
+    <form onSubmit={handleSubmit(onSubmit)} className="card">
+      <h2 className="mb-4 text-xl">I tuoi dati</h2>
 
       <div className="mb-4 grid grid-cols-2 gap-3">
         <CampoSolaLettura etichetta="Nome" valore={profilo.nome} />

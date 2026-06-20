@@ -10,9 +10,6 @@ interface Voce {
   label: string
 }
 
-// Le tab visibili dipendono dal ruolo e dallo sport preferito (come nella v1):
-//  - admin: vede la Segreteria (più Tornei e Premi); le tab personali sono nascoste.
-//  - socio: Profilo, lo/gli sport preferiti, Tornei e Premi.
 function vociMenu(p: Socio): Voce[] {
   if (p.is_admin) {
     return [
@@ -40,56 +37,52 @@ export default function AppShell() {
 
   return (
     <div className="min-h-screen">
-      {/* Barra superiore: marchio, nome utente, ruolo, logout */}
-      <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b-2 border-ottone-500 bg-verde-800 px-6 text-white">
-        <div className="font-display text-xl font-bold uppercase tracking-[0.12em]">
+      {/* Barra superiore */}
+      <header className="app-header">
+        <div className="brand">
           Circolo Sportivo
+          <small>Padel &amp; Calcio</small>
         </div>
         <div className="flex items-center gap-3 text-sm">
-          {avatar && <Medaglia sport={avatar.sport} liv={avatar.liv} size={32} />}
-          <span className="font-medium">
+          {avatar && <Medaglia sport={avatar.sport} liv={avatar.liv} size={34} />}
+          <span className="font-semibold">
             {profilo.nome} {profilo.cognome}
           </span>
           {profilo.is_admin && (
-            <span className="rounded bg-ottone-500/20 px-2 py-0.5 text-xs font-semibold text-ottone-300">
-              Admin
-            </span>
+            <span className="tag text-ottone-300">Admin</span>
           )}
           {collaboratore && (
-            <span className="rounded bg-ottone-500/20 px-2 py-0.5 text-xs font-semibold text-ottone-300">
+            <span className="tag" style={{ color: '#F3C969' }}>
               Collaboratore
             </span>
           )}
           <button
             type="button"
             onClick={() => esci()}
-            className="rounded-lg border border-white/25 px-3 py-1 text-xs font-semibold transition hover:bg-white/10"
+            className="ml-1 rounded-lg border border-white/25 px-3.5 py-1.5 font-display text-xs font-semibold uppercase tracking-[0.08em] text-white/80 transition hover:border-white/45 hover:bg-white/10"
           >
             Esci
           </button>
         </div>
       </header>
 
-      {/* Barra delle tab */}
-      <nav className="sticky top-16 z-10 flex gap-1 overflow-x-auto border-b border-verde-700/10 bg-superficie px-4">
-        {voci.map((v) => (
-          <NavLink
-            key={v.path}
-            to={v.path}
-            className={({ isActive }) =>
-              'whitespace-nowrap border-b-2 px-4 py-3 text-sm font-semibold uppercase tracking-wide transition ' +
-              (isActive
-                ? 'border-ottone-500 text-verde-800'
-                : 'border-transparent text-ink-3 hover:text-verde-700')
-            }
-          >
-            {v.label}
-          </NavLink>
-        ))}
-      </nav>
+      {/* Tab principali */}
+      <div className="mx-auto max-w-[900px] px-5 pt-4">
+        <nav className="tabs">
+          {voci.map((v) => (
+            <NavLink
+              key={v.path}
+              to={v.path}
+              className={({ isActive }) => 'tab-btn' + (isActive ? ' attivo' : '')}
+            >
+              {v.label}
+            </NavLink>
+          ))}
+        </nav>
+      </div>
 
-      {/* Contenuto della sezione attiva */}
-      <main className="mx-auto max-w-4xl p-6">
+      {/* Contenuto */}
+      <main className="mx-auto max-w-[900px] px-5 pb-20 pt-2">
         <Outlet />
       </main>
     </div>

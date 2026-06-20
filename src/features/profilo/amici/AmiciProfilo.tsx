@@ -14,7 +14,7 @@ export default function AmiciProfilo() {
   // Database non ancora predisposto: messaggio guidato (come nella v1).
   if (amici.erroreAmicizie && mancaTabella(amici.erroreAmicizie, 'amicizie')) {
     return (
-      <div className="rounded-2xl border border-verde-700/10 bg-superficie p-6 text-ink-2 shadow-sm">
+      <div className="card text-ink-2">
         Esegui lo script <code className="rounded bg-verde-50 px-1">amici.sql</code> su
         Supabase per attivare gli amici.
       </div>
@@ -43,15 +43,11 @@ export default function AmiciProfilo() {
   }
 
   return (
-    <div className="rounded-2xl border border-verde-700/10 bg-superficie p-6 shadow-sm">
-      <h2 className="mb-4 font-display text-xl uppercase tracking-wide text-verde-800">
-        Amici
-      </h2>
+    <div className="card">
+      <h2 className="mb-4 text-xl">Amici</h2>
 
       {/* Aggiungi un amico */}
-      <label className="mb-1 block text-sm font-medium text-ink-2">
-        Cerca un giocatore da aggiungere
-      </label>
+      <label>Cerca un giocatore da aggiungere</label>
       <select
         className={classiInput}
         value=""
@@ -163,17 +159,13 @@ function Bottone({
   onClick: () => void
   variante?: 'principale' | 'secondario' | 'pericolo'
 }) {
-  const stili = {
-    principale: 'bg-verde-700 text-white hover:bg-verde-800',
-    secondario: 'bg-verde-50 text-ink-2 hover:bg-verde-100',
-    pericolo: 'bg-red-50 text-red-700 hover:bg-red-100',
+  const classe = {
+    principale: 'btn btn-mini',
+    secondario: 'btn btn-secondario btn-mini',
+    pericolo: 'btn btn-pericolo btn-mini',
   }
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={'rounded-lg px-3 py-1.5 text-xs font-semibold transition ' + stili[variante]}
-    >
+    <button type="button" onClick={onClick} className={classe[variante]}>
       {children}
     </button>
   )

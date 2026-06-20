@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useState } from 'react'
 import RiepilogoProfilo from './RiepilogoProfilo'
 import DatiProfilo from './DatiProfilo'
 import AmiciProfilo from './amici/AmiciProfilo'
@@ -20,19 +20,18 @@ export default function ProfiloPage() {
 
   return (
     <div>
-      <h1 className="mb-4 font-display text-3xl uppercase tracking-wide text-verde-800">
-        Profilo
-      </h1>
+      <h1 className="mb-1 text-3xl">Profilo</h1>
 
-      <div className="mb-5 flex flex-wrap gap-2">
+      <div className="mb-5 flex flex-wrap gap-1.5 pt-2">
         {SCHEDE.map((s) => (
-          <BottoneScheda
+          <button
             key={s.id}
-            attiva={scheda === s.id}
+            type="button"
             onClick={() => setScheda(s.id)}
+            className={'subtab-btn' + (scheda === s.id ? ' attivo' : '')}
           >
             {s.label}
-          </BottoneScheda>
+          </button>
         ))}
       </div>
 
@@ -42,30 +41,5 @@ export default function ProfiloPage() {
       {scheda === 'classifica' && <ClassificaProfilo />}
       {scheda === 'badge' && <BadgeProfilo />}
     </div>
-  )
-}
-
-function BottoneScheda({
-  attiva,
-  onClick,
-  children,
-}: {
-  attiva: boolean
-  onClick: () => void
-  children: ReactNode
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={
-        'rounded-lg px-4 py-2 text-sm font-semibold transition ' +
-        (attiva
-          ? 'bg-verde-700 text-white'
-          : 'bg-verde-50 text-ink-2 hover:bg-verde-100')
-      }
-    >
-      {children}
-    </button>
   )
 }

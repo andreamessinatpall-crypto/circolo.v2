@@ -1,20 +1,11 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { supabase } from '@/lib/supabase'
-import {
-  classiBottone,
-  classiCard,
-  classiEtichetta,
-  classiErrore,
-  classiInput,
-  classiOk,
-} from '@/components/stili'
+import { classiInput, classiErrore, classiOk } from '@/components/stili'
 
-// Regole di validazione del modulo. Zod controlla i dati prima dell'invio
-// e React Hook Form mostra i messaggi accanto ai campi sbagliati.
 const schema = z.object({
   nome: z.string().trim().min(1, 'Inserisci il nome'),
   cognome: z.string().trim().min(1, 'Inserisci il cognome'),
@@ -71,11 +62,8 @@ export default function RegisterPage() {
       return
     }
 
-    if (data.session) {
-      // Conferma email disattivata: l'utente è già loggato e l'AuthProvider procede.
-      return
-    }
-    // Conferma email attiva: deve confermare prima di accedere.
+    if (data.session) return // già loggato: l'AuthProvider procede
+
     reset()
     setSuccesso(
       "Registrazione inviata! Ti abbiamo mandato un'email di conferma. Dopo averla confermata, accedi: il profilo resterà in attesa di approvazione dalla segreteria.",
@@ -83,106 +71,97 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-6 p-6">
-      <header className="text-center">
-        <h1 className="font-display text-4xl uppercase tracking-wider text-verde-800">
-          Circolo Sportivo
-        </h1>
-        <p className="mt-1 font-display text-xs uppercase tracking-[0.32em] text-ottone-500">
-          Padel &amp; Calcio
-        </p>
-      </header>
+    <div className="mx-auto mt-13 max-w-[680px] px-4 pb-16">
+      <div className="auth-hero">
+        <div className="auth-crest">⚽</div>
+        <div className="auth-titolo">Circolo Sportivo</div>
+        <div className="auth-claim">Crea il tuo account</div>
+      </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className={classiCard}>
-        <h2 className="mb-5 font-display text-xl uppercase tracking-wide text-ink">
-          Registrati
-        </h2>
-
-        <div className="mb-4 grid grid-cols-2 gap-3">
-          <div>
-            <label className={classiEtichetta}>Nome</label>
+      <form onSubmit={handleSubmit(onSubmit)} className="card auth-card">
+        <div className="grid grid-cols-1 gap-x-5 sm:grid-cols-2">
+          <Campo errore={errors.nome?.message}>
+            <label>Nome</label>
             <input className={classiInput} {...register('nome')} />
-            {errors.nome && (
-              <p className="mt-1 text-xs text-red-700">{errors.nome.message}</p>
-            )}
-          </div>
-          <div>
-            <label className={classiEtichetta}>Cognome</label>
+          </Campo>
+          <Campo errore={errors.cognome?.message}>
+            <label>Cognome</label>
             <input className={classiInput} {...register('cognome')} />
-            {errors.cognome && (
-              <p className="mt-1 text-xs text-red-700">{errors.cognome.message}</p>
-            )}
-          </div>
-        </div>
+          </Campo>
 
-        <div className="mb-4">
-          <label className={classiEtichetta}>Email</label>
-          <input type="email" className={classiInput} {...register('email')} />
-          {errors.email && (
-            <p className="mt-1 text-xs text-red-700">{errors.email.message}</p>
-          )}
-        </div>
+          <Campo errore={errors.email?.message} wide>
+            <label>Email</label>
+            <input type="email" className={classiInput} {...register('email')} />
+          </Campo>
 
-        <div className="mb-4 grid grid-cols-2 gap-3">
-          <div>
-            <label className={classiEtichetta}>Telefono (facoltativo)</label>
+          <Campo>
+            <label>Telefono (facoltativo)</label>
             <input className={classiInput} {...register('telefono')} />
-          </div>
-          <div>
-            <label className={classiEtichetta}>Data di nascita</label>
+          </Campo>
+          <Campo errore={errors.data_nascita?.message}>
+            <label>Data di nascita</label>
             <input type="date" className={classiInput} {...register('data_nascita')} />
-            {errors.data_nascita && (
-              <p className="mt-1 text-xs text-red-700">{errors.data_nascita.message}</p>
-            )}
-          </div>
-        </div>
+          </Campo>
 
-        <div className="mb-4 grid grid-cols-2 gap-3">
-          <div>
-            <label className={classiEtichetta}>Genere</label>
+          <Campo>
+            <label>Genere</label>
             <select className={classiInput} {...register('genere')}>
               <option value="M">Maschile</option>
               <option value="F">Femminile</option>
               <option value="altro">Altro</option>
             </select>
-          </div>
-          <div>
-            <label className={classiEtichetta}>Sport preferito</label>
+          </Campo>
+          <Campo>
+            <label>Sport preferito</label>
             <select className={classiInput} {...register('sport_preferito')}>
               <option value="entrambi">Entrambi</option>
               <option value="padel">Padel</option>
               <option value="calcio">Calcio</option>
             </select>
-          </div>
+          </Campo>
+
+          <Campo errore={errors.password?.message} wide>
+            <label>Password</label>
+            <input
+              type="password"
+              autoComplete="new-password"
+              className={classiInput}
+              {...register('password')}
+            />
+          </Campo>
         </div>
 
-        <div className="mb-5">
-          <label className={classiEtichetta}>Password</label>
-          <input
-            type="password"
-            autoComplete="new-password"
-            className={classiInput}
-            {...register('password')}
-          />
-          {errors.password && (
-            <p className="mt-1 text-xs text-red-700">{errors.password.message}</p>
-          )}
-        </div>
+        {erroreGenerale && <p className={`mt-4 ${classiErrore}`}>{erroreGenerale}</p>}
+        {successo && <p className={`mt-4 ${classiOk}`}>{successo}</p>}
 
-        {erroreGenerale && <p className={`mb-4 ${classiErrore}`}>{erroreGenerale}</p>}
-        {successo && <p className={`mb-4 ${classiOk}`}>{successo}</p>}
-
-        <button type="submit" className={classiBottone} disabled={isSubmitting}>
+        <button type="submit" className="btn btn-oro btn-block mt-5" disabled={isSubmitting}>
           {isSubmitting ? 'Invio in corso…' : 'Crea account'}
         </button>
 
         <p className="mt-5 text-center text-sm text-ink-2">
           Hai già un account?{' '}
-          <Link to="/login" className="font-semibold text-verde-700 hover:underline">
+          <Link to="/login" className="font-semibold text-verde-600 hover:underline">
             Accedi
           </Link>
         </p>
       </form>
+    </div>
+  )
+}
+
+function Campo({
+  children,
+  errore,
+  wide,
+}: {
+  children: ReactNode
+  errore?: string
+  wide?: boolean
+}) {
+  return (
+    <div className={wide ? 'sm:col-span-2' : undefined}>
+      {children}
+      {errore && <p className="mt-1 text-xs text-red-700">{errore}</p>}
     </div>
   )
 }

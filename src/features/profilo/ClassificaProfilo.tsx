@@ -41,11 +41,9 @@ export default function ClassificaProfilo() {
   const mia = lista.find((r) => r.is_me)
 
   return (
-    <div className="rounded-2xl border border-verde-700/10 bg-superficie p-6 shadow-sm">
+    <div className="card">
       <div className="mb-5 flex items-baseline gap-3">
-        <h2 className="font-display text-xl uppercase tracking-wide text-verde-800">
-          Classifica
-        </h2>
+        <h2 className="text-xl">Classifica</h2>
         <span className="text-sm text-ink-2">
           La tua posizione:{' '}
           <strong className="text-verde-700">{mia ? mia.posizione + 'º' : '—'}</strong>
@@ -63,20 +61,17 @@ export default function ClassificaProfilo() {
               Non sei ancora in classifica: gioca qualche partita per comparire.
             </p>
           )}
-          <div className="flex flex-col">
+          <div className="flex flex-col gap-0.5">
             {lista.map((r) => (
               <div
                 key={r.posizione + '-' + (r.etichetta ?? '')}
-                className={
-                  'flex items-center gap-3 border-b border-verde-700/10 py-2 last:border-0 ' +
-                  (r.is_me ? 'font-semibold text-verde-800' : 'text-ink')
-                }
+                className={'classifica-riga' + (r.is_me ? ' io' : '')}
               >
-                <span className="w-10 text-sm text-ink-3">{r.posizione}º</span>
-                <span className="flex-1 text-sm">
+                <span className="cl-pos">{r.posizione}º</span>
+                <span className="cl-nick">
                   {r.etichetta ? titleCase(String(r.etichetta)) : '—'}
                 </span>
-                <span className="text-sm text-ink-2">{r.punti ?? 0} pt</span>
+                <span className="cl-punti">{r.punti ?? 0} pt</span>
               </div>
             ))}
           </div>
@@ -87,9 +82,5 @@ export default function ClassificaProfilo() {
 }
 
 function Contenitore({ children }: { children: ReactNode }) {
-  return (
-    <div className="rounded-2xl border border-verde-700/10 bg-superficie p-6 text-ink-2 shadow-sm">
-      {children}
-    </div>
-  )
+  return <div className="card text-ink-2">{children}</div>
 }
