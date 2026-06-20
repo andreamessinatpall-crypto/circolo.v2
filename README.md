@@ -42,6 +42,7 @@ supabase/
 ## Stato
 
 - [x] **Fase 0** — fondamenta (progetto, stack, client Supabase).
-- [x] **Fase 1** — autenticazione (login, registrazione, stati account, logout). ← *sei qui*
-- [ ] Fase 2 — guscio app e navigazione
+- [x] **Fase 1** — autenticazione (login, registrazione, stati account, logout).
+- [x] **Fase 2** — guscio app e navigazione a tab (filtri per ruolo e sport). ← *sei qui*
+- [ ] Fase 3 — profilo
 - [ ] … (vedi `nuovo-progetto/04-roadmap.md`)
