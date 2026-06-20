@@ -1,43 +1,26 @@
-import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase'
+import { Navigate, Route, Routes } from 'react-router-dom'
+import { useAuth } from '@/auth/useAuth'
+import SchermataCaricamento from '@/components/SchermataCaricamento'
+import LoginPage from '@/pages/LoginPage'
+import RegisterPage from '@/pages/RegisterPage'
+import BloccoPage from '@/pages/BloccoPage'
+import AppShell from '@/pages/AppShell'
 
+// Mostra la schermata giusta in base allo stato di autenticazione.
 function App() {
-  const [statoConnessione, setStatoConnessione] = useState<
-    'verifica' | 'ok' | 'errore'
-  >('verifica')
+  const { stato } = useAuth()
 
-  // Verifica all'avvio che il collegamento a Supabase funzioni.
-  useEffect(() => {
-    supabase.auth
-      .getSession()
-      .then(() => setStatoConnessione('ok'))
-      .catch(() => setStatoConnessione('errore'))
-  }, [])
+  if (stato === 'caricamento') return <SchermataCaricamento />
+  if (stato === 'attivo') return <AppShell />
+  if (stato === 'bloccato') return <BloccoPage />
 
+  // stato === 'anonimo': login e registrazione
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center gap-6 p-6 text-center">
-      <header>
-        <h1 className="font-display uppercase tracking-wider text-4xl text-verde-800">
-          Circolo Sportivo
-        </h1>
-        <p className="font-display uppercase tracking-[0.32em] text-xs text-ottone-500 mt-1">
-          Padel &amp; Calcio · v2
-        </p>
-      </header>
-
-      <div className="rounded-xl border border-verde-700/15 bg-superficie px-6 py-4 shadow-sm">
-        <p className="text-sm text-ink-2">Collegamento a Supabase</p>
-        <p className="mt-1 font-semibold">
-          {statoConnessione === 'verifica' && '⏳ Verifica in corso…'}
-          {statoConnessione === 'ok' && '✅ Connesso'}
-          {statoConnessione === 'errore' && '❌ Errore di connessione'}
-        </p>
-      </div>
-
-      <p className="text-sm text-ink-3 max-w-md">
-        Fondamenta pronte (Fase 0). Prossimo passo: autenticazione (Fase 1).
-      </p>
-    </div>
+    <Routes>
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/registrati" element={<RegisterPage />} />
+      <Route path="*" element={<Navigate to="/login" replace />} />
+    </Routes>
   )
 }
 
