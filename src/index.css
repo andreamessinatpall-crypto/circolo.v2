@@ -1,0 +1,49 @@
+/* Font dell'app originale */
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=Saira+Condensed:wght@400;500;600;700&display=swap');
+
+@import 'tailwindcss';
+
+/* ─────────────────────────────────────────────────────────────
+   Design token del Circolo Sportivo (ripresi dall'index.html v1).
+   Con Tailwind v4 questi diventano classi pronte all'uso, es.:
+     bg-verde-800   text-ottone-400   border-verde-700
+   ───────────────────────────────────────────────────────────── */
+@theme {
+  /* Verde campo */
+  --color-verde-900: #071510;
+  --color-verde-800: #0c3319;
+  --color-verde-700: #14532a;
+  --color-verde-600: #1c6b3a;
+  --color-verde-500: #2e8b50;
+  --color-verde-100: #e4efe9;
+  --color-verde-50: #f1f7f3;
+
+  /* Ottone */
+  --color-ottone-700: #7a5010;
+  --color-ottone-600: #9a6f18;
+  --color-ottone-500: #c8972e;
+  --color-ottone-400: #d4a52c;
+  --color-ottone-300: #e8c878;
+  --color-ottone-100: #fdf9ee;
+
+  /* Inchiostro / testo */
+  --color-ink: #1b2219;
+  --color-ink-2: #546252;
+  --color-ink-3: #8a9c88;
+
+  /* Superfici */
+  --color-fondo: #f0f4ee;
+  --color-superficie: #ffffff;
+
+  /* Tipografia */
+  --font-sans: 'DM Sans', system-ui, sans-serif;
+  --font-display: 'Saira Condensed', sans-serif;
+}
+
+body {
+  margin: 0;
+  background: var(--color-fondo);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
