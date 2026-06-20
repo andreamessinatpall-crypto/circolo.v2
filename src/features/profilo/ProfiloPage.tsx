@@ -3,14 +3,16 @@ import RiepilogoProfilo from './RiepilogoProfilo'
 import DatiProfilo from './DatiProfilo'
 import AmiciProfilo from './amici/AmiciProfilo'
 import ClassificaProfilo from './ClassificaProfilo'
+import BadgeProfilo from './badge/BadgeProfilo'
 
-type SottoScheda = 'riepilogo' | 'dati' | 'amici' | 'classifica'
+type SottoScheda = 'riepilogo' | 'dati' | 'amici' | 'classifica' | 'badge'
 
 const SCHEDE: { id: SottoScheda; label: string }[] = [
   { id: 'riepilogo', label: 'Riepilogo' },
   { id: 'dati', label: 'Dati' },
   { id: 'amici', label: 'Amici' },
   { id: 'classifica', label: 'Classifica' },
+  { id: 'badge', label: 'Badge' },
 ]
 
 export default function ProfiloPage() {
@@ -38,6 +40,7 @@ export default function ProfiloPage() {
       {scheda === 'dati' && <DatiProfilo />}
       {scheda === 'amici' && <AmiciProfilo />}
       {scheda === 'classifica' && <ClassificaProfilo />}
+      {scheda === 'badge' && <BadgeProfilo />}
     </div>
   )
 }

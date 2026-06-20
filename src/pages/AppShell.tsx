@@ -2,6 +2,8 @@ import { NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '@/auth/useAuth'
 import { sportConsentiti } from '@/auth/ruoli'
 import type { Socio } from '@/auth/tipi'
+import Medaglia from '@/features/profilo/badge/Medaglia'
+import { leggiCodiceBadge } from '@/features/profilo/badge/badgeDati'
 
 interface Voce {
   path: string
@@ -34,6 +36,7 @@ export default function AppShell() {
 
   const collaboratore = !!profilo.is_allenatore && !profilo.is_admin
   const voci = vociMenu(profilo)
+  const avatar = leggiCodiceBadge(profilo.badge_profilo)
 
   return (
     <div className="min-h-screen">
@@ -43,6 +46,7 @@ export default function AppShell() {
           Circolo Sportivo
         </div>
         <div className="flex items-center gap-3 text-sm">
+          {avatar && <Medaglia sport={avatar.sport} liv={avatar.liv} size={32} />}
           <span className="font-medium">
             {profilo.nome} {profilo.cognome}
           </span>
