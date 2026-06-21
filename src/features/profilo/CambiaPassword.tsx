@@ -61,7 +61,7 @@ export default function CambiaPassword() {
 
   return (
     <div>
-      <div className="eyebrow mt-7">Cambia password</div>
+      <div className="eyebrow">Cambia password</div>
       <form onSubmit={onSubmit} className="card">
         <label htmlFor="pw-attuale">Password attuale</label>
         <input

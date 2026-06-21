@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import { useAuth } from '@/auth/useAuth'
 import { mancaTabella, eDuplicato, messaggioErrore } from '@/lib/errori'
+import { titleCase } from '@/lib/formato'
 import { classiInput } from '@/components/stili'
 import { useAmici, type Amicizia, type VoceAmico } from './useAmici'
 
@@ -72,7 +73,7 @@ export default function AmiciProfilo() {
         <option value="">— Seleziona un giocatore —</option>
         {selezionabili.map((s) => (
           <option key={s.id} value={s.id}>
-            {s.etichetta}
+            {titleCase(s.etichetta)}
           </option>
         ))}
       </select>

@@ -69,7 +69,7 @@ export default function ClubProfilo() {
         )}
       </div>
 
-      <div className="eyebrow mt-7">I tuoi traguardi</div>
+      <div className="eyebrow">I tuoi traguardi</div>
       <BadgeProfilo />
     </div>
   )

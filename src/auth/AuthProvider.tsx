@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import type { User } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
+import { titleCase } from '@/lib/formato'
 import { AuthContext, type MessaggioBlocco, type StatoAuth } from './contesto'
 import type { Socio, SportPreferito } from './tipi'
 
@@ -109,7 +110,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return
     }
 
-    setProfilo(socio as Socio)
+    // Nome e cognome sempre con l'iniziale maiuscola (come nella v1).
+    const socioPulito = {
+      ...(socio as Socio),
+      nome: titleCase((socio as Socio).nome),
+      cognome: titleCase((socio as Socio).cognome),
+    }
+    setProfilo(socioPulito)
     setBlocco(null)
     setStato('attivo')
   }, [])

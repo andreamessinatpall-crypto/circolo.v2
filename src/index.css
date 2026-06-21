@@ -1,6 +1,4 @@
-/* Font dell'app originale */
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=Saira+Condensed:wght@400;500;600;700&display=swap');
-
+/* I font (DM Sans + Saira Condensed) sono caricati con <link> in index.html. */
 @import 'tailwindcss';
 
 /* ─────────────────────────────────────────────────────────────
@@ -142,6 +140,7 @@
     border: 1px solid var(--border);
     border-radius: 18px;
     padding: 24px;
+    margin-bottom: 16px;
     box-shadow: var(--ombra-card);
   }
 
@@ -156,7 +155,7 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    margin: 8px 0 14px;
+    margin: 28px 0 14px;
   }
   .eyebrow::before {
     content: '';

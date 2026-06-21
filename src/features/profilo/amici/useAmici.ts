@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import { titleCase } from '@/lib/formato'
 
 export interface SocioPubblico {
   id: string
@@ -47,7 +48,7 @@ export function useAmici(profiloId: string) {
   // mappa id socio -> etichetta (nome leggibile)
   const etichette = useMemo(() => {
     const m: Record<string, string> = {}
-    for (const s of sociQuery.data ?? []) m[s.id] = s.etichetta
+    for (const s of sociQuery.data ?? []) m[s.id] = titleCase(s.etichetta)
     return m
   }, [sociQuery.data])
 
