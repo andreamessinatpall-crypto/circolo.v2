@@ -44,6 +44,7 @@ supabase/
 - [x] **Fase 0** — fondamenta (progetto, stack, client Supabase).
 - [x] **Fase 1** — autenticazione (login, registrazione, stati account, logout).
 - [x] **Fase 2** — guscio app e navigazione a tab (filtri per ruolo e sport).
-- [x] **Fase 3** — profilo: riepilogo, dati, amici, classifica, badge. ← *sei qui*
-- [ ] Fase 4 — prenotazioni campi
+- [x] **Fase 3** — profilo: riepilogo, dati, amici, classifica, badge.
+- [x] **Fase 4** — prenotazioni campi (griglia, prenota/annulla, regole, realtime). ← *sei qui*
+- [ ] Fase 5 — amichevoli e lezioni
 - [ ] … (vedi `nuovo-progetto/04-roadmap.md`)

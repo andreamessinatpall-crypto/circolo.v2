@@ -585,6 +585,146 @@
     font-size: 0.88rem;
   }
 
+  /* Pillola di stato (es. "Fuori servizio") */
+  .pill {
+    font-size: 0.66rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 3px 9px;
+    border-radius: 999px;
+  }
+  .pill.off {
+    background: var(--v050);
+    color: var(--ink3);
+  }
+
+  /* ── Prenotazioni: selettore giorni e griglia slot ── */
+  .giorni {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 6px;
+    margin-bottom: 8px;
+    scrollbar-width: none;
+  }
+  .giorni::-webkit-scrollbar {
+    display: none;
+  }
+  .giorno-btn {
+    flex: 0 0 auto;
+    padding: 8px 16px;
+    font-size: 0.78rem;
+    font-family: var(--font-display);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    background: transparent;
+    color: var(--v700);
+    border: 1.5px solid var(--border2);
+    border-radius: 999px;
+    cursor: pointer;
+    transition: all 0.14s;
+  }
+  .giorno-btn:hover {
+    background: var(--v050);
+    border-color: var(--v600);
+  }
+  .giorno-btn.attivo {
+    background: var(--v700);
+    color: #fff;
+    border-color: var(--v700);
+  }
+
+  .campo-blocco {
+    margin-top: 18px;
+  }
+  .campo-titolo {
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: 700;
+    font-size: 1rem;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--v700);
+  }
+  .slot-griglia {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+    gap: 8px;
+  }
+  .slot {
+    padding: 10px 6px;
+    font-size: 0.8rem;
+    letter-spacing: 0.04em;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    min-height: 56px;
+    justify-content: center;
+    font-family: var(--font-display);
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.14s, color 0.14s;
+  }
+  .slot .chi {
+    font-family: var(--font-sans);
+    text-transform: none;
+    letter-spacing: 0;
+    font-weight: 500;
+    font-size: 0.72rem;
+    line-height: 1.2;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .slot.libero {
+    background: transparent;
+    color: var(--v700);
+    border: 1.5px solid rgba(20, 83, 42, 0.28);
+  }
+  .slot.libero:hover {
+    background: var(--v700);
+    color: #fff;
+  }
+  .slot.mio {
+    background: var(--v700);
+    color: #fff;
+  }
+  .slot.mio:hover {
+    background: var(--terra);
+  }
+  .slot.occupato {
+    background: var(--v050);
+    color: var(--ink3);
+    cursor: default;
+    border: 1px solid var(--border);
+  }
+  .slot.occupato.annullabile {
+    cursor: pointer;
+  }
+  .slot.occupato.annullabile:hover {
+    background: transparent;
+    color: var(--terra);
+    outline: 1.5px solid var(--terra);
+  }
+  .slot.passato {
+    background: transparent;
+    color: var(--ink3);
+    border: 1.5px dashed var(--border);
+    opacity: 0.5;
+    cursor: default;
+  }
+  .slot:disabled {
+    cursor: default;
+  }
+
   /* Campo in sola lettura */
   .ro {
     background: var(--v050);

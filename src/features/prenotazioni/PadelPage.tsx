@@ -1,7 +1,5 @@
-import Segnaposto from '@/components/Segnaposto'
+import GrigliaPrenotazioni from './GrigliaPrenotazioni'
 
 export default function PadelPage() {
-  return (
-    <Segnaposto descrizione="Prenotazioni dei campi, amichevoli e lezioni di padel — in arrivo dalla Fase 4." />
-  )
+  return <GrigliaPrenotazioni sport="padel" />
 }
