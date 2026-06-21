@@ -266,40 +266,25 @@ function DettaglioTorneo({
   else if (torneo.data_fine) periodo = ' · fino al ' + fmt(torneo.data_fine)
 
   // Contenuto della scheda "Gestione torneo" (solo organizzatori).
+  // Ordine: prima le squadre iscritte, poi i gironi, infine la modifica regole.
   const schedaGestione = (
     <div>
-      <div className="flex items-center gap-2">
-        <label className="m-0">Stato:</label>
-        <select
-          className={classiInput}
-          style={{ width: 'auto' }}
-          value={torneo.stato}
-          onChange={(e) => cambiaStato.mutate(e.target.value as StatoTorneo)}
-        >
-          {Object.entries(STATI_TORNEO).map(([k, v]) => (
-            <option key={k} value={k}>
-              {v}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <ImpostazioniTorneo torneo={torneo} />
-
-      <div className="eyebrow" style={{ marginTop: 20 }}>
-        Gironi
-      </div>
-      <GestioneGironi torneo={torneo} squadre={squadre} />
-
-      <div className="eyebrow" style={{ marginTop: 20 }}>
-        Squadre iscritte
-      </div>
+      <div className="eyebrow">Squadre iscritte</div>
       <GestioneSquadre
         torneo={torneo}
         squadre={squadre}
         compBySquadra={dati.perSquadraComp}
         assegnati={assegnati}
       />
+
+      <div className="eyebrow" style={{ marginTop: 24 }}>
+        Gironi
+      </div>
+      <GestioneGironi torneo={torneo} squadre={squadre} />
+
+      <div className="mt-6 border-t border-[var(--border)] pt-4">
+        <ImpostazioniTorneo torneo={torneo} />
+      </div>
     </div>
   )
 
@@ -315,16 +300,31 @@ function DettaglioTorneo({
 
   return (
     <div className="card">
-      <div className="amichevole-cap">
+      <div className="torneo-hero">
         <div>
-          <div className="quando">{torneo.nome}</div>
-          <div className="dove">
+          <div className="torneo-hero-nome">{torneo.nome}</div>
+          <div className="torneo-hero-sub">
             {(FORMATI_TORNEO[torneo.formato] ?? torneo.formato) + periodo}
           </div>
         </div>
-        <span className={'pill' + (torneo.stato !== 'in_corso' ? ' off' : '')}>
-          {STATI_TORNEO[torneo.stato]}
-        </span>
+        {gestore ? (
+          // Lo stato si cambia direttamente qui, in alto a destra.
+          <select
+            className="torneo-hero-stato"
+            value={torneo.stato}
+            onChange={(e) => cambiaStato.mutate(e.target.value as StatoTorneo)}
+          >
+            {Object.entries(STATI_TORNEO).map(([k, v]) => (
+              <option key={k} value={k}>
+                {v}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <span className={'pill' + (torneo.stato !== 'in_corso' ? ' off' : '')}>
+            {STATI_TORNEO[torneo.stato]}
+          </span>
+        )}
       </div>
 
       {gestore ? (
