@@ -74,3 +74,40 @@ export function useMieAmichevoli(
     },
   })
 }
+
+// Le lezioni (allenamenti) di cui sono istruttore, con i partecipanti.
+export function useMieLezioni(
+  sport: Sport,
+  idCampi: Array<number | string>,
+  allenatoreId: string,
+) {
+  return useQuery({
+    queryKey: ['lezioni', sport, allenatoreId],
+    enabled: idCampi.length > 0,
+    queryFn: async () => {
+      const adesso = new Date().toISOString()
+      const { data: pren, error } = await supabase
+        .from('prenotazioni')
+        .select('*')
+        .eq('allenatore_id', allenatoreId)
+        .eq('allenamento', true)
+        .in('campo_id', idCampi)
+        .gte('fine', adesso)
+        .order('inizio', { ascending: true })
+      if (error) throw error
+      const lista = (pren ?? []) as MiaPrenotazione[]
+
+      const ids = lista.map((p) => p.id)
+      let parts: Partecipante[] = []
+      if (ids.length) {
+        const { data, error: errP } = await supabase
+          .from('partecipanti_amichevole')
+          .select('*')
+          .in('prenotazione_id', ids)
+        if (errP) throw errP
+        parts = (data ?? []) as Partecipante[]
+      }
+      return { lista, parts }
+    },
+  })
+}

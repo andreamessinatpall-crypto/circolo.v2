@@ -13,6 +13,7 @@ export default function GrigliaPrenotazioni({ sport }: { sport: Sport }) {
   const impQuery = useImpostazioni()
   const campiQuery = useCampi()
   const [giorno, setGiorno] = useState(() => ymd(new Date()))
+  const [scelta, setScelta] = useState<{ campo: Campo; inizio: Date; fine: Date } | null>(null)
   const prenQuery = usePrenotazioniGiorno(giorno)
 
   const imp = impQuery.data ?? { giorniAnticipo: 6, maxPadel: 0, maxCalcio: 0 }
@@ -26,7 +27,17 @@ export default function GrigliaPrenotazioni({ sport }: { sport: Sport }) {
   )
 
   const prenota = useMutation({
-    mutationFn: async ({ campo, inizio, fine }: { campo: Campo; inizio: Date; fine: Date }) => {
+    mutationFn: async ({
+      campo,
+      inizio,
+      fine,
+      allenamento,
+    }: {
+      campo: Campo
+      inizio: Date
+      fine: Date
+      allenamento: boolean
+    }) => {
       if (!profilo) throw new Error('Profilo non disponibile')
       // Limite di prenotazioni attive per socio (0 = nessun limite; staff esente).
       const limite = sport === 'padel' ? imp.maxPadel : imp.maxCalcio
@@ -41,12 +52,17 @@ export default function GrigliaPrenotazioni({ sport }: { sport: Sport }) {
           .gte('fine', new Date().toISOString())
         if (count != null && count >= limite) throw new Error(`LIMITE:${count}:${limite}`)
       }
-      const { error } = await supabase.from('prenotazioni').insert({
+      const dati: Record<string, unknown> = {
         campo_id: campo.id,
         socio_id: profilo.id,
         inizio: inizio.toISOString(),
         fine: fine.toISOString(),
-      })
+      }
+      if (allenamento) {
+        dati.allenamento = true
+        if (profilo.e_allenatore || profilo.is_allenatore) dati.allenatore_id = profilo.id
+      }
+      const { error } = await supabase.from('prenotazioni').insert(dati)
       if (error) throw error
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['prenotazioni'] }),
@@ -89,6 +105,13 @@ export default function GrigliaPrenotazioni({ sport }: { sport: Sport }) {
       ? `Annullare la prenotazione di ${diChi} su ${campo.nome} (${quando})?`
       : `Annullare la tua prenotazione su ${campo.nome} (${quando})?`
     if (window.confirm(domanda)) annulla.mutate(p.id)
+  }
+
+  // Lo staff (admin/collaboratore) sceglie tra prenotazione e allenamento.
+  const staff = !!(profilo?.is_allenatore || profilo?.is_admin)
+  function apriPrenota(campo: Campo, inizio: Date, fine: Date) {
+    if (staff) setScelta({ campo, inizio, fine })
+    else prenota.mutate({ campo, inizio, fine, allenamento: false })
   }
 
   if (!profilo) return null
@@ -150,10 +173,57 @@ export default function GrigliaPrenotazioni({ sport }: { sport: Sport }) {
           )}
           isAdmin={!!profilo.is_admin}
           mioId={profilo.id}
-          onPrenota={(inizio, fine) => prenota.mutate({ campo, inizio, fine })}
+          onPrenota={(inizio, fine) => apriPrenota(campo, inizio, fine)}
           onAnnulla={chiediAnnulla}
         />
       ))}
+
+      {scelta && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={() => setScelta(null)}
+        >
+          <div className="card max-w-sm" onClick={(e) => e.stopPropagation()}>
+            <h2 className="mb-1 text-xl">Cosa prenoti?</h2>
+            <p className="sub mb-4">
+              {scelta.campo.nome} ·{' '}
+              {scelta.inizio.toLocaleDateString('it-IT', {
+                weekday: 'long',
+                day: 'numeric',
+                month: 'long',
+              })}{' '}
+              {oraLocale(scelta.inizio)}
+            </p>
+            <button
+              type="button"
+              className="btn btn-block mb-2"
+              onClick={() => {
+                prenota.mutate({ ...scelta, allenamento: false })
+                setScelta(null)
+              }}
+            >
+              Prenotazione campo
+            </button>
+            <button
+              type="button"
+              className="btn btn-secondario btn-block mb-2"
+              onClick={() => {
+                prenota.mutate({ ...scelta, allenamento: true })
+                setScelta(null)
+              }}
+            >
+              🏋️ Allenamento
+            </button>
+            <button
+              type="button"
+              className="btn btn-pericolo btn-block"
+              onClick={() => setScelta(null)}
+            >
+              Annulla
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

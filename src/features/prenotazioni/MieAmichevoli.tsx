@@ -200,7 +200,7 @@ export default function MieAmichevoli({ sport }: { sport: Sport }) {
   )
 }
 
-function SchedaPartita({
+export function SchedaPartita({
   sport,
   pren,
   campo,

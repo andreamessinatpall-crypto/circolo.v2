@@ -1,11 +1,17 @@
 import { useState } from 'react'
+import { useAuth } from '@/auth/useAuth'
 import GrigliaPrenotazioni from './GrigliaPrenotazioni'
 import MieAmichevoli from './MieAmichevoli'
+import MieLezioni from './MieLezioni'
 import type { Sport } from './tipi'
 
+type Sub = 'prenota' | 'mie' | 'lezioni'
+
 export default function SportPage({ sport }: { sport: Sport }) {
-  const [sub, setSub] = useState<'prenota' | 'mie'>('prenota')
+  const { profilo } = useAuth()
+  const [sub, setSub] = useState<Sub>('prenota')
   const label = sport === 'padel' ? 'Padel' : 'Calcio'
+  const istruttore = !!(profilo?.e_allenatore && !profilo.is_admin)
 
   return (
     <div>
@@ -24,6 +30,15 @@ export default function SportPage({ sport }: { sport: Sport }) {
         >
           Le mie prenotazioni
         </button>
+        {istruttore && (
+          <button
+            type="button"
+            className={'subtab-btn' + (sub === 'lezioni' ? ' attivo' : '')}
+            onClick={() => setSub('lezioni')}
+          >
+            Le mie lezioni
+          </button>
+        )}
       </nav>
 
       {sub === 'prenota' && (
@@ -40,6 +55,15 @@ export default function SportPage({ sport }: { sport: Sport }) {
           <div className="eyebrow">{label} · Le tue partite</div>
           <div className="card">
             <MieAmichevoli sport={sport} />
+          </div>
+        </>
+      )}
+
+      {sub === 'lezioni' && istruttore && (
+        <>
+          <div className="eyebrow">{label} · Le mie lezioni</div>
+          <div className="card">
+            <MieLezioni sport={sport} />
           </div>
         </>
       )}
