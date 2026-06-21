@@ -292,6 +292,8 @@ function RigaRisultato({
             torneo={torneo}
             m={m}
             nomi={nomi}
+            compCasa={compBySquadra[String(m.casa_id)] ?? []}
+            compOspite={compBySquadra[String(m.ospite_id)] ?? []}
             etichetta="Sfida"
             titolo="Organizza la sfida"
           />
@@ -305,6 +307,8 @@ function RigaRisultato({
             torneo={torneo}
             m={m}
             nomi={nomi}
+            compCasa={compBySquadra[String(m.casa_id)] ?? []}
+            compOspite={compBySquadra[String(m.ospite_id)] ?? []}
             etichetta={dPren ? 'Riprogramma' : 'Programma'}
           />
           {dPren && <BottoneAnnullaProgrammazione m={m} />}

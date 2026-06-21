@@ -3,11 +3,19 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/auth/useAuth'
 import { mancaRpc, messaggioErrore } from '@/lib/errori'
+import { puoGestireTornei } from '@/auth/ruoli'
 import { useCampi, usePrenotazioniGiorno } from '@/features/prenotazioni/datiPrenotazioni'
 import { dataDa, oraLocale, orariCampo, SLOT_MINUTI, ymd } from '@/features/prenotazioni/orari'
 import { nomeSquadraElegante } from './gironi'
 import { SPORT_LABEL } from './tipi'
-import type { Incontro, Torneo } from './tipi'
+import type { Componente, Incontro, Torneo } from './tipi'
+
+// I titolari da iscrivere alla prenotazione: si esclude la riserva e, nel padel,
+// si tengono al massimo i primi 2 (la coppia che gioca davvero).
+function titolari(comp: Componente[], sport: 'padel' | 'calcio'): string[] {
+  const ids = comp.filter((c) => c.riserva !== true).map((c) => c.socio_id)
+  return sport === 'padel' ? ids.slice(0, 2) : ids
+}
 
 // (Fase 6e) Programmazione di un incontro: si crea una prenotazione legata
 // all'incontro (campo + giorno + orario) e, con la RPC crea_partecipanti_sfida,
@@ -20,6 +28,8 @@ export function BottoneProgramma({
   torneo,
   m,
   nomi,
+  compCasa,
+  compOspite,
   etichetta,
   classe = 'btn-secondario',
   titolo = 'Programma incontro',
@@ -27,6 +37,8 @@ export function BottoneProgramma({
   torneo: Torneo
   m: Incontro
   nomi: Record<string, string>
+  compCasa: Componente[]
+  compOspite: Componente[]
   etichetta: string
   classe?: string
   titolo?: string
@@ -46,6 +58,8 @@ export function BottoneProgramma({
           torneo={torneo}
           m={m}
           nomi={nomi}
+          compCasa={compCasa}
+          compOspite={compOspite}
           titolo={titolo}
           onChiudi={() => setAperto(false)}
         />
@@ -91,18 +105,23 @@ function ModaleProgramma({
   torneo,
   m,
   nomi,
+  compCasa,
+  compOspite,
   titolo,
   onChiudi,
 }: {
   torneo: Torneo
   m: Incontro
   nomi: Record<string, string>
+  compCasa: Componente[]
+  compOspite: Componente[]
   titolo: string
   onChiudi: () => void
 }) {
   const { profilo } = useAuth()
   const qc = useQueryClient()
   const campiQuery = useCampi()
+  const staff = !!profilo && puoGestireTornei(profilo)
 
   const campiSport = (campiQuery.data ?? []).filter(
     (c) => c.sport === torneo.sport && c.in_servizio !== false,
@@ -153,13 +172,35 @@ function ModaleProgramma({
         .select('id')
         .single()
       if (error) throw error
-      // Aggiungo i giocatori delle due squadre (stessa RPC delle sfide).
-      const { error: errS } = await supabase.rpc('crea_partecipanti_sfida', {
-        p_prenotazione: data.id,
-        p_squadra_mia: m.casa_id,
-        p_squadra_avv: m.ospite_id,
-      })
-      if (errS) return { avviso: errS } // prenotazione ok, ma giocatori non aggiunti
+      // Aggiungo in automatico i titolari delle due squadre alla prenotazione.
+      // Lo staff li iscrive direttamente (ne ha i permessi); il socio che
+      // organizza la propria sfida usa la RPC (così può aggiungere anche gli
+      // avversari, che potrebbero non essere suoi amici).
+      if (staff) {
+        const righe = [
+          ...titolari(compCasa, torneo.sport),
+          ...titolari(compOspite, torneo.sport),
+        ].map((socio_id) => ({ prenotazione_id: data.id, socio_id, confermato: false }))
+        if (righe.length) {
+          const { error: errP } = await supabase
+            .from('partecipanti_amichevole')
+            .upsert(righe, { onConflict: 'prenotazione_id,socio_id', ignoreDuplicates: true })
+          if (errP) return { avviso: errP } // prenotazione ok, ma giocatori non aggiunti
+        }
+      } else {
+        // La squadra "mia" è quella di cui faccio parte (così la RPC non sbaglia
+        // il controllo di appartenenza quando gioco come ospite).
+        const miaSquadra = compCasa.some((c) => c.socio_id === profilo?.id)
+          ? m.casa_id
+          : m.ospite_id
+        const avversaria = String(miaSquadra) === String(m.casa_id) ? m.ospite_id : m.casa_id
+        const { error: errS } = await supabase.rpc('crea_partecipanti_sfida', {
+          p_prenotazione: data.id,
+          p_squadra_mia: miaSquadra,
+          p_squadra_avv: avversaria,
+        })
+        if (errS) return { avviso: errS } // prenotazione ok, ma giocatori non aggiunti
+      }
       return {}
     },
     onSuccess: (esito) => {
@@ -189,10 +230,10 @@ function ModaleProgramma({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      className="fixed inset-0 z-50 flex justify-center overflow-y-auto overscroll-contain bg-black/40 p-4"
       onClick={onChiudi}
     >
-      <div className="card max-w-sm" onClick={(e) => e.stopPropagation()}>
+      <div className="card my-auto max-w-sm" onClick={(e) => e.stopPropagation()}>
         <h2 className="mb-1 text-xl">{titolo}</h2>
         <p className="sub mb-3">
           {nomeSquadraElegante(nomi[String(m.casa_id)] ?? '?')} vs{' '}
