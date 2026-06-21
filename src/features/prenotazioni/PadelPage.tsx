@@ -1,5 +1,5 @@
-import GrigliaPrenotazioni from './GrigliaPrenotazioni'
+import SportPage from './SportPage'
 
 export default function PadelPage() {
-  return <GrigliaPrenotazioni sport="padel" />
+  return <SportPage sport="padel" />
 }

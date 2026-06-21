@@ -4,6 +4,7 @@ import { sportConsentiti } from '@/auth/ruoli'
 import type { Socio } from '@/auth/tipi'
 import Medaglia from '@/features/profilo/badge/Medaglia'
 import { leggiCodiceBadge } from '@/features/profilo/badge/badgeDati'
+import { useRealtimeCircolo } from '@/hooks/useRealtimeCircolo'
 
 interface Voce {
   path: string
@@ -29,6 +30,7 @@ function vociMenu(p: Socio): Voce[] {
 
 export default function AppShell() {
   const { profilo, esci } = useAuth()
+  useRealtimeCircolo()
   if (!profilo) return null
 
   const collaboratore = !!profilo.is_allenatore && !profilo.is_admin

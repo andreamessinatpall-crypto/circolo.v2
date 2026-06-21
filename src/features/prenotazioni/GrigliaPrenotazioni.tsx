@@ -3,7 +3,6 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/auth/useAuth'
 import { messaggioErrore } from '@/lib/errori'
-import { useRealtimePrenotazioni } from '@/hooks/useRealtimePrenotazioni'
 import { useCampi, useImpostazioni, usePrenotazioniGiorno } from './datiPrenotazioni'
 import { SLOT_MINUTI, dataDa, oraLocale, orariCampo, ymd } from './orari'
 import type { Campo, PrenotazioneGiorno, Sport } from './tipi'
@@ -15,7 +14,6 @@ export default function GrigliaPrenotazioni({ sport }: { sport: Sport }) {
   const campiQuery = useCampi()
   const [giorno, setGiorno] = useState(() => ymd(new Date()))
   const prenQuery = usePrenotazioniGiorno(giorno)
-  useRealtimePrenotazioni()
 
   const imp = impQuery.data ?? { giorniAnticipo: 6, maxPadel: 0, maxCalcio: 0 }
 
