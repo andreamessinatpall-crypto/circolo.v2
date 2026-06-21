@@ -877,6 +877,36 @@
     flex: 1 1 180px;
   }
 
+  /* Riga di un componente (giocatore) dentro una coppia/squadra del torneo */
+  .comp-riga {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 7px 10px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-top: 8px;
+    font-size: 0.85rem;
+  }
+  .comp-riga .nome {
+    font-weight: 600;
+  }
+  .tag-riserva {
+    display: inline-block;
+    margin-left: 8px;
+    font-size: 0.62rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #854d0e;
+    background: #fefce8;
+    border: 1px solid #d97706;
+    border-radius: 999px;
+    padding: 2px 8px;
+    vertical-align: middle;
+  }
+
   /* Campo in sola lettura */
   .ro {
     background: var(--v050);

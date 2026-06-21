@@ -9,6 +9,8 @@ import { puoGestireTornei } from '@/auth/ruoli'
 import { mancaTabella, messaggioErrore } from '@/lib/errori'
 import { classiErrore, classiInput, classiOk } from '@/components/stili'
 import { useTornei } from './datiTornei'
+import type { DatiTornei } from './datiTornei'
+import GestioneSquadre from './GestioneSquadre'
 import { FORMATI_TORNEO, STATI_TORNEO } from './tipi'
 import type { StatoTorneo, Torneo } from './tipi'
 
@@ -66,7 +68,7 @@ export default function TorneiPage() {
       {selCorrente === 'nuovo' ? (
         <NuovoTorneo onCreato={(id) => setSel(String(id))} />
       ) : torneoSel ? (
-        <DettaglioTorneo torneo={torneoSel} gestore={gestore} />
+        <DettaglioTorneo torneo={torneoSel} gestore={gestore} dati={d} />
       ) : null}
     </div>
   )
@@ -221,8 +223,21 @@ function NuovoTorneo({ onCreato }: { onCreato: (id: number | string) => void }) 
   )
 }
 
-function DettaglioTorneo({ torneo, gestore }: { torneo: Torneo; gestore: boolean }) {
+function DettaglioTorneo({
+  torneo,
+  gestore,
+  dati,
+}: {
+  torneo: Torneo
+  gestore: boolean
+  dati: DatiTornei
+}) {
+  const { profilo } = useAuth()
   const qc = useQueryClient()
+
+  const squadre = dati.perTorneoSquadre[String(torneo.id)] ?? []
+  const assegnati = dati.assegnati[String(torneo.id)] ?? new Set<string>()
+  const unita = torneo.sport === 'padel' ? 'coppie' : 'squadre'
 
   const cambiaStato = useMutation({
     mutationFn: async (stato: StatoTorneo) => {
@@ -277,8 +292,43 @@ function DettaglioTorneo({ torneo, gestore }: { torneo: Torneo; gestore: boolean
         </div>
       )}
 
+      <div className="eyebrow" style={{ marginTop: 20 }}>
+        {torneo.sport === 'padel' ? 'Coppie iscritte' : 'Squadre iscritte'}
+      </div>
+
+      {gestore ? (
+        <GestioneSquadre
+          torneo={torneo}
+          squadre={squadre}
+          compBySquadra={dati.perSquadraComp}
+          assegnati={assegnati}
+        />
+      ) : squadre.length === 0 ? (
+        <p className="part-vuoto">
+          Le {unita} compariranno qui quando l'organizzatore le avrà inserite.
+        </p>
+      ) : (
+        <div className="schede-griglia">
+          {squadre.map((s) => {
+            const comp = dati.perSquadraComp[String(s.id)] ?? []
+            const miaSquadra = comp.some((c) => c.socio_id === profilo?.id)
+            return (
+              <div key={s.id} className="amichevole-riga">
+                <div className="amichevole-cap">
+                  <div className="quando">{s.nome}</div>
+                  {miaSquadra && <span className="tag-riserva">La tua</span>}
+                </div>
+                <div className="dove mt-1">
+                  {comp.length} giocator{comp.length === 1 ? 'e' : 'i'}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
       <p className="sub mt-4">
-        Gestione di squadre/coppie, gironi e tabellone in arrivo nelle prossime sotto-fasi.
+        Gironi, calendario e classifica in arrivo nelle prossime sotto-fasi.
       </p>
     </div>
   )
