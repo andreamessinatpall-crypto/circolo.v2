@@ -16,6 +16,7 @@ import GestioneCalendario from './GestioneCalendario'
 import ClassificaTorneo from './ClassificaTorneo'
 import PodioTorneo from './PodioTorneo'
 import Risultati from './Risultati'
+import RiepilogoPunti from './RiepilogoPunti'
 import ImpostazioniTorneo from './ImpostazioniTorneo'
 import { FORMATI_TORNEO, STATI_TORNEO } from './tipi'
 import type { StatoTorneo, Torneo } from './tipi'
@@ -295,6 +296,16 @@ function DettaglioTorneo({
         Calendario
       </div>
       <GestioneCalendario torneo={torneo} squadre={squadre} incontri={incontri} />
+
+      <div className="eyebrow" style={{ marginTop: 24 }}>
+        Riepilogo punti
+      </div>
+      <RiepilogoPunti
+        torneo={torneo}
+        squadre={squadre}
+        incontri={incontri}
+        compBySquadra={dati.perSquadraComp}
+      />
 
       <div className="mt-6 border-t border-[var(--border)] pt-4">
         <ImpostazioniTorneo torneo={torneo} />

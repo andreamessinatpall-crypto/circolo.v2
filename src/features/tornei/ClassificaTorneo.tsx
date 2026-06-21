@@ -67,7 +67,7 @@ function TabellaClassifica({
   const intestazioni =
     sport === 'calcio'
       ? ['#', 'Squadra', 'G', 'V', 'N', 'P', 'DR', 'Pti']
-      : ['#', 'Coppia', 'G', 'V', 'P', 'DS', 'Pti']
+      : ['#', 'Squadra', 'G', 'V', 'P', 'DS', 'Pti']
 
   return (
     <div className="classifica-wow">
@@ -98,9 +98,7 @@ function TabellaClassifica({
                     className={i === 0 ? 'nome-cl' : i === celle.length - 1 ? 'pti' : undefined}
                   >
                     {i === 0 ? (
-                      <span className="chip-squadra">
-                        <NomeSquadra nome={r.nome} logoUrl={loghi[String(r.id)]} sport={sport} />
-                      </span>
+                      <NomeSquadra nome={r.nome} logoUrl={loghi[String(r.id)]} sport={sport} />
                     ) : (
                       val
                     )}

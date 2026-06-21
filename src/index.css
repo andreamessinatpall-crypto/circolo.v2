@@ -753,7 +753,7 @@
   }
   .schede-griglia {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: 12px;
     margin-top: 4px;
   }
@@ -772,6 +772,36 @@
     justify-content: space-between;
     gap: 10px;
     flex-wrap: wrap;
+  }
+  /* (Fase 7a) Scheda squadra del torneo: nome e azioni (matita/cestino) sempre
+     sulla stessa riga, accanto al nome; il nome non va mai a capo. */
+  .squadra-card .amichevole-cap {
+    flex-wrap: nowrap;
+    align-items: center;
+  }
+  .squadra-card .amichevole-cap .quando {
+    min-width: 0;
+    overflow: hidden;
+  }
+  /* il nome resta su una riga; la scheda è larga abbastanza da non sovrapporsi
+     ai pulsanti — l'ellissi è solo una rete di sicurezza per nomi estremi. */
+  .squadra-card .amichevole-cap .chip-squadra {
+    display: inline-block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    vertical-align: middle;
+  }
+  .squadra-card .azioni-squadra {
+    flex: 0 0 auto;
+  }
+  /* matita ed elimina: stessa larghezza (emoji centrata, padding orizzontale tolto). */
+  .squadra-card .azioni-squadra .btn-mini {
+    width: 38px;
+    padding-left: 0;
+    padding-right: 0;
+    text-align: center;
   }
   .amichevole-cap .quando {
     font-weight: 700;
@@ -920,10 +950,6 @@
     text-align: center;
     border-bottom: 1px solid var(--border);
   }
-  .classifica th:first-child,
-  .classifica td:first-child {
-    text-align: left;
-  }
   .classifica th {
     font-weight: 700;
     color: var(--ink3);
@@ -944,14 +970,18 @@
   .classifica-wow .classifica {
     margin-top: 0;
   }
+  /* Intestazione come banner unico: sfondo sulla riga (non per colonna) con lo
+     stesso effetto sfumato/alone della banda "Giornata". */
+  .classifica-wow .classifica thead tr {
+    background:
+      radial-gradient(120px 120px at top right, rgba(232, 200, 120, 0.22), transparent 70%),
+      linear-gradient(135deg, var(--v800) 0%, var(--v600) 100%);
+  }
   .classifica-wow .classifica thead th {
-    background: linear-gradient(135deg, var(--v800), var(--v700));
-    color: #fff;
+    background: transparent;
+    color: var(--g300);
     padding: 10px 6px;
     border: none;
-  }
-  .classifica-wow .classifica thead th:first-child {
-    color: var(--g300);
   }
   .classifica-wow .classifica tbody tr:nth-child(odd) td {
     background: rgba(20, 83, 42, 0.025);
@@ -959,6 +989,13 @@
   .classifica-wow .classifica td.nome-cl {
     text-align: left;
     font-weight: 600;
+  }
+  /* (Fase 7a) Riepilogo punti: prima colonna (Giocatore + nomi) staccata dal bordo
+     sinistro. Selettore specifico per allineare intestazione E celle allo stesso modo. */
+  .classifica-wow .classifica-riep thead th:first-child,
+  .classifica-wow .classifica-riep tbody td:first-child {
+    text-align: left;
+    padding-left: 18px;
   }
   .cl-rank {
     display: inline-flex;
@@ -971,7 +1008,6 @@
     font-size: 0.85rem;
     color: var(--ink2);
     background: transparent;
-    margin-right: 8px;
     vertical-align: middle;
   }
   .cl-rank.m1 {
@@ -1567,7 +1603,8 @@
     border-top: 1px dashed var(--border2);
   }
   .match-admin .set-editor {
-    align-items: center;
+    /* tutte le righe dei set partono dallo stesso bordo: restano allineate fra loro. */
+    align-items: flex-start;
   }
   .match-admin label.mini {
     font-size: 0.64rem;
@@ -1785,12 +1822,11 @@
     cursor: pointer;
     padding: 2px 6px;
   }
-  .set-azioni {
-    display: flex;
-    gap: 6px;
-  }
-  .set-azioni button {
+  /* "+ Set" sulla stessa riga del primo set, compatto. */
+  .set-riga .set-piu {
     margin-top: 0;
-    padding: 7px 14px;
+    margin-left: 4px;
+    padding: 6px 12px;
+    font-size: 0.78rem;
   }
 }

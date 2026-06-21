@@ -229,9 +229,8 @@ function RigaRisultato({
           <span className={'chip-data' + (disputata ? '' : ' prog')}>
             {(disputata ? 'Giocata · ' : '📅 ') +
               dPren.toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'long' }) +
-              (disputata
-                ? ''
-                : ' · ' + dPren.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }))}
+              ' · ' +
+              dPren.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
           </span>
         ) : m.data_disputata ? (
           <span className="chip-data">
@@ -419,13 +418,14 @@ function EditorPadel({
                 ×
               </button>
             )}
+            {/* Il "+ Set" sta sulla stessa riga del primo set. */}
+            {i === 0 && (
+              <button type="button" className="btn btn-secondario set-piu" onClick={aggiungiSet}>
+                + Set
+              </button>
+            )}
           </div>
         ))}
-        <div className="set-azioni">
-          <button type="button" className="btn btn-secondario" onClick={aggiungiSet}>
-            + Set
-          </button>
-        </div>
       </div>
       <label className="mini">Giocata il</label>
       <input type="date" value={data} onChange={(e) => setData(e.target.value)} />

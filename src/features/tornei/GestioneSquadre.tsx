@@ -248,18 +248,17 @@ function RigaSquadra({
   // Padel: massimo 3 giocatori per squadra.
   const pieno = torneo.sport === 'padel' && componenti.length >= 3
   const prossimoRiserva = torneo.sport === 'padel' && componenti.length >= 2
-  const testoVuoto = pieno ? 'Squadra completa (3/3)' : '— Aggiungi un giocatore —'
 
   // Soci selezionabili: non già assegnati in questo torneo.
   const selezionabili = soci.filter((s) => !assegnati.has(s.id))
 
   return (
-    <div className="amichevole-riga">
+    <div className="amichevole-riga squadra-card">
       <div className="amichevole-cap">
         <div className="quando">
           <span className="chip-squadra">{nomeSquadraElegante(squadra.nome)}</span>
         </div>
-        <div className="flex gap-1.5">
+        <div className="azioni-squadra flex gap-1.5">
           <button
             type="button"
             className="btn btn-secondario btn-mini"
@@ -341,22 +340,23 @@ function RigaSquadra({
         </div>
       )}
 
-      <div className="aggiungi-part">
-        <select
-          value=""
-          disabled={pieno}
-          onChange={(e) => {
-            if (e.target.value) onAggiungi(e.target.value, prossimoRiserva)
-          }}
-        >
-          <option value="">{testoVuoto}</option>
-          {selezionabili.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.etichetta}
-            </option>
-          ))}
-        </select>
-      </div>
+      {!pieno && (
+        <div className="aggiungi-part">
+          <select
+            value=""
+            onChange={(e) => {
+              if (e.target.value) onAggiungi(e.target.value, prossimoRiserva)
+            }}
+          >
+            <option value="">— Aggiungi un giocatore —</option>
+            {selezionabili.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.etichetta}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
     </div>
   )
 }

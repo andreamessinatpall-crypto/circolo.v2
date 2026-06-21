@@ -35,9 +35,6 @@ export default function PodioTorneo({
       <div className="podio-vincitore">
         <NomeSquadra nome={vincitore.nome} logoUrl={loghi[String(vincitore.id)]} sport={torneo.sport} />
       </div>
-      {torneo.punti_torneo ? (
-        <div className="podio-punti">+{torneo.punti_torneo} punti per la vittoria del torneo</div>
-      ) : null}
 
       {podio.length > 1 && (
         <div className="podio-lista">
