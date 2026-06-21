@@ -1,0 +1,346 @@
+import { useState } from 'react'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { supabase } from '@/lib/supabase'
+import { messaggioErrore } from '@/lib/errori'
+import {
+  formattaSet,
+  incontroDisputato,
+  mancaColonnaRisultato,
+  perGiornata,
+  SCRIPT_RISULTATO,
+  setVinti,
+} from './calendario'
+import {
+  incontriDelGirone,
+  nomeGirone,
+  nomeSquadraElegante,
+  numGironi,
+  squadreDelGirone,
+  unitaTorneo,
+} from './gironi'
+import type { Incontro, SetPunteggio, Squadra, Torneo } from './tipi'
+
+// (Fase 6d) Calendario + risultati. Con più gironi mostra una sezione per
+// girone; lo staff (gestore) può inserire i punteggi, tutti vedono il calendario.
+export default function Risultati({
+  torneo,
+  squadre,
+  incontri,
+  gestore,
+}: {
+  torneo: Torneo
+  squadre: Squadra[]
+  incontri: Incontro[]
+  gestore: boolean
+}) {
+  const n = numGironi(torneo)
+
+  if (!incontri.length) {
+    return (
+      <p className="part-vuoto">
+        {gestore
+          ? 'Calendario non ancora generato. Vai in “Gestione torneo” e premi “Genera calendario”.'
+          : 'Calendario non ancora disponibile.'}
+      </p>
+    )
+  }
+
+  if (n <= 1) {
+    return <GironeRisultati torneo={torneo} squadre={squadre} incontri={incontri} gestore={gestore} />
+  }
+
+  return (
+    <div>
+      {Array.from({ length: n }, (_, i) => i + 1).map((g) => {
+        const sg = squadreDelGirone(torneo, squadre, g)
+        return (
+          <div key={g}>
+            <div className="eyebrow" style={{ marginTop: 18 }}>
+              {nomeGirone(torneo, g)}
+            </div>
+            {sg.length ? (
+              <GironeRisultati
+                torneo={torneo}
+                squadre={sg}
+                incontri={incontriDelGirone(incontri, g)}
+                gestore={gestore}
+              />
+            ) : (
+              <p className="sub">Nessuna {unitaTorneo(torneo.sport, false)} in questo girone.</p>
+            )}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+function GironeRisultati({
+  torneo,
+  squadre,
+  incontri,
+  gestore,
+}: {
+  torneo: Torneo
+  squadre: Squadra[]
+  incontri: Incontro[]
+  gestore: boolean
+}) {
+  const nomi: Record<string, string> = {}
+  for (const s of squadre) nomi[String(s.id)] = s.nome
+
+  if (!incontri.length) {
+    return <p className="sub">Nessun incontro in questo girone.</p>
+  }
+
+  return (
+    <div>
+      {perGiornata(incontri).map(({ round, partite }) => {
+        const giocate = partite.filter(incontroDisputato).length
+        return (
+          <div key={round}>
+            <div className="giornata-band">
+              <span className="g-num">{round}</span>
+              <div className="g-lab">
+                <b>Giornata</b>
+              </div>
+              <span className="g-stato">
+                {giocate === partite.length ? 'Completata' : giocate + '/' + partite.length + ' giocate'}
+              </span>
+            </div>
+            {partite.map((m) => (
+              <RigaRisultato key={m.id} torneo={torneo} m={m} nomi={nomi} gestore={gestore} />
+            ))}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+function RigaRisultato({
+  torneo,
+  m,
+  nomi,
+  gestore,
+}: {
+  torneo: Torneo
+  m: Incontro
+  nomi: Record<string, string>
+  gestore: boolean
+}) {
+  const qc = useQueryClient()
+  const disputata = incontroDisputato(m)
+
+  // Salvataggio del risultato: riceve già il patch pronto da scrivere.
+  const salva = useMutation({
+    mutationFn: async (patch: Partial<Incontro>) => {
+      const { error } = await supabase.from('incontri').update(patch).eq('id', m.id)
+      if (error) throw error
+      // (Fase 7) qui andrà assegnaPuntiPartita: dare i punti ai giocatori.
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['tornei'] }),
+    onError: (e: unknown) =>
+      window.alert(
+        mancaColonnaRisultato(e) ? SCRIPT_RISULTATO : 'Salvataggio non riuscito: ' + messaggioErrore(e),
+      ),
+  })
+
+  return (
+    <div className={'match' + (disputata ? ' giocata' : '')}>
+      <div className="match-row">
+        <div className="match-side">{nomeSquadraElegante(nomi[String(m.casa_id)] ?? '?')}</div>
+        <div className="match-ris">
+          {disputata ? (
+            <>
+              {m.punti_casa}–{m.punti_ospite}
+              {torneo.sport === 'padel' && m.set_punteggi?.length ? (
+                <span className="set-line">{formattaSet(m.set_punteggi)}</span>
+              ) : null}
+            </>
+          ) : (
+            <span className="vs">vs</span>
+          )}
+        </div>
+        <div className="match-side">{nomeSquadraElegante(nomi[String(m.ospite_id)] ?? '?')}</div>
+      </div>
+
+      <div className="match-meta">
+        {m.data_disputata ? (
+          <span className="chip-data">
+            Giocata ·{' '}
+            {new Date(m.data_disputata + 'T00:00:00').toLocaleDateString('it-IT', {
+              weekday: 'short',
+              day: 'numeric',
+              month: 'long',
+            })}
+          </span>
+        ) : (
+          <span className="chip-data attesa">Da giocare</span>
+        )}
+      </div>
+
+      {gestore &&
+        (torneo.sport === 'padel' ? (
+          <EditorPadel m={m} salva={salva.mutate} inSalvataggio={salva.isPending} />
+        ) : (
+          <EditorCalcio m={m} salva={salva.mutate} inSalvataggio={salva.isPending} />
+        ))}
+    </div>
+  )
+}
+
+// Calcio: due numeri (gol casa / gol ospite) + data della partita.
+function EditorCalcio({
+  m,
+  salva,
+  inSalvataggio,
+}: {
+  m: Incontro
+  salva: (patch: Partial<Incontro>) => void
+  inSalvataggio: boolean
+}) {
+  const [casa, setCasa] = useState(m.punti_casa == null ? '' : String(m.punti_casa))
+  const [ospite, setOspite] = useState(m.punti_ospite == null ? '' : String(m.punti_ospite))
+  const [data, setData] = useState(m.data_disputata ?? '')
+
+  function onSalva() {
+    const patch: Partial<Incontro> = { data_disputata: data || null }
+    // Entrambi vuoti = azzero il risultato (la data resta).
+    if (casa.trim() === '' && ospite.trim() === '') {
+      salva({ ...patch, punti_casa: null, punti_ospite: null })
+      return
+    }
+    const a = parseInt(casa, 10)
+    const b = parseInt(ospite, 10)
+    if (Number.isNaN(a) || Number.isNaN(b) || a < 0 || b < 0) {
+      window.alert('Inserisci due punteggi validi (numeri ≥ 0).')
+      return
+    }
+    salva({ ...patch, punti_casa: a, punti_ospite: b })
+  }
+
+  return (
+    <div className="match-admin">
+      <input
+        type="number"
+        min={0}
+        inputMode="numeric"
+        value={casa}
+        onChange={(e) => setCasa(e.target.value)}
+      />
+      <span>–</span>
+      <input
+        type="number"
+        min={0}
+        inputMode="numeric"
+        value={ospite}
+        onChange={(e) => setOspite(e.target.value)}
+      />
+      <label className="mini">Giocata il</label>
+      <input type="date" value={data} onChange={(e) => setData(e.target.value)} />
+      <button type="button" className="btn btn-secondario" onClick={onSalva} disabled={inSalvataggio}>
+        Salva
+      </button>
+    </div>
+  )
+}
+
+// Padel: un editor a set. Ogni set ha i game di casa e ospite; il vincitore è
+// chi vince più set. Si salvano i set vinti (punti_casa/ospite) + i game (set_punteggi).
+function EditorPadel({
+  m,
+  salva,
+  inSalvataggio,
+}: {
+  m: Incontro
+  salva: (patch: Partial<Incontro>) => void
+  inSalvataggio: boolean
+}) {
+  type RigaSet = { casa: string; ospite: string }
+  const iniziali: RigaSet[] =
+    m.set_punteggi?.length
+      ? m.set_punteggi.map((s) => ({ casa: String(s.casa), ospite: String(s.ospite) }))
+      : [{ casa: '', ospite: '' }]
+  const [sets, setSets] = useState<RigaSet[]>(iniziali)
+  const [data, setData] = useState(m.data_disputata ?? '')
+
+  const aggiorna = (i: number, campo: 'casa' | 'ospite', val: string) =>
+    setSets((prev) => prev.map((r, j) => (j === i ? { ...r, [campo]: val } : r)))
+  const togliSet = (i: number) => setSets((prev) => prev.filter((_, j) => j !== i))
+  const aggiungiSet = () => setSets((prev) => [...prev, { casa: '', ospite: '' }])
+
+  function onSalva() {
+    const patch: Partial<Incontro> = { data_disputata: data || null }
+    const nonVuoti = sets.filter((s) => s.casa.trim() !== '' || s.ospite.trim() !== '')
+    // Tutti vuoti = azzero il risultato (la data resta).
+    if (!nonVuoti.length) {
+      salva({ ...patch, punti_casa: null, punti_ospite: null, set_punteggi: null })
+      return
+    }
+    const validi: SetPunteggio[] = []
+    for (let i = 0; i < nonVuoti.length; i++) {
+      const c = parseInt(nonVuoti[i].casa, 10)
+      const o = parseInt(nonVuoti[i].ospite, 10)
+      if (Number.isNaN(c) || Number.isNaN(o) || c < 0 || o < 0) {
+        window.alert('Set ' + (i + 1) + ': inserisci i game di entrambe le coppie (numeri ≥ 0).')
+        return
+      }
+      if (c === o) {
+        window.alert('Set ' + (i + 1) + ': un set di padel non può finire in parità.')
+        return
+      }
+      validi.push({ casa: c, ospite: o })
+    }
+    const v = setVinti(validi)
+    if (v.casa === v.ospite) {
+      window.alert('Risultato in parità di set: nel padel deve esserci una coppia vincitrice.')
+      return
+    }
+    salva({ ...patch, punti_casa: v.casa, punti_ospite: v.ospite, set_punteggi: validi })
+  }
+
+  return (
+    <div className="match-admin">
+      <div className="set-editor">
+        {sets.map((r, i) => (
+          <div key={i} className="set-riga">
+            <span className="set-et">Set {i + 1}</span>
+            <input
+              type="number"
+              min={0}
+              inputMode="numeric"
+              className="set-game"
+              value={r.casa}
+              onChange={(e) => aggiorna(i, 'casa', e.target.value)}
+            />
+            <span>–</span>
+            <input
+              type="number"
+              min={0}
+              inputMode="numeric"
+              className="set-game"
+              value={r.ospite}
+              onChange={(e) => aggiorna(i, 'ospite', e.target.value)}
+            />
+            {sets.length > 1 && (
+              <button type="button" className="x" title="Togli set" onClick={() => togliSet(i)}>
+                ×
+              </button>
+            )}
+          </div>
+        ))}
+        <div className="set-azioni">
+          <button type="button" className="btn btn-secondario" onClick={aggiungiSet}>
+            + Set
+          </button>
+        </div>
+      </div>
+      <label className="mini">Giocata il</label>
+      <input type="date" value={data} onChange={(e) => setData(e.target.value)} />
+      <button type="button" className="btn btn-secondario" onClick={onSalva} disabled={inSalvataggio}>
+        Salva
+      </button>
+    </div>
+  )
+}

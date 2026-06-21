@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { eDuplicato, messaggioErrore } from '@/lib/errori'
 import { useSociPubblici } from '@/features/prenotazioni/datiAmichevoli'
+import { nomeSquadraElegante } from './gironi'
 import type { Componente, Squadra, Torneo } from './tipi'
 
 // Cognome del socio: in v2 non abbiamo un campo separato, quindi prendiamo
@@ -225,7 +226,9 @@ function RigaSquadra({
   return (
     <div className="amichevole-riga">
       <div className="amichevole-cap">
-        <div className="quando">{squadra.nome}</div>
+        <div className="quando">
+          <span className="chip-squadra">{nomeSquadraElegante(squadra.nome)}</span>
+        </div>
         <div className="flex gap-1.5">
           <button
             type="button"

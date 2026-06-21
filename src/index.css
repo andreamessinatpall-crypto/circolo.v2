@@ -997,43 +997,63 @@
     justify-content: space-between;
     gap: 14px;
     border-radius: 18px;
-    margin-bottom: 18px;
-    padding: 18px 20px;
+    margin-bottom: 10px;
+    padding: 18px 22px 18px 26px;
     color: #fff;
     background: linear-gradient(140deg, var(--v600) 0%, var(--v800) 55%, var(--v900) 100%);
     box-shadow: 0 12px 34px rgba(12, 51, 25, 0.22);
-    border: 1px solid rgba(200, 151, 46, 0.22);
+    border: 1px solid rgba(200, 151, 46, 0.35);
+  }
+  /* Dettagli dorati: barra verticale a sinistra + bagliore in alto a destra. */
+  .torneo-hero::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 5px;
+    background: linear-gradient(180deg, var(--g300), var(--g500));
   }
   .torneo-hero::after {
     content: '';
     position: absolute;
     inset: 0;
     pointer-events: none;
-    background: radial-gradient(55% 70% at 100% 0%, rgba(200, 151, 46, 0.22), transparent 55%);
+    background:
+      radial-gradient(55% 70% at 100% 0%, rgba(200, 151, 46, 0.28), transparent 55%),
+      radial-gradient(40% 60% at 0% 100%, rgba(200, 151, 46, 0.12), transparent 60%);
   }
   .torneo-hero > * {
     position: relative;
     z-index: 1;
   }
   .torneo-hero-nome {
+    flex: 1 1 auto;
+    min-width: 0;
     font-family: var(--font-display);
     font-size: 1.5rem;
-    line-height: 1.05;
+    line-height: 1.1;
     letter-spacing: 0.02em;
     font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
+  /* (Fase 6c) Formato + periodo: ora fuori dal riquadro verde, sotto al titolo.
+     Colore leggibile su fondo bianco della card. */
   .torneo-hero-sub {
-    margin-top: 5px;
+    margin-bottom: 18px;
     font-family: var(--font-display);
     text-transform: uppercase;
     letter-spacing: 0.12em;
     font-size: 0.72rem;
-    color: var(--g300);
+    color: var(--ink2);
   }
   .torneo-hero-stato {
     flex: 0 0 auto;
+    width: auto;
     border-radius: 999px;
-    border: 1px solid rgba(255, 255, 255, 0.35);
+    border: 1px solid rgba(200, 151, 46, 0.6);
     background: rgba(255, 255, 255, 0.14);
     color: #fff;
     font-weight: 700;
@@ -1043,6 +1063,20 @@
   }
   .torneo-hero-stato option {
     color: #1a1a1a;
+  }
+
+  /* (Fase 6c) Nome squadra/coppia evidenziato su fondo ottone. */
+  .chip-squadra {
+    display: inline-block;
+    padding: 3px 11px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, var(--g300), var(--g400));
+    border: 1px solid var(--g500);
+    color: var(--v900);
+    font-family: var(--font-display);
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    box-shadow: 0 1px 3px rgba(122, 80, 16, 0.18);
   }
 
   /* Campo in sola lettura */
@@ -1372,5 +1406,236 @@
     color: var(--g300);
     font-weight: 700;
     margin-bottom: 2px;
+  }
+
+  /* (Fase 6d) Calendario e risultati: banda "Giornata" + righe partita.
+     Stili ripresi dalla v1. */
+  .giornata-band {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 18px 0 12px;
+    padding: 8px 16px;
+    border-radius: 14px;
+    position: relative;
+    overflow: hidden;
+    color: #fff;
+    background: linear-gradient(135deg, var(--v800) 0%, var(--v600) 100%);
+    box-shadow: 0 10px 24px rgba(12, 51, 25, 0.22);
+  }
+  .giornata-band::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 5px;
+    background: linear-gradient(180deg, var(--g300), var(--g500));
+  }
+  .giornata-band::after {
+    content: '';
+    position: absolute;
+    right: -30px;
+    top: -40px;
+    width: 120px;
+    height: 120px;
+    background: radial-gradient(circle, rgba(232, 200, 120, 0.22), transparent 70%);
+    pointer-events: none;
+  }
+  .giornata-band .g-num {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1.5rem;
+    line-height: 1;
+    color: var(--g300);
+  }
+  .giornata-band .g-lab {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.15;
+  }
+  .giornata-band .g-lab b {
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: rgba(232, 240, 232, 0.78);
+  }
+  .giornata-band .g-stato {
+    margin-left: auto;
+    font-size: 0.66rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    background: rgba(255, 255, 255, 0.14);
+    border: 1px solid rgba(232, 200, 120, 0.4);
+    color: var(--g300);
+    padding: 4px 10px;
+    border-radius: 999px;
+  }
+
+  /* Riga partita: squadre centrate + risultato al centro + controlli sotto */
+  .match {
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: var(--surface);
+    padding: 13px 14px;
+    margin-bottom: 10px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    transition:
+      box-shadow 0.15s,
+      transform 0.15s;
+  }
+  @media (hover: hover) {
+    .match:hover {
+      box-shadow: 0 8px 22px rgba(12, 51, 25, 0.1);
+      transform: translateY(-1px);
+    }
+  }
+  .match.giocata {
+    background: linear-gradient(180deg, var(--v050), var(--surface));
+    border-color: var(--border2);
+  }
+  .match-row {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 10px;
+  }
+  .match-side {
+    text-align: center;
+    font-weight: 700;
+    font-size: 0.92rem;
+    color: var(--ink);
+    min-width: 0;
+  }
+  .match-ris {
+    min-width: 64px;
+    text-align: center;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1.5rem;
+    color: var(--v800);
+    letter-spacing: 0.02em;
+  }
+  .match-ris .vs {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink3);
+  }
+  .match-ris .set-line {
+    display: block;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.66rem;
+    font-weight: 600;
+    color: var(--ink2);
+    margin-top: 2px;
+  }
+  .match-meta {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    flex-wrap: wrap;
+    margin-top: 9px;
+  }
+  .match-meta .chip-data {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--v700);
+    background: var(--v050);
+    border: 1px solid var(--border2);
+    border-radius: 999px;
+    padding: 4px 12px;
+  }
+  .match-meta .chip-data.attesa {
+    color: var(--ink3);
+    background: transparent;
+    border-style: dashed;
+  }
+  .match-admin {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 11px;
+    padding-top: 11px;
+    border-top: 1px dashed var(--border2);
+  }
+  .match-admin .set-editor {
+    align-items: center;
+  }
+  .match-admin label.mini {
+    font-size: 0.64rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--ink3);
+  }
+  .match-admin input[type='date'] {
+    width: auto;
+    margin-top: 0;
+    padding: 6px 8px;
+    font-size: 14px;
+  }
+  .match-admin input[type='number'] {
+    width: 52px;
+    text-align: center;
+    margin-top: 0;
+    padding: 6px 4px;
+    font-size: 16px;
+  }
+  .match-admin button {
+    margin-top: 0;
+    padding: 7px 13px;
+    font-size: 0.82rem;
+  }
+
+  /* Padel: editor dei set */
+  .set-editor {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: center;
+  }
+  .set-riga {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .set-riga .set-et {
+    font-size: 0.66rem;
+    color: var(--ink3);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    min-width: 40px;
+  }
+  .set-riga .set-game {
+    width: 46px;
+    text-align: center;
+    margin-top: 0;
+    padding: 6px 4px;
+    font-size: 16px;
+  }
+  .set-riga .x {
+    border: none;
+    background: transparent;
+    color: var(--errore);
+    font-size: 1.1rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 2px 6px;
+  }
+  .set-azioni {
+    display: flex;
+    gap: 6px;
+  }
+  .set-azioni button {
+    margin-top: 0;
+    padding: 7px 14px;
   }
 }

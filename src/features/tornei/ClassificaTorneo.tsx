@@ -1,4 +1,4 @@
-import { calcolaClassifica, incontriDelGirone, nomeGirone, numGironi, squadreDelGirone, unitaTorneo } from './gironi'
+import { calcolaClassifica, incontriDelGirone, nomeGirone, nomeSquadraElegante, numGironi, squadreDelGirone, unitaTorneo } from './gironi'
 import type { Incontro, Squadra, Torneo } from './tipi'
 
 // (Fase 6c) Classifica all'italiana del torneo. Con più gironi mostra una
@@ -95,7 +95,11 @@ function TabellaClassifica({
                     key={i}
                     className={i === 0 ? 'nome-cl' : i === celle.length - 1 ? 'pti' : undefined}
                   >
-                    {val}
+                    {i === 0 ? (
+                      <span className="chip-squadra">{nomeSquadraElegante(String(val))}</span>
+                    ) : (
+                      val
+                    )}
                   </td>
                 ))}
               </tr>

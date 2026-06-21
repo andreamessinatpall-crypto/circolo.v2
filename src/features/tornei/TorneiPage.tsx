@@ -12,7 +12,9 @@ import { useTornei } from './datiTornei'
 import type { DatiTornei } from './datiTornei'
 import GestioneSquadre from './GestioneSquadre'
 import GestioneGironi from './GestioneGironi'
+import GestioneCalendario from './GestioneCalendario'
 import ClassificaTorneo from './ClassificaTorneo'
+import Risultati from './Risultati'
 import ImpostazioniTorneo from './ImpostazioniTorneo'
 import { FORMATI_TORNEO, STATI_TORNEO } from './tipi'
 import type { StatoTorneo, Torneo } from './tipi'
@@ -282,6 +284,11 @@ function DettaglioTorneo({
       </div>
       <GestioneGironi torneo={torneo} squadre={squadre} />
 
+      <div className="eyebrow" style={{ marginTop: 24 }}>
+        Calendario
+      </div>
+      <GestioneCalendario torneo={torneo} squadre={squadre} incontri={incontri} />
+
       <div className="mt-6 border-t border-[var(--border)] pt-4">
         <ImpostazioniTorneo torneo={torneo} />
       </div>
@@ -294,19 +301,18 @@ function DettaglioTorneo({
     <div>
       <div className="eyebrow">🏆 Classifica</div>
       <ClassificaTorneo torneo={torneo} squadre={squadre} incontri={incontri} />
-      <p className="sub mt-4">Calendario e risultati in arrivo nella prossima sotto-fase.</p>
+
+      <div className="eyebrow" style={{ marginTop: 24 }}>
+        📅 Calendario e risultati
+      </div>
+      <Risultati torneo={torneo} squadre={squadre} incontri={incontri} gestore={gestore} />
     </div>
   )
 
   return (
     <div className="card">
       <div className="torneo-hero">
-        <div>
-          <div className="torneo-hero-nome">{torneo.nome}</div>
-          <div className="torneo-hero-sub">
-            {(FORMATI_TORNEO[torneo.formato] ?? torneo.formato) + periodo}
-          </div>
-        </div>
+        <div className="torneo-hero-nome">{torneo.nome}</div>
         {gestore ? (
           // Lo stato si cambia direttamente qui, in alto a destra.
           <select
@@ -325,6 +331,10 @@ function DettaglioTorneo({
             {STATI_TORNEO[torneo.stato]}
           </span>
         )}
+      </div>
+      {/* Formato + periodo: fuori dal riquadro verde, sotto al titolo. */}
+      <div className="torneo-hero-sub">
+        {(FORMATI_TORNEO[torneo.formato] ?? torneo.formato) + periodo}
       </div>
 
       {gestore ? (

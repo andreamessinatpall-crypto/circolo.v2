@@ -7,6 +7,16 @@ import type { Incontro, RigaClassifica, Squadra, Torneo } from './tipi'
 // Massimo 12 gironi: una lettera per ciascuno.
 export const LETTERE_GIRONE = 'ABCDEFGHIJKL'
 
+// Nome squadra "elegante": i membri di una coppia sono salvati separati da "/"
+// (es. "Rossi/Bianchi"); per mostrarli usiamo un puntino " · " più raffinato.
+export function nomeSquadraElegante(nome: string): string {
+  return String(nome ?? '')
+    .split('/')
+    .map((p) => p.trim())
+    .filter(Boolean)
+    .join(' · ')
+}
+
 // Quanti gironi ha il torneo (1 = girone unico). Limitato fra 1 e 12.
 export function numGironi(t: Pick<Torneo, 'numero_gironi'>): number {
   return Math.min(12, Math.max(1, Number(t.numero_gironi) || 1))

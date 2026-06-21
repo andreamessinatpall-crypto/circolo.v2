@@ -45,6 +45,17 @@ export interface Incontro {
   girone: number | null
   punti_casa: number | null
   punti_ospite: number | null
+  // (Fase 6d) risultato. Nel padel punti_casa/punti_ospite sono i SET vinti e
+  // set_punteggi conserva i game di ogni set (es. [{casa:6,ospite:4}, …]).
+  // data_disputata è il giorno in cui la partita è stata giocata (facoltativo).
+  set_punteggi?: SetPunteggio[] | null
+  data_disputata?: string | null
+}
+
+// Un set di padel: i game vinti dalla coppia di casa e da quella ospite.
+export interface SetPunteggio {
+  casa: number
+  ospite: number
 }
 
 // Una riga della classifica all'italiana (calcolata, non salvata nel database).

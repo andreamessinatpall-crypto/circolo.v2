@@ -6,6 +6,7 @@ import {
   LETTERE_GIRONE,
   mancaColonnaGironi,
   nomeGirone,
+  nomeSquadraElegante,
   numGironi,
   SCRIPT_GIRONI,
   unitaTorneo,
@@ -161,7 +162,9 @@ export default function GestioneGironi({
             <div>
               {squadre.map((s) => (
                 <div key={s.id} className="comp-riga">
-                  <span className="nome">{s.nome}</span>
+                  <span className="nome">
+                    <span className="chip-squadra">{nomeSquadraElegante(s.nome)}</span>
+                  </span>
                   <select
                     className={classiInput}
                     style={{ width: 'auto', marginTop: 0 }}
