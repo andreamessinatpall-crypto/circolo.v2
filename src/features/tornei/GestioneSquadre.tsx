@@ -154,22 +154,28 @@ export default function GestioneSquadre({
     onError: (e: unknown) => window.alert('Non riuscito: ' + messaggioErrore(e)),
   })
 
-  const cambiaRiserva = useMutation({
+  const impostaRiserva = useMutation({
     mutationFn: async ({
       squadraId,
       socioId,
-      valore,
     }: {
       squadraId: number | string
       socioId: string
-      valore: boolean
     }) => {
-      const { error } = await supabase
+      // Mantiene esattamente una riserva: il socio scelto diventa riserva e
+      // tutti gli altri tornano titolari (sempre 2 titolari + 1 riserva).
+      const { error: e1 } = await supabase
         .from('squadra_componenti')
-        .update({ riserva: valore })
+        .update({ riserva: false })
+        .eq('squadra_id', squadraId)
+        .neq('socio_id', socioId)
+      if (e1) throw e1
+      const { error: e2 } = await supabase
+        .from('squadra_componenti')
+        .update({ riserva: true })
         .eq('squadra_id', squadraId)
         .eq('socio_id', socioId)
-      if (error) throw error
+      if (e2) throw e2
       await aggiornaNomeCoppia(squadraId)
     },
     onSuccess: aggiorna,
@@ -203,9 +209,7 @@ export default function GestioneSquadre({
               aggiungiComp.mutate({ squadraId: s.id, socioId, riserva })
             }
             onRimuovi={(socioId) => rimuoviComp.mutate({ squadraId: s.id, socioId })}
-            onCambiaRiserva={(socioId, valore) =>
-              cambiaRiserva.mutate({ squadraId: s.id, socioId, valore })
-            }
+            onImpostaRiserva={(socioId) => impostaRiserva.mutate({ squadraId: s.id, socioId })}
           />
         ))}
       </div>
@@ -256,7 +260,7 @@ function RigaSquadra({
   onElimina,
   onAggiungi,
   onRimuovi,
-  onCambiaRiserva,
+  onImpostaRiserva,
 }: {
   torneo: Torneo
   squadra: Squadra
@@ -268,7 +272,7 @@ function RigaSquadra({
   onElimina: () => void
   onAggiungi: (socioId: string, riserva: boolean) => void
   onRimuovi: (socioId: string) => void
-  onCambiaRiserva: (socioId: string, valore: boolean) => void
+  onImpostaRiserva: (socioId: string) => void
 }) {
   // Titolari prima, riserve in fondo.
   const ordinati = componenti
@@ -279,7 +283,7 @@ function RigaSquadra({
   const pieno = torneo.sport === 'padel' && componenti.length >= 3
   const prossimoRiserva = torneo.sport === 'padel' && componenti.length >= 2
   const testoVuoto = pieno
-    ? 'Coppia completa (3/3)'
+    ? 'Squadra completa (3/3)'
     : prossimoRiserva
       ? '— Aggiungi riserva —'
       : '— Aggiungi un socio —'
@@ -322,32 +326,42 @@ function RigaSquadra({
         <div className="part-vuoto">Nessun giocatore.</div>
       ) : (
         <div>
-          {ordinati.map((c) => (
-            <div key={c.socio_id} className="comp-riga">
-              <div className="nome">
-                {etichette.get(c.socio_id) ?? 'Socio'}
-                {c.riserva && <span className="tag-riserva">Riserva</span>}
-              </div>
-              <div className="flex gap-1.5">
-                {torneo.sport === 'padel' && componenti.length >= 3 && (
-                  <button
-                    type="button"
-                    className="btn btn-secondario btn-mini"
-                    onClick={() => onCambiaRiserva(c.socio_id, !c.riserva)}
-                  >
-                    {c.riserva ? 'Rendi titolare' : 'Rendi riserva'}
-                  </button>
-                )}
+          {ordinati.map((c) => {
+            // Le icone di ruolo compaiono solo nel padel quando c'è la riserva (3 giocatori).
+            const mostraRuolo = torneo.sport === 'padel' && componenti.length >= 3
+            return (
+              <div key={c.socio_id} className="comp-riga">
+                <div className="nome flex items-center gap-2">
+                  {mostraRuolo && (
+                    <button
+                      type="button"
+                      className="border-0 bg-transparent p-0.5 text-base leading-none"
+                      style={{ cursor: c.riserva ? 'default' : 'pointer' }}
+                      title={
+                        c.riserva
+                          ? 'Riserva — tocca un titolare per cambiarla'
+                          : 'Titolare — tocca per renderlo riserva'
+                      }
+                      onClick={() => {
+                        if (!c.riserva) onImpostaRiserva(c.socio_id)
+                      }}
+                    >
+                      {c.riserva ? '🪑' : '⭐'}
+                    </button>
+                  )}
+                  <span>{etichette.get(c.socio_id) ?? 'Socio'}</span>
+                </div>
                 <button
                   type="button"
-                  className="btn btn-pericolo btn-mini"
+                  className="border-0 bg-transparent px-1 text-xl font-bold leading-none text-red-700"
+                  title="Togli dalla squadra"
                   onClick={() => onRimuovi(c.socio_id)}
                 >
-                  Togli
+                  ×
                 </button>
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
 

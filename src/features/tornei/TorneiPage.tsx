@@ -237,7 +237,6 @@ function DettaglioTorneo({
 
   const squadre = dati.perTorneoSquadre[String(torneo.id)] ?? []
   const assegnati = dati.assegnati[String(torneo.id)] ?? new Set<string>()
-  const unita = torneo.sport === 'padel' ? 'coppie' : 'squadre'
 
   const cambiaStato = useMutation({
     mutationFn: async (stato: StatoTorneo) => {
@@ -293,7 +292,7 @@ function DettaglioTorneo({
       )}
 
       <div className="eyebrow" style={{ marginTop: 20 }}>
-        {torneo.sport === 'padel' ? 'Coppie iscritte' : 'Squadre iscritte'}
+        Squadre iscritte
       </div>
 
       {gestore ? (
@@ -305,7 +304,7 @@ function DettaglioTorneo({
         />
       ) : squadre.length === 0 ? (
         <p className="part-vuoto">
-          Le {unita} compariranno qui quando l'organizzatore le avrà inserite.
+          Le squadre compariranno qui quando l'organizzatore le avrà inserite.
         </p>
       ) : (
         <div className="schede-griglia">
