@@ -86,11 +86,11 @@ export default function BadgeProfilo() {
         const raggiunto = livelloDaConteggio(n)
         return (
           <div key={sport} className="mb-6 last:mb-0">
-            <div className="mb-3 text-sm font-semibold text-ink-2">
+            <div className="badge-titolo-sport">
               {sport === 'padel' ? '🎾 Padel' : '⚽ Calcio'} · {n}{' '}
               {n === 1 ? 'partita' : 'partite'}
             </div>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
+            <div className="badge-griglia">
               {LIVELLI_PARTITE.map((l, idx) => {
                 const liv = idx + 1
                 const sbloccato = liv <= raggiunto
@@ -102,18 +102,18 @@ export default function BadgeProfilo() {
                     disabled={!sbloccato || salvaAvatar.isPending}
                     onClick={() => salvaAvatar.mutate(codiceBadge(sport, liv))}
                     className={
-                      'flex flex-col items-center gap-1 rounded-xl border p-3 text-center transition ' +
-                      (scelto
-                        ? 'border-ottone-500 bg-ottone-100'
-                        : 'border-verde-700/10') +
-                      (sbloccato ? ' hover:border-ottone-400' : ' cursor-not-allowed')
+                      'badge-cella ' +
+                      (sbloccato ? 'sbloccato' : 'bloccato') +
+                      (scelto ? ' scelto' : '')
                     }
                   >
-                    <Medaglia sport={sport} liv={liv} bloccato={!sbloccato} />
-                    <span className="mt-1 text-xs font-semibold text-ink">{l.nome}</span>
-                    <span className="text-[11px] text-ink-3">
+                    <div className="badge-medaglia">
+                      <Medaglia sport={sport} liv={liv} size={66} />
+                    </div>
+                    <div className="badge-nome">{l.nome}</div>
+                    <div className="badge-soglia">
                       {sbloccato ? (scelto ? 'In uso' : 'Sbloccato') : l.soglia + ' partite'}
-                    </span>
+                    </div>
                   </button>
                 )
               })}

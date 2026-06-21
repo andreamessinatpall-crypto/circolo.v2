@@ -1,16 +1,11 @@
-import {
-  EMOJI_SPORT,
-  LIVELLI_PARTITE,
-  numeroRomano,
-  type Sport,
-} from './badgeDati'
+import { LIVELLI_PARTITE, type Sport } from './badgeDati'
+import { svgEmblema } from './medaglieSvg'
 
-// Medaglia stilizzata: cerchio colorato del livello, con l'emoji dell'animale,
-// un piccolo indicatore dello sport e il livello in numero romano.
+// Emblema rotondo del livello (griglia traguardi e avatar nell'header).
 export default function Medaglia({
   sport,
   liv,
-  size = 64,
+  size = 66,
   bloccato = false,
 }: {
   sport: Sport
@@ -18,29 +13,17 @@ export default function Medaglia({
   size?: number
   bloccato?: boolean
 }) {
-  const l = LIVELLI_PARTITE[liv - 1]
-  if (!l) return null
-
+  const colore = LIVELLI_PARTITE[liv - 1]?.colore ?? '#9AA3A0'
   return (
-    <div
-      className="relative flex items-center justify-center rounded-full shadow-inner"
+    <span
+      className="emblema"
       style={{
         width: size,
         height: size,
-        background: bloccato ? '#D9DEDA' : l.colore,
-        opacity: bloccato ? 0.6 : 1,
+        filter: bloccato ? 'grayscale(1)' : undefined,
+        opacity: bloccato ? 0.35 : 1,
       }}
-      title={`${l.nome} · livello ${numeroRomano(liv)}`}
-    >
-      <span style={{ fontSize: size * 0.42, filter: bloccato ? 'grayscale(1)' : 'none' }}>
-        {l.emoji}
-      </span>
-      <span
-        className="absolute -bottom-1 -right-1 flex items-center justify-center rounded-full bg-white shadow"
-        style={{ width: size * 0.36, height: size * 0.36, fontSize: size * 0.2 }}
-      >
-        {EMOJI_SPORT[sport]}
-      </span>
-    </div>
+      dangerouslySetInnerHTML={{ __html: svgEmblema(sport, colore) }}
+    />
   )
 }

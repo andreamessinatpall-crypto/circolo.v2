@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/auth/useAuth'
 import { dataEstesa } from '@/lib/formato'
 import { LIVELLI_PUNTI, livelloDaPunti } from './livelliPunti'
+import { svgMedagliaColore } from './badge/medaglieSvg'
 
 export default function RiepilogoProfilo() {
   const { profilo } = useAuth()
@@ -64,9 +65,11 @@ export default function RiepilogoProfilo() {
     <div>
       <div className="riep-wow">
         <div className="riep-wow-top">
-          <span className="riep-liv-medal" style={{ borderColor: liv.colore }}>
-            {liv.emoji}
-          </span>
+          <span
+            className="riep-liv-medal"
+            style={{ borderColor: liv.colore }}
+            dangerouslySetInnerHTML={{ __html: svgMedagliaColore(livN, liv.colore) }}
+          />
           <div className="riep-wow-hi">
             <h1>Benvenuto, {profilo.nome}</h1>
             <p className="riep-liv-eyebrow">

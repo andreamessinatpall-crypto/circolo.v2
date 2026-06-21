@@ -553,13 +553,104 @@
     width: 66px;
     height: 66px;
     border-radius: 50%;
+    overflow: hidden;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 2rem;
     background: rgba(255, 255, 255, 0.1);
     border: 2px solid var(--g500);
     box-shadow: 0 0 0 7px rgba(200, 151, 46, 0.1), 0 4px 18px rgba(0, 0, 0, 0.22);
+  }
+  .riep-liv-medal svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  /* Emblema rotondo SVG (avatar header, griglia traguardi) */
+  .emblema {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    overflow: hidden;
+    background: var(--v050);
+    flex: 0 0 auto;
+  }
+  .emblema svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  /* Griglia dei traguardi (badge) */
+  .badge-titolo-sport {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 700;
+    margin: 8px 0 4px;
+  }
+  .badge-griglia {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 12px;
+    margin-top: 6px;
+  }
+  .badge-cella {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 16px 12px;
+    text-align: center;
+    position: relative;
+    cursor: pointer;
+    box-shadow: var(--ombra-card);
+    transition: transform 0.14s, box-shadow 0.14s, border-color 0.15s;
+  }
+  .badge-cella:not(:disabled):hover {
+    transform: translateY(-2px);
+  }
+  .badge-cella.sbloccato {
+    border-color: var(--g500);
+    box-shadow: 0 0 0 1px var(--g500), 0 8px 24px rgba(200, 151, 46, 0.16);
+  }
+  .badge-cella.bloccato {
+    cursor: not-allowed;
+  }
+  .badge-cella.bloccato .emblema {
+    filter: grayscale(1);
+    opacity: 0.3;
+  }
+  .badge-cella.scelto {
+    outline: 3px solid var(--g400);
+    border-color: var(--g500);
+  }
+  .badge-medaglia {
+    width: 66px;
+    height: 66px;
+    margin: 0 auto 10px;
+  }
+  .badge-nome {
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 700;
+    font-size: 0.92rem;
+    line-height: 1;
+  }
+  .badge-soglia {
+    font-size: 0.7rem;
+    color: var(--ink2);
+    margin-top: 4px;
+    line-height: 1.25;
+  }
+  .badge-cella.sbloccato .badge-soglia {
+    color: var(--ok);
+    font-weight: 600;
   }
   .riep-wow-hi {
     min-width: 0;
