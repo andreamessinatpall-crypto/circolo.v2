@@ -13,6 +13,7 @@ import type { DatiTornei } from './datiTornei'
 import GestioneSquadre from './GestioneSquadre'
 import GestioneGironi from './GestioneGironi'
 import ClassificaTorneo from './ClassificaTorneo'
+import ImpostazioniTorneo from './ImpostazioniTorneo'
 import { FORMATI_TORNEO, STATI_TORNEO } from './tipi'
 import type { StatoTorneo, Torneo } from './tipi'
 
@@ -234,8 +235,10 @@ function DettaglioTorneo({
   gestore: boolean
   dati: DatiTornei
 }) {
-  const { profilo } = useAuth()
   const qc = useQueryClient()
+  // Sotto-schede del dettaglio (solo per gli organizzatori; i giocatori vedono
+  // direttamente "Risultati e Classifica").
+  const [scheda, setScheda] = useState<'gestione' | 'risultati'>('gestione')
 
   const squadre = dati.perTorneoSquadre[String(torneo.id)] ?? []
   const incontri = dati.perTorneoIncontri[String(torneo.id)] ?? []
@@ -262,6 +265,54 @@ function DettaglioTorneo({
   else if (torneo.data_inizio) periodo = ' · dal ' + fmt(torneo.data_inizio)
   else if (torneo.data_fine) periodo = ' · fino al ' + fmt(torneo.data_fine)
 
+  // Contenuto della scheda "Gestione torneo" (solo organizzatori).
+  const schedaGestione = (
+    <div>
+      <div className="flex items-center gap-2">
+        <label className="m-0">Stato:</label>
+        <select
+          className={classiInput}
+          style={{ width: 'auto' }}
+          value={torneo.stato}
+          onChange={(e) => cambiaStato.mutate(e.target.value as StatoTorneo)}
+        >
+          {Object.entries(STATI_TORNEO).map(([k, v]) => (
+            <option key={k} value={k}>
+              {v}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <ImpostazioniTorneo torneo={torneo} />
+
+      <div className="eyebrow" style={{ marginTop: 20 }}>
+        Gironi
+      </div>
+      <GestioneGironi torneo={torneo} squadre={squadre} />
+
+      <div className="eyebrow" style={{ marginTop: 20 }}>
+        Squadre iscritte
+      </div>
+      <GestioneSquadre
+        torneo={torneo}
+        squadre={squadre}
+        compBySquadra={dati.perSquadraComp}
+        assegnati={assegnati}
+      />
+    </div>
+  )
+
+  // Contenuto della scheda "Risultati e Classifica" (visibile a tutti).
+  // Calendario e risultati arriveranno con la Fase 6d.
+  const schedaRisultati = (
+    <div>
+      <div className="eyebrow">🏆 Classifica</div>
+      <ClassificaTorneo torneo={torneo} squadre={squadre} incontri={incontri} />
+      <p className="sub mt-4">Calendario e risultati in arrivo nella prossima sotto-fase.</p>
+    </div>
+  )
+
   return (
     <div className="card">
       <div className="amichevole-cap">
@@ -276,69 +327,29 @@ function DettaglioTorneo({
         </span>
       </div>
 
-      {gestore && (
-        <div className="mt-4 flex items-center gap-2">
-          <label className="m-0">Stato:</label>
-          <select
-            className={classiInput}
-            style={{ width: 'auto' }}
-            value={torneo.stato}
-            onChange={(e) => cambiaStato.mutate(e.target.value as StatoTorneo)}
-          >
-            {Object.entries(STATI_TORNEO).map(([k, v]) => (
-              <option key={k} value={k}>
-                {v}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
-
-      {gestore && <GestioneGironi torneo={torneo} squadre={squadre} />}
-
-      <div className="eyebrow" style={{ marginTop: 20 }}>
-        Squadre iscritte
-      </div>
-
       {gestore ? (
-        <GestioneSquadre
-          torneo={torneo}
-          squadre={squadre}
-          compBySquadra={dati.perSquadraComp}
-          assegnati={assegnati}
-        />
-      ) : squadre.length === 0 ? (
-        <p className="part-vuoto">
-          Le squadre compariranno qui quando l'organizzatore le avrà inserite.
-        </p>
+        <>
+          <nav className="mt-4 mb-4 flex flex-wrap gap-1.5" aria-label="Sezioni torneo">
+            <button
+              type="button"
+              className={'subtab-btn' + (scheda === 'gestione' ? ' attivo' : '')}
+              onClick={() => setScheda('gestione')}
+            >
+              ⚙️ Gestione torneo
+            </button>
+            <button
+              type="button"
+              className={'subtab-btn' + (scheda === 'risultati' ? ' attivo' : '')}
+              onClick={() => setScheda('risultati')}
+            >
+              🏆 Risultati e Classifica
+            </button>
+          </nav>
+          {scheda === 'gestione' ? schedaGestione : schedaRisultati}
+        </>
       ) : (
-        <div className="schede-griglia">
-          {squadre.map((s) => {
-            const comp = dati.perSquadraComp[String(s.id)] ?? []
-            const miaSquadra = comp.some((c) => c.socio_id === profilo?.id)
-            return (
-              <div key={s.id} className="amichevole-riga">
-                <div className="amichevole-cap">
-                  <div className="quando">{s.nome}</div>
-                  {miaSquadra && <span className="tag-riserva">La tua</span>}
-                </div>
-                <div className="dove mt-1">
-                  {comp.length} giocator{comp.length === 1 ? 'e' : 'i'}
-                </div>
-              </div>
-            )
-          })}
-        </div>
+        <div className="mt-4">{schedaRisultati}</div>
       )}
-
-      <div className="eyebrow" style={{ marginTop: 24 }}>
-        🏆 Classifica
-      </div>
-      <ClassificaTorneo torneo={torneo} squadre={squadre} incontri={incontri} />
-
-      <p className="sub mt-4">
-        Calendario e risultati in arrivo nella prossima sotto-fase.
-      </p>
     </div>
   )
 }

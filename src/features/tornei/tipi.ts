@@ -70,3 +70,5 @@ export const STATI_TORNEO: Record<StatoTorneo, string> = {
 export const FORMATI_TORNEO: Record<string, string> = {
   girone: "Girone all'italiana",
 }
+
+export const SPORT_LABEL: Record<string, string> = { padel: 'Padel', calcio: 'Calcio' }
