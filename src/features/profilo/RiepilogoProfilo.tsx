@@ -4,6 +4,7 @@ import { useAuth } from '@/auth/useAuth'
 import { dataEstesa } from '@/lib/formato'
 import { LIVELLI_PUNTI, livelloDaPunti } from './livelliPunti'
 import { svgMedagliaColore } from './badge/medaglieSvg'
+import AttivitaInProgramma from './AttivitaInProgramma'
 
 export default function RiepilogoProfilo() {
   const { profilo } = useAuth()
@@ -112,11 +113,9 @@ export default function RiepilogoProfilo() {
         </div>
       </div>
 
-      <div className="eyebrow">Partite in programma</div>
+      <div className="eyebrow">Attività in programma</div>
       <div className="card">
-        <p className="text-sm text-ink-2">
-          Le tue prossime partite compariranno qui con le prenotazioni (Fase 4).
-        </p>
+        <AttivitaInProgramma />
       </div>
     </div>
   )

@@ -158,7 +158,7 @@ export default function MieAmichevoli({ sport }: { sport: Sport }) {
   return (
     <div>
       {gruppi.map((g) => (
-        <div key={g.giorno}>
+        <div key={g.giorno} className="gruppo-giorno">
           <div className="giorno-partite">
             {ICONA_CAL}
             <span>{g.etichetta}</span>
@@ -240,7 +240,7 @@ export function SchedaPartita({
     : amiciVuoti
       ? 'Aggiungi prima degli amici dal Profilo'
       : staff
-        ? '— Aggiungi un socio —'
+        ? '— Aggiungi giocatori —'
         : '— Aggiungi un amico —'
 
   return (
@@ -248,11 +248,17 @@ export function SchedaPartita({
       <div className="amichevole-cap">
         <div>
           <div className="quando">
-            {inizio.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' })}{' '}
-            · {oraLocale(inizio)}–{oraLocale(fine)}
+            {inizio.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' })}
+          </div>
+          <div className="orario">
+            {oraLocale(inizio)}–{oraLocale(fine)}
           </div>
           <div className="dove">{campo?.nome ?? 'Campo'}</div>
-          {pren.allenamento && <div className="allenamento-badge">🏋️ Allenamento</div>}
+          {pren.allenamento ? (
+            <div className="allenamento-badge">🏋️ Allenamento</div>
+          ) : (
+            <div className="partita-badge">Partita</div>
+          )}
         </div>
         {sport === 'padel' && <span className="part-conta">{lista.length}/4</span>}
       </div>
@@ -313,9 +319,11 @@ export function SchedaPartita({
         </>
       )}
 
-      <button type="button" className="btn btn-pericolo btn-mini mt-3" onClick={onAnnulla}>
-        Annulla la prenotazione
-      </button>
+      <div className="mt-auto pt-3">
+        <button type="button" className="btn btn-pericolo btn-mini w-full" onClick={onAnnulla}>
+          Annulla la prenotazione
+        </button>
+      </div>
     </div>
   )
 }

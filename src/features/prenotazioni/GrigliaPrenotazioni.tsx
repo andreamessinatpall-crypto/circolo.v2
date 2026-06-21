@@ -62,10 +62,26 @@ export default function GrigliaPrenotazioni({ sport }: { sport: Sport }) {
         dati.allenamento = true
         if (profilo.e_allenatore || profilo.is_allenatore) dati.allenatore_id = profilo.id
       }
-      const { error } = await supabase.from('prenotazioni').insert(dati)
+      const { data: creata, error } = await supabase
+        .from('prenotazioni')
+        .insert(dati)
+        .select('id')
+        .single()
       if (error) throw error
+      // Nelle partite normali il prenotante è subito tra i giocatori.
+      if (!allenamento && creata) {
+        await supabase
+          .from('partecipanti_amichevole')
+          .upsert([{ prenotazione_id: creata.id, socio_id: profilo.id, confermato: false }], {
+            onConflict: 'prenotazione_id,socio_id',
+            ignoreDuplicates: true,
+          })
+      }
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['prenotazioni'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['prenotazioni'] })
+      qc.invalidateQueries({ queryKey: ['amichevoli'] })
+    },
     onError: (e: unknown) => {
       const err = e as { code?: string; message?: string }
       if (err.message?.startsWith('LIMITE:')) {
@@ -107,8 +123,8 @@ export default function GrigliaPrenotazioni({ sport }: { sport: Sport }) {
     if (window.confirm(domanda)) annulla.mutate(p.id)
   }
 
-  // Lo staff (admin/collaboratore) sceglie tra prenotazione e allenamento.
-  const staff = !!(profilo?.is_allenatore || profilo?.is_admin)
+  // Lo staff (admin/collaboratore/istruttore) sceglie tra prenotazione e allenamento.
+  const staff = !!(profilo?.is_allenatore || profilo?.is_admin || profilo?.e_allenatore)
   function apriPrenota(campo: Campo, inizio: Date, fine: Date) {
     if (staff) setScelta({ campo, inizio, fine })
     else prenota.mutate({ campo, inizio, fine, allenamento: false })

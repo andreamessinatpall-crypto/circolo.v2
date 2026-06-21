@@ -131,7 +131,7 @@ export default function MieLezioni({ sport }: { sport: Sport }) {
   return (
     <div>
       {gruppi.map((g) => (
-        <div key={g.giorno}>
+        <div key={g.giorno} className="gruppo-giorno">
           <div className="giorno-partite">
             {ICONA_CAL}
             <span>{g.etichetta}</span>
