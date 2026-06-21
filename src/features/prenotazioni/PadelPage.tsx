@@ -2,9 +2,6 @@ import Segnaposto from '@/components/Segnaposto'
 
 export default function PadelPage() {
   return (
-    <Segnaposto
-      titolo="Padel"
-      descrizione="Prenotazioni dei campi, amichevoli e lezioni di padel — in arrivo dalla Fase 4."
-    />
+    <Segnaposto descrizione="Prenotazioni dei campi, amichevoli e lezioni di padel — in arrivo dalla Fase 4." />
   )
 }

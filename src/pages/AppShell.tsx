@@ -67,7 +67,7 @@ export default function AppShell() {
       </header>
 
       {/* Tab principali */}
-      <div className="mx-auto max-w-[900px] px-5 pt-4">
+      <div className="mx-auto max-w-[900px] px-5 pt-3">
         <nav className="tabs">
           {voci.map((v) => (
             <NavLink
@@ -82,7 +82,7 @@ export default function AppShell() {
       </div>
 
       {/* Contenuto */}
-      <main className="mx-auto max-w-[900px] px-5 pb-20 pt-2">
+      <main className="mx-auto max-w-[900px] px-5 pb-20">
         <Outlet />
       </main>
     </div>

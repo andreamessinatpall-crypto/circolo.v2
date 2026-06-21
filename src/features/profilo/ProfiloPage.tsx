@@ -18,7 +18,7 @@ export default function ProfiloPage() {
 
   return (
     <div>
-      <nav className="mb-4 flex flex-wrap gap-1.5 pt-2" aria-label="Sezioni profilo">
+      <nav className="mb-4 flex flex-wrap gap-1.5" aria-label="Sezioni profilo">
         {SCHEDE.map((s) => (
           <button
             key={s.id}

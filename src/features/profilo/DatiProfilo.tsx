@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/auth/useAuth'
 import { etichettaGenere } from '@/lib/formato'
 import { classiErrore, classiOk } from '@/components/stili'
+import CambiaPassword from './CambiaPassword'
 
 // Solo questi campi sono modificabili dal socio (come nella v1).
 const schema = z.object({
@@ -116,6 +117,8 @@ export default function DatiProfilo() {
           {salva.isPending ? 'Salvataggio…' : 'Salva modifiche'}
         </button>
       </form>
+
+      <CambiaPassword />
     </div>
   )
 }
