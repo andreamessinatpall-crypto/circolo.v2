@@ -1733,21 +1733,49 @@
   }
 
   /* (Fase 6e) Podio di fine torneo */
+  /* (Fase 7c) Podio "trionfale": fondo verde profondo con bagliore e raggi
+     dorati a ventaglio dietro la coppa, bordo oro e ombra ricca. */
   .podio {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
     text-align: center;
-    border-radius: 16px;
-    padding: 20px 18px 18px;
+    border-radius: 18px;
+    padding: 26px 18px 22px;
     margin-bottom: 18px;
-    background: linear-gradient(160deg, var(--v600), var(--v800) 70%, var(--v900));
+    background:
+      radial-gradient(120% 85% at 50% -12%, rgba(232, 200, 120, 0.38), transparent 60%),
+      radial-gradient(70% 55% at 50% 0%, rgba(255, 236, 175, 0.22), transparent 72%),
+      linear-gradient(160deg, var(--v600), var(--v800) 65%, var(--v900));
     color: #fff;
+    border: 1px solid rgba(232, 200, 120, 0.45);
     box-shadow:
-      0 10px 30px rgba(20, 83, 42, 0.25),
-      inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+      0 18px 44px rgba(20, 83, 42, 0.4),
+      0 0 0 1px rgba(232, 200, 120, 0.12),
+      inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  }
+  /* Raggi di sole dorati che si irradiano dall'alto, sfumati ai bordi. */
+  .podio::before {
+    content: '';
+    position: absolute;
+    left: -10%;
+    top: -55%;
+    width: 120%;
+    height: 150%;
+    z-index: -1;
+    background: repeating-conic-gradient(
+      from 0deg at 50% 0%,
+      rgba(255, 236, 175, 0.12) 0deg 5deg,
+      transparent 5deg 11deg
+    );
+    -webkit-mask-image: radial-gradient(58% 70% at 50% 0%, #000, transparent 72%);
+    mask-image: radial-gradient(58% 70% at 50% 0%, #000, transparent 72%);
+    pointer-events: none;
   }
   .podio-corona {
-    font-size: 2.2rem;
+    font-size: 2.6rem;
     line-height: 1;
-    filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.3));
+    filter: drop-shadow(0 2px 10px rgba(232, 200, 120, 0.6));
   }
   .podio-eyebrow {
     margin-top: 6px;
@@ -1760,8 +1788,44 @@
   .podio-vincitore {
     margin-top: 4px;
     font-family: var(--font-display);
-    font-size: 1.5rem;
+    font-size: 1.6rem;
     font-weight: 800;
+    text-shadow: 0 1px 12px rgba(232, 200, 120, 0.5);
+  }
+  /* (Fase 7c) Vista "Tutti": un campione per ogni girone. */
+  .podio-campioni {
+    margin: 14px auto 0;
+    display: grid;
+    gap: 8px;
+    max-width: 420px;
+  }
+  .podio-campione {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 14px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(232, 200, 120, 0.28);
+  }
+  .podio-campione-medaglia {
+    flex: 0 0 auto;
+    font-size: 1.2rem;
+  }
+  .podio-campione-girone {
+    flex: 0 0 auto;
+    min-width: 70px;
+    text-align: left;
+    font-size: 0.66rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--g300);
+  }
+  .podio-campione-nome {
+    flex: 1 1 auto;
+    text-align: left;
+    font-weight: 700;
   }
   .podio-punti {
     display: inline-block;

@@ -358,10 +358,8 @@ function DettaglioTorneo({
   // Calendario e risultati arriveranno con la Fase 6d.
   const schedaRisultati = (
     <div>
-      {/* (Fase 6e) Podio: appare quando il calendario è completo. */}
-      <PodioTorneo torneo={torneo} squadre={squadre} incontri={incontri} />
-
-      {/* (Fase 7c) Con più gironi: tasti per scegliere quale girone vedere. */}
+      {/* (Fase 7c) Con più gironi: tasti per scegliere quale girone vedere
+          (controllano podio, classifica e calendario). */}
       {n > 1 && (
         <nav className="mb-4 flex flex-wrap gap-1.5" aria-label="Scegli il girone">
           <button
@@ -383,6 +381,9 @@ function DettaglioTorneo({
           ))}
         </nav>
       )}
+
+      {/* (Fase 6e) Podio: appare quando il calendario è completo. */}
+      <PodioTorneo torneo={torneo} squadre={squadre} incontri={incontri} gironeFiltro={gironeSel} />
 
       <Sezione titolo="🏆 Classifica">
         <ClassificaTorneo
