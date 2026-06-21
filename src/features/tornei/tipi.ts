@@ -12,6 +12,10 @@ export interface Torneo {
   punti_iscrizione: number | null
   punti_vittoria: number | null
   punti_torneo: number | null
+  // (Fase 6c) gironi: quanti gironi e i loro nomi personalizzati.
+  // nomi_gironi è un oggetto JSON tipo { "1": "Girone Rosso", ... }.
+  numero_gironi: number | null
+  nomi_gironi: Record<string, string> | null
 }
 
 export interface Squadra {
@@ -28,6 +32,33 @@ export interface Componente {
   torneo_id: number | string
   socio_id: string
   riserva: boolean | null
+}
+
+// (Fase 6c) Un incontro del girone fra due squadre/coppie.
+// punti_casa/punti_ospite sono null finché il risultato non è inserito (Fase 6d).
+export interface Incontro {
+  id: number | string
+  torneo_id: number | string
+  round: number
+  casa_id: number | string
+  ospite_id: number | string
+  girone: number | null
+  punti_casa: number | null
+  punti_ospite: number | null
+}
+
+// Una riga della classifica all'italiana (calcolata, non salvata nel database).
+export interface RigaClassifica {
+  id: number | string
+  nome: string
+  g: number // partite giocate
+  v: number // vinte
+  n: number // pareggi (solo calcio)
+  p: number // perse
+  gf: number // gol/punti fatti
+  gs: number // gol/punti subiti
+  diff: number // differenza reti/punti
+  pti: number // punti in classifica
 }
 
 export const STATI_TORNEO: Record<StatoTorneo, string> = {

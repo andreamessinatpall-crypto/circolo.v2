@@ -11,6 +11,8 @@ import { classiErrore, classiInput, classiOk } from '@/components/stili'
 import { useTornei } from './datiTornei'
 import type { DatiTornei } from './datiTornei'
 import GestioneSquadre from './GestioneSquadre'
+import GestioneGironi from './GestioneGironi'
+import ClassificaTorneo from './ClassificaTorneo'
 import { FORMATI_TORNEO, STATI_TORNEO } from './tipi'
 import type { StatoTorneo, Torneo } from './tipi'
 
@@ -236,6 +238,7 @@ function DettaglioTorneo({
   const qc = useQueryClient()
 
   const squadre = dati.perTorneoSquadre[String(torneo.id)] ?? []
+  const incontri = dati.perTorneoIncontri[String(torneo.id)] ?? []
   const assegnati = dati.assegnati[String(torneo.id)] ?? new Set<string>()
 
   const cambiaStato = useMutation({
@@ -291,6 +294,8 @@ function DettaglioTorneo({
         </div>
       )}
 
+      {gestore && <GestioneGironi torneo={torneo} squadre={squadre} />}
+
       <div className="eyebrow" style={{ marginTop: 20 }}>
         Squadre iscritte
       </div>
@@ -326,8 +331,13 @@ function DettaglioTorneo({
         </div>
       )}
 
+      <div className="eyebrow" style={{ marginTop: 24 }}>
+        🏆 Classifica
+      </div>
+      <ClassificaTorneo torneo={torneo} squadre={squadre} incontri={incontri} />
+
       <p className="sub mt-4">
-        Gironi, calendario e classifica in arrivo nelle prossime sotto-fasi.
+        Calendario e risultati in arrivo nella prossima sotto-fase.
       </p>
     </div>
   )

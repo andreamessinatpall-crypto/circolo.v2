@@ -907,6 +907,86 @@
     vertical-align: middle;
   }
 
+  /* (Fase 6c) Classifica all'italiana del torneo (ripresa dalla v1) */
+  .classifica {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.84rem;
+    margin-top: 8px;
+  }
+  .classifica th,
+  .classifica td {
+    padding: 8px 6px;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+  }
+  .classifica th:first-child,
+  .classifica td:first-child {
+    text-align: left;
+  }
+  .classifica th {
+    font-weight: 700;
+    color: var(--ink3);
+    text-transform: uppercase;
+    font-size: 0.62rem;
+    letter-spacing: 0.06em;
+  }
+  .classifica td.pti {
+    font-weight: 800;
+    color: var(--v700);
+  }
+  .classifica-wow {
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  }
+  .classifica-wow .classifica {
+    margin-top: 0;
+  }
+  .classifica-wow .classifica thead th {
+    background: linear-gradient(135deg, var(--v800), var(--v700));
+    color: #fff;
+    padding: 10px 6px;
+    border: none;
+  }
+  .classifica-wow .classifica thead th:first-child {
+    color: var(--g300);
+  }
+  .classifica-wow .classifica tbody tr:nth-child(odd) td {
+    background: rgba(20, 83, 42, 0.025);
+  }
+  .classifica-wow .classifica td.nome-cl {
+    text-align: left;
+    font-weight: 600;
+  }
+  .cl-rank {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: var(--ink2);
+    background: transparent;
+    margin-right: 8px;
+    vertical-align: middle;
+  }
+  .cl-rank.m1 {
+    background: linear-gradient(135deg, #e8c878, #c8972e);
+    color: var(--v900);
+  }
+  .cl-rank.m2 {
+    background: linear-gradient(135deg, #d7dce0, #9ba3aa);
+    color: #2b2f33;
+  }
+  .cl-rank.m3 {
+    background: linear-gradient(135deg, #e0a878, #b07a45);
+    color: #fff;
+  }
+
   /* Campo in sola lettura */
   .ro {
     background: var(--v050);
