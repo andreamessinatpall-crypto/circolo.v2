@@ -392,6 +392,47 @@
     padding: 2px 8px;
     border: 1px solid currentColor;
     border-radius: 3px;
+    white-space: nowrap;
+  }
+
+  /* Tab principali dentro l'header (fondo scuro) */
+  .header-tabs {
+    position: relative;
+    z-index: 1;
+    flex: 1 1 auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 4px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .header-tabs::-webkit-scrollbar {
+    display: none;
+  }
+  .header-tab {
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 700;
+    font-size: 0.82rem;
+    white-space: nowrap;
+    padding: 8px 16px;
+    border-radius: 999px;
+    color: rgba(255, 255, 255, 0.7);
+    transition: background 0.14s, color 0.14s;
+  }
+  .header-tab:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.08);
+  }
+  .header-tab.attivo {
+    color: var(--g300);
+    background: rgba(255, 255, 255, 0.12);
+  }
+  .header-utente {
+    position: relative;
+    z-index: 1;
   }
 
   /* Login / registrazione */

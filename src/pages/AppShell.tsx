@@ -37,20 +37,31 @@ export default function AppShell() {
 
   return (
     <div className="min-h-screen">
-      {/* Barra superiore */}
+      {/* Barra superiore con marchio, tab e utente */}
       <header className="app-header">
         <div className="brand">
           Circolo Sportivo
           <small>Padel &amp; Calcio</small>
         </div>
-        <div className="flex items-center gap-3 text-sm">
+
+        <nav className="header-tabs">
+          {voci.map((v) => (
+            <NavLink
+              key={v.path}
+              to={v.path}
+              className={({ isActive }) => 'header-tab' + (isActive ? ' attivo' : '')}
+            >
+              {v.label}
+            </NavLink>
+          ))}
+        </nav>
+
+        <div className="header-utente flex items-center gap-2 text-sm">
           {avatar && <Medaglia sport={avatar.sport} liv={avatar.liv} size={34} />}
-          <span className="font-semibold">
+          <span className="hidden font-semibold md:inline">
             {profilo.nome} {profilo.cognome}
           </span>
-          {profilo.is_admin && (
-            <span className="tag text-ottone-300">Admin</span>
-          )}
+          {profilo.is_admin && <span className="tag text-ottone-300">Admin</span>}
           {collaboratore && (
             <span className="tag" style={{ color: '#F3C969' }}>
               Collaboratore
@@ -59,30 +70,15 @@ export default function AppShell() {
           <button
             type="button"
             onClick={() => esci()}
-            className="ml-1 rounded-lg border border-white/25 px-3.5 py-1.5 font-display text-xs font-semibold uppercase tracking-[0.08em] text-white/80 transition hover:border-white/45 hover:bg-white/10"
+            className="ml-1 rounded-lg border border-white/25 px-3 py-1.5 font-display text-xs font-semibold uppercase tracking-[0.08em] text-white/80 transition hover:border-white/45 hover:bg-white/10"
           >
             Esci
           </button>
         </div>
       </header>
 
-      {/* Tab principali */}
-      <div className="mx-auto max-w-[900px] px-5 pt-3">
-        <nav className="tabs">
-          {voci.map((v) => (
-            <NavLink
-              key={v.path}
-              to={v.path}
-              className={({ isActive }) => 'tab-btn' + (isActive ? ' attivo' : '')}
-            >
-              {v.label}
-            </NavLink>
-          ))}
-        </nav>
-      </div>
-
       {/* Contenuto */}
-      <main className="mx-auto max-w-[900px] px-5 pb-20">
+      <main className="mx-auto max-w-[900px] px-5 pb-20 pt-4">
         <Outlet />
       </main>
     </div>
