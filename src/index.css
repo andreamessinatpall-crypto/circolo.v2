@@ -83,6 +83,7 @@
   h1,
   h2 {
     font-family: var(--font-display);
+    font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.04em;
     color: var(--v800);
@@ -448,6 +449,7 @@
   .auth-titolo {
     font-family: var(--font-display);
     font-weight: 700;
+    text-transform: uppercase;
     letter-spacing: 0.1em;
     font-size: 2.2rem;
     line-height: 1;
@@ -476,6 +478,37 @@
     border-radius: 0 0 22px 22px;
     box-shadow: 0 24px 60px rgba(0, 0, 0, 0.12);
     border-top: 0;
+    margin-bottom: 0;
+  }
+
+  /* Testo descrittivo (sottotitolo) */
+  .sub {
+    color: var(--ink2);
+    font-size: 0.9rem;
+    line-height: 1.58;
+  }
+
+  /* Vantaggi nella schermata di login */
+  .auth-perks {
+    margin-top: 20px;
+    border-top: 1px solid var(--border);
+    padding-top: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .auth-perks .perk {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.84rem;
+    color: var(--ink2);
+  }
+  .auth-perks .perk svg {
+    width: 18px;
+    height: 18px;
+    color: var(--g600);
+    flex: 0 0 auto;
   }
 
   /* Classifica */

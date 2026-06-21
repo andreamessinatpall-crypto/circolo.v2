@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { supabase } from '@/lib/supabase'
 import { classiInput, classiErrore, classiOk } from '@/components/stili'
+import AuthHero from './AuthHero'
 
 const schema = z.object({
   nome: z.string().trim().min(1, 'Inserisci il nome'),
@@ -72,13 +73,14 @@ export default function RegisterPage() {
 
   return (
     <div className="mx-auto mt-13 max-w-[680px] px-4 pb-16">
-      <div className="auth-hero">
-        <div className="auth-crest">⚽</div>
-        <div className="auth-titolo">Circolo Sportivo</div>
-        <div className="auth-claim">Crea il tuo account</div>
-      </div>
+      <AuthHero />
 
       <form onSubmit={handleSubmit(onSubmit)} className="card auth-card">
+        <h1 className="text-2xl">Registrati</h1>
+        <p className="sub mb-4 mt-1">
+          Crea il tuo accesso all'area Club. Dopo aver confermato l'email, la segreteria
+          approverà il profilo prima che tu possa prenotare.
+        </p>
         <div className="grid grid-cols-1 gap-x-5 sm:grid-cols-2">
           <Campo errore={errors.nome?.message}>
             <label>Nome</label>
