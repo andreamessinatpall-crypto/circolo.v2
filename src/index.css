@@ -1613,6 +1613,143 @@
     margin-top: 0;
   }
 
+  /* (Fase 6e) Loghi squadre di calcio, accanto al nome */
+  .nome-con-logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .logo-squadra {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    object-fit: cover;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    flex: 0 0 auto;
+  }
+  .logo-squadra.grande {
+    width: 48px;
+    height: 48px;
+  }
+  .logo-segnaposto {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: 1px dashed var(--border2);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    color: var(--ink3);
+    background: var(--surface);
+    flex: 0 0 auto;
+  }
+  .logo-segnaposto.grande {
+    width: 48px;
+    height: 48px;
+    font-size: 1.3rem;
+  }
+  .match-side .nome-con-logo {
+    justify-content: center;
+  }
+  .match-side .nome-con-logo span:last-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  /* logo dentro la "pillola" della classifica: più piccolo */
+  .chip-squadra .nome-con-logo {
+    gap: 6px;
+  }
+  .chip-squadra .logo-squadra {
+    width: 20px;
+    height: 20px;
+    border-radius: 5px;
+  }
+  /* riga di gestione logo nella scheda squadra */
+  .logo-riga {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin: 10px 0;
+  }
+  .logo-riga .btn {
+    margin-top: 0;
+  }
+
+  /* (Fase 6e) Podio di fine torneo */
+  .podio {
+    text-align: center;
+    border-radius: 16px;
+    padding: 20px 18px 18px;
+    margin-bottom: 18px;
+    background: linear-gradient(160deg, var(--v600), var(--v800) 70%, var(--v900));
+    color: #fff;
+    box-shadow:
+      0 10px 30px rgba(20, 83, 42, 0.25),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  }
+  .podio-corona {
+    font-size: 2.2rem;
+    line-height: 1;
+    filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.3));
+  }
+  .podio-eyebrow {
+    margin-top: 6px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--g300);
+  }
+  .podio-vincitore {
+    margin-top: 4px;
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 800;
+  }
+  .podio-punti {
+    display: inline-block;
+    margin-top: 8px;
+    padding: 4px 14px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: var(--v900);
+    background: linear-gradient(135deg, var(--g300), var(--g400));
+    border: 1px solid var(--g500);
+  }
+  .podio-lista {
+    margin: 14px auto 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-width: 360px;
+  }
+  .podio-riga {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 12px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.08);
+  }
+  .podio-medaglia {
+    font-size: 1.1rem;
+    flex: 0 0 auto;
+  }
+  .podio-nome {
+    flex: 1 1 auto;
+    text-align: left;
+    font-weight: 600;
+  }
+  .podio-pti {
+    flex: 0 0 auto;
+    font-weight: 700;
+    color: var(--g300);
+  }
+
   /* Padel: editor dei set */
   .set-editor {
     display: flex;

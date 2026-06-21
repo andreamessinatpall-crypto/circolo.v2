@@ -17,6 +17,13 @@ export function nomeSquadraElegante(nome: string): string {
     .join(' · ')
 }
 
+// Mappa id squadra -> logo_url, comoda per i componenti che hanno l'elenco squadre.
+export function mappaLoghi(squadre: { id: number | string; logo_url: string | null }[]) {
+  const m: Record<string, string | null> = {}
+  for (const s of squadre) m[String(s.id)] = s.logo_url
+  return m
+}
+
 // Quanti gironi ha il torneo (1 = girone unico). Limitato fra 1 e 12.
 export function numGironi(t: Pick<Torneo, 'numero_gironi'>): number {
   return Math.min(12, Math.max(1, Number(t.numero_gironi) || 1))

@@ -12,12 +12,13 @@ import {
 } from './calendario'
 import {
   incontriDelGirone,
+  mappaLoghi,
   nomeGirone,
-  nomeSquadraElegante,
   numGironi,
   squadreDelGirone,
   unitaTorneo,
 } from './gironi'
+import { NomeSquadra } from './NomeSquadra'
 import { BottoneAnnullaProgrammazione, BottoneProgramma } from './ProgrammaIncontro'
 import type { Incontro, SetPunteggio, Squadra, Torneo } from './tipi'
 
@@ -110,6 +111,7 @@ function GironeRisultati({
 }) {
   const nomi: Record<string, string> = {}
   for (const s of squadre) nomi[String(s.id)] = s.nome
+  const loghi = mappaLoghi(squadre)
 
   if (!incontri.length) {
     return <p className="sub">Nessun incontro in questo girone.</p>
@@ -136,6 +138,7 @@ function GironeRisultati({
                 torneo={torneo}
                 m={m}
                 nomi={nomi}
+                loghi={loghi}
                 gestore={gestore}
                 prenByIncontro={prenByIncontro}
                 miaSquadraId={miaSquadraId}
@@ -152,6 +155,7 @@ function RigaRisultato({
   torneo,
   m,
   nomi,
+  loghi,
   gestore,
   prenByIncontro,
   miaSquadraId,
@@ -159,6 +163,7 @@ function RigaRisultato({
   torneo: Torneo
   m: Incontro
   nomi: Record<string, string>
+  loghi: Record<string, string | null>
   gestore: boolean
   prenByIncontro: Record<string, string>
   miaSquadraId?: number | string
@@ -198,7 +203,9 @@ function RigaRisultato({
   return (
     <div className={'match' + (disputata ? ' giocata' : '')}>
       <div className="match-row">
-        <div className="match-side">{nomeSquadraElegante(nomi[String(m.casa_id)] ?? '?')}</div>
+        <div className="match-side">
+          <NomeSquadra nome={nomi[String(m.casa_id)] ?? '?'} logoUrl={loghi[String(m.casa_id)]} sport={torneo.sport} />
+        </div>
         <div className="match-ris">
           {disputata ? (
             <>
@@ -211,7 +218,9 @@ function RigaRisultato({
             <span className="vs">vs</span>
           )}
         </div>
-        <div className="match-side">{nomeSquadraElegante(nomi[String(m.ospite_id)] ?? '?')}</div>
+        <div className="match-side">
+          <NomeSquadra nome={nomi[String(m.ospite_id)] ?? '?'} logoUrl={loghi[String(m.ospite_id)]} sport={torneo.sport} />
+        </div>
       </div>
 
       <div className="match-meta">

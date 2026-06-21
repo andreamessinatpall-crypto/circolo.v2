@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { eDuplicato, messaggioErrore } from '@/lib/errori'
+import { logoDaFile } from '@/lib/immagini'
 import { useSociPubblici } from '@/features/prenotazioni/datiAmichevoli'
 import { nomeSquadraElegante } from './gironi'
 import type { Componente, Squadra, Torneo } from './tipi'
@@ -21,6 +22,17 @@ function mancaColonnaRiserva(error: unknown) {
     e.code === 'PGRST204' ||
     e.code === '42703' ||
     (e.message ?? '').toLowerCase().includes('riserva')
+  )
+}
+
+// La colonna "logo_url" potrebbe non esistere ancora nel database.
+function mancaColonnaLogo(error: unknown) {
+  const e = error as { code?: string; message?: string } | null
+  if (!e) return false
+  return (
+    e.code === 'PGRST204' ||
+    e.code === '42703' ||
+    (e.message ?? '').toLowerCase().includes('logo_url')
   )
 }
 
@@ -128,6 +140,21 @@ export default function GestioneSquadre({
       ),
   })
 
+  // (Calcio) logo della squadra: salvo il data URL nella colonna squadre.logo_url.
+  const logo = useMutation({
+    mutationFn: async ({ id, dataUrl }: { id: number | string; dataUrl: string | null }) => {
+      const { error } = await supabase.from('squadre').update({ logo_url: dataUrl }).eq('id', id)
+      if (error) throw error
+    },
+    onSuccess: aggiorna,
+    onError: (e: unknown) =>
+      window.alert(
+        mancaColonnaLogo(e)
+          ? 'Manca la colonna logo_url nella tabella squadre. Esegui su Supabase: ALTER TABLE squadre ADD COLUMN logo_url text;'
+          : 'Salvataggio logo non riuscito: ' + messaggioErrore(e),
+      ),
+  })
+
   const rimuoviComp = useMutation({
     mutationFn: async ({
       squadraId,
@@ -178,6 +205,7 @@ export default function GestioneSquadre({
               aggiungiComp.mutate({ squadraId: s.id, socioId, riserva })
             }
             onRimuovi={(socioId) => rimuoviComp.mutate({ squadraId: s.id, socioId })}
+            onLogo={(dataUrl) => logo.mutate({ id: s.id, dataUrl })}
           />
         ))}
       </div>
@@ -198,6 +226,7 @@ function RigaSquadra({
   onElimina,
   onAggiungi,
   onRimuovi,
+  onLogo,
 }: {
   torneo: Torneo
   squadra: Squadra
@@ -209,6 +238,7 @@ function RigaSquadra({
   onElimina: () => void
   onAggiungi: (socioId: string, riserva: boolean) => void
   onRimuovi: (socioId: string) => void
+  onLogo: (dataUrl: string | null) => void
 }) {
   // Titolari prima, riserve in fondo.
   const ordinati = componenti
@@ -255,6 +285,41 @@ function RigaSquadra({
           </button>
         </div>
       </div>
+
+      {torneo.sport === 'calcio' && (
+        <div className="logo-riga">
+          {squadra.logo_url ? (
+            <img className="logo-squadra grande" src={squadra.logo_url} alt={'Logo ' + squadra.nome} />
+          ) : (
+            <span className="logo-segnaposto grande" aria-hidden>
+              ⚽
+            </span>
+          )}
+          <label className="btn btn-secondario btn-mini cursor-pointer">
+            {squadra.logo_url ? 'Cambia logo' : 'Carica logo'}
+            <input
+              type="file"
+              accept="image/*"
+              hidden
+              onChange={async (e) => {
+                const file = e.target.files?.[0]
+                e.target.value = '' // così si può ricaricare lo stesso file
+                if (!file) return
+                try {
+                  onLogo(await logoDaFile(file))
+                } catch (err) {
+                  window.alert(messaggioErrore(err))
+                }
+              }}
+            />
+          </label>
+          {squadra.logo_url && (
+            <button type="button" className="btn btn-pericolo btn-mini" onClick={() => onLogo(null)}>
+              Rimuovi
+            </button>
+          )}
+        </div>
+      )}
 
       {ordinati.length === 0 ? (
         <div className="part-vuoto">Nessun giocatore.</div>

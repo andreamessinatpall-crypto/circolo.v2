@@ -14,6 +14,7 @@ import GestioneSquadre from './GestioneSquadre'
 import GestioneGironi from './GestioneGironi'
 import GestioneCalendario from './GestioneCalendario'
 import ClassificaTorneo from './ClassificaTorneo'
+import PodioTorneo from './PodioTorneo'
 import Risultati from './Risultati'
 import ImpostazioniTorneo from './ImpostazioniTorneo'
 import { FORMATI_TORNEO, STATI_TORNEO } from './tipi'
@@ -305,6 +306,9 @@ function DettaglioTorneo({
   // Calendario e risultati arriveranno con la Fase 6d.
   const schedaRisultati = (
     <div>
+      {/* (Fase 6e) Podio: appare quando il calendario è completo. */}
+      <PodioTorneo torneo={torneo} squadre={squadre} incontri={incontri} />
+
       <div className="eyebrow">🏆 Classifica</div>
       <ClassificaTorneo torneo={torneo} squadre={squadre} incontri={incontri} />
 

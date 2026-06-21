@@ -1,4 +1,5 @@
-import { calcolaClassifica, incontriDelGirone, nomeGirone, nomeSquadraElegante, numGironi, squadreDelGirone, unitaTorneo } from './gironi'
+import { calcolaClassifica, incontriDelGirone, mappaLoghi, nomeGirone, numGironi, squadreDelGirone, unitaTorneo } from './gironi'
+import { NomeSquadra } from './NomeSquadra'
 import type { Incontro, Squadra, Torneo } from './tipi'
 
 // (Fase 6c) Classifica all'italiana del torneo. Con più gironi mostra una
@@ -61,6 +62,7 @@ function TabellaClassifica({
   incontri: Incontro[]
 }) {
   const arr = calcolaClassifica(sport, squadre, incontri)
+  const loghi = mappaLoghi(squadre)
   // Calcio: pareggi (N) e differenza reti (DR). Padel: niente pareggi, differenza set (DS).
   const intestazioni =
     sport === 'calcio'
@@ -96,7 +98,9 @@ function TabellaClassifica({
                     className={i === 0 ? 'nome-cl' : i === celle.length - 1 ? 'pti' : undefined}
                   >
                     {i === 0 ? (
-                      <span className="chip-squadra">{nomeSquadraElegante(String(val))}</span>
+                      <span className="chip-squadra">
+                        <NomeSquadra nome={r.nome} logoUrl={loghi[String(r.id)]} sport={sport} />
+                      </span>
                     ) : (
                       val
                     )}
