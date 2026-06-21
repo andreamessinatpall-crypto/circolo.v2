@@ -5,13 +5,16 @@ import type { Socio } from '@/auth/tipi'
 import Medaglia from '@/features/profilo/badge/Medaglia'
 import { leggiCodiceBadge } from '@/features/profilo/badge/badgeDati'
 import { useRealtimeCircolo } from '@/hooks/useRealtimeCircolo'
+import { useModalitaPremi } from '@/features/premi/datiPremi'
 
 interface Voce {
   path: string
   label: string
 }
 
-function vociMenu(p: Socio): Voce[] {
+// premiVisibile: il socio vede la tab Premi solo a "modalità premi" accesa;
+// l'admin la vede sempre (la gestione lato segreteria arriva in Fase 8).
+function vociMenu(p: Socio, premiVisibile: boolean): Voce[] {
   if (p.is_admin) {
     return [
       { path: '/segreteria', label: 'Segreteria' },
@@ -24,17 +27,18 @@ function vociMenu(p: Socio): Voce[] {
   if (sport.includes('padel')) voci.push({ path: '/padel', label: 'Padel' })
   if (sport.includes('calcio')) voci.push({ path: '/calcio', label: 'Calcio' })
   voci.push({ path: '/tornei', label: 'Tornei' })
-  voci.push({ path: '/premi', label: 'Premi' })
+  if (premiVisibile) voci.push({ path: '/premi', label: 'Premi' })
   return voci
 }
 
 export default function AppShell() {
   const { profilo, esci } = useAuth()
   useRealtimeCircolo()
+  const { data: modalitaPremi } = useModalitaPremi()
   if (!profilo) return null
 
   const collaboratore = !!profilo.is_allenatore && !profilo.is_admin
-  const voci = vociMenu(profilo)
+  const voci = vociMenu(profilo, !!modalitaPremi)
   const avatar = leggiCodiceBadge(profilo.badge_profilo)
 
   return (

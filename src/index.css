@@ -850,6 +850,107 @@
     color: var(--ink2);
     margin-top: 8px;
   }
+
+  /* ─── PREMI (Fase 7c) — portate dalla v1 ─────────────── */
+  .saldo-crediti {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    padding: 18px 20px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, var(--v600), var(--v800));
+    color: #fff;
+    box-shadow: var(--ombra-card);
+    margin-bottom: 16px;
+  }
+  .saldo-crediti .num {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 2.2rem;
+    line-height: 1;
+    color: var(--g300);
+  }
+  .saldo-crediti .et {
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    opacity: 0.9;
+  }
+  .premio-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 18px;
+    margin-bottom: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    box-shadow: var(--ombra-card);
+  }
+  .premio-card.spento {
+    opacity: 0.55;
+  }
+  .premio-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .premio-nome {
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: 700;
+    font-size: 1.1rem;
+    line-height: 1.1;
+  }
+  .premio-costo {
+    font-family: var(--font-display);
+    font-weight: 700;
+    color: var(--g600);
+    font-size: 1.05rem;
+    white-space: nowrap;
+  }
+  .premio-descr {
+    font-size: 0.9rem;
+    color: var(--ink2);
+    line-height: 1.4;
+    white-space: pre-wrap;
+  }
+  .premio-meta {
+    font-size: 0.78rem;
+    color: var(--ink3);
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .premio-card .azioni {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-top: 6px;
+  }
+  .stato-pill {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 3px 10px;
+    border-radius: 999px;
+    border: 1px solid currentColor;
+    white-space: nowrap;
+  }
+  .stato-pill.attesa {
+    color: var(--terra);
+  }
+  .stato-pill.approvato {
+    color: var(--ok);
+  }
+  .stato-pill.consegnato {
+    color: var(--ink3);
+  }
   .allenamento-badge {
     display: inline-block;
     margin-top: 6px;
