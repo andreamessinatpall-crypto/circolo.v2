@@ -255,7 +255,12 @@ export function SchedaPartita({
           </div>
           <div className="dove">{campo?.nome ?? 'Campo'}</div>
           {pren.allenamento ? (
-            <div className="allenamento-badge">🏋️ Allenamento</div>
+            <>
+              <div className="allenamento-badge">Allenamento</div>
+              {pren.allenatore_id && (
+                <div className="dove">Istruttore: {etichette.get(pren.allenatore_id) ?? '—'}</div>
+              )}
+            </>
           ) : (
             <div className="partita-badge">Partita</div>
           )}

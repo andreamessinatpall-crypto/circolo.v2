@@ -810,9 +810,9 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    color: #8a3c24;
-    background: #fef2e6;
-    border: 1px solid var(--terra);
+    color: #3f4a00;
+    background: #d7df23;
+    border: 1px solid #a9b015;
     border-radius: 999px;
     padding: 3px 10px;
   }

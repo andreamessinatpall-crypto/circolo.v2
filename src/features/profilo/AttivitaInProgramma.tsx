@@ -162,7 +162,7 @@ export default function AttivitaInProgramma() {
                       {(m.campo_nome ?? 'Campo') + ' · ' + (SPORT_LABEL[m.sport] ?? m.sport)}
                     </div>
                     {m.allenamento ? (
-                      <div className="allenamento-badge">🏋️ Allenamento</div>
+                      <div className="allenamento-badge">Allenamento</div>
                     ) : (
                       <div className="partita-badge">Partita</div>
                     )}
