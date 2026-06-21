@@ -1,37 +1,129 @@
+import { useQuery } from '@tanstack/react-query'
+import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/auth/useAuth'
-import { dataEstesa, etichettaGenere, etichettaSport } from '@/lib/formato'
+import { dataEstesa } from '@/lib/formato'
+import { LIVELLI_PUNTI, livelloDaPunti } from './livelliPunti'
 
-function Riga({ etichetta, valore }: { etichetta: string; valore: string }) {
+export default function RiepilogoProfilo() {
+  const { profilo } = useAuth()
+
+  const stat = useQuery({
+    queryKey: ['riepilogo-stat', profilo?.id],
+    enabled: !!profilo,
+    queryFn: async () => {
+      // Punti e crediti dalla riga del socio (se le colonne non esistono, 0).
+      const { data: me } = await supabase
+        .from('soci')
+        .select('punti, crediti')
+        .eq('id', profilo!.id)
+        .maybeSingle()
+      const punti = Number(me?.punti) || 0
+      const crediti = Number(me?.crediti) || 0
+
+      // Posizione in classifica.
+      let posizione: number | null = null
+      const { data: cls } = await supabase.rpc('classifica_visibile')
+      const righe = (cls ?? []) as Array<{ is_me?: boolean; posizione?: number }>
+      const mia = righe.find((r) => r.is_me)
+      if (mia?.posizione != null) posizione = mia.posizione
+
+      // Attività: amichevoli confermate.
+      let attivita: number | null = null
+      const { data: att, error: errAtt } = await supabase
+        .from('partecipanti_amichevole')
+        .select('prenotazione_id')
+        .eq('socio_id', profilo!.id)
+        .eq('confermato', true)
+      if (!errAtt && att) attivita = att.length
+
+      return { punti, crediti, posizione, attivita }
+    },
+  })
+
+  if (!profilo) return null
+
+  const punti = stat.data?.punti ?? 0
+  const crediti = stat.data?.crediti ?? 0
+  const posizione = stat.data?.posizione ?? null
+  const attivita = stat.data?.attivita ?? null
+
+  const livN = livelloDaPunti(punti)
+  const liv = LIVELLI_PUNTI[livN - 1] ?? LIVELLI_PUNTI[0]
+  const prossimo = LIVELLI_PUNTI[livN] // undefined se livello massimo
+  const pct = prossimo
+    ? Math.max(
+        0,
+        Math.min(
+          100,
+          Math.round(((punti - liv.soglia) / (prossimo.soglia - liv.soglia || 1)) * 100),
+        ),
+      )
+    : 100
+
   return (
-    <div className="flex justify-between gap-4 border-b border-verde-700/10 py-2.5 last:border-0">
-      <span className="text-sm text-ink-3">{etichetta}</span>
-      <span className="text-sm font-medium text-ink">{valore}</span>
+    <div>
+      <div className="riep-wow">
+        <div className="riep-wow-top">
+          <span className="riep-liv-medal" style={{ borderColor: liv.colore }}>
+            {liv.emoji}
+          </span>
+          <div className="riep-wow-hi">
+            <h1>Benvenuto, {profilo.nome}</h1>
+            <p className="riep-liv-eyebrow">
+              Livello {livN} · {liv.nome}
+            </p>
+            <p className="riep-wow-sub">Iscritto dal {dataEstesa(profilo.data_iscrizione)}</p>
+          </div>
+        </div>
+
+        <div className="riep-liv-prog">
+          {prossimo ? (
+            <>
+              <div className="pp-top">
+                <span>Prossimo livello</span>
+                <b>{prossimo.nome}</b>
+              </div>
+              <div className="pp-bar">
+                <i style={{ width: pct + '%' }} />
+              </div>
+              <div className="pp-top" style={{ marginTop: 4 }}>
+                <span>
+                  {punti} / {prossimo.soglia} punti
+                </span>
+                <span>{pct}%</span>
+              </div>
+            </>
+          ) : (
+            <div className="pp-top">
+              <span>Livello massimo raggiunto</span>
+              <b>★</b>
+            </div>
+          )}
+        </div>
+
+        <div className="riep-griglia">
+          <Stat valore={String(punti)} nome="Punti" />
+          <Stat valore={posizione != null ? posizione + 'º' : '—'} nome="Posizione" />
+          <Stat valore={attivita != null ? String(attivita) : '—'} nome="Attività" />
+          <Stat valore={String(crediti)} nome="Crediti" />
+        </div>
+      </div>
+
+      <div className="eyebrow">Partite in programma</div>
+      <div className="card">
+        <p className="text-sm text-ink-2">
+          Le tue prossime partite compariranno qui con le prenotazioni (Fase 4).
+        </p>
+      </div>
     </div>
   )
 }
 
-export default function RiepilogoProfilo() {
-  const { profilo } = useAuth()
-  if (!profilo) return null
-
-  const ruolo = profilo.is_admin
-    ? 'Amministratore'
-    : profilo.is_allenatore
-      ? 'Collaboratore'
-      : 'Socio'
-
+function Stat({ valore, nome }: { valore: string; nome: string }) {
   return (
-    <div className="card">
-      <h2 className="mb-4 text-xl">
-        {profilo.nome} {profilo.cognome}
-      </h2>
-      <Riga etichetta="Email" valore={profilo.email ?? '—'} />
-      <Riga etichetta="Telefono" valore={profilo.telefono ?? '—'} />
-      <Riga etichetta="Genere" valore={etichettaGenere(profilo.genere)} />
-      <Riga etichetta="Data di nascita" valore={dataEstesa(profilo.data_nascita)} />
-      <Riga etichetta="Sport preferito" valore={etichettaSport(profilo.sport_preferito)} />
-      <Riga etichetta="Iscritto dal" valore={dataEstesa(profilo.data_iscrizione)} />
-      <Riga etichetta="Ruolo" valore={ruolo} />
+    <div className="riep-stat">
+      <div className="valore">{valore}</div>
+      <div className="nome-stat">{nome}</div>
     </div>
   )
 }

@@ -511,4 +511,242 @@
     color: var(--ink2);
     font-size: 0.88rem;
   }
+
+  /* Campo in sola lettura */
+  .ro {
+    background: var(--v050);
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 11px 14px;
+    font-size: 0.95rem;
+    color: var(--ink2);
+  }
+
+  /* Riepilogo: hero "wow" con livello a punti */
+  .riep-wow {
+    position: relative;
+    overflow: hidden;
+    border-radius: 22px;
+    margin-bottom: 18px;
+    padding: 24px 22px 20px;
+    color: #fff;
+    background: linear-gradient(140deg, var(--v600) 0%, var(--v800) 55%, var(--v900) 100%);
+    box-shadow: 0 14px 42px rgba(12, 51, 25, 0.24);
+    border: 1px solid rgba(200, 151, 46, 0.22);
+  }
+  .riep-wow::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(55% 70% at 100% 0%, rgba(200, 151, 46, 0.22), transparent 55%);
+  }
+  .riep-wow-top {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    position: relative;
+    z-index: 1;
+  }
+  .riep-liv-medal {
+    flex: 0 0 auto;
+    width: 66px;
+    height: 66px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid var(--g500);
+    box-shadow: 0 0 0 7px rgba(200, 151, 46, 0.1), 0 4px 18px rgba(0, 0, 0, 0.22);
+  }
+  .riep-wow-hi {
+    min-width: 0;
+  }
+  .riep-wow-hi h1 {
+    font-family: var(--font-display);
+    font-size: 1.6rem;
+    letter-spacing: 0.02em;
+    line-height: 1.05;
+    margin: 0;
+    color: #fff;
+  }
+  .riep-liv-eyebrow {
+    margin: 4px 0 0;
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    font-size: 0.76rem;
+    color: var(--g300);
+    font-weight: 700;
+  }
+  .riep-wow-sub {
+    color: rgba(228, 240, 232, 0.78);
+    font-size: 0.82rem;
+    margin-top: 4px;
+  }
+  .riep-liv-prog {
+    position: relative;
+    z-index: 1;
+    margin: 18px 0 4px;
+  }
+  .riep-liv-prog .pp-top {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.74rem;
+    color: rgba(228, 240, 232, 0.78);
+    margin-bottom: 6px;
+  }
+  .riep-liv-prog .pp-top b {
+    color: var(--g300);
+    font-weight: 700;
+  }
+  .riep-liv-prog .pp-bar {
+    height: 7px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.12);
+    overflow: hidden;
+  }
+  .riep-liv-prog .pp-bar i {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--g300), var(--g500));
+  }
+  .riep-griglia {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-top: 18px;
+  }
+  .riep-stat {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 12px 8px;
+    text-align: center;
+  }
+  .riep-stat .valore {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1.65rem;
+    color: #fff;
+    line-height: 1;
+  }
+  .riep-stat .nome-stat {
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: rgba(228, 240, 232, 0.72);
+    margin-top: 4px;
+  }
+  @media (max-width: 520px) {
+    .riep-griglia {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  /* Bacheca scura (classifica del club) */
+  .bacheca {
+    position: relative;
+    overflow: hidden;
+    border-radius: 22px;
+    padding: 20px;
+    color: #eaf1e9;
+    background: linear-gradient(135deg, var(--v600) 0%, var(--v800) 100%);
+    box-shadow: 0 10px 30px rgba(12, 51, 25, 0.18);
+  }
+  .bacheca::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(55% 80% at 50% -10%, rgba(200, 151, 46, 0.18), transparent 60%);
+    pointer-events: none;
+  }
+  .bacheca > * {
+    position: relative;
+    z-index: 1;
+  }
+  .bacheca .classifica-riga {
+    color: #eaf1e9;
+  }
+  .bacheca .classifica-riga:nth-child(odd) {
+    background: rgba(255, 255, 255, 0.06);
+  }
+  .bacheca .classifica-riga.io {
+    background: rgba(200, 151, 46, 0.2);
+  }
+  .bacheca .classifica-riga .cl-pos {
+    color: var(--g300);
+  }
+  .bacheca .classifica-riga .cl-nick {
+    color: #fff;
+  }
+  .bacheca .classifica-riga .cl-punti {
+    color: rgba(228, 240, 232, 0.72);
+  }
+
+  /* Hero verde delle sezioni (I miei dati, Amici) */
+  .sez-hero {
+    position: relative;
+    overflow: hidden;
+    border-radius: 20px;
+    padding: 22px 20px;
+    margin-bottom: 16px;
+    color: #fff;
+    background: linear-gradient(135deg, var(--v600) 0%, var(--v800) 100%);
+    box-shadow: 0 10px 32px rgba(12, 51, 25, 0.2);
+    border: 1px solid rgba(200, 151, 46, 0.2);
+  }
+  .sez-hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(65% 120% at 100% -10%, rgba(200, 151, 46, 0.2), transparent 55%);
+    pointer-events: none;
+  }
+  .sez-hero > * {
+    position: relative;
+    z-index: 1;
+  }
+  .sez-hero h2 {
+    color: #fff;
+    font-size: 1.4rem;
+    margin-bottom: 4px;
+  }
+  .sez-hero-top {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .sez-hero-av {
+    width: 54px;
+    height: 54px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.12);
+    border: 2px solid rgba(200, 151, 46, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8rem;
+    font-family: var(--font-display);
+    font-weight: 700;
+    color: #fff;
+    flex: 0 0 auto;
+  }
+  .sez-hero-info {
+    min-width: 0;
+  }
+  .sez-hero-eyebrow {
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    font-size: 0.68rem;
+    color: var(--g300);
+    font-weight: 700;
+    margin-bottom: 2px;
+  }
 }

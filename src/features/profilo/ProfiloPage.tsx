@@ -1,18 +1,16 @@
 import { useState } from 'react'
 import RiepilogoProfilo from './RiepilogoProfilo'
+import ClubProfilo from './ClubProfilo'
 import DatiProfilo from './DatiProfilo'
 import AmiciProfilo from './amici/AmiciProfilo'
-import ClassificaProfilo from './ClassificaProfilo'
-import BadgeProfilo from './badge/BadgeProfilo'
 
-type SottoScheda = 'riepilogo' | 'dati' | 'amici' | 'classifica' | 'badge'
+type SottoScheda = 'riepilogo' | 'club' | 'dati' | 'amici'
 
 const SCHEDE: { id: SottoScheda; label: string }[] = [
   { id: 'riepilogo', label: 'Riepilogo' },
-  { id: 'dati', label: 'Dati' },
+  { id: 'club', label: 'Club' },
+  { id: 'dati', label: 'I miei dati' },
   { id: 'amici', label: 'Amici' },
-  { id: 'classifica', label: 'Classifica' },
-  { id: 'badge', label: 'Badge' },
 ]
 
 export default function ProfiloPage() {
@@ -20,9 +18,7 @@ export default function ProfiloPage() {
 
   return (
     <div>
-      <h1 className="mb-1 text-3xl">Profilo</h1>
-
-      <div className="mb-5 flex flex-wrap gap-1.5 pt-2">
+      <nav className="mb-4 flex flex-wrap gap-1.5 pt-2" aria-label="Sezioni profilo">
         {SCHEDE.map((s) => (
           <button
             key={s.id}
@@ -33,13 +29,12 @@ export default function ProfiloPage() {
             {s.label}
           </button>
         ))}
-      </div>
+      </nav>
 
       {scheda === 'riepilogo' && <RiepilogoProfilo />}
+      {scheda === 'club' && <ClubProfilo />}
       {scheda === 'dati' && <DatiProfilo />}
       {scheda === 'amici' && <AmiciProfilo />}
-      {scheda === 'classifica' && <ClassificaProfilo />}
-      {scheda === 'badge' && <BadgeProfilo />}
     </div>
   )
 }

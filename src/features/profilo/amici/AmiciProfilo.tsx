@@ -42,12 +42,25 @@ export default function AmiciProfilo() {
     })
   }
 
-  return (
-    <div className="card">
-      <h2 className="mb-4 text-xl">Amici</h2>
+  const conta = amici.amici.length
 
-      {/* Aggiungi un amico */}
-      <label>Cerca un giocatore da aggiungere</label>
+  return (
+    <div>
+      <div className="sez-hero">
+        <div className="sez-hero-top">
+          <div className="sez-hero-av">👥</div>
+          <div className="sez-hero-info">
+            <div className="sez-hero-eyebrow">I tuoi amici del club</div>
+            <h2>
+              {conta} {conta === 1 ? 'amico' : 'amici'}
+            </h2>
+          </div>
+        </div>
+      </div>
+
+      <div className="card">
+        {/* Aggiungi un amico */}
+        <label>Cerca un giocatore da aggiungere</label>
       <select
         className={classiInput}
         value=""
@@ -111,6 +124,7 @@ export default function AmiciProfilo() {
           ))}
         </Sezione>
       )}
+      </div>
     </div>
   )
 }

@@ -65,15 +65,18 @@ export default function BadgeProfilo() {
 
   return (
     <div className="card">
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <h2 className="text-xl">I tuoi traguardi</h2>
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <p className="max-w-prose text-sm text-ink-2">
+          Sblocchi i traguardi giocando partite. Tocca un traguardo sbloccato per usarlo
+          come <strong>immagine del profilo</strong>.
+        </p>
         {profilo.badge_profilo && (
           <button
             type="button"
             onClick={() => salvaAvatar.mutate(null)}
-            className="btn-pericolo btn-mini"
+            className="btn-pericolo btn-mini shrink-0"
           >
-            Togli immagine del profilo
+            Togli immagine
           </button>
         )}
       </div>
