@@ -1,0 +1,273 @@
+import { useState } from 'react'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/auth/useAuth'
+import { mancaRpc, messaggioErrore } from '@/lib/errori'
+import { useCampi, usePrenotazioniGiorno } from '@/features/prenotazioni/datiPrenotazioni'
+import { dataDa, oraLocale, orariCampo, SLOT_MINUTI, ymd } from '@/features/prenotazioni/orari'
+import { nomeSquadraElegante } from './gironi'
+import { SPORT_LABEL } from './tipi'
+import type { Incontro, Torneo } from './tipi'
+
+// (Fase 6e) Programmazione di un incontro: si crea una prenotazione legata
+// all'incontro (campo + giorno + orario) e, con la RPC crea_partecipanti_sfida,
+// si aggiungono in automatico i giocatori delle due squadre/coppie.
+// Lo stesso flusso serve sia all'organizzatore ("Programma") sia al socio padel
+// che organizza la propria partita ("Sfida").
+
+// Bottone che apre la modale di programmazione.
+export function BottoneProgramma({
+  torneo,
+  m,
+  nomi,
+  etichetta,
+  classe = 'btn-secondario',
+  titolo = 'Programma incontro',
+}: {
+  torneo: Torneo
+  m: Incontro
+  nomi: Record<string, string>
+  etichetta: string
+  classe?: string
+  titolo?: string
+}) {
+  const [aperto, setAperto] = useState(false)
+  return (
+    <>
+      <button
+        type="button"
+        className={'btn btn-mini ' + classe}
+        onClick={() => setAperto(true)}
+      >
+        {etichetta}
+      </button>
+      {aperto && (
+        <ModaleProgramma
+          torneo={torneo}
+          m={m}
+          nomi={nomi}
+          titolo={titolo}
+          onChiudi={() => setAperto(false)}
+        />
+      )}
+    </>
+  )
+}
+
+// Bottone per annullare la programmazione (rimuove la prenotazione collegata).
+export function BottoneAnnullaProgrammazione({ m }: { m: Incontro }) {
+  const qc = useQueryClient()
+  const annulla = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from('prenotazioni').delete().eq('incontro_id', m.id)
+      if (error) throw error
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['tornei'] })
+      qc.invalidateQueries({ queryKey: ['prenotazioni'] })
+    },
+    onError: (e: unknown) => window.alert('Annullamento non riuscito: ' + messaggioErrore(e)),
+  })
+  return (
+    <button
+      type="button"
+      className="btn btn-mini btn-pericolo"
+      disabled={annulla.isPending}
+      onClick={() => {
+        if (
+          window.confirm(
+            'Annullare la programmazione di questo incontro? La prenotazione collegata verrà rimossa.',
+          )
+        )
+          annulla.mutate()
+      }}
+    >
+      Annulla programmazione
+    </button>
+  )
+}
+
+function ModaleProgramma({
+  torneo,
+  m,
+  nomi,
+  titolo,
+  onChiudi,
+}: {
+  torneo: Torneo
+  m: Incontro
+  nomi: Record<string, string>
+  titolo: string
+  onChiudi: () => void
+}) {
+  const { profilo } = useAuth()
+  const qc = useQueryClient()
+  const campiQuery = useCampi()
+
+  const campiSport = (campiQuery.data ?? []).filter(
+    (c) => c.sport === torneo.sport && c.in_servizio !== false,
+  )
+
+  const oggi = ymd(new Date())
+  const [campoId, setCampoId] = useState('')
+  const [giorno, setGiorno] = useState(oggi)
+  const [ora, setOra] = useState('')
+  const [msg, setMsg] = useState<{ tipo: 'errore' | 'ok'; testo: string } | null>(null)
+
+  // Campo scelto (il primo disponibile finché l'utente non sceglie).
+  const campo = campiSport.find((c) => String(c.id) === campoId) ?? campiSport[0]
+
+  // Prenotazioni del giorno: servono a togliere gli slot già occupati.
+  const prenGiorno = usePrenotazioniGiorno(giorno)
+
+  // Slot liberi = orari del campo, futuri e non occupati su quel campo.
+  const adesso = new Date()
+  const occupati = new Set(
+    (prenGiorno.data ?? [])
+      .filter((p) => campo && String(p.campo_id) === String(campo.id))
+      .map((p) => new Date(p.inizio).getTime()),
+  )
+  const slot = campo
+    ? orariCampo(campo).filter((o) => {
+        const inizio = dataDa(giorno, o)
+        return inizio > adesso && !occupati.has(inizio.getTime())
+      })
+    : []
+
+  const salva = useMutation({
+    mutationFn: async () => {
+      if (!campo || !ora) throw new Error('Scegli un campo e un orario disponibile.')
+      const inizio = dataDa(giorno, ora)
+      const fine = new Date(inizio.getTime() + SLOT_MINUTI * 60000)
+      // Se sto riprogrammando, libero prima la vecchia prenotazione collegata.
+      await supabase.from('prenotazioni').delete().eq('incontro_id', m.id)
+      const { data, error } = await supabase
+        .from('prenotazioni')
+        .insert({
+          campo_id: campo.id,
+          socio_id: profilo!.id,
+          inizio: inizio.toISOString(),
+          fine: fine.toISOString(),
+          incontro_id: m.id,
+        })
+        .select('id')
+        .single()
+      if (error) throw error
+      // Aggiungo i giocatori delle due squadre (stessa RPC delle sfide).
+      const { error: errS } = await supabase.rpc('crea_partecipanti_sfida', {
+        p_prenotazione: data.id,
+        p_squadra_mia: m.casa_id,
+        p_squadra_avv: m.ospite_id,
+      })
+      if (errS) return { avviso: errS } // prenotazione ok, ma giocatori non aggiunti
+      return {}
+    },
+    onSuccess: (esito) => {
+      qc.invalidateQueries({ queryKey: ['tornei'] })
+      qc.invalidateQueries({ queryKey: ['prenotazioni'] })
+      if (esito?.avviso) {
+        window.alert(
+          mancaRpc(esito.avviso)
+            ? 'Incontro programmato, ma per aggiungere i giocatori serve lo script sfida.sql su Supabase.'
+            : 'Incontro programmato, ma non ho potuto aggiungere i giocatori: ' +
+                messaggioErrore(esito.avviso),
+        )
+      }
+      onChiudi()
+    },
+    onError: (e: unknown) => {
+      const err = e as { code?: string; message?: string }
+      const testo =
+        err.code === '23505'
+          ? 'Quello slot è appena stato occupato: scegline un altro.'
+          : err.code === '42501'
+            ? 'Programmazione non consentita: lo slot potrebbe essere fuori orario o oltre la finestra di prenotazione.'
+            : messaggioErrore(e)
+      setMsg({ tipo: 'errore', testo })
+    },
+  })
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      onClick={onChiudi}
+    >
+      <div className="card max-w-sm" onClick={(e) => e.stopPropagation()}>
+        <h2 className="mb-1 text-xl">{titolo}</h2>
+        <p className="sub mb-3">
+          {nomeSquadraElegante(nomi[String(m.casa_id)] ?? '?')} vs{' '}
+          {nomeSquadraElegante(nomi[String(m.ospite_id)] ?? '?')}
+        </p>
+
+        {campiQuery.isLoading ? (
+          <p className="sub">Caricamento campi…</p>
+        ) : !campiSport.length ? (
+          <>
+            <p className="msg-errore">
+              Nessun campo di {SPORT_LABEL[torneo.sport] ?? torneo.sport} disponibile. Aggiungi o
+              riattiva un campo in Segreteria › Campi e orari.
+            </p>
+            <button type="button" className="btn btn-secondario mt-3" onClick={onChiudi}>
+              Chiudi
+            </button>
+          </>
+        ) : (
+          <>
+            <label>Campo</label>
+            <select className="campo" value={campo ? String(campo.id) : ''} onChange={(e) => setCampoId(e.target.value)}>
+              {campiSport.map((c) => (
+                <option key={c.id} value={String(c.id)}>
+                  {c.nome}
+                </option>
+              ))}
+            </select>
+
+            <label>Giorno</label>
+            <input
+              type="date"
+              className="campo"
+              min={oggi}
+              value={giorno}
+              onChange={(e) => setGiorno(e.target.value)}
+            />
+
+            <label>Orario di inizio</label>
+            <select className="campo" value={ora} onChange={(e) => setOra(e.target.value)}>
+              <option value="">
+                {prenGiorno.isLoading
+                  ? 'Calcolo slot liberi…'
+                  : slot.length
+                    ? 'Scegli un orario…'
+                    : 'Nessuno slot libero in questo giorno'}
+              </option>
+              {slot.map((o) => (
+                <option key={o} value={o}>
+                  {o}–{oraLocale(new Date(dataDa(giorno, o).getTime() + SLOT_MINUTI * 60000))}
+                </option>
+              ))}
+            </select>
+
+            {msg && <p className={'mt-3 ' + (msg.tipo === 'errore' ? 'msg-errore' : 'msg-ok')}>{msg.testo}</p>}
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button
+                type="button"
+                className="btn"
+                disabled={salva.isPending || !ora}
+                onClick={() => {
+                  setMsg(null)
+                  salva.mutate()
+                }}
+              >
+                {salva.isPending ? 'Salvataggio…' : 'Conferma'}
+              </button>
+              <button type="button" className="btn btn-secondario" onClick={onChiudi}>
+                Annulla
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}

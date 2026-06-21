@@ -1594,6 +1594,24 @@
     padding: 7px 13px;
     font-size: 0.82rem;
   }
+  /* (Fase 6e) chip "in programma": campo+orario fissati ma partita non ancora giocata */
+  .match-meta .chip-data.prog {
+    color: var(--g700);
+    background: rgba(176, 137, 60, 0.1);
+    border-color: var(--g300);
+  }
+  /* (Fase 6e) riga con i bottoni Programma/Riprogramma/Annulla */
+  .match-prog {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 9px;
+  }
+  .match-prog button {
+    margin-top: 0;
+  }
 
   /* Padel: editor dei set */
   .set-editor {

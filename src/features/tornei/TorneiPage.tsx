@@ -238,6 +238,7 @@ function DettaglioTorneo({
   dati: DatiTornei
 }) {
   const qc = useQueryClient()
+  const { profilo } = useAuth()
   // Sotto-schede del dettaglio (solo per gli organizzatori; i giocatori vedono
   // direttamente "Risultati e Classifica").
   const [scheda, setScheda] = useState<'gestione' | 'risultati'>('gestione')
@@ -245,6 +246,11 @@ function DettaglioTorneo({
   const squadre = dati.perTorneoSquadre[String(torneo.id)] ?? []
   const incontri = dati.perTorneoIncontri[String(torneo.id)] ?? []
   const assegnati = dati.assegnati[String(torneo.id)] ?? new Set<string>()
+
+  // (Fase 6e) La squadra/coppia del socio in questo torneo (per il bottone "Sfida").
+  const miaSquadraId = squadre.find((s) =>
+    (dati.perSquadraComp[String(s.id)] ?? []).some((c) => c.socio_id === profilo?.id),
+  )?.id
 
   const cambiaStato = useMutation({
     mutationFn: async (stato: StatoTorneo) => {
@@ -305,7 +311,14 @@ function DettaglioTorneo({
       <div className="eyebrow" style={{ marginTop: 24 }}>
         📅 Calendario e risultati
       </div>
-      <Risultati torneo={torneo} squadre={squadre} incontri={incontri} gestore={gestore} />
+      <Risultati
+        torneo={torneo}
+        squadre={squadre}
+        incontri={incontri}
+        gestore={gestore}
+        prenByIncontro={dati.prenByIncontro}
+        miaSquadraId={miaSquadraId}
+      />
     </div>
   )
 

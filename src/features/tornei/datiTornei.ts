@@ -8,6 +8,9 @@ export interface DatiTornei {
   perSquadraComp: Record<string, Componente[]>
   perTorneoIncontri: Record<string, Incontro[]>
   assegnati: Record<string, Set<string>>
+  // (Fase 6e) incontro_id -> data/ora ISO della prenotazione collegata.
+  // Serve per mostrare "In programma/Disputata" e nascondere il bottone "Sfida".
+  prenByIncontro: Record<string, string>
 }
 
 // Carica tornei + squadre + componenti e li raggruppa (come datiTornei della v1).
@@ -42,6 +45,19 @@ export function useTornei() {
         incontri = (r3.data ?? []) as Incontro[]
       }
 
+      // (Fase 6e) Quali incontri hanno già una prenotazione (campo+orario fissati).
+      // Usiamo la RPC incontri_prenotati così la vedono anche i soci (la tabella
+      // prenotazioni è protetta da RLS). Se la RPC non c'è ancora, mappa vuota.
+      const prenByIncontro: Record<string, string> = {}
+      if (incontri.length) {
+        const { data: pi } = await supabase.rpc('incontri_prenotati', {
+          p_incontri: incontri.map((m) => m.id),
+        })
+        for (const r of (pi ?? []) as { incontro_id: number | string; inizio: string }[]) {
+          prenByIncontro[String(r.incontro_id)] = r.inizio
+        }
+      }
+
       const perTorneoSquadre: Record<string, Squadra[]> = {}
       const perSquadraComp: Record<string, Componente[]> = {}
       const perTorneoIncontri: Record<string, Incontro[]> = {}
@@ -58,7 +74,14 @@ export function useTornei() {
         ;(perTorneoIncontri[String(m.torneo_id)] ??= []).push(m)
       }
 
-      return { tornei: lista, perTorneoSquadre, perSquadraComp, perTorneoIncontri, assegnati }
+      return {
+        tornei: lista,
+        perTorneoSquadre,
+        perSquadraComp,
+        perTorneoIncontri,
+        assegnati,
+        prenByIncontro,
+      }
     },
   })
 }

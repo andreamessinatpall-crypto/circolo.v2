@@ -18,20 +18,27 @@ import {
   squadreDelGirone,
   unitaTorneo,
 } from './gironi'
+import { BottoneAnnullaProgrammazione, BottoneProgramma } from './ProgrammaIncontro'
 import type { Incontro, SetPunteggio, Squadra, Torneo } from './tipi'
 
 // (Fase 6d) Calendario + risultati. Con più gironi mostra una sezione per
 // girone; lo staff (gestore) può inserire i punteggi, tutti vedono il calendario.
+// (Fase 6e) prenByIncontro = incontro_id -> data/ora prenotazione; miaSquadraId =
+// la squadra del socio (per il bottone "Sfida" del padel).
 export default function Risultati({
   torneo,
   squadre,
   incontri,
   gestore,
+  prenByIncontro,
+  miaSquadraId,
 }: {
   torneo: Torneo
   squadre: Squadra[]
   incontri: Incontro[]
   gestore: boolean
+  prenByIncontro: Record<string, string>
+  miaSquadraId?: number | string
 }) {
   const n = numGironi(torneo)
 
@@ -46,7 +53,16 @@ export default function Risultati({
   }
 
   if (n <= 1) {
-    return <GironeRisultati torneo={torneo} squadre={squadre} incontri={incontri} gestore={gestore} />
+    return (
+      <GironeRisultati
+        torneo={torneo}
+        squadre={squadre}
+        incontri={incontri}
+        gestore={gestore}
+        prenByIncontro={prenByIncontro}
+        miaSquadraId={miaSquadraId}
+      />
+    )
   }
 
   return (
@@ -64,6 +80,8 @@ export default function Risultati({
                 squadre={sg}
                 incontri={incontriDelGirone(incontri, g)}
                 gestore={gestore}
+                prenByIncontro={prenByIncontro}
+                miaSquadraId={miaSquadraId}
               />
             ) : (
               <p className="sub">Nessuna {unitaTorneo(torneo.sport, false)} in questo girone.</p>
@@ -80,11 +98,15 @@ function GironeRisultati({
   squadre,
   incontri,
   gestore,
+  prenByIncontro,
+  miaSquadraId,
 }: {
   torneo: Torneo
   squadre: Squadra[]
   incontri: Incontro[]
   gestore: boolean
+  prenByIncontro: Record<string, string>
+  miaSquadraId?: number | string
 }) {
   const nomi: Record<string, string> = {}
   for (const s of squadre) nomi[String(s.id)] = s.nome
@@ -109,7 +131,15 @@ function GironeRisultati({
               </span>
             </div>
             {partite.map((m) => (
-              <RigaRisultato key={m.id} torneo={torneo} m={m} nomi={nomi} gestore={gestore} />
+              <RigaRisultato
+                key={m.id}
+                torneo={torneo}
+                m={m}
+                nomi={nomi}
+                gestore={gestore}
+                prenByIncontro={prenByIncontro}
+                miaSquadraId={miaSquadraId}
+              />
             ))}
           </div>
         )
@@ -123,14 +153,33 @@ function RigaRisultato({
   m,
   nomi,
   gestore,
+  prenByIncontro,
+  miaSquadraId,
 }: {
   torneo: Torneo
   m: Incontro
   nomi: Record<string, string>
   gestore: boolean
+  prenByIncontro: Record<string, string>
+  miaSquadraId?: number | string
 }) {
   const qc = useQueryClient()
   const disputata = incontroDisputato(m)
+  // (Fase 6e) prenotazione collegata: c'è già un campo+orario fissato?
+  const iso = prenByIncontro[String(m.id)]
+  const dPren = iso ? new Date(iso) : null
+  // Il socio può "sfidare" (programmare lui) solo nel padel, a torneo in corso,
+  // se gioca questo incontro, non ancora programmato né disputato.
+  const sonoNellaPartita =
+    miaSquadraId != null &&
+    (String(m.casa_id) === String(miaSquadraId) || String(m.ospite_id) === String(miaSquadraId))
+  const puoSfidare =
+    !gestore &&
+    sonoNellaPartita &&
+    torneo.sport === 'padel' &&
+    torneo.stato === 'in_corso' &&
+    !disputata &&
+    !dPren
 
   // Salvataggio del risultato: riceve già il patch pronto da scrivere.
   const salva = useMutation({
@@ -166,7 +215,16 @@ function RigaRisultato({
       </div>
 
       <div className="match-meta">
-        {m.data_disputata ? (
+        {dPren ? (
+          // C'è una prenotazione: mostro data (e l'ora se non ancora disputata).
+          <span className={'chip-data' + (disputata ? '' : ' prog')}>
+            {(disputata ? 'Giocata · ' : '📅 ') +
+              dPren.toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'long' }) +
+              (disputata
+                ? ''
+                : ' · ' + dPren.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }))}
+          </span>
+        ) : m.data_disputata ? (
           <span className="chip-data">
             Giocata ·{' '}
             {new Date(m.data_disputata + 'T00:00:00').toLocaleDateString('it-IT', {
@@ -176,9 +234,33 @@ function RigaRisultato({
             })}
           </span>
         ) : (
-          <span className="chip-data attesa">Da giocare</span>
+          <span className="chip-data attesa">Da programmare</span>
+        )}
+
+        {/* (Fase 6e) socio padel: organizza la propria partita scegliendo campo+orario. */}
+        {puoSfidare && (
+          <BottoneProgramma
+            torneo={torneo}
+            m={m}
+            nomi={nomi}
+            etichetta="Sfida"
+            titolo="Organizza la sfida"
+          />
         )}
       </div>
+
+      {/* (Fase 6e) organizzatore: fissa/sposta campo e orario dell'incontro. */}
+      {gestore && !disputata && (
+        <div className="match-prog">
+          <BottoneProgramma
+            torneo={torneo}
+            m={m}
+            nomi={nomi}
+            etichetta={dPren ? 'Riprogramma' : 'Programma'}
+          />
+          {dPren && <BottoneAnnullaProgrammazione m={m} />}
+        </div>
+      )}
 
       {gestore &&
         (torneo.sport === 'padel' ? (
