@@ -18,9 +18,10 @@ import {
   squadreDelGirone,
   unitaTorneo,
 } from './gironi'
+import { assegnaPuntiPartita, assegnaPuntiVittoriaAuto } from './punti'
 import { NomeSquadra } from './NomeSquadra'
 import { BottoneAnnullaProgrammazione, BottoneProgramma } from './ProgrammaIncontro'
-import type { Incontro, SetPunteggio, Squadra, Torneo } from './tipi'
+import type { Componente, Incontro, SetPunteggio, Squadra, Torneo } from './tipi'
 
 // (Fase 6d) Calendario + risultati. Con più gironi mostra una sezione per
 // girone; lo staff (gestore) può inserire i punteggi, tutti vedono il calendario.
@@ -33,6 +34,8 @@ export default function Risultati({
   gestore,
   prenByIncontro,
   miaSquadraId,
+  compBySquadra,
+  gironeFiltro = null,
 }: {
   torneo: Torneo
   squadre: Squadra[]
@@ -40,6 +43,8 @@ export default function Risultati({
   gestore: boolean
   prenByIncontro: Record<string, string>
   miaSquadraId?: number | string
+  compBySquadra: Record<string, Componente[]>
+  gironeFiltro?: number | null
 }) {
   const n = numGironi(torneo)
 
@@ -62,19 +67,28 @@ export default function Risultati({
         gestore={gestore}
         prenByIncontro={prenByIncontro}
         miaSquadraId={miaSquadraId}
+        squadreTorneo={squadre}
+        incontriTorneo={incontri}
+        compBySquadra={compBySquadra}
       />
     )
   }
 
+  const gironi =
+    gironeFiltro != null ? [gironeFiltro] : Array.from({ length: n }, (_, i) => i + 1)
+
   return (
     <div>
-      {Array.from({ length: n }, (_, i) => i + 1).map((g) => {
+      {gironi.map((g) => {
         const sg = squadreDelGirone(torneo, squadre, g)
         return (
           <div key={g}>
-            <div className="eyebrow" style={{ marginTop: 18 }}>
-              {nomeGirone(torneo, g)}
-            </div>
+            {/* Con "Tutti" mostro il nome del girone; se è filtrato lo indicano i tasti. */}
+            {gironeFiltro == null && (
+              <div className="eyebrow" style={{ marginTop: 18 }}>
+                {nomeGirone(torneo, g)}
+              </div>
+            )}
             {sg.length ? (
               <GironeRisultati
                 torneo={torneo}
@@ -83,6 +97,9 @@ export default function Risultati({
                 gestore={gestore}
                 prenByIncontro={prenByIncontro}
                 miaSquadraId={miaSquadraId}
+                squadreTorneo={squadre}
+                incontriTorneo={incontri}
+                compBySquadra={compBySquadra}
               />
             ) : (
               <p className="sub">Nessuna {unitaTorneo(torneo.sport, false)} in questo girone.</p>
@@ -101,6 +118,9 @@ function GironeRisultati({
   gestore,
   prenByIncontro,
   miaSquadraId,
+  squadreTorneo,
+  incontriTorneo,
+  compBySquadra,
 }: {
   torneo: Torneo
   squadre: Squadra[]
@@ -108,6 +128,9 @@ function GironeRisultati({
   gestore: boolean
   prenByIncontro: Record<string, string>
   miaSquadraId?: number | string
+  squadreTorneo: Squadra[]
+  incontriTorneo: Incontro[]
+  compBySquadra: Record<string, Componente[]>
 }) {
   const nomi: Record<string, string> = {}
   for (const s of squadre) nomi[String(s.id)] = s.nome
@@ -142,6 +165,9 @@ function GironeRisultati({
                 gestore={gestore}
                 prenByIncontro={prenByIncontro}
                 miaSquadraId={miaSquadraId}
+                squadreTorneo={squadreTorneo}
+                incontriTorneo={incontriTorneo}
+                compBySquadra={compBySquadra}
               />
             ))}
           </div>
@@ -159,6 +185,9 @@ function RigaRisultato({
   gestore,
   prenByIncontro,
   miaSquadraId,
+  squadreTorneo,
+  incontriTorneo,
+  compBySquadra,
 }: {
   torneo: Torneo
   m: Incontro
@@ -167,6 +196,9 @@ function RigaRisultato({
   gestore: boolean
   prenByIncontro: Record<string, string>
   miaSquadraId?: number | string
+  squadreTorneo: Squadra[]
+  incontriTorneo: Incontro[]
+  compBySquadra: Record<string, Componente[]>
 }) {
   const qc = useQueryClient()
   const disputata = incontroDisputato(m)
@@ -191,7 +223,16 @@ function RigaRisultato({
     mutationFn: async (patch: Partial<Incontro>) => {
       const { error } = await supabase.from('incontri').update(patch).eq('id', m.id)
       if (error) throw error
-      // (Fase 7) qui andrà assegnaPuntiPartita: dare i punti ai giocatori.
+      // (Fase 7b) Punti partita ai vincitori, ricalcolati sul risultato attuale.
+      // La data evento è quella della prenotazione collegata, altrimenti il
+      // giorno indicato (appena salvato o già presente).
+      const dataEvento = iso ?? patch.data_disputata ?? m.data_disputata ?? null
+      const aggiornato = { ...m, ...patch }
+      await assegnaPuntiPartita(torneo, aggiornato, dataEvento)
+      // (Fase 7b) Vittoria torneo automatica: con questo risultato il calendario
+      // potrebbe essersi completato. Ricalcolo sulla situazione aggiornata.
+      const incontriAgg = incontriTorneo.map((x) => (x.id === m.id ? aggiornato : x))
+      await assegnaPuntiVittoriaAuto(torneo, squadreTorneo, incontriAgg, compBySquadra)
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['tornei'] }),
     onError: (e: unknown) =>

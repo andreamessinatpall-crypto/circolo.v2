@@ -6,20 +6,22 @@ import { useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { messaggioErrore } from '@/lib/errori'
 import { classiErrore, classiInput, classiOk } from '@/components/stili'
+import { costruisciPuntiGironi, numGironi, puntiBase, puntiGironiArray } from './gironi'
+import { ricalcolaPuntiTorneo } from './punti'
+import EditorPuntiTorneo from './EditorPuntiTorneo'
 import { SPORT_LABEL } from './tipi'
-import type { Torneo } from './tipi'
+import type { Componente, Incontro, PuntiSet, Squadra, Torneo } from './tipi'
 
 // (Fase 6c) Modifica delle "regole" del torneo decise alla creazione:
 // nome, date e i valori dei punti. Sport e formato restano fissi: cambiarli
 // a torneo avviato romperebbe squadre e calendario già inseriti.
+// (Fase 7b) I punti si modificano per girone (se più di uno); dopo il
+// salvataggio i punti già assegnati vengono ricalcolati.
 const schema = z
   .object({
     nome: z.string().trim().min(1, 'Inserisci il nome'),
     data_inizio: z.string().optional(),
     data_fine: z.string().optional(),
-    punti_iscrizione: z.coerce.number().int().min(0, 'Numero ≥ 0'),
-    punti_vittoria: z.coerce.number().int().min(0, 'Numero ≥ 0'),
-    punti_torneo: z.coerce.number().int().min(0, 'Numero ≥ 0'),
   })
   .refine((v) => !(v.data_inizio && v.data_fine && v.data_fine < v.data_inizio), {
     message: 'La data fine non può precedere la data inizio.',
@@ -29,10 +31,26 @@ const schema = z
 type FormIn = z.input<typeof schema>
 type FormOut = z.output<typeof schema>
 
-export default function ImpostazioniTorneo({ torneo }: { torneo: Torneo }) {
+export default function ImpostazioniTorneo({
+  torneo,
+  squadre,
+  incontri,
+  compBySquadra,
+}: {
+  torneo: Torneo
+  squadre: Squadra[]
+  incontri: Incontro[]
+  compBySquadra: Record<string, Componente[]>
+}) {
   const qc = useQueryClient()
   const [aperto, setAperto] = useState(false)
   const [msg, setMsg] = useState<{ tipo: 'ok' | 'errore'; testo: string } | null>(null)
+  // I punti stanno fuori da react-hook-form (con più gironi sono dinamici).
+  const [base, setBase] = useState<PuntiSet>(() => puntiBase(torneo))
+  const [gironi, setGironi] = useState<PuntiSet[]>(() => puntiGironiArray(torneo))
+  const [puntiTocchi, setPuntiTocchi] = useState(false)
+
+  const numeroGironi = numGironi(torneo)
 
   const {
     register,
@@ -45,54 +63,70 @@ export default function ImpostazioniTorneo({ torneo }: { torneo: Torneo }) {
       nome: torneo.nome,
       data_inizio: (torneo.data_inizio ?? '').slice(0, 10),
       data_fine: (torneo.data_fine ?? '').slice(0, 10),
-      punti_iscrizione: torneo.punti_iscrizione ?? 0,
-      punti_vittoria: torneo.punti_vittoria ?? 0,
-      punti_torneo: torneo.punti_torneo ?? 0,
     },
   })
 
-  // Apre la scheda a comparsa ripristinando i valori correnti del torneo.
+  // Apre la modale ripristinando i valori correnti del torneo.
   function apri() {
     setMsg(null)
     reset({
       nome: torneo.nome,
       data_inizio: (torneo.data_inizio ?? '').slice(0, 10),
       data_fine: (torneo.data_fine ?? '').slice(0, 10),
-      punti_iscrizione: torneo.punti_iscrizione ?? 0,
-      punti_vittoria: torneo.punti_vittoria ?? 0,
-      punti_torneo: torneo.punti_torneo ?? 0,
     })
+    setBase(puntiBase(torneo))
+    setGironi(puntiGironiArray(torneo))
+    setPuntiTocchi(false)
     setAperto(true)
   }
 
   async function onSubmit(v: FormOut) {
     setMsg(null)
-    const { error } = await supabase
-      .from('tornei')
-      .update({
-        nome: v.nome,
-        data_inizio: v.data_inizio || null,
-        data_fine: v.data_fine || null,
-        punti_iscrizione: v.punti_iscrizione,
-        punti_vittoria: v.punti_vittoria,
-        punti_torneo: v.punti_torneo,
-      })
-      .eq('id', torneo.id)
+    const puntiGironi = costruisciPuntiGironi(numeroGironi, gironi)
+    const baseVal = numeroGironi > 1 ? (gironi[0] ?? base) : base
+    const payload: Record<string, unknown> = {
+      nome: v.nome,
+      data_inizio: v.data_inizio || null,
+      data_fine: v.data_fine || null,
+      punti_iscrizione: baseVal.iscrizione,
+      punti_vittoria: baseVal.vittoria,
+      punti_torneo: baseVal.torneo,
+    }
+    if (puntiGironi) payload.punti_gironi = puntiGironi
+
+    const { error } = await supabase.from('tornei').update(payload).eq('id', torneo.id)
 
     if (error) {
       const err = error as { code?: string; message?: string }
-      const mancaCol =
-        err.code === '42703' ||
-        (err.message ?? '').toLowerCase().includes('punti_iscrizione')
+      const m = (err.message ?? '').toLowerCase()
+      const mancaPuntiGironi = puntiGironi != null && (err.code === '42703' || m.includes('punti_gironi'))
+      const mancaCol = err.code === '42703' || m.includes('punti_iscrizione')
       setMsg({
         tipo: 'errore',
-        testo: mancaCol
-          ? 'Per i punti del torneo esegui prima lo script tappa6-pannello-admin.sql su Supabase.'
-          : 'Salvataggio non riuscito: ' + messaggioErrore(error),
+        testo: mancaPuntiGironi
+          ? 'Per i punti diversi per girone esegui prima lo script tappa7-punti-gironi.sql su Supabase.'
+          : mancaCol
+            ? 'Per i punti del torneo esegui prima lo script tappa6-pannello-admin.sql su Supabase.'
+            : 'Salvataggio non riuscito: ' + messaggioErrore(error),
       })
       return
     }
+
+    // Ricalcola i punti già assegnati con le nuove regole.
+    const torneoNuovo: Torneo = {
+      ...torneo,
+      nome: v.nome,
+      data_inizio: v.data_inizio || null,
+      data_fine: v.data_fine || null,
+      punti_iscrizione: baseVal.iscrizione,
+      punti_vittoria: baseVal.vittoria,
+      punti_torneo: baseVal.torneo,
+      punti_gironi: puntiGironi ?? torneo.punti_gironi,
+    }
+    await ricalcolaPuntiTorneo(torneoNuovo, squadre, incontri, compBySquadra)
+
     qc.invalidateQueries({ queryKey: ['tornei'] })
+    setPuntiTocchi(false)
     setMsg({ tipo: 'ok', testo: 'Modifiche salvate.' })
   }
 
@@ -150,42 +184,36 @@ export default function ImpostazioniTorneo({ torneo }: { torneo: Torneo }) {
               <div className="eyebrow" style={{ marginTop: 16 }}>
                 Punti di questo torneo
               </div>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                <div>
-                  <label>Iscrizione</label>
-                  <input
-                    type="number"
-                    min={0}
-                    className={classiInput}
-                    {...register('punti_iscrizione')}
-                  />
-                </div>
-                <div>
-                  <label>Partita vinta</label>
-                  <input
-                    type="number"
-                    min={0}
-                    className={classiInput}
-                    {...register('punti_vittoria')}
-                  />
-                </div>
-                <div>
-                  <label>Vittoria torneo</label>
-                  <input
-                    type="number"
-                    min={0}
-                    className={classiInput}
-                    {...register('punti_torneo')}
-                  />
-                </div>
-              </div>
+              <p className="sub mb-2">
+                {numeroGironi > 1
+                  ? 'Punti per ciascun girone. Il numero di gironi si cambia nella sezione “Gironi”.'
+                  : 'Valgono solo per questo torneo.'}
+              </p>
+              <EditorPuntiTorneo
+                torneo={torneo}
+                numeroGironi={numeroGironi}
+                base={base}
+                setBase={(p) => {
+                  setBase(p)
+                  setPuntiTocchi(true)
+                }}
+                gironi={gironi}
+                setGironi={(a) => {
+                  setGironi(a)
+                  setPuntiTocchi(true)
+                }}
+              />
 
               {msg && (
                 <p className={`mt-4 ${msg.tipo === 'ok' ? classiOk : classiErrore}`}>{msg.testo}</p>
               )}
 
               <div className="mt-4 flex gap-2">
-                <button type="submit" className="btn" disabled={isSubmitting || !isDirty}>
+                <button
+                  type="submit"
+                  className="btn"
+                  disabled={isSubmitting || (!isDirty && !puntiTocchi)}
+                >
                   {isSubmitting ? 'Salvataggio…' : 'Salva modifiche'}
                 </button>
                 <button

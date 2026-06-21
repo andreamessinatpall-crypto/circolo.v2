@@ -1,5 +1,13 @@
 export type StatoTorneo = 'bozza' | 'in_corso' | 'concluso'
 
+// (Fase 7b) Una terna di punti: iscrizione, partita vinta, vittoria torneo.
+// Sono i punti "base" del torneo; con più gironi ogni girone può avere la sua.
+export interface PuntiSet {
+  iscrizione: number
+  vittoria: number
+  torneo: number
+}
+
 export interface Torneo {
   id: number | string
   nome: string
@@ -16,6 +24,10 @@ export interface Torneo {
   // nomi_gironi è un oggetto JSON tipo { "1": "Girone Rosso", ... }.
   numero_gironi: number | null
   nomi_gironi: Record<string, string> | null
+  // (Fase 7b) Punti diversi per ciascun girone (solo se più di un girone).
+  // JSON tipo { "1": {iscrizione, vittoria, torneo}, "2": {...} }. Quando manca
+  // un girone si usano i punti base (le tre colonne qui sopra).
+  punti_gironi: Record<string, PuntiSet> | null
 }
 
 export interface Squadra {

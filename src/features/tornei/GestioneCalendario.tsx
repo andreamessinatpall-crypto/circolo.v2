@@ -1,28 +1,47 @@
+import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { mancaTabella, messaggioErrore } from '@/lib/errori'
-import { generaTurni, SCRIPT_INCONTRI } from './calendario'
+import { generaTurni, incontroDisputato, SCRIPT_INCONTRI } from './calendario'
 import { gironeSquadra, mancaColonnaGironi, nomeGirone, numGironi, SCRIPT_GIRONI, unitaTorneo } from './gironi'
-import type { Incontro, Squadra, Torneo } from './tipi'
+import { azzeraChiave } from '@/lib/punti'
+import { ricalcolaPuntiTorneo } from './punti'
+import type { Componente, Incontro, SetPunteggio, Squadra, Torneo } from './tipi'
+
+// Chiave che identifica una coppia di squadre, indipendente da chi gioca in casa.
+function chiaveCoppia(a: number | string, b: number | string) {
+  return [String(a), String(b)].sort().join('|')
+}
+// Inverte casa/ospite nei set del padel (quando il vecchio risultato era ribaltato).
+function ribaltaSet(sp: SetPunteggio[] | null | undefined): SetPunteggio[] | null {
+  return sp ? sp.map((s) => ({ casa: s.ospite, ospite: s.casa })) : null
+}
 
 // (Fase 6d) Pannello staff: genera (o rigenera) il calendario all'italiana.
 // Per ogni girone "pieno" (≥2 squadre) crea gli incontri di andata col metodo
-// del girone. Rigenerare cancella TUTTI gli incontri e i risultati esistenti.
+// del girone.
+// (Fase 7c) Rigenerando, l'organizzatore sceglie se MANTENERE i risultati delle
+// partite già giocate (riassociandoli alle stesse sfide) o azzerarli tutti.
 export default function GestioneCalendario({
   torneo,
   squadre,
   incontri,
+  compBySquadra,
 }: {
   torneo: Torneo
   squadre: Squadra[]
   incontri: Incontro[]
+  compBySquadra: Record<string, Componente[]>
 }) {
   const qc = useQueryClient()
   const esistono = incontri.length > 0
   const n = numGironi(torneo)
+  // Modale di scelta mantieni/azzera (solo in rigenerazione).
+  const [chiediScelta, setChiediScelta] = useState(false)
+  const giocate = incontri.filter(incontroDisputato).length
 
   const genera = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (mantieni: boolean) => {
       // Raggruppo le squadre per girone (in girone unico: tutte nel Girone 1).
       const perGirone: Record<number, (number | string)[]> = {}
       for (const s of squadre) {
@@ -35,8 +54,17 @@ export default function GestioneCalendario({
         .filter((g) => perGirone[g].length >= 2)
         .sort((a, b) => a - b)
 
-      // Se sto rigenerando, prima cancello tutti gli incontri esistenti.
+      // I risultati già giocati, indicizzati per coppia di squadre (se mantieni).
+      const perCoppia = new Map<string, Incontro>()
+      if (mantieni) {
+        for (const o of incontri) {
+          if (incontroDisputato(o)) perCoppia.set(chiaveCoppia(o.casa_id, o.ospite_id), o)
+        }
+      }
+
+      // Rigenerando: azzero i punti delle vecchie partite e cancello gli incontri.
       if (esistono) {
+        for (const o of incontri) await azzeraChiave(`partita:${o.id}`)
         const { error: errDel } = await supabase.from('incontri').delete().eq('torneo_id', torneo.id)
         if (errDel) throw errDel
       }
@@ -46,13 +74,35 @@ export default function GestioneCalendario({
       for (const g of gironiPieni) {
         const turni = generaTurni(perGirone[g])
         turni.forEach((round, idx) =>
-          round.forEach(([casa, ospite]) =>
-            righe.push({ torneo_id: torneo.id, round: idx + 1, casa_id: casa, ospite_id: ospite, girone: g }),
-          ),
+          round.forEach(([casa, ospite]) => {
+            const riga: Partial<Incontro> = {
+              torneo_id: torneo.id,
+              round: idx + 1,
+              casa_id: casa,
+              ospite_id: ospite,
+              girone: g,
+            }
+            // Riporto il risultato della stessa sfida, se va mantenuto.
+            const vecchio = mantieni ? perCoppia.get(chiaveCoppia(casa, ospite)) : undefined
+            if (vecchio) {
+              const stessoVerso = String(vecchio.casa_id) === String(casa)
+              riga.punti_casa = stessoVerso ? vecchio.punti_casa : vecchio.punti_ospite
+              riga.punti_ospite = stessoVerso ? vecchio.punti_ospite : vecchio.punti_casa
+              if (vecchio.set_punteggi !== undefined)
+                riga.set_punteggi = stessoVerso
+                  ? vecchio.set_punteggi
+                  : ribaltaSet(vecchio.set_punteggi)
+              if (vecchio.data_disputata !== undefined) riga.data_disputata = vecchio.data_disputata
+            }
+            righe.push(riga)
+          }),
         )
       }
-      const { error } = await supabase.from('incontri').insert(righe)
+      const { data: nuovi, error } = await supabase.from('incontri').insert(righe).select()
       if (error) throw error
+
+      // Riassegno i punti sui nuovi incontri (partite mantenute + vittorie di girone).
+      await ricalcolaPuntiTorneo(torneo, squadre, (nuovi ?? []) as Incontro[], compBySquadra)
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['tornei'] }),
     onError: (e: unknown) =>
@@ -107,15 +157,14 @@ export default function GestioneCalendario({
       if (avviso && !window.confirm(avviso + '\nProcedo con la generazione del calendario?')) return
     }
 
-    if (
-      esistono &&
-      !window.confirm(
-        'Rigenerare il calendario? Verranno CANCELLATI tutti gli incontri e i risultati già inseriti.',
-      )
-    )
+    // Primo calendario: nessun risultato da salvare, genero subito.
+    if (!esistono) {
+      genera.mutate(false)
       return
-
-    genera.mutate()
+    }
+    // Rigenerazione: se ci sono risultati chiedo cosa farne, altrimenti procedo.
+    if (giocate > 0) setChiediScelta(true)
+    else genera.mutate(false)
   }
 
   return (
@@ -128,6 +177,53 @@ export default function GestioneCalendario({
           ? 'Il calendario è già stato generato.'
           : 'Crea gli incontri all’italiana (tutte contro tutte) di ogni girone.'}
       </span>
+
+      {chiediScelta && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={() => setChiediScelta(false)}
+        >
+          <div className="card w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+            <h2 className="m-0 text-xl">Rigenera calendario</h2>
+            <p className="sub mt-2">
+              Ci sono <strong>{giocate}</strong>{' '}
+              {giocate === 1 ? 'partita già giocata' : 'partite già giocate'}. Cosa vuoi fare dei
+              risultati? Gli incontri vengono comunque ricreati; i risultati mantenuti vengono
+              riassociati alle stesse sfide.
+            </p>
+            <div className="mt-4 flex flex-col gap-2">
+              <button
+                type="button"
+                className="btn"
+                onClick={() => {
+                  setChiediScelta(false)
+                  genera.mutate(true)
+                }}
+              >
+                Mantieni i risultati già inseriti
+              </button>
+              <button
+                type="button"
+                className="btn btn-pericolo"
+                onClick={() => {
+                  if (!window.confirm('Azzerare TUTTI i risultati già inseriti?')) return
+                  setChiediScelta(false)
+                  genera.mutate(false)
+                }}
+              >
+                Azzera tutti i risultati
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondario"
+                onClick={() => setChiediScelta(false)}
+              >
+                Annulla
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

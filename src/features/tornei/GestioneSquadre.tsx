@@ -5,6 +5,7 @@ import { eDuplicato, messaggioErrore } from '@/lib/errori'
 import { logoDaFile } from '@/lib/immagini'
 import { useSociPubblici } from '@/features/prenotazioni/datiAmichevoli'
 import { nomeSquadraElegante } from './gironi'
+import { annullaPuntiIscrizione, assegnaPuntiIscrizione } from './punti'
 import type { Componente, Squadra, Torneo } from './tipi'
 
 // Cognome del socio: in v2 non abbiamo un campo separato, quindi prendiamo
@@ -128,7 +129,10 @@ export default function GestioneSquadre({
           )
       }
       if (error) throw error
-      // TODO Fase 7 (punti/premi): assegnare i punti di iscrizione al socio.
+      // (Fase 7b) Punti di iscrizione al socio, in base al girone della squadra
+      // (silenzioso: il riepilogo punti mostra comunque quanto spetta).
+      const squadra = squadre.find((s) => String(s.id) === String(squadraId))
+      if (squadra) await assegnaPuntiIscrizione(torneo, squadra, socioId)
       if (torneo.sport === 'padel') await aggiornaNomeCoppia(squadraId)
     },
     onSuccess: aggiorna,
@@ -169,6 +173,8 @@ export default function GestioneSquadre({
         .eq('squadra_id', squadraId)
         .eq('socio_id', socioId)
       if (error) throw error
+      // (Fase 7b) Tolgo i punti di iscrizione assegnati a questo socio.
+      await annullaPuntiIscrizione(squadraId, socioId)
       if (torneo.sport === 'padel') await aggiornaNomeCoppia(squadraId)
     },
     onSuccess: aggiorna,

@@ -4,14 +4,18 @@ import type { Incontro, Squadra, Torneo } from './tipi'
 
 // (Fase 6c) Classifica all'italiana del torneo. Con più gironi mostra una
 // tabella per ciascun girone; con girone unico una sola tabella.
+// (Fase 7c) gironeFiltro: se valorizzato mostra solo quel girone (i tasti dei
+// gironi stanno fuori, nella scheda "Risultati e Classifica").
 export default function ClassificaTorneo({
   torneo,
   squadre,
   incontri,
+  gironeFiltro = null,
 }: {
   torneo: Torneo
   squadre: Squadra[]
   incontri: Incontro[]
+  gironeFiltro?: number | null
 }) {
   const n = numGironi(torneo)
 
@@ -27,15 +31,21 @@ export default function ClassificaTorneo({
     return <TabellaClassifica sport={torneo.sport} squadre={squadre} incontri={incontri} />
   }
 
+  const gironi =
+    gironeFiltro != null ? [gironeFiltro] : Array.from({ length: n }, (_, i) => i + 1)
+
   return (
     <div>
-      {Array.from({ length: n }, (_, i) => i + 1).map((g) => {
+      {gironi.map((g) => {
         const sg = squadreDelGirone(torneo, squadre, g)
         return (
           <div key={g}>
-            <div className="eyebrow" style={{ marginTop: 18 }}>
-              {nomeGirone(torneo, g)}
-            </div>
+            {/* Con "Tutti" mostro il nome del girone; se è filtrato lo indicano i tasti. */}
+            {gironeFiltro == null && (
+              <div className="eyebrow" style={{ marginTop: 18 }}>
+                {nomeGirone(torneo, g)}
+              </div>
+            )}
             {sg.length ? (
               <TabellaClassifica
                 sport={torneo.sport}

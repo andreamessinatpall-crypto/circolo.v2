@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
@@ -18,8 +18,14 @@ import PodioTorneo from './PodioTorneo'
 import Risultati from './Risultati'
 import RiepilogoPunti from './RiepilogoPunti'
 import ImpostazioniTorneo from './ImpostazioniTorneo'
+import EditorPuntiTorneo from './EditorPuntiTorneo'
+import Sezione from '@/components/Sezione'
+import { costruisciPuntiGironi, nomeGirone, numGironi } from './gironi'
 import { FORMATI_TORNEO, STATI_TORNEO } from './tipi'
-import type { StatoTorneo, Torneo } from './tipi'
+import type { PuntiSet, StatoTorneo, Torneo } from './tipi'
+
+// Terna di punti tutta a zero (default dei form).
+const puntiZero = (): PuntiSet => ({ iscrizione: 0, vittoria: 0, torneo: 0 })
 
 const iconaSport = (s: string) => (s === 'calcio' ? '⚽' : '🎾')
 
@@ -88,16 +94,14 @@ const schema = z
     formato: z.enum(['girone']),
     data_inizio: z.string().optional(),
     data_fine: z.string().optional(),
-    punti_iscrizione: z.coerce.number().int().min(0, 'Numero ≥ 0'),
-    punti_vittoria: z.coerce.number().int().min(0, 'Numero ≥ 0'),
-    punti_torneo: z.coerce.number().int().min(0, 'Numero ≥ 0'),
+    numero_gironi: z.coerce.number().int().min(1).max(12),
   })
   .refine((v) => !(v.data_inizio && v.data_fine && v.data_fine < v.data_inizio), {
     message: 'La data fine non può precedere la data inizio.',
     path: ['data_fine'],
   })
 
-// Zod converte i campi punti da stringa a numero: il tipo "in ingresso"
+// Zod converte numero_gironi da stringa a numero: il tipo "in ingresso"
 // (quello che l'utente digita) è diverso da quello "in uscita" (già numero).
 type FormTorneoIn = z.input<typeof schema>
 type FormTorneoOut = z.output<typeof schema>
@@ -106,58 +110,72 @@ function NuovoTorneo({ onCreato }: { onCreato: (id: number | string) => void }) 
   const { profilo } = useAuth()
   const qc = useQueryClient()
   const [msg, setMsg] = useState<{ tipo: 'ok' | 'errore'; testo: string } | null>(null)
+  // I punti stanno fuori da react-hook-form: con più gironi sono dinamici
+  // (una terna per girone). base = terna unica usata con un solo girone.
+  const [base, setBase] = useState<PuntiSet>(puntiZero)
+  const [gironi, setGironi] = useState<PuntiSet[]>(() => Array.from({ length: 12 }, puntiZero))
 
   const {
     register,
     handleSubmit,
     reset,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<FormTorneoIn, unknown, FormTorneoOut>({
     resolver: zodResolver(schema),
     defaultValues: {
       sport: 'padel',
       formato: 'girone',
-      punti_iscrizione: 0,
-      punti_vittoria: 0,
-      punti_torneo: 0,
+      numero_gironi: 1,
     },
   })
 
+  const numeroGironiRaw = useWatch({ control, name: 'numero_gironi' })
+  const numeroGironi = Math.min(12, Math.max(1, Number(numeroGironiRaw) || 1))
+
   async function onSubmit(v: FormTorneoOut) {
     setMsg(null)
-    const { data, error } = await supabase
-      .from('tornei')
-      .insert({
-        nome: v.nome,
-        sport: v.sport,
-        formato: v.formato,
-        data_inizio: v.data_inizio || null,
-        data_fine: v.data_fine || null,
-        creato_da: profilo!.id,
-        punti_iscrizione: v.punti_iscrizione,
-        punti_vittoria: v.punti_vittoria,
-        punti_torneo: v.punti_torneo,
-      })
-      .select('id')
-      .single()
+    // Con più gironi: i punti base diventano quelli del 1º girone (fallback) e
+    // si salva la mappa punti_gironi; con un solo girone si usa solo la terna base.
+    const puntiGironi = costruisciPuntiGironi(v.numero_gironi, gironi)
+    const puntiBaseVal = v.numero_gironi > 1 ? (gironi[0] ?? puntiZero()) : base
+    const payload: Record<string, unknown> = {
+      nome: v.nome,
+      sport: v.sport,
+      formato: v.formato,
+      data_inizio: v.data_inizio || null,
+      data_fine: v.data_fine || null,
+      creato_da: profilo!.id,
+      numero_gironi: v.numero_gironi,
+      punti_iscrizione: puntiBaseVal.iscrizione,
+      punti_vittoria: puntiBaseVal.vittoria,
+      punti_torneo: puntiBaseVal.torneo,
+    }
+    if (puntiGironi) payload.punti_gironi = puntiGironi
+
+    const { data, error } = await supabase.from('tornei').insert(payload).select('id').single()
 
     if (error) {
       const err = error as { code?: string; message?: string }
+      const m = (err.message ?? '').toLowerCase()
+      const mancaPuntiGironi = puntiGironi != null && (err.code === '42703' || m.includes('punti_gironi'))
       const mancaCol =
-        err.code === '42703' ||
-        (err.message ?? '').toLowerCase().includes('punti_iscrizione') ||
-        (err.message ?? '').toLowerCase().includes('data_fine')
+        err.code === '42703' || m.includes('punti_iscrizione') || m.includes('data_fine')
       setMsg({
         tipo: 'errore',
-        testo: mancaCol
-          ? 'Per i punti del torneo esegui prima lo script tappa6-pannello-admin.sql su Supabase.'
-          : mancaTabella(error, 'tornei')
-            ? 'Esegui lo script tappa3b1-tornei.sql su Supabase.'
-            : 'Creazione non riuscita: ' + messaggioErrore(error),
+        testo: mancaPuntiGironi
+          ? 'Per i punti diversi per girone esegui prima lo script tappa7-punti-gironi.sql su Supabase.'
+          : mancaCol
+            ? 'Per i punti del torneo esegui prima lo script tappa6-pannello-admin.sql su Supabase.'
+            : mancaTabella(error, 'tornei')
+              ? 'Esegui lo script tappa3b1-tornei.sql su Supabase.'
+              : 'Creazione non riuscita: ' + messaggioErrore(error),
       })
       return
     }
     reset()
+    setBase(puntiZero())
+    setGironi(Array.from({ length: 12 }, puntiZero))
     qc.invalidateQueries({ queryKey: ['tornei'] })
     if (data?.id != null) onCreato(data.id)
   }
@@ -181,6 +199,15 @@ function NuovoTorneo({ onCreato }: { onCreato: (id: number | string) => void }) 
           <option value="girone">Girone all'italiana</option>
         </select>
 
+        <label>Numero di gironi</label>
+        <select className={classiInput} {...register('numero_gironi')}>
+          {Array.from({ length: 12 }, (_, i) => i + 1).map((i) => (
+            <option key={i} value={i}>
+              {i === 1 ? 'Girone unico' : i + ' gironi'}
+            </option>
+          ))}
+        </select>
+
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label>Data inizio (facoltativa)</label>
@@ -198,21 +225,19 @@ function NuovoTorneo({ onCreato }: { onCreato: (id: number | string) => void }) 
         <div className="eyebrow" style={{ marginTop: 16 }}>
           Punti di questo torneo
         </div>
-        <p className="sub mb-2">Valgono solo per questo torneo.</p>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <div>
-            <label>Iscrizione</label>
-            <input type="number" min={0} className={classiInput} {...register('punti_iscrizione')} />
-          </div>
-          <div>
-            <label>Partita vinta</label>
-            <input type="number" min={0} className={classiInput} {...register('punti_vittoria')} />
-          </div>
-          <div>
-            <label>Vittoria torneo</label>
-            <input type="number" min={0} className={classiInput} {...register('punti_torneo')} />
-          </div>
-        </div>
+        <p className="sub mb-2">
+          {numeroGironi > 1
+            ? 'Valgono solo per questo torneo. Con più gironi puoi dare punti diversi a ogni girone.'
+            : 'Valgono solo per questo torneo.'}
+        </p>
+        <EditorPuntiTorneo
+          torneo={{ nomi_gironi: null }}
+          numeroGironi={numeroGironi}
+          base={base}
+          setBase={setBase}
+          gironi={gironi}
+          setGironi={setGironi}
+        />
 
         {msg && (
           <p className={`mt-4 ${msg.tipo === 'ok' ? classiOk : classiErrore}`}>{msg.testo}</p>
@@ -244,10 +269,13 @@ function DettaglioTorneo({
   // Sotto-schede del dettaglio (solo per gli organizzatori; i giocatori vedono
   // direttamente "Risultati e Classifica").
   const [scheda, setScheda] = useState<'gestione' | 'risultati'>('gestione')
+  // (Fase 7c) Girone visualizzato in "Risultati e Classifica" (null = tutti).
+  const [gironeSel, setGironeSel] = useState<number | null>(null)
 
   const squadre = dati.perTorneoSquadre[String(torneo.id)] ?? []
   const incontri = dati.perTorneoIncontri[String(torneo.id)] ?? []
   const assegnati = dati.assegnati[String(torneo.id)] ?? new Set<string>()
+  const n = numGironi(torneo)
 
   // (Fase 6e) La squadra/coppia del socio in questo torneo (per il bottone "Sfida").
   const miaSquadraId = squadre.find((s) =>
@@ -279,36 +307,49 @@ function DettaglioTorneo({
   // Ordine: prima le squadre iscritte, poi i gironi, infine la modifica regole.
   const schedaGestione = (
     <div>
-      <div className="eyebrow">Squadre iscritte</div>
-      <GestioneSquadre
-        torneo={torneo}
-        squadre={squadre}
-        compBySquadra={dati.perSquadraComp}
-        assegnati={assegnati}
-      />
+      <Sezione titolo="Squadre iscritte">
+        <GestioneSquadre
+          torneo={torneo}
+          squadre={squadre}
+          compBySquadra={dati.perSquadraComp}
+          assegnati={assegnati}
+        />
+      </Sezione>
 
-      <div className="eyebrow" style={{ marginTop: 24 }}>
-        Gironi
-      </div>
-      <GestioneGironi torneo={torneo} squadre={squadre} />
+      <Sezione titolo="Gironi">
+        <GestioneGironi
+          torneo={torneo}
+          squadre={squadre}
+          incontri={incontri}
+          compBySquadra={dati.perSquadraComp}
+        />
+      </Sezione>
 
-      <div className="eyebrow" style={{ marginTop: 24 }}>
-        Calendario
-      </div>
-      <GestioneCalendario torneo={torneo} squadre={squadre} incontri={incontri} />
+      <Sezione titolo="Calendario">
+        <GestioneCalendario
+          torneo={torneo}
+          squadre={squadre}
+          incontri={incontri}
+          compBySquadra={dati.perSquadraComp}
+        />
+      </Sezione>
 
-      <div className="eyebrow" style={{ marginTop: 24 }}>
-        Riepilogo punti
-      </div>
-      <RiepilogoPunti
-        torneo={torneo}
-        squadre={squadre}
-        incontri={incontri}
-        compBySquadra={dati.perSquadraComp}
-      />
+      <Sezione titolo="Riepilogo punti">
+        <RiepilogoPunti
+          torneo={torneo}
+          squadre={squadre}
+          incontri={incontri}
+          compBySquadra={dati.perSquadraComp}
+        />
+      </Sezione>
 
       <div className="mt-6 border-t border-[var(--border)] pt-4">
-        <ImpostazioniTorneo torneo={torneo} />
+        <ImpostazioniTorneo
+          torneo={torneo}
+          squadre={squadre}
+          incontri={incontri}
+          compBySquadra={dati.perSquadraComp}
+        />
       </div>
     </div>
   )
@@ -320,20 +361,50 @@ function DettaglioTorneo({
       {/* (Fase 6e) Podio: appare quando il calendario è completo. */}
       <PodioTorneo torneo={torneo} squadre={squadre} incontri={incontri} />
 
-      <div className="eyebrow">🏆 Classifica</div>
-      <ClassificaTorneo torneo={torneo} squadre={squadre} incontri={incontri} />
+      {/* (Fase 7c) Con più gironi: tasti per scegliere quale girone vedere. */}
+      {n > 1 && (
+        <nav className="mb-4 flex flex-wrap gap-1.5" aria-label="Scegli il girone">
+          <button
+            type="button"
+            className={'subtab-btn' + (gironeSel === null ? ' attivo' : '')}
+            onClick={() => setGironeSel(null)}
+          >
+            Tutti
+          </button>
+          {Array.from({ length: n }, (_, i) => i + 1).map((g) => (
+            <button
+              key={g}
+              type="button"
+              className={'subtab-btn' + (gironeSel === g ? ' attivo' : '')}
+              onClick={() => setGironeSel(g)}
+            >
+              {nomeGirone(torneo, g)}
+            </button>
+          ))}
+        </nav>
+      )}
 
-      <div className="eyebrow" style={{ marginTop: 24 }}>
-        📅 Calendario e risultati
-      </div>
-      <Risultati
-        torneo={torneo}
-        squadre={squadre}
-        incontri={incontri}
-        gestore={gestore}
-        prenByIncontro={dati.prenByIncontro}
-        miaSquadraId={miaSquadraId}
-      />
+      <Sezione titolo="🏆 Classifica">
+        <ClassificaTorneo
+          torneo={torneo}
+          squadre={squadre}
+          incontri={incontri}
+          gironeFiltro={gironeSel}
+        />
+      </Sezione>
+
+      <Sezione titolo="📅 Calendario e risultati">
+        <Risultati
+          torneo={torneo}
+          squadre={squadre}
+          incontri={incontri}
+          gestore={gestore}
+          prenByIncontro={dati.prenByIncontro}
+          miaSquadraId={miaSquadraId}
+          compBySquadra={dati.perSquadraComp}
+          gironeFiltro={gironeSel}
+        />
+      </Sezione>
     </div>
   )
 

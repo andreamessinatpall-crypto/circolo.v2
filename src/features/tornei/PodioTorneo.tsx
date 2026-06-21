@@ -4,9 +4,10 @@ import { NomeSquadra } from './NomeSquadra'
 import type { Incontro, Squadra, Torneo } from './tipi'
 
 // (Fase 6e) Podio: quando il calendario è completo (tutti gli incontri
-// disputati) mostra il vincitore del torneo, i punti che conquista con la
-// vittoria e il podio (1º/2º/3º). Per i gironi multipli usa la classifica
-// complessiva (somma dei punti di tutti gli incontri).
+// disputati) mostra il vincitore del torneo e il podio (1º/2º/3º). Per i gironi
+// multipli usa la classifica complessiva (somma dei punti di tutti gli incontri).
+// (Fase 7b) I punti per la vittoria del torneo vengono accreditati
+// automaticamente a calendario completo (vedi Risultati), senza pulsanti.
 export default function PodioTorneo({
   torneo,
   squadre,

@@ -1,13 +1,21 @@
 import { useMemo } from 'react'
 import { useSociPubblici } from '@/features/prenotazioni/datiAmichevoli'
 import { incontroDisputato } from './calendario'
-import { calcolaClassifica } from './gironi'
+import {
+  calcolaClassifica,
+  gironeSquadra,
+  incontriDelGirone,
+  numGironi,
+  puntiDelGirone,
+  squadreDelGirone,
+} from './gironi'
 import type { Componente, Incontro, Squadra, Torneo } from './tipi'
 
 // (Fase 7a) Riepilogo dei punti che QUESTO torneo assegna a ogni giocatore,
-// secondo le sue regole (iscrizione, partita vinta, vittoria torneo). È un
-// calcolo trasparente: l'accredito vero sul saldo dei soci arriva nel passo
-// successivo della Fase 7. Vive nella scheda "Gestione torneo".
+// secondo le sue regole (iscrizione, partita vinta, vittoria torneo).
+// (Fase 7b) Con più gironi i punti possono variare per girone: l'iscrizione e
+// la partita usano i punti del girone della squadra; la vittoria premia il
+// primo di ogni girone, con i punti di quel girone.
 export default function RiepilogoPunti({
   torneo,
   squadre,
@@ -26,9 +34,7 @@ export default function RiepilogoPunti({
     return m
   }, [sociQuery.data])
 
-  const pIscr = torneo.punti_iscrizione ?? 0
-  const pVin = torneo.punti_vittoria ?? 0
-  const pTor = torneo.punti_torneo ?? 0
+  const n = numGironi(torneo)
 
   // Quante partite ha vinto ciascuna squadra (un risultato inserito decide il vincitore).
   const vittoriePerSquadra = useMemo(() => {
@@ -41,32 +47,46 @@ export default function RiepilogoPunti({
     return w
   }, [incontri])
 
-  // Vincitore del torneo: solo a calendario completo (stessa regola del podio).
-  const completo = incontri.length > 0 && incontri.every(incontroDisputato)
-  const classifica = completo ? calcolaClassifica(torneo.sport, squadre, incontri) : []
-  const idVincitore = classifica.length ? String(classifica[0].id) : null
+  // Vincitore di ogni girone: solo a calendario del girone completo (come il podio).
+  const vincitoriGirone = useMemo(() => {
+    const ids = new Set<string>()
+    for (let g = 1; g <= n; g++) {
+      const ig = incontriDelGirone(incontri, g)
+      if (!ig.length || !ig.every(incontroDisputato)) continue
+      const classifica = calcolaClassifica(torneo.sport, squadreDelGirone(torneo, squadre, g), ig)
+      if (classifica.length) ids.add(String(classifica[0].id))
+    }
+    return ids
+  }, [torneo, squadre, incontri, n])
 
-  // Una riga per ogni giocatore iscritto, col dettaglio dei punti.
+  // Una riga per ogni giocatore iscritto, col dettaglio dei punti del suo girone.
   const righe = squadre.flatMap((s) => {
     const comp = compBySquadra[String(s.id)] ?? []
+    const pts = puntiDelGirone(torneo, gironeSquadra(torneo, s))
     const vinte = vittoriePerSquadra[String(s.id)] ?? 0
-    const vinceTorneo = idVincitore === String(s.id)
+    const vinceTorneo = vincitoriGirone.has(String(s.id))
     return comp.map((c) => {
-      const puntiPartite = pVin * vinte
-      const puntiTorneo = vinceTorneo ? pTor : 0
+      const puntiPartite = pts.vittoria * vinte
+      const puntiTorneo = vinceTorneo ? pts.torneo : 0
       return {
         socioId: c.socio_id,
         nome: etichette.get(c.socio_id) ?? '—',
-        iscr: pIscr,
+        iscr: pts.iscrizione,
         puntiPartite,
         puntiTorneo,
-        totale: pIscr + puntiPartite + puntiTorneo,
+        totale: pts.iscrizione + puntiPartite + puntiTorneo,
       }
     })
   })
   righe.sort((a, b) => b.totale - a.totale || a.nome.localeCompare(b.nome, 'it'))
 
-  if (pIscr === 0 && pVin === 0 && pTor === 0) {
+  // Il torneo assegna qualcosa se almeno un girone ha una voce di punti > 0.
+  const assegnaQualcosa = Array.from({ length: n }, (_, i) => i + 1).some((g) => {
+    const p = puntiDelGirone(torneo, g)
+    return p.iscrizione > 0 || p.vittoria > 0 || p.torneo > 0
+  })
+
+  if (!assegnaQualcosa) {
     return (
       <p className="sub">
         Questo torneo non assegna punti. Imposta i valori in “Modifica regole del torneo”.
@@ -82,11 +102,9 @@ export default function RiepilogoPunti({
   return (
     <div>
       <p className="sub mb-2">
-        Punti che questo torneo assegna a ogni giocatore (iscrizione {pIscr}, partita vinta{' '}
-        {pVin}, vittoria torneo {pTor}).
-        {!completo && pTor > 0
-          ? ' La vittoria del torneo verrà conteggiata a calendario completo.'
-          : ''}
+        {n > 1
+          ? 'Punti che ogni giocatore guadagna, in base alle regole del suo girone.'
+          : 'Punti che questo torneo assegna a ogni giocatore (iscrizione, partita vinta, vittoria torneo).'}
       </p>
       <div className="classifica-wow">
         <table className="classifica classifica-riep">
@@ -116,8 +134,9 @@ export default function RiepilogoPunti({
         Totale punti distribuiti dal torneo: <strong>{totaleGenerale}</strong>.
       </p>
       <p className="sub mt-1 text-xs">
-        Nota: per ora è solo il calcolo. L’accredito automatico sul saldo dei soci arriverà nel
-        prossimo passo della Fase 7.
+        I punti vengono accreditati automaticamente sul saldo dei soci: iscrizione (all’ingresso in
+        squadra), partita vinta (al salvataggio del risultato) e vittoria torneo (a calendario
+        completo, al primo di ogni girone).
       </p>
     </div>
   )

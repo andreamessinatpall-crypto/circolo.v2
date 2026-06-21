@@ -11,16 +11,23 @@ import {
   SCRIPT_GIRONI,
   unitaTorneo,
 } from './gironi'
-import type { Squadra, Torneo } from './tipi'
+import { ricalcolaPuntiTorneo } from './punti'
+import type { Componente, Incontro, Squadra, Torneo } from './tipi'
 
 // (Fase 6c) Pannello staff per organizzare le squadre/coppie nei gironi:
 // quanti gironi, sorteggio automatico, rinomina e assegnazione manuale.
+// (Fase 7b) Quando i gironi cambiano i punti vanno ricalcolati, perché con più
+// gironi ogni girone può avere punti diversi (iscrizione/partita/vittoria).
 export default function GestioneGironi({
   torneo,
   squadre,
+  incontri,
+  compBySquadra,
 }: {
   torneo: Torneo
   squadre: Squadra[]
+  incontri: Incontro[]
+  compBySquadra: Record<string, Componente[]>
 }) {
   const qc = useQueryClient()
   const aggiorna = () => qc.invalidateQueries({ queryKey: ['tornei'] })
@@ -40,6 +47,13 @@ export default function GestioneGironi({
       if (error) throw error
       // Le squadre finite in un girone che non esiste più tornano "non assegnate".
       await supabase.from('squadre').update({ girone: null }).eq('torneo_id', torneo.id).gt('girone', val)
+      // Ricalcolo i punti: cambia il numero di gironi (e quindi le terne valide).
+      const torneoNuovo = { ...torneo, numero_gironi: val }
+      const squadreNuove = squadre.map((s) => ({
+        ...s,
+        girone: s.girone && s.girone <= val ? s.girone : null,
+      }))
+      await ricalcolaPuntiTorneo(torneoNuovo, squadreNuove, incontri, compBySquadra)
     },
     onSuccess: aggiorna,
     onError: segnalaErrore,
@@ -49,11 +63,15 @@ export default function GestioneGironi({
     mutationFn: async () => {
       // Mescolo e distribuisco a giro: gironi il più equilibrati possibile.
       const mescolate = squadre.slice().sort(() => Math.random() - 0.5)
+      const giro: Record<string, number> = {}
       for (let i = 0; i < mescolate.length; i++) {
         const g = (i % n) + 1
         const { error } = await supabase.from('squadre').update({ girone: g }).eq('id', mescolate[i].id)
         if (error) throw error
+        giro[String(mescolate[i].id)] = g
       }
+      const squadreNuove = squadre.map((s) => ({ ...s, girone: giro[String(s.id)] ?? s.girone }))
+      await ricalcolaPuntiTorneo(torneo, squadreNuove, incontri, compBySquadra)
     },
     onSuccess: aggiorna,
     onError: segnalaErrore,
@@ -75,6 +93,11 @@ export default function GestioneGironi({
     mutationFn: async ({ squadraId, girone }: { squadraId: number | string; girone: number | null }) => {
       const { error } = await supabase.from('squadre').update({ girone }).eq('id', squadraId)
       if (error) throw error
+      // Ricalcolo i punti: questa squadra ora appartiene a un girone diverso.
+      const squadreNuove = squadre.map((s) =>
+        String(s.id) === String(squadraId) ? { ...s, girone } : s,
+      )
+      await ricalcolaPuntiTorneo(torneo, squadreNuove, incontri, compBySquadra)
     },
     onSuccess: aggiorna,
     onError: segnalaErrore,

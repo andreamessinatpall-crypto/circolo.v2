@@ -2,7 +2,7 @@
 // Funzioni pure portate dalla v1 (numGironi, nomeGirone, gironeSquadra,
 // calcolaClassifica, ...) per poterle riusare e testare facilmente.
 
-import type { Incontro, RigaClassifica, Squadra, Torneo } from './tipi'
+import type { Incontro, PuntiSet, RigaClassifica, Squadra, Torneo } from './tipi'
 
 // Massimo 12 gironi: una lettera per ciascuno.
 export const LETTERE_GIRONE = 'ABCDEFGHIJKL'
@@ -54,6 +54,61 @@ export function squadreDelGirone(
 
 export function incontriDelGirone(incontri: Incontro[], g: number): Incontro[] {
   return incontri.filter((m) => (Number(m.girone) || 1) === g)
+}
+
+// (Fase 7b) Punti "base" del torneo (le tre colonne dirette).
+export function puntiBase(
+  t: Pick<Torneo, 'punti_iscrizione' | 'punti_vittoria' | 'punti_torneo'>,
+): PuntiSet {
+  return {
+    iscrizione: t.punti_iscrizione ?? 0,
+    vittoria: t.punti_vittoria ?? 0,
+    torneo: t.punti_torneo ?? 0,
+  }
+}
+
+// (Fase 7b) Punti validi per un certo girone: quelli personalizzati del girone
+// se ci sono, altrimenti i punti base. Con un solo girone si usano sempre i base.
+export function puntiDelGirone(t: Torneo, girone: number | null): PuntiSet {
+  const base = puntiBase(t)
+  if (numGironi(t) <= 1 || girone == null) return base
+  const pg = t.punti_gironi?.[String(girone)]
+  if (!pg) return base
+  return {
+    iscrizione: pg.iscrizione ?? base.iscrizione,
+    vittoria: pg.vittoria ?? base.vittoria,
+    torneo: pg.torneo ?? base.torneo,
+  }
+}
+
+// (Fase 7b) 12 terne di punti precompilate dai dati del torneo: comode per i
+// form (un blocco per girone). I gironi senza valori propri partono dai base.
+export function puntiGironiArray(t: Torneo): PuntiSet[] {
+  const base = puntiBase(t)
+  return Array.from({ length: 12 }, (_, i) => {
+    const pg = t.punti_gironi?.[String(i + 1)]
+    return pg
+      ? {
+          iscrizione: pg.iscrizione ?? 0,
+          vittoria: pg.vittoria ?? 0,
+          torneo: pg.torneo ?? 0,
+        }
+      : { ...base }
+  })
+}
+
+// (Fase 7b) Costruisce il JSON punti_gironi da salvare: solo se più di un
+// girone, altrimenti null (si usano le colonne base).
+export function costruisciPuntiGironi(
+  numeroGironi: number,
+  gironi: PuntiSet[],
+): Record<string, PuntiSet> | null {
+  if (numeroGironi <= 1) return null
+  const out: Record<string, PuntiSet> = {}
+  for (let g = 1; g <= numeroGironi; g++) {
+    out[String(g)] = gironi[g - 1] ?? { iscrizione: 0, vittoria: 0, torneo: 0 }
+  }
+  return out
 }
 
 // Etichetta dell'unità del torneo: "coppia/coppie" nel padel, "squadra/squadre" nel calcio.
