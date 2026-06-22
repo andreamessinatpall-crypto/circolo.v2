@@ -767,6 +767,12 @@
     font-size: 0.72rem;
     line-height: 1.2;
     max-width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+  }
+  .slot .chi .chi-t {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -787,21 +793,24 @@
   .slot.mio:hover {
     background: var(--terra);
   }
+  /* (Fase 8g) Slot prenotato: fondo bianco, lato sinistro PIATTO con una sottile
+     striscia del TIPO; lo STATO è un piccolo segno accanto al nome. */
   .slot.occupato {
-    background: var(--v050);
-    color: var(--ink3);
+    background: var(--surface);
+    color: var(--ink);
     cursor: default;
     border: 1px solid var(--border);
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    padding-left: 12px;
   }
   .slot.occupato.annullabile {
     cursor: pointer;
   }
   .slot.occupato.annullabile:hover {
-    background: transparent;
     color: var(--terra);
     outline: 1.5px solid var(--terra);
   }
-  /* (Fase 8g) Slot prenotato cliccabile per gestirlo (presenze, giocatori). */
   .slot.occupato.gestibile {
     cursor: pointer;
     color: var(--ink);
@@ -809,20 +818,50 @@
   .slot.occupato.gestibile:hover {
     outline: 1.5px solid var(--v700);
   }
-  /* Stato della prenotazione leggibile dallo sfondo dello slot:
-     attesa = da confermare (ambra), confermato = tutte le presenze ok (verde). */
-  .slot.occupato.attesa {
-    background: rgba(200, 151, 46, 0.16);
-    border-color: var(--g500);
-    color: var(--g700);
+  /* Stato accanto al nome: ✓ verde = confermato, anello ambra = da confermare. */
+  .slot .chi-ok {
+    flex: 0 0 auto;
+    width: 13px;
+    height: 13px;
+    color: var(--ok, #1a7a3c);
+    stroke: currentColor;
+    stroke-width: 3;
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
   }
-  .slot.occupato.confermato {
-    background: var(--v050);
-    border-color: rgba(20, 83, 42, 0.32);
-    color: var(--v700);
+  .slot .chi-att {
+    flex: 0 0 auto;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    border: 2px solid var(--g500);
+    box-sizing: border-box;
   }
   .slot.libero.libero-passato {
     opacity: 0.6;
+  }
+  /* (Fase 8g · A) Striscia verticale a sinistra che identifica il tipo di
+     prenotazione: partita (verde), allenamento (ottone), torneo (terracotta). */
+  .slot.occupato.tipo-partita {
+    box-shadow: inset 3px 0 0 0 var(--v700);
+  }
+  .slot.occupato.tipo-allenamento {
+    box-shadow: inset 3px 0 0 0 var(--g500);
+  }
+  .slot.occupato.tipo-torneo {
+    box-shadow: inset 3px 0 0 0 var(--terra);
+  }
+  /* Blocco libero "corto" (30/60 min): grigio tratteggiato, diverso dagli slot pieni. */
+  .slot.libero.corto {
+    color: var(--ink3);
+    border-style: dashed;
+    border-color: var(--border2);
+    background: rgba(0, 0, 0, 0.04);
+  }
+  .slot.libero.corto:hover {
+    background: rgba(0, 0, 0, 0.1);
+    color: var(--ink);
   }
   .slot.passato {
     background: transparent;

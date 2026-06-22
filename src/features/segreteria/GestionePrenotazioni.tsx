@@ -7,10 +7,11 @@ import { useCampi } from '@/features/prenotazioni/datiPrenotazioni'
 import { mancaColonnaManuale, useSociPubblici } from '@/features/prenotazioni/datiAmichevoli'
 import { SchedaPartita } from '@/features/prenotazioni/MieAmichevoli'
 import { assegnaPuntiPresenza, annullaPuntiPresenza } from '@/features/prenotazioni/puntiPresenze'
-import { SLOT_MINUTI, dataDa, oraLocale, orariCampo } from '@/features/prenotazioni/orari'
+import { oraLocale } from '@/features/prenotazioni/orari'
 import { useModalitaPremi } from '@/features/premi/datiPremi'
 import { useValoriPunti } from './datiPunti'
 import { usePrenotazioniAdminIntervallo } from './datiPrenotazioniAdmin'
+import { SLOT_DEF, costruisciSlots } from './slotGiornata'
 import type { MiaPrenotazione, Partecipante } from '@/features/prenotazioni/datiAmichevoli'
 import type { Campo, Sport } from '@/features/prenotazioni/tipi'
 
@@ -39,6 +40,8 @@ interface SlotScelto {
   inizio: Date
   fine: Date
   booking: MiaPrenotazione | null
+  // Minuti liberi fino al prossimo confine (per scegliere la durata creabile).
+  disponibileMin: number
 }
 
 // (Fase 8g) Segreteria · calendario settimanale + tabellone a slot per campo;
@@ -182,19 +185,21 @@ export default function GestionePrenotazioni() {
     onError: (e: unknown) => window.alert('Operazione non riuscita: ' + messaggioErrore(e)),
   })
 
-  // Crea una prenotazione su uno slot libero (organizzatore = admin).
+  // Crea una prenotazione su uno slot libero (organizzatore = admin). La durata
+  // (in minuti) la decide chi prenota: 90 = default, 60 = allenamento da 1h.
   const crea = useMutation({
     mutationFn: async ({
       campo,
       inizio,
-      fine,
+      durataMin,
       allenamento,
     }: {
       campo: Campo
       inizio: Date
-      fine: Date
+      durataMin: number
       allenamento: boolean
     }) => {
+      const fine = new Date(inizio.getTime() + durataMin * 60000)
       const dati: Record<string, unknown> = {
         campo_id: campo.id,
         socio_id: profilo!.id,
@@ -217,6 +222,10 @@ export default function GestionePrenotazioni() {
     onError: (e: unknown) => {
       const err = e as { code?: string }
       if (err.code === '23505') window.alert('Questo slot è appena stato prenotato.')
+      else if (err.code === '23514')
+        window.alert(
+          'Il database non accetta una durata diversa da 1h30 (vincolo CHECK sulla tabella prenotazioni): serve una modifica. Segnalamelo.',
+        )
       else if (err.code === '42501')
         window.alert(
           'Il database ha rifiutato la prenotazione (probabilmente perché nel passato): serve una modifica alle regole RLS. Segnalamelo.',
@@ -347,7 +356,37 @@ export default function GestionePrenotazioni() {
       ) : campiSport.length === 0 ? (
         <p className="sub">Nessun campo {sport} configurato.</p>
       ) : (
-        campiSport.map((campo) => (
+        <>
+          <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-ink-2">
+            <span className="flex items-center gap-1.5">
+              <i className="inline-block h-3.5 w-1 rounded-sm" style={{ background: 'var(--v700)' }} />
+              Partita
+            </span>
+            <span className="flex items-center gap-1.5">
+              <i className="inline-block h-3.5 w-1 rounded-sm" style={{ background: 'var(--g500)' }} />
+              Allenamento
+            </span>
+            <span className="flex items-center gap-1.5">
+              <i className="inline-block h-3.5 w-1 rounded-sm" style={{ background: 'var(--terra)' }} />
+              Torneo
+            </span>
+            <span className="text-ink-3">·</span>
+            <span className="flex items-center gap-1.5">
+              <i
+                className="inline-block h-3.5 w-3.5 rounded-full"
+                style={{ background: 'var(--ok, #2e9e5b)' }}
+              />
+              Confermato
+            </span>
+            <span className="flex items-center gap-1.5">
+              <i
+                className="inline-block h-3.5 w-3.5 rounded-full border-2"
+                style={{ borderColor: 'var(--g500)' }}
+              />
+              Da confermare
+            </span>
+          </div>
+          {campiSport.map((campo) => (
           <CampoSlots
             key={campo.id}
             campo={campo}
@@ -356,9 +395,12 @@ export default function GestionePrenotazioni() {
             prenotazioni={prenGiorno.filter((p) => String(p.campo_id) === String(campo.id))}
             etichette={etichette}
             statoDi={statoPren}
-            onSlot={(inizio, fine, booking) => setSlot({ campo, inizio, fine, booking })}
+            onSlot={(inizio, fine, booking, disponibileMin) =>
+              setSlot({ campo, inizio, fine, booking, disponibileMin })
+            }
           />
-        ))
+          ))}
+        </>
       )}
 
       {/* Finestra dello slot */}
@@ -411,14 +453,10 @@ export default function GestionePrenotazioni() {
               />
             ) : (
               <SlotLibero
+                disponibileMin={slot.disponibileMin}
                 disabilitato={crea.isPending}
-                onCrea={(allenamento) =>
-                  crea.mutate({
-                    campo: slot.campo,
-                    inizio: slot.inizio,
-                    fine: slot.fine,
-                    allenamento,
-                  })
+                onCrea={(allenamento, durataMin) =>
+                  crea.mutate({ campo: slot.campo, inizio: slot.inizio, durataMin, allenamento })
                 }
               />
             )}
@@ -429,8 +467,8 @@ export default function GestionePrenotazioni() {
   )
 }
 
-// Slot di un campo per il giorno scelto: tutti gli orari previsti dalle regole,
-// liberi o prenotati. Le celle prenotate e gli slot futuri liberi sono cliccabili.
+// Slot di un campo per il giorno scelto: sequenza dinamica (vedi costruisciSlots)
+// con i tempi liberi che si adattano alle durate reali delle prenotazioni.
 function CampoSlots({
   campo,
   giorno,
@@ -446,11 +484,15 @@ function CampoSlots({
   prenotazioni: MiaPrenotazione[]
   etichette: Map<string, string>
   statoDi: (prenId: number | string) => 'confermato' | 'attesa'
-  onSlot: (inizio: Date, fine: Date, booking: MiaPrenotazione | null) => void
+  onSlot: (
+    inizio: Date,
+    fine: Date,
+    booking: MiaPrenotazione | null,
+    disponibileMin: number,
+  ) => void
 }) {
-  const perSlot = new Map<number, MiaPrenotazione>()
-  for (const p of prenotazioni) perSlot.set(new Date(p.inizio).getTime(), p)
   const fuoriServizio = campo.in_servizio === false
+  const slots = costruisciSlots(campo, giorno, prenotazioni)
 
   return (
     <div className="campo-blocco">
@@ -467,36 +509,53 @@ function CampoSlots({
         </p>
       ) : (
         <div className="slot-griglia">
-          {orariCampo(campo).map((ora) => {
-            const inizio = dataDa(giorno, ora)
-            const fine = new Date(inizio.getTime() + SLOT_MINUTI * 60000)
-            const p = perSlot.get(inizio.getTime())
-            const passato = inizio <= adesso
+          {slots.map((s) => {
+            const p = s.booking
+            const passato = s.inizio <= adesso
 
             let classe = 'slot'
             let chi: string
-
+            let stato: 'confermato' | 'attesa' | null = null
             if (p) {
-              // Prenotato: distinguo "da confermare" (attesa) da "confermato".
-              classe += ' occupato gestibile ' + statoDi(p.id)
-              chi = p.allenamento ? 'Allenamento' : (etichette.get(p.socio_id) ?? 'Prenotato')
+              stato = statoDi(p.id)
+              const tipo = p.incontro_id ? 'torneo' : p.allenamento ? 'allenamento' : 'partita'
+              classe += ' occupato gestibile tipo-' + tipo
+              chi = p.incontro_id
+                ? 'Torneo'
+                : p.allenamento
+                  ? 'Allenamento'
+                  : (etichette.get(p.socio_id) ?? 'Prenotato')
             } else {
-              // Libero: cliccabile anche nel passato (l'admin può prenotare a posteriori).
+              // Blocco libero "corto" (< 1h30): buco fra prenotazioni, colore diverso.
               classe += ' libero' + (passato ? ' libero-passato' : '')
+              if (s.disponibileMin < SLOT_DEF) classe += ' corto'
               chi = 'Libero'
             }
 
             return (
               <button
-                key={ora}
+                key={`${s.inizio.getTime()}-${p?.id ?? 'free'}`}
                 type="button"
                 className={classe}
-                onClick={() => onSlot(inizio, fine, p ?? null)}
+                onClick={() => onSlot(s.inizio, s.fine, p, s.disponibileMin)}
               >
                 <span>
-                  {ora}–{oraLocale(fine)}
+                  {oraLocale(s.inizio)}–{oraLocale(s.fine)}
                 </span>
-                <span className="chi">{chi}</span>
+                <span className="chi">
+                  <span className="chi-t">{chi}</span>
+                  {stato === 'confermato' && (
+                    <svg
+                      className="chi-ok"
+                      viewBox="0 0 24 24"
+                      aria-label="Presenze confermate"
+                      role="img"
+                    >
+                      <path d="M5 12.5l4 4L19 7" />
+                    </svg>
+                  )}
+                  {stato === 'attesa' && <span className="chi-att" title="Da confermare" />}
+                </span>
               </button>
             )
           })}
@@ -506,32 +565,51 @@ function CampoSlots({
   )
 }
 
+// Durata leggibile (es. 90 -> "1h 30min", 60 -> "1h").
+function durataLabel(min: number): string {
+  const h = Math.floor(min / 60)
+  const m = min % 60
+  return (h ? `${h}h` : '') + (m ? ` ${m}min` : '')
+}
+
 function SlotLibero({
+  disponibileMin,
   disabilitato,
   onCrea,
 }: {
+  disponibileMin: number
   disabilitato: boolean
-  onCrea: (allenamento: boolean) => void
+  onCrea: (allenamento: boolean, durataMin: number) => void
 }) {
+  const puo90 = disponibileMin >= 90
+  const puo60 = disponibileMin >= 60
+
   return (
     <div>
-      <p className="sub mb-3">Slot libero. Cosa vuoi creare?</p>
-      <button
-        type="button"
-        className="btn btn-block mb-2"
-        disabled={disabilitato}
-        onClick={() => onCrea(false)}
-      >
-        Prenotazione campo
-      </button>
-      <button
-        type="button"
-        className="btn btn-secondario btn-block"
-        disabled={disabilitato}
-        onClick={() => onCrea(true)}
-      >
-        🏋️ Allenamento
-      </button>
+      <p className="sub mb-3">Slot libero ({durataLabel(disponibileMin)} disponibili). Cosa crei?</p>
+      {puo90 && (
+        <button
+          type="button"
+          className="btn btn-block mb-2"
+          disabled={disabilitato}
+          onClick={() => onCrea(false, 90)}
+        >
+          Prenotazione campo
+        </button>
+      )}
+      {puo60 && (
+        <button
+          type="button"
+          className="btn btn-secondario btn-block"
+          disabled={disabilitato}
+          onClick={() => onCrea(true, 60)}
+        >
+          🏋️ Allenamento · 1h
+        </button>
+      )}
+      {!puo60 && (
+        <p className="sub">Spazio troppo corto ({durataLabel(disponibileMin)}) per una sessione.</p>
+      )}
     </div>
   )
 }
