@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import Segnaposto from '@/components/Segnaposto'
 import NuovoSocio from './NuovoSocio'
 import GestioneGiocatori from './GestioneGiocatori'
 import GestioneCampi from './GestioneCampi'
@@ -8,6 +7,7 @@ import ValoriPunti from './ValoriPunti'
 import IntervalliCrediti from './IntervalliCrediti'
 import RigeneraPunti from './RigeneraPunti'
 import RigeneraCrediti from './RigeneraCrediti'
+import GestionePremi from './GestionePremi'
 
 // Pannello amministratori. Come nella v1 raccoglie più sezioni; qui sono
 // sotto-schede. Vengono riempite una alla volta lungo la Fase 8.
@@ -52,9 +52,7 @@ export default function SegreteriaPage() {
           <RigeneraCrediti />
         </>
       )}
-      {scheda === 'premi' && (
-        <Segnaposto descrizione="Modalità premi, catalogo e richieste — in arrivo nella Fase 8f." />
-      )}
+      {scheda === 'premi' && <GestionePremi />}
     </div>
   )
 }
