@@ -1102,21 +1102,23 @@
     font-size: 0.82rem;
     color: var(--ink2);
   }
-  /* Pulsante riscatto dorato con riflesso "specchio" che scorre */
+  /* Pulsante riscatto dorato con riflesso "specchio" che scorre. Pillola della
+     stessa dimensione del pulsante "bloccato". */
   .btn-riscatta {
     position: relative;
     overflow: hidden;
-    width: 100%;
+    display: inline-flex;
+    align-items: center;
     border: none;
-    border-radius: 12px;
-    padding: 11px 16px;
-    font-weight: 800;
-    font-size: 0.82rem;
-    letter-spacing: 0.04em;
+    border-radius: 999px;
+    padding: 5px 14px;
+    font-weight: 700;
+    font-size: 0.8rem;
+    letter-spacing: 0.03em;
     text-transform: uppercase;
     color: #3a2a06;
     background: linear-gradient(135deg, #f6df97, #c8972f 55%, #a9781f);
-    box-shadow: 0 4px 14px rgba(176, 137, 60, 0.38);
+    box-shadow: 0 3px 10px rgba(176, 137, 60, 0.35);
     cursor: pointer;
   }
   .btn-riscatta::after {
