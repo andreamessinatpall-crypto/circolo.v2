@@ -146,6 +146,75 @@
     box-shadow: var(--ombra-card);
   }
 
+  /* ---- Segreteria · scheda di un singolo campo ----
+     Intestazione colorata per sport (calcio = verde, padel = azzurro),
+     che diventa grigia quando il campo è sospeso. Corpo bianco con testo
+     scuro nitido. */
+  .campo-card {
+    border: 1px solid var(--color-verde-100);
+    border-radius: 14px;
+    overflow: hidden;
+    background: #fff;
+    box-shadow: var(--ombra-card);
+  }
+  .campo-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 13px;
+    color: #fff;
+  }
+  .campo-head-calcio {
+    background: linear-gradient(135deg, var(--color-verde-600), var(--color-verde-800));
+  }
+  .campo-head-padel {
+    background: linear-gradient(135deg, #0d92ad, #0a4f63);
+  }
+  .campo-head-off {
+    background: linear-gradient(135deg, #6b7689, #424c5e);
+  }
+  .campo-head-icona {
+    font-size: 1.3rem;
+    line-height: 1;
+  }
+  .campo-head-sport {
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-weight: 700;
+    font-size: 0.98rem;
+  }
+  .campo-head-tag {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 2px 9px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.22);
+  }
+  /* interruttore di stato (icona) sull'intestazione */
+  .campo-toggle {
+    margin-left: auto;
+    width: 30px;
+    height: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.18);
+    border: 1px solid rgba(255, 255, 255, 0.45);
+    color: #fff;
+    font-size: 1.15rem;
+    transition: background 0.15s;
+  }
+  .campo-toggle:hover {
+    background: rgba(255, 255, 255, 0.32);
+  }
+  .campo-body {
+    padding: 12px 13px;
+  }
+
   /* Eyebrow: titoletto di sezione con barretta oro */
   .eyebrow {
     font-family: var(--font-display);
