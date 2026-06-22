@@ -1,17 +1,19 @@
-import type { MiaPrenotazione } from '@/features/prenotazioni/datiAmichevoli'
-import type { Campo } from '@/features/prenotazioni/tipi'
+import type { Campo } from './tipi'
 
 // (Fase 8g · A) Durate degli slot, in minuti.
 export const SLOT_DEF = 90 // default (1h 30min)
 export const ALLEN_CORTO = 60 // allenamento "corto" (1h)
 
-export interface SlotGiorno {
+// Generico sul tipo di prenotazione: basta che abbia inizio/fine ISO. Così la
+// stessa logica serve sia al pannello admin (MiaPrenotazione) sia alla griglia
+// del socio (PrenotazioneGiorno).
+export interface SlotGiorno<T> {
   inizio: Date
   fine: Date
   // Minuti liberi da questo slot fino al prossimo confine (prenotazione o
   // chiusura). Serve a sapere quali durate si possono creare. 0 per i prenotati.
   disponibileMin: number
-  booking: MiaPrenotazione | null
+  booking: T | null
 }
 
 function minOf(hhmm: string): number {
@@ -31,11 +33,11 @@ function dataMin(giorno: string, min: number): Date {
 // lo spazio residuo verso la prossima prenotazione è minore). Così un
 // allenamento da 1h "compatta" la giornata e non lascia buchi, ma ci si ferma
 // sulle prenotazioni successive già fissate (lasciando eventualmente un vuoto).
-export function costruisciSlots(
+export function costruisciSlots<T extends { inizio: string; fine: string }>(
   campo: Campo,
   giorno: string,
-  prenotazioni: MiaPrenotazione[],
-): SlotGiorno[] {
+  prenotazioni: T[],
+): SlotGiorno<T>[] {
   const ap = minOf(campo.apertura || '08:00')
   const ch = minOf(campo.chiusura || '22:00')
 
@@ -46,7 +48,7 @@ export function costruisciSlots(
 
   const MIN_RESIDUO = 30 // sotto questa soglia il buco è troppo piccolo: niente slot
 
-  const out: SlotGiorno[] = []
+  const out: SlotGiorno<T>[] = []
   let cursor = ap
   let bi = 0
   let guardia = 0

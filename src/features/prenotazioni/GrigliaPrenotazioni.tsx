@@ -4,7 +4,8 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/auth/useAuth'
 import { messaggioErrore } from '@/lib/errori'
 import { useCampi, useImpostazioni, usePrenotazioniGiorno } from './datiPrenotazioni'
-import { SLOT_MINUTI, dataDa, oraLocale, orariCampo, ymd } from './orari'
+import { oraLocale, ymd } from './orari'
+import { SLOT_DEF, costruisciSlots } from './slotGiornata'
 import type { Campo, PrenotazioneGiorno, Sport } from './tipi'
 
 export default function GrigliaPrenotazioni({ sport }: { sport: Sport }) {
@@ -263,10 +264,11 @@ function CampoGriglia({
   onPrenota: (inizio: Date, fine: Date) => void
   onAnnulla: (p: PrenotazioneGiorno, campo: Campo, inizio: Date, diChi?: string) => void
 }) {
-  const perSlot = new Map<number, PrenotazioneGiorno>()
-  for (const p of prenotazioni) perSlot.set(new Date(p.inizio).getTime(), p)
-
   const fuoriServizio = campo.in_servizio === false
+  // (Fase 8g · C) Griglia dinamica: gli slot si adattano agli orari/durate reali
+  // delle prenotazioni (così la disponibilità è corretta anche dopo allenamenti
+  // da 1h o orari modificati a mano dall'admin).
+  const slots = costruisciSlots(campo, giorno, prenotazioni)
 
   return (
     <div className="campo-blocco">
@@ -283,11 +285,9 @@ function CampoGriglia({
         </p>
       ) : (
         <div className="slot-griglia">
-          {orariCampo(campo).map((ora) => {
-            const inizio = dataDa(giorno, ora)
-            const fine = new Date(inizio.getTime() + SLOT_MINUTI * 60000)
-            const p = perSlot.get(inizio.getTime())
-            const passato = inizio <= adesso
+          {slots.map((s) => {
+            const p = s.booking
+            const passato = s.inizio <= adesso
             const mio = p ? p.socio_id === mioId : false
 
             let classe = 'slot'
@@ -295,45 +295,53 @@ function CampoGriglia({
             let disabilitato = false
             let onClick: (() => void) | undefined
 
-            if (passato) {
-              if (p) {
+            if (p) {
+              // Slot occupato da una prenotazione.
+              if (passato) {
                 classe += ' occupato'
                 chi = isAdmin ? p.etichetta ?? 'Prenotato' : mio ? 'Tua' : 'Prenotato'
+                disabilitato = true
+              } else if (mio) {
+                classe += ' mio'
+                chi = 'Tua · tocca per annullare'
+                onClick = () => onAnnulla(p, campo, s.inizio)
               } else {
-                classe += ' passato'
-                chi = '—'
+                classe += ' occupato'
+                if (isAdmin) {
+                  classe += ' annullabile'
+                  chi = p.etichetta ?? 'Prenotato'
+                  onClick = () => onAnnulla(p, campo, s.inizio, p.etichetta ?? undefined)
+                } else {
+                  chi = 'Prenotato'
+                  disabilitato = true
+                }
               }
+            } else if (passato) {
+              classe += ' passato'
+              chi = '—'
               disabilitato = true
-            } else if (!p) {
+            } else if (s.disponibileMin < SLOT_DEF) {
+              // Spazio residuo fra due prenotazioni troppo corto per uno slot
+              // standard da 1h30: lo mostriamo ma non è prenotabile.
+              classe += ' libero corto'
+              chi = 'Spazio ridotto'
+              disabilitato = true
+            } else {
               classe += ' libero'
               chi = 'Libero'
-              onClick = () => onPrenota(inizio, fine)
-            } else if (mio) {
-              classe += ' mio'
-              chi = 'Tua · tocca per annullare'
-              onClick = () => onAnnulla(p, campo, inizio)
-            } else {
-              classe += ' occupato'
-              if (isAdmin) {
-                classe += ' annullabile'
-                chi = p.etichetta ?? 'Prenotato'
-                onClick = () => onAnnulla(p, campo, inizio, p.etichetta ?? undefined)
-              } else {
-                chi = 'Prenotato'
-                disabilitato = true
-              }
+              onClick = () => onPrenota(s.inizio, s.fine)
             }
 
             return (
               <button
-                key={ora}
+                key={`${s.inizio.getTime()}-${p?.id ?? 'free'}`}
                 type="button"
                 className={classe}
                 disabled={disabilitato}
                 onClick={onClick}
               >
                 <span>
-                  {ora}–{oraLocale(fine)}
+                  {oraLocale(s.inizio)}–{oraLocale(s.fine)}
                 </span>
                 <span className="chi">{chi}</span>
               </button>

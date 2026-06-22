@@ -12,7 +12,7 @@ import { oraLocale } from '@/features/prenotazioni/orari'
 import { useModalitaPremi } from '@/features/premi/datiPremi'
 import { useValoriPunti } from './datiPunti'
 import { usePrenotazioniAdminIntervallo } from './datiPrenotazioniAdmin'
-import { SLOT_DEF, costruisciSlots } from './slotGiornata'
+import { SLOT_DEF, costruisciSlots } from '@/features/prenotazioni/slotGiornata'
 import type { MiaPrenotazione, Partecipante } from '@/features/prenotazioni/datiAmichevoli'
 import type { Campo, Sport } from '@/features/prenotazioni/tipi'
 
