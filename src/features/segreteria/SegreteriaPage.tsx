@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import Segnaposto from '@/components/Segnaposto'
 import NuovoSocio from './NuovoSocio'
+import GestioneGiocatori from './GestioneGiocatori'
 
 // Pannello amministratori. Come nella v1 raccoglie più sezioni; qui sono
 // sotto-schede. Vengono riempite una alla volta lungo la Fase 8.
@@ -33,9 +34,7 @@ export default function SegreteriaPage() {
       </nav>
 
       {scheda === 'nuovo' && <NuovoSocio />}
-      {scheda === 'giocatori' && (
-        <Segnaposto descrizione="Elenco giocatori, ruoli e saldi — in arrivo nella Fase 8b." />
-      )}
+      {scheda === 'giocatori' && <GestioneGiocatori />}
       {scheda === 'campi' && (
         <Segnaposto descrizione="Campi, orari e regole di prenotazione — in arrivo nella Fase 8c." />
       )}
