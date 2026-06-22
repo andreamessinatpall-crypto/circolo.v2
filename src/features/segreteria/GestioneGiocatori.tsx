@@ -50,16 +50,16 @@ export default function GestioneGiocatori() {
       <div className="card">
         <p className="sub m-0 mb-2.5">Seleziona un giocatore per aprirne la scheda.</p>
 
-        <div className="mb-3 flex flex-col gap-2 sm:flex-row">
+        <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center">
           <input
             type="text"
-            className={`${classiInput} sm:flex-1`}
-            placeholder="Cerca per nome o cognome…"
+            className={`${classiInput} w-full sm:flex-1`}
+            placeholder="Cerca giocatore"
             value={cerca}
             onChange={(e) => setCerca(e.target.value)}
           />
           <select
-            className={classiInput}
+            className={`${classiInput} !mt-0 !w-auto shrink-0`}
             value={ordine}
             onChange={(e) => setOrdine(e.target.value as Ordine)}
           >

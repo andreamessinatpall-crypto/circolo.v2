@@ -8,7 +8,8 @@ import ModificaGiocatore from './ModificaGiocatore'
 import { aggiustaSaldo, fetchStoricoSocio, type SocioAdmin } from './datiSoci'
 
 // Colonne da NON esportare nel CSV dei movimenti.
-const COLONNE_NASCOSTE = ['socio_id', 'chiave']
+// "quando" è identica a "data_evento", quindi la escludiamo.
+const COLONNE_NASCOSTE = ['socio_id', 'chiave', 'quando']
 
 // (Fase 8b) Scheda di dettaglio di un giocatore: saldi, attiva/blocca,
 // modifica dati e aggiustamento manuale dei saldi.

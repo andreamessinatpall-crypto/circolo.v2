@@ -2,8 +2,8 @@ import { useAuth } from '@/auth/useAuth'
 import { costruisciCsv, scaricaCsv } from '@/lib/csv'
 import { useStoricoMovimenti, mancaStorico, SCRIPT_STORICO } from './datiMovimenti'
 
-// Colonne da NON esportare nel CSV.
-const COLONNE_NASCOSTE = ['socio_id', 'chiave']
+// Colonne da NON esportare nel CSV ("quando" è identica a "data_evento").
+const COLONNE_NASCOSTE = ['socio_id', 'chiave', 'quando']
 
 export default function StoricoMovimenti() {
   const { profilo } = useAuth()
