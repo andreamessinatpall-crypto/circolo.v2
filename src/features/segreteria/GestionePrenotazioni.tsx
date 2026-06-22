@@ -11,6 +11,7 @@ import { assegnaPuntiPresenza, annullaPuntiPresenza } from '@/features/prenotazi
 import { oraLocale } from '@/features/prenotazioni/orari'
 import { useModalitaPremi } from '@/features/premi/datiPremi'
 import { useValoriPunti } from './datiPunti'
+import { useIntervalliCrediti } from './datiIntervalli'
 import { usePrenotazioniAdminIntervallo } from './datiPrenotazioniAdmin'
 import { SLOT_DEF, costruisciSlots } from '@/features/prenotazioni/slotGiornata'
 import type { MiaPrenotazione, Partecipante } from '@/features/prenotazioni/datiAmichevoli'
@@ -81,6 +82,7 @@ export default function GestionePrenotazioni() {
   const sociQuery = useSociPubblici()
   const valoriQuery = useValoriPunti()
   const modalitaPremiQuery = useModalitaPremi()
+  const intervalliQuery = useIntervalliCrediti()
 
   const campiSport = useMemo(
     () =>
@@ -197,7 +199,14 @@ export default function GestionePrenotazioni() {
       if (error) throw error
       if (part.socio_id && valoriQuery.data) {
         if (valore)
-          await assegnaPuntiPresenza(p, part.socio_id, sport, valoriQuery.data, !!modalitaPremiQuery.data)
+          await assegnaPuntiPresenza(
+            p,
+            part.socio_id,
+            sport,
+            valoriQuery.data,
+            !!modalitaPremiQuery.data,
+            intervalliQuery.data ?? [],
+          )
         else await annullaPuntiPresenza(p.id, part.socio_id)
       }
     },

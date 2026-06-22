@@ -5,6 +5,7 @@ import { useAuth } from '@/auth/useAuth'
 import { mancaTabella, messaggioErrore } from '@/lib/errori'
 import { useAmici } from '@/features/profilo/amici/useAmici'
 import { useValoriPunti } from '@/features/segreteria/datiPunti'
+import { useIntervalliCrediti } from '@/features/segreteria/datiIntervalli'
 import { useModalitaPremi } from '@/features/premi/datiPremi'
 import { useCampi } from './datiPrenotazioni'
 import { mancaColonnaManuale, useMieAmichevoli, useSociPubblici } from './datiAmichevoli'
@@ -28,6 +29,7 @@ export default function MieAmichevoli({ sport }: { sport: Sport }) {
   const amiciData = useAmici(profilo?.id ?? '')
   const valoriQuery = useValoriPunti()
   const modalitaPremiQuery = useModalitaPremi()
+  const intervalliQuery = useIntervalliCrediti()
 
   const idCampi = useMemo(
     () => (campiQuery.data ?? []).filter((c) => c.sport === sport).map((c) => c.id),
@@ -149,6 +151,7 @@ export default function MieAmichevoli({ sport }: { sport: Sport }) {
             sport,
             valoriQuery.data,
             !!modalitaPremiQuery.data,
+            intervalliQuery.data ?? [],
           )
         else await annullaPuntiPresenza(pren.id, part.socio_id)
       }

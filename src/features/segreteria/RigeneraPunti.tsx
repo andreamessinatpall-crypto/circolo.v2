@@ -7,6 +7,7 @@ import { useTornei } from '@/features/tornei/datiTornei'
 import { useModalitaPremi } from '@/features/premi/datiPremi'
 import type { Sport } from '@/features/prenotazioni/tipi'
 import { useValoriPunti } from './datiPunti'
+import { useIntervalliCrediti } from './datiIntervalli'
 import { rigeneraTuttiIPunti } from './rigenera'
 
 type Esito = { tipo: 'ok' | 'errore'; testo: string } | null
@@ -17,6 +18,7 @@ export default function RigeneraPunti() {
   const torneiQuery = useTornei()
   const valoriQuery = useValoriPunti()
   const modalitaPremiQuery = useModalitaPremi()
+  const intervalliQuery = useIntervalliCrediti()
   const campiQuery = useCampi()
   const [msg, setMsg] = useState<Esito>(null)
 
@@ -35,6 +37,7 @@ export default function RigeneraPunti() {
         valoriQuery.data,
         !!modalitaPremiQuery.data,
         sportDiCampo,
+        intervalliQuery.data ?? [],
       )
     },
     onSuccess: ({ tornei, presenze }) => {
@@ -60,7 +63,8 @@ export default function RigeneraPunti() {
         <p className="sub m-0 mb-3">
           Ricostruisce i <strong>punti</strong> di tutti i soci dagli eventi reali (tornei e
           presenze) con i valori impostati qui sopra. Riallinea anche i <strong>crediti</strong>{' '}
-          delle presenze (solo a modalità premi accesa). I valori inseriti a mano restano.
+          delle presenze (solo a modalità premi accesa e rispettando gli intervalli qui sopra). I
+          valori inseriti a mano restano.
         </p>
         <button
           type="button"

@@ -5,6 +5,7 @@ import type { DatiTornei } from '@/features/tornei/datiTornei'
 import type { MiaPrenotazione } from '@/features/prenotazioni/datiAmichevoli'
 import type { Sport } from '@/features/prenotazioni/tipi'
 import type { ValoriPunti } from './datiPunti'
+import type { Intervallo } from './datiIntervalli'
 
 // (Fase 8d · blocco 2) Rigenera i PUNTI di tutti i soci ricostruendoli dagli
 // eventi reali con i valori ATTUALI. In v2 ogni evento registra punti e crediti
@@ -24,6 +25,7 @@ export async function rigeneraTuttiIPunti(
   valori: ValoriPunti,
   modalitaPremi: boolean,
   sportDiCampo: (campoId: number | string) => Sport | null,
+  intervalli: Intervallo[] = [],
 ): Promise<EsitoRigenera> {
   // 1) Tornei: ricalcolo completo (iscrizioni, partite, vittorie di girone).
   let tornei = 0
@@ -55,7 +57,7 @@ export async function rigeneraTuttiIPunti(
       if (!pren || pren.incontro_id) continue // torneo: gestito sopra
       const sport = sportDiCampo(pren.campo_id)
       if (!sport) continue
-      await assegnaPuntiPresenza(pren, r.socio_id, sport, valori, modalitaPremi)
+      await assegnaPuntiPresenza(pren, r.socio_id, sport, valori, modalitaPremi, intervalli)
       presenze++
     }
   }

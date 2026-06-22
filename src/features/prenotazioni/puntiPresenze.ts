@@ -6,14 +6,15 @@
 // grazie alla chiave "amich:<prenotazione>:<socio>" (vedi src/lib/punti.ts).
 //
 // Differenza dalla v1: i CREDITI hanno un valore proprio (non più uguale ai
-// punti). Vengono accreditati solo a modalità premi accesa; il filtro per
-// INTERVALLI di date arriverà col blocco "intervalli crediti" (TODO sotto).
+// punti). Vengono accreditati solo a modalità premi accesa E se la data
+// dell'evento ricade in uno degli intervalli crediti (vedi datiIntervalli).
 //
 // Le partite di torneo (prenotazione con incontro_id) NON passano di qui: i loro
 // punti sono gestiti da features/tornei/punti.ts.
 
 import { assegnaMovimento, azzeraChiave, type EsitoPunti } from '@/lib/punti'
 import type { ValoriPunti } from '@/features/segreteria/datiPunti'
+import { dataInIntervalli, type Intervallo } from '@/features/segreteria/datiIntervalli'
 import type { MiaPrenotazione } from './datiAmichevoli'
 import type { Sport } from './tipi'
 
@@ -32,19 +33,22 @@ function chiavePresenza(prenId: number | string, socioId: string): string {
 }
 
 // Assegna punti (+ eventuali crediti) per una presenza confermata.
+// `intervalli` vuoto = nessun limite di date sui crediti (default).
 export async function assegnaPuntiPresenza(
   pren: MiaPrenotazione,
   socioId: string,
   sport: Sport,
   valori: ValoriPunti,
   modalitaPremi: boolean,
+  intervalli: Intervallo[] = [],
 ): Promise<EsitoPunti> {
   if (pren.incontro_id) return { ok: true } // partita di torneo: gestita altrove
   const allenamento = !!pren.allenamento
   const punti = valorePunti(valori, sport, allenamento)
-  // TODO (blocco intervalli crediti): a modalità premi accesa, accreditare i
-  // crediti solo se pren.inizio cade dentro un intervallo salvato.
-  const crediti = modalitaPremi ? valoreCrediti(valori, sport, allenamento) : 0
+  // Crediti solo a modalità premi accesa E se la data dell'evento è in un
+  // intervallo (nessun intervallo = nessun limite). I punti non si filtrano mai.
+  const dentroIntervallo = dataInIntervalli(pren.inizio, intervalli)
+  const crediti = modalitaPremi && dentroIntervallo ? valoreCrediti(valori, sport, allenamento) : 0
 
   const chiave = chiavePresenza(pren.id, socioId)
   await azzeraChiave(chiave) // evito doppi conteggi

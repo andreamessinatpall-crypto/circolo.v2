@@ -5,6 +5,7 @@ import GestioneGiocatori from './GestioneGiocatori'
 import GestioneCampi from './GestioneCampi'
 import GestionePrenotazioni from './GestionePrenotazioni'
 import ValoriPunti from './ValoriPunti'
+import IntervalliCrediti from './IntervalliCrediti'
 import RigeneraPunti from './RigeneraPunti'
 
 // Pannello amministratori. Come nella v1 raccoglie più sezioni; qui sono
@@ -45,6 +46,7 @@ export default function SegreteriaPage() {
       {scheda === 'punti' && (
         <>
           <ValoriPunti />
+          <IntervalliCrediti />
           <RigeneraPunti />
         </>
       )}
