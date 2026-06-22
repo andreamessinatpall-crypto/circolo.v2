@@ -7,6 +7,7 @@ import GestionePrenotazioni from './GestionePrenotazioni'
 import ValoriPunti from './ValoriPunti'
 import IntervalliCrediti from './IntervalliCrediti'
 import RigeneraPunti from './RigeneraPunti'
+import RigeneraCrediti from './RigeneraCrediti'
 
 // Pannello amministratori. Come nella v1 raccoglie più sezioni; qui sono
 // sotto-schede. Vengono riempite una alla volta lungo la Fase 8.
@@ -46,8 +47,9 @@ export default function SegreteriaPage() {
       {scheda === 'punti' && (
         <>
           <ValoriPunti />
-          <IntervalliCrediti />
           <RigeneraPunti />
+          <IntervalliCrediti />
+          <RigeneraCrediti />
         </>
       )}
       {scheda === 'premi' && (

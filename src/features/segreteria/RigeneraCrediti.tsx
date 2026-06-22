@@ -3,19 +3,18 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { classiErrore, classiOk } from '@/components/stili'
 import { messaggioErrore } from '@/lib/errori'
 import { useCampi } from '@/features/prenotazioni/datiPrenotazioni'
-import { useTornei } from '@/features/tornei/datiTornei'
 import { useModalitaPremi } from '@/features/premi/datiPremi'
 import type { Sport } from '@/features/prenotazioni/tipi'
 import { useValoriPunti } from './datiPunti'
 import { useIntervalliCrediti } from './datiIntervalli'
-import { rigeneraPunti } from './rigenera'
+import { rigeneraCrediti } from './rigenera'
 
 type Esito = { tipo: 'ok' | 'errore'; testo: string } | null
 
-// (Fase 8d · blocco 2) Segreteria · pulsante per rigenerare i punti.
-export default function RigeneraPunti() {
+// (Fase 8d · blocco 4) Segreteria · pulsante per rigenerare i crediti delle
+// presenze applicando gli intervalli. Sta nella stessa scheda degli intervalli.
+export default function RigeneraCrediti() {
   const qc = useQueryClient()
-  const torneiQuery = useTornei()
   const valoriQuery = useValoriPunti()
   const modalitaPremiQuery = useModalitaPremi()
   const intervalliQuery = useIntervalliCrediti()
@@ -30,39 +29,34 @@ export default function RigeneraPunti() {
 
   const rigenera = useMutation({
     mutationFn: async () => {
-      if (!torneiQuery.data || !valoriQuery.data)
-        throw new Error('Dati non ancora pronti: riprova tra un istante.')
-      return rigeneraPunti(
-        torneiQuery.data,
+      if (!valoriQuery.data) throw new Error('Dati non ancora pronti: riprova tra un istante.')
+      return rigeneraCrediti(
         valoriQuery.data,
         !!modalitaPremiQuery.data,
         sportDiCampo,
         intervalliQuery.data ?? [],
       )
     },
-    onSuccess: ({ tornei, presenze }) => {
+    onSuccess: ({ presenze }) => {
       qc.invalidateQueries({ queryKey: ['soci'] })
       qc.invalidateQueries({ queryKey: ['saldo-crediti'] })
       qc.invalidateQueries({ queryKey: ['riepilogo-stat'] })
       qc.invalidateQueries({ queryKey: ['storico-movimenti'] })
-      setMsg({
-        tipo: 'ok',
-        testo: `Punti ricostruiti: ${tornei} tornei e ${presenze} presenze.`,
-      })
+      setMsg({ tipo: 'ok', testo: `Crediti riallineati su ${presenze} presenze.` })
     },
     onError: (e: unknown) =>
       setMsg({ tipo: 'errore', testo: 'Rigenerazione non riuscita: ' + messaggioErrore(e) }),
   })
 
-  const pronto = !!torneiQuery.data && !!valoriQuery.data && !rigenera.isPending
+  const pronto = !!valoriQuery.data && !rigenera.isPending
 
   return (
     <div>
-      <div className="eyebrow">Rigenera punti</div>
+      <div className="eyebrow">Rigenera crediti</div>
       <div className="card">
         <p className="sub m-0 mb-3">
-          Ricostruisce i <strong>punti</strong> di tutti i soci da tornei e presenze con i valori
-          correnti. I valori inseriti a mano restano.
+          Riallinea i <strong>crediti</strong> delle presenze ai valori e agli intervalli correnti
+          (solo a modalità premi accesa). I valori inseriti a mano restano.
         </p>
         <button
           type="button"
@@ -70,11 +64,11 @@ export default function RigeneraPunti() {
           disabled={!pronto}
           onClick={() => {
             setMsg(null)
-            if (window.confirm('Rigenerare i punti di tutti i soci con i valori correnti?'))
+            if (window.confirm('Rigenerare i crediti di tutti i soci secondo gli intervalli?'))
               rigenera.mutate()
           }}
         >
-          {rigenera.isPending ? 'Rigenerazione in corso…' : 'Rigenera punti'}
+          {rigenera.isPending ? 'Rigenerazione in corso…' : 'Rigenera crediti'}
         </button>
         {msg && <p className={`mt-3 ${msg.tipo === 'ok' ? classiOk : classiErrore}`}>{msg.testo}</p>}
       </div>

@@ -23,9 +23,8 @@ export default function IntervalliCrediti() {
       <div className="eyebrow">Intervalli per l'accumulo dei crediti</div>
       <div className="card">
         <p className="sub m-0 mb-3">
-          I <strong>crediti</strong> si accumulano solo per gli eventi la cui data ricade dentro uno
-          di questi intervalli. Nessun intervallo = nessun limite di data (vale solo l'interruttore
-          della modalità premi). I <strong>punti</strong> non sono mai filtrati.
+          I <strong>crediti</strong> contano solo per gli eventi dentro un intervallo. Nessun
+          intervallo = nessun limite di date. I punti non sono mai filtrati.
         </p>
         {isLoading ? (
           <p className="text-ink-2">Caricamento…</p>
