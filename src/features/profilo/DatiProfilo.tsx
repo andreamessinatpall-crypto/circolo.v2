@@ -8,6 +8,7 @@ import { useAuth } from '@/auth/useAuth'
 import { etichettaGenere } from '@/lib/formato'
 import { classiErrore, classiOk } from '@/components/stili'
 import CambiaPassword from './CambiaPassword'
+import StoricoMovimenti from './StoricoMovimenti'
 
 // Solo questi campi sono modificabili dal socio (come nella v1).
 const schema = z.object({
@@ -117,6 +118,8 @@ export default function DatiProfilo() {
           {salva.isPending ? 'Salvataggio…' : 'Salva modifiche'}
         </button>
       </form>
+
+      <StoricoMovimenti />
 
       <CambiaPassword />
     </div>
