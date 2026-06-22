@@ -67,6 +67,19 @@ export default function MieLezioni({ sport }: { sport: Sport }) {
     onError: (e: unknown) => window.alert('Rimozione non riuscita: ' + messaggioErrore(e)),
   })
 
+  // (Tappa 11) Conferma/annulla la presenza di un partecipante alla lezione.
+  const conferma = useMutation({
+    mutationFn: async ({ id, valore }: { id: number | string; valore: boolean }) => {
+      const { error } = await supabase
+        .from('partecipanti_amichevole')
+        .update({ confermato: valore })
+        .eq('id', id)
+      if (error) throw error
+    },
+    onSuccess: aggiorna,
+    onError: (e: unknown) => window.alert('Operazione non riuscita: ' + messaggioErrore(e)),
+  })
+
   // (Tappa 11) Ospite non registrato in una lezione: nessun account, niente punti.
   const aggiungiOspite = useMutation({
     mutationFn: async ({ prenId, nome }: { prenId: number | string; nome: string }) => {
@@ -167,6 +180,7 @@ export default function MieLezioni({ sport }: { sport: Sport }) {
                 amiciVuoti={false}
                 onAggiungi={(socioId) => aggiungi.mutate({ prenId: p.id, socioId })}
                 onAggiungiOspite={(nome) => aggiungiOspite.mutate({ prenId: p.id, nome })}
+                onConferma={(id, valore) => conferma.mutate({ id, valore })}
                 onRimuovi={(part) => rimuovi.mutate(part.id)}
                 onAnnulla={() => {
                   const quando =
