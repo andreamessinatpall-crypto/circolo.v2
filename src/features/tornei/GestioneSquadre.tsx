@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { eDuplicato, messaggioErrore } from '@/lib/errori'
@@ -13,6 +13,24 @@ import type { Componente, Squadra, Torneo } from './tipi'
 function cognomeDa(etichetta: string) {
   const parti = (etichetta || '').trim().split(/\s+/)
   return parti.length ? parti[parti.length - 1] : ''
+}
+
+// Nome da mostrare per un componente: il socio registrato, oppure il nome
+// inserito a mano per un giocatore non registrato.
+function nomeComponente(c: Componente, etichette: Map<string, string>) {
+  if (c.socio_id) return etichette.get(c.socio_id) ?? 'Socio'
+  return c.nome_manuale ?? 'Giocatore'
+}
+
+// La colonna "nome_manuale" potrebbe non esistere ancora nel database.
+function mancaColonnaManuale(error: unknown) {
+  const e = error as { code?: string; message?: string } | null
+  if (!e) return false
+  return (
+    e.code === 'PGRST204' ||
+    e.code === '42703' ||
+    (e.message ?? '').toLowerCase().includes('nome_manuale')
+  )
 }
 
 // La colonna "riserva" potrebbe non esistere ancora nel database.
@@ -70,7 +88,9 @@ export default function GestioneSquadre({
     const ord = (comp as Componente[])
       .slice()
       .sort((a, b) => (a.riserva ? 1 : 0) - (b.riserva ? 1 : 0))
-    const cognomi = ord.map((c) => cognomeDa(etichette.get(c.socio_id) ?? '')).filter(Boolean)
+    const cognomi = ord
+      .map((c) => cognomeDa(c.socio_id ? (etichette.get(c.socio_id) ?? '') : (c.nome_manuale ?? '')))
+      .filter(Boolean)
     if (!cognomi.length) return
     await supabase.from('squadre').update({ nome: cognomi.join('/') }).eq('id', squadraId)
   }
@@ -144,6 +164,43 @@ export default function GestioneSquadre({
       ),
   })
 
+  // (Tappa 10) Giocatore NON registrato, inserito a mano: nessun socio_id,
+  // quindi non guadagna punti né crediti.
+  const aggiungiCompManuale = useMutation({
+    mutationFn: async ({
+      squadraId,
+      nome,
+      riserva,
+    }: {
+      squadraId: number | string
+      nome: string
+      riserva: boolean
+    }) => {
+      const riga: Record<string, unknown> = {
+        squadra_id: squadraId,
+        socio_id: null,
+        nome_manuale: nome,
+        torneo_id: torneo.id,
+        riserva,
+      }
+      let { error } = await supabase.from('squadra_componenti').insert(riga)
+      // Tollerante: se manca la colonna "riserva", reinserisco senza.
+      if (error && mancaColonnaRiserva(error)) {
+        delete riga.riserva
+        ;({ error } = await supabase.from('squadra_componenti').insert(riga))
+      }
+      if (error) throw error
+      if (torneo.sport === 'padel') await aggiornaNomeCoppia(squadraId)
+    },
+    onSuccess: aggiorna,
+    onError: (e: unknown) =>
+      window.alert(
+        mancaColonnaManuale(e)
+          ? 'Per inserire giocatori non registrati esegui lo script tappa10-componenti-manuali.sql su Supabase.'
+          : 'Non riuscito: ' + messaggioErrore(e),
+      ),
+  })
+
   // (Calcio) logo della squadra: salvo il data URL nella colonna squadre.logo_url.
   const logo = useMutation({
     mutationFn: async ({ id, dataUrl }: { id: number | string; dataUrl: string | null }) => {
@@ -162,19 +219,18 @@ export default function GestioneSquadre({
   const rimuoviComp = useMutation({
     mutationFn: async ({
       squadraId,
-      socioId,
+      comp,
     }: {
       squadraId: number | string
-      socioId: string
+      comp: Componente
     }) => {
-      const { error } = await supabase
-        .from('squadra_componenti')
-        .delete()
-        .eq('squadra_id', squadraId)
-        .eq('socio_id', socioId)
+      // Rimuovo per id del componente: funziona anche per i giocatori manuali
+      // (che non hanno socio_id).
+      const { error } = await supabase.from('squadra_componenti').delete().eq('id', comp.id)
       if (error) throw error
-      // (Fase 7b) Tolgo i punti di iscrizione assegnati a questo socio.
-      await annullaPuntiIscrizione(squadraId, socioId)
+      // (Fase 7b) Tolgo i punti di iscrizione assegnati a questo socio (i
+      // componenti manuali non ne hanno).
+      if (comp.socio_id) await annullaPuntiIscrizione(squadraId, comp.socio_id)
       if (torneo.sport === 'padel') await aggiornaNomeCoppia(squadraId)
     },
     onSuccess: aggiorna,
@@ -210,7 +266,10 @@ export default function GestioneSquadre({
             onAggiungi={(socioId, riserva) =>
               aggiungiComp.mutate({ squadraId: s.id, socioId, riserva })
             }
-            onRimuovi={(socioId) => rimuoviComp.mutate({ squadraId: s.id, socioId })}
+            onAggiungiManuale={(nome, riserva) =>
+              aggiungiCompManuale.mutate({ squadraId: s.id, nome, riserva })
+            }
+            onRimuovi={(comp) => rimuoviComp.mutate({ squadraId: s.id, comp })}
             onLogo={(dataUrl) => logo.mutate({ id: s.id, dataUrl })}
           />
         ))}
@@ -231,6 +290,7 @@ function RigaSquadra({
   onRinomina,
   onElimina,
   onAggiungi,
+  onAggiungiManuale,
   onRimuovi,
   onLogo,
 }: {
@@ -243,9 +303,11 @@ function RigaSquadra({
   onRinomina: (nome: string) => void
   onElimina: () => void
   onAggiungi: (socioId: string, riserva: boolean) => void
-  onRimuovi: (socioId: string) => void
+  onAggiungiManuale: (nome: string, riserva: boolean) => void
+  onRimuovi: (comp: Componente) => void
   onLogo: (dataUrl: string | null) => void
 }) {
+  const [nomeManuale, setNomeManuale] = useState('')
   // Titolari prima, riserve in fondo.
   const ordinati = componenti
     .slice()
@@ -331,13 +393,16 @@ function RigaSquadra({
       ) : (
         <div>
           {ordinati.map((c) => (
-            <div key={c.socio_id} className="comp-riga">
-              <span className="nome">{etichette.get(c.socio_id) ?? 'Socio'}</span>
+            <div key={c.id} className="comp-riga">
+              <span className="nome">
+                {nomeComponente(c, etichette)}
+                {!c.socio_id && <span className="sub text-xs"> · ospite</span>}
+              </span>
               <button
                 type="button"
                 className="border-0 bg-transparent px-1 text-xl font-bold leading-none text-red-700"
                 title="Togli dalla squadra"
-                onClick={() => onRimuovi(c.socio_id)}
+                onClick={() => onRimuovi(c)}
               >
                 ×
               </button>
@@ -347,20 +412,44 @@ function RigaSquadra({
       )}
 
       {!pieno && (
-        <div className="aggiungi-part">
+        <div className="aggiungi-part flex flex-col gap-2">
           <select
             value=""
             onChange={(e) => {
               if (e.target.value) onAggiungi(e.target.value, prossimoRiserva)
             }}
           >
-            <option value="">— Aggiungi un giocatore —</option>
+            <option value="">— Aggiungi un socio —</option>
             {selezionabili.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.etichetta}
               </option>
             ))}
           </select>
+
+          {/* (Tappa 10) Giocatore non registrato: solo il nome, niente punti. */}
+          <form
+            className="flex gap-1.5"
+            onSubmit={(e) => {
+              e.preventDefault()
+              const nome = nomeManuale.trim()
+              if (!nome) return
+              onAggiungiManuale(nome, prossimoRiserva)
+              setNomeManuale('')
+            }}
+          >
+            <input
+              type="text"
+              className="campo flex-1"
+              placeholder="Nome giocatore non registrato"
+              maxLength={60}
+              value={nomeManuale}
+              onChange={(e) => setNomeManuale(e.target.value)}
+            />
+            <button type="submit" className="btn btn-secondario btn-mini" disabled={!nomeManuale.trim()}>
+              Aggiungi
+            </button>
+          </form>
         </div>
       )}
     </div>

@@ -65,12 +65,13 @@ export default function RiepilogoPunti({
     const pts = puntiDelGirone(torneo, gironeSquadra(torneo, s))
     const vinte = vittoriePerSquadra[String(s.id)] ?? 0
     const vinceTorneo = vincitoriGirone.has(String(s.id))
-    return comp.map((c) => {
+    // I componenti manuali non guadagnano punti: non compaiono nel riepilogo.
+    return comp.filter((c) => c.socio_id).map((c) => {
       const puntiPartite = pts.vittoria * vinte
       const puntiTorneo = vinceTorneo ? pts.torneo : 0
       return {
-        socioId: c.socio_id,
-        nome: etichette.get(c.socio_id) ?? '—',
+        socioId: c.socio_id!,
+        nome: etichette.get(c.socio_id!) ?? '—',
         iscr: pts.iscrizione,
         puntiPartite,
         puntiTorneo,

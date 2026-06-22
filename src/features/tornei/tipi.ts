@@ -42,8 +42,12 @@ export interface Componente {
   id: number | string
   squadra_id: number | string
   torneo_id: number | string
-  socio_id: string
+  socio_id: string | null
   riserva: boolean | null
+  // (Tappa 10) Nome di un giocatore NON registrato, inserito a mano
+  // dall'organizzatore. Quando è valorizzato, socio_id è null e il giocatore
+  // non guadagna punti né crediti.
+  nome_manuale?: string | null
 }
 
 // (Fase 6c) Un incontro del girone fra due squadre/coppie.

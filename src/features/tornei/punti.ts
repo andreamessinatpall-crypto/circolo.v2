@@ -83,7 +83,8 @@ export async function assegnaPuntiPartita(
     .in('squadra_id', [incontro.casa_id, incontro.ospite_id])
 
   let esito: EsitoPunti = { ok: true }
-  for (const c of (comp ?? []) as { squadra_id: number | string; socio_id: string }[]) {
+  for (const c of (comp ?? []) as { squadra_id: number | string; socio_id: string | null }[]) {
+    if (!c.socio_id) continue // componente manuale: niente punti
     if (String(c.squadra_id) !== String(vincitore)) continue
     const r = await assegnaMovimento({
       socioId: c.socio_id,
@@ -125,7 +126,9 @@ export async function assegnaPuntiVittoriaAuto(
       await azzeraChiave(chiave)
       continue
     }
-    const membri = (compBySquadra[String(classifica[0].id)] ?? []).map((c) => c.socio_id)
+    const membri = (compBySquadra[String(classifica[0].id)] ?? [])
+      .map((c) => c.socio_id)
+      .filter((x): x is string => !!x) // esclude i componenti manuali
     const p = puntiDelGirone(torneo, g).torneo
     const r = await assegnaPuntiVittoriaGirone(chiave, torneo, p, membri)
     if (!r.ok) esito = r
@@ -169,7 +172,7 @@ export async function ricalcolaPuntiTorneo(
 ): Promise<void> {
   for (const s of squadre) {
     for (const c of compBySquadra[String(s.id)] ?? []) {
-      await assegnaPuntiIscrizione(torneo, s, c.socio_id)
+      if (c.socio_id) await assegnaPuntiIscrizione(torneo, s, c.socio_id)
     }
   }
   for (const m of incontri) {

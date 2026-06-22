@@ -13,7 +13,11 @@ import type { Componente, Incontro, Torneo } from './tipi'
 // I titolari da iscrivere alla prenotazione: si esclude la riserva e, nel padel,
 // si tengono al massimo i primi 2 (la coppia che gioca davvero).
 function titolari(comp: Componente[], sport: 'padel' | 'calcio'): string[] {
-  const ids = comp.filter((c) => c.riserva !== true).map((c) => c.socio_id)
+  // I componenti manuali (senza socio_id) non possono essere iscritti alla
+  // prenotazione, che collega utenti registrati: li si esclude qui.
+  const ids = comp
+    .filter((c) => c.riserva !== true && c.socio_id)
+    .map((c) => c.socio_id as string)
   return sport === 'padel' ? ids.slice(0, 2) : ids
 }
 

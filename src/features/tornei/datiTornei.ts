@@ -68,7 +68,8 @@ export function useTornei() {
       }
       for (const c of comp) {
         ;(perSquadraComp[String(c.squadra_id)] ??= []).push(c)
-        ;(assegnati[String(c.torneo_id)] ??= new Set()).add(c.socio_id)
+        // I componenti manuali (senza socio_id) non occupano un posto fra i soci.
+        if (c.socio_id) (assegnati[String(c.torneo_id)] ??= new Set()).add(c.socio_id)
       }
       for (const m of incontri) {
         ;(perTorneoIncontri[String(m.torneo_id)] ??= []).push(m)
