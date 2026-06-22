@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { eDuplicato, messaggioErrore } from '@/lib/errori'
@@ -307,7 +307,6 @@ function RigaSquadra({
   onRimuovi: (comp: Componente) => void
   onLogo: (dataUrl: string | null) => void
 }) {
-  const [nomeManuale, setNomeManuale] = useState('')
   // Titolari prima, riserve in fondo.
   const ordinati = componenti
     .slice()
@@ -412,44 +411,30 @@ function RigaSquadra({
       )}
 
       {!pieno && (
-        <div className="aggiungi-part flex flex-col gap-2">
+        <div className="aggiungi-part">
           <select
             value=""
             onChange={(e) => {
-              if (e.target.value) onAggiungi(e.target.value, prossimoRiserva)
+              const v = e.target.value
+              if (!v) return
+              // (Tappa 10) Voce "ospite": chiede il nome in una finestra a comparsa
+              // e aggiunge un giocatore non registrato (niente punti/crediti).
+              if (v === '__ospite__') {
+                const nome = window.prompt('Nome del giocatore non registrato:')
+                if (nome && nome.trim()) onAggiungiManuale(nome.trim(), prossimoRiserva)
+                return
+              }
+              onAggiungi(v, prossimoRiserva)
             }}
           >
-            <option value="">— Aggiungi un socio —</option>
+            <option value="">— Aggiungi un giocatore —</option>
+            <option value="__ospite__">➕ Ospite (non registrato)…</option>
             {selezionabili.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.etichetta}
               </option>
             ))}
           </select>
-
-          {/* (Tappa 10) Giocatore non registrato: solo il nome, niente punti. */}
-          <form
-            className="flex gap-1.5"
-            onSubmit={(e) => {
-              e.preventDefault()
-              const nome = nomeManuale.trim()
-              if (!nome) return
-              onAggiungiManuale(nome, prossimoRiserva)
-              setNomeManuale('')
-            }}
-          >
-            <input
-              type="text"
-              className="campo flex-1"
-              placeholder="Nome giocatore non registrato"
-              maxLength={60}
-              value={nomeManuale}
-              onChange={(e) => setNomeManuale(e.target.value)}
-            />
-            <button type="submit" className="btn btn-secondario btn-mini" disabled={!nomeManuale.trim()}>
-              Aggiungi
-            </button>
-          </form>
         </div>
       )}
     </div>
