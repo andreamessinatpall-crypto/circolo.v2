@@ -1014,31 +1014,59 @@
   }
 
   /* ─── PREMI (Fase 7c) — portate dalla v1 ─────────────── */
+  /* Saldo crediti: banner celebrativo bianco con decori dorati, numero sopra
+     ed etichetta centrata sotto. */
   .saldo-crediti {
+    position: relative;
+    overflow: hidden;
     display: flex;
-    align-items: baseline;
-    gap: 12px;
-    padding: 18px 20px;
-    border-radius: 16px;
-    background: linear-gradient(135deg, var(--v600), var(--v800));
-    color: #fff;
-    box-shadow: var(--ombra-card);
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 2px;
+    padding: 20px;
+    border-radius: 18px;
+    background: #fff;
+    border: 1px solid var(--g300);
+    box-shadow: 0 6px 22px rgba(176, 137, 60, 0.16);
     margin-bottom: 16px;
   }
+  .saldo-crediti::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(120% 80% at 50% 0%, rgba(232, 200, 120, 0.28), transparent 62%);
+    pointer-events: none;
+  }
   .saldo-crediti .num {
+    position: relative;
     font-family: var(--font-display);
     font-weight: 800;
-    font-size: 2.2rem;
+    font-size: 2.8rem;
     line-height: 1;
-    color: var(--g300);
+    color: var(--g600);
+  }
+  /* Scintille dorate ai lati del numero */
+  .saldo-crediti .num::before,
+  .saldo-crediti .num::after {
+    content: "✦";
+    position: relative;
+    top: -0.5em;
+    margin: 0 0.32em;
+    font-size: 0.8rem;
+    color: var(--g500);
+    opacity: 0.75;
   }
   .saldo-crediti .et {
-    font-size: 0.82rem;
+    position: relative;
+    font-size: 0.74rem;
+    font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
-    opacity: 0.9;
+    letter-spacing: 0.14em;
+    color: var(--ink2);
   }
   .premio-card {
+    position: relative;
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 16px;
@@ -1058,6 +1086,9 @@
     justify-content: space-between;
     gap: 12px;
   }
+  .premio-top.pr-pop {
+    padding-right: 92px;
+  }
   .premio-nome {
     font-family: var(--font-display);
     text-transform: uppercase;
@@ -1065,6 +1096,97 @@
     font-weight: 700;
     font-size: 1.1rem;
     line-height: 1.1;
+    color: var(--v800);
+  }
+  /* Badge "Popolare" (premio molto richiesto), in alto a destra della scheda */
+  .badge-popolare {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 0.58rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #c2410c;
+    background: #fff4ed;
+    border: 1px solid #f7c9a8;
+    border-radius: 999px;
+    padding: 2px 8px 2px 6px;
+  }
+  /* Icona pacco + disponibilità */
+  .premio-stock {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.82rem;
+    color: var(--ink2);
+  }
+  /* Pulsante riscatto dorato con riflesso "specchio" che scorre */
+  .btn-riscatta {
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+    border: none;
+    border-radius: 12px;
+    padding: 11px 16px;
+    font-weight: 800;
+    font-size: 0.82rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #3a2a06;
+    background: linear-gradient(135deg, #f6df97, #c8972f 55%, #a9781f);
+    box-shadow: 0 4px 14px rgba(176, 137, 60, 0.38);
+    cursor: pointer;
+  }
+  .btn-riscatta::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -60%;
+    width: 38%;
+    height: 100%;
+    background: linear-gradient(105deg, transparent, rgba(255, 255, 255, 0.75), transparent);
+    transform: skewX(-20deg);
+    animation: brilla-oro 3.5s ease-in-out infinite;
+  }
+  .btn-riscatta:hover {
+    filter: brightness(1.05);
+  }
+  .btn-riscatta:disabled {
+    opacity: 0.7;
+    cursor: default;
+  }
+  @keyframes brilla-oro {
+    0%,
+    55% {
+      left: -60%;
+    }
+    100% {
+      left: 130%;
+    }
+  }
+  /* Pulsante bloccato (crediti insufficienti / esaurito): bianco con lucchetto */
+  .btn-bloccato {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    background: #fff;
+    color: var(--ink3);
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    padding: 11px 16px;
+    font-weight: 700;
+    font-size: 0.82rem;
+    cursor: not-allowed;
+  }
+  .btn-bloccato svg {
+    width: 15px;
+    height: 15px;
   }
   .premio-costo {
     font-family: var(--font-display);

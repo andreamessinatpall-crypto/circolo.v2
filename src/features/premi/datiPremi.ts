@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import { mancaRpc } from '@/lib/errori'
 
 // Tipi del sistema premi (le tabelle vivono già su Supabase dalla v1).
 export interface Premio {
@@ -79,6 +80,28 @@ export function useSaldoCrediti(socioId: string | undefined) {
         .eq('id', socioId!)
         .maybeSingle()
       return Number((data as { crediti?: number } | null)?.crediti) || 0
+    },
+  })
+}
+
+// Quante richieste ha ricevuto ogni premio (per il badge "Popolare"). Il socio
+// non può leggere le richieste altrui (RLS), quindi il conteggio arriva da una
+// RPC SECURITY DEFINER. Tollerante: se la RPC non c'è, nessun conteggio.
+export const SCRIPT_POPOLARITA = 'tappa16-premi-popolarita.sql'
+
+export function usePopolaritaPremi() {
+  return useQuery({
+    queryKey: ['premi-popolarita'],
+    queryFn: async (): Promise<Map<string, number>> => {
+      const { data, error } = await supabase.rpc('premi_popolarita')
+      if (error) {
+        if (mancaRpc(error) || mancaPremi(error)) return new Map()
+        throw error
+      }
+      const m = new Map<string, number>()
+      for (const r of (data ?? []) as { nome_premio: string; n: number }[])
+        m.set((r.nome_premio ?? '').toLowerCase(), Number(r.n) || 0)
+      return m
     },
   })
 }

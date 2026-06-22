@@ -6,11 +6,15 @@ import {
   SCRIPT_PREMI,
   mancaPremi,
   usePremiCatalogo,
+  usePopolaritaPremi,
   useSaldoCrediti,
   useMieRichieste,
   type Premio,
   type Richiesta,
 } from './datiPremi'
+
+// Da quante richieste in su un premio è considerato "Popolare".
+const SOGLIA_POPOLARE = 3
 
 // Data breve in italiano (es. "21 giu 2026").
 function dataIt(iso: string): string {
@@ -38,6 +42,7 @@ export default function PremiPage() {
   const saldoQuery = useSaldoCrediti(profilo?.id)
   const catalogoQuery = usePremiCatalogo()
   const richiesteQuery = useMieRichieste(profilo?.id)
+  const popolaritaQuery = usePopolaritaPremi()
 
   const crediti = saldoQuery.data ?? 0
 
@@ -110,6 +115,7 @@ export default function PremiPage() {
             key={p.id}
             premio={p}
             crediti={crediti}
+            popolare={(popolaritaQuery.data?.get(p.nome.toLowerCase()) ?? 0) >= SOGLIA_POPOLARE}
             inCorso={riscatta.isPending}
             onRiscatta={() => {
               if (window.confirm(`Riscattare "${p.nome}" per ${p.costo ?? 0} crediti?`))
@@ -148,14 +154,24 @@ export default function PremiPage() {
   )
 }
 
+// Lucchetto per il pulsante "bloccato" (crediti insufficienti).
+const LUCCHETTO = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+    <rect x="5" y="11" width="14" height="9" rx="2" />
+    <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+  </svg>
+)
+
 function CardPremio({
   premio,
   crediti,
+  popolare,
   inCorso,
   onRiscatta,
 }: {
   premio: Premio
   crediti: number
+  popolare: boolean
   inCorso: boolean
   onRiscatta: () => void
 }) {
@@ -165,27 +181,42 @@ function CardPremio({
 
   return (
     <div className={'premio-card' + (esaurito ? ' spento' : '')}>
-      <div className="premio-top">
+      {popolare && (
+        <span className="badge-popolare" title="Premio molto richiesto">
+          🔥 Popolare
+        </span>
+      )}
+      <div className={'premio-top' + (popolare ? ' pr-pop' : '')}>
         <div className="premio-nome">{premio.nome}</div>
-        <div className="premio-costo">{costo} cr</div>
       </div>
       {premio.descrizione && <div className="premio-descr">{premio.descrizione}</div>}
-      <div className="premio-meta">
+      <div className="premio-stock">
+        📦{' '}
         {premio.stock != null
           ? esaurito
             ? 'Esaurito'
-            : 'Disponibili: ' + premio.stock
+            : `${premio.stock} disponibili`
           : 'Sempre disponibile'}
       </div>
-      <div className="azioni">
-        <button
-          type="button"
-          className="btn"
-          disabled={esaurito || insuff || inCorso}
-          onClick={onRiscatta}
-        >
-          {esaurito ? 'Esaurito' : insuff ? 'Crediti insufficienti' : 'Richiedi'}
-        </button>
+      <div className="azioni mt-1">
+        {esaurito ? (
+          <button type="button" className="btn-bloccato" disabled>
+            Esaurito
+          </button>
+        ) : insuff ? (
+          <button
+            type="button"
+            className="btn-bloccato"
+            disabled
+            title={`Ti servono ${costo} crediti`}
+          >
+            {LUCCHETTO} {costo} CR
+          </button>
+        ) : (
+          <button type="button" className="btn-riscatta" disabled={inCorso} onClick={onRiscatta}>
+            Riscatta · {costo} CR
+          </button>
+        )}
       </div>
     </div>
   )
