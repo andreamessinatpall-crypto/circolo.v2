@@ -5,6 +5,7 @@ import GestioneGiocatori from './GestioneGiocatori'
 import GestioneCampi from './GestioneCampi'
 import GestionePrenotazioni from './GestionePrenotazioni'
 import ValoriPunti from './ValoriPunti'
+import RigeneraPunti from './RigeneraPunti'
 
 // Pannello amministratori. Come nella v1 raccoglie più sezioni; qui sono
 // sotto-schede. Vengono riempite una alla volta lungo la Fase 8.
@@ -41,7 +42,12 @@ export default function SegreteriaPage() {
       {scheda === 'giocatori' && <GestioneGiocatori />}
       {scheda === 'campi' && <GestioneCampi />}
       {scheda === 'prenotazioni' && <GestionePrenotazioni />}
-      {scheda === 'punti' && <ValoriPunti />}
+      {scheda === 'punti' && (
+        <>
+          <ValoriPunti />
+          <RigeneraPunti />
+        </>
+      )}
       {scheda === 'premi' && (
         <Segnaposto descrizione="Modalità premi, catalogo e richieste — in arrivo nella Fase 8f." />
       )}
