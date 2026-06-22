@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/auth/useAuth'
+import { classiErrore } from '@/components/stili'
 import { mancaTabella, messaggioErrore } from '@/lib/errori'
 import { useCampi } from '@/features/prenotazioni/datiPrenotazioni'
 import { mancaColonnaManuale, useSociPubblici } from '@/features/prenotazioni/datiAmichevoli'
@@ -33,6 +34,25 @@ function ymd(d: Date): string {
   return `${d.getFullYear()}-${m}-${g}`
 }
 const DOW = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom']
+
+// (Fase 8g · B) Modifica manuale degli orari: tendine HH : MM (minuti 00/15/30/45).
+const ORE = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'))
+const MINUTI = ['00', '15', '30', '45']
+// "HH:MM" da una data locale.
+function hhmm(d: Date): string {
+  return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0')
+}
+// Minuti dall'inizio della giornata di una "HH:MM".
+function minutiDa(hhmmStr: string): number {
+  const [h, m] = hhmmStr.split(':').map(Number)
+  return h * 60 + m
+}
+// Costruisce una data locale dal giorno "AAAA-MM-GG" e da una "HH:MM".
+function dataConOra(giorno: string, hhmmStr: string): Date {
+  const [y, m, g] = giorno.split('-').map(Number)
+  const [h, mi] = hhmmStr.split(':').map(Number)
+  return new Date(y, m - 1, g, h, mi)
+}
 
 // Uno slot selezionato = la finestra aperta su una cella del tabellone.
 interface SlotScelto {
@@ -246,6 +266,51 @@ export default function GestionePrenotazioni() {
     onError: (e: unknown) => window.alert('Annullamento non riuscito: ' + messaggioErrore(e)),
   })
 
+  // (Fase 8g · B) Modifica manuale degli orari di una prenotazione esistente.
+  const modificaOrario = useMutation({
+    mutationFn: async ({
+      id,
+      inizio,
+      fine,
+    }: {
+      id: number | string
+      inizio: Date
+      fine: Date
+    }) => {
+      const { error } = await supabase
+        .from('prenotazioni')
+        .update({ inizio: inizio.toISOString(), fine: fine.toISOString() })
+        .eq('id', id)
+      if (error) throw error
+      return { inizio, fine }
+    },
+    onSuccess: ({ inizio, fine }) => {
+      aggiorna()
+      // Riflette subito i nuovi orari nell'intestazione e nella prenotazione aperta.
+      setSlot((s) =>
+        s && s.booking
+          ? {
+              ...s,
+              inizio,
+              fine,
+              booking: { ...s.booking, inizio: inizio.toISOString(), fine: fine.toISOString() },
+            }
+          : s,
+      )
+    },
+    onError: (e: unknown) => {
+      const err = e as { code?: string }
+      if (err.code === '23505') window.alert('In quell’orario il campo risulta già occupato.')
+      else if (err.code === '23514')
+        window.alert(
+          'Il database non accetta questa durata (vincolo CHECK sulla tabella prenotazioni): serve una modifica. Segnalamelo.',
+        )
+      else if (err.code === '42501')
+        window.alert('Il database ha rifiutato la modifica (regole RLS): segnalamelo.')
+      else window.alert('Modifica orario non riuscita: ' + messaggioErrore(e))
+    },
+  })
+
   if (!profilo) return null
 
   const adesso = new Date()
@@ -428,6 +493,21 @@ export default function GestionePrenotazioni() {
             </div>
 
             {bookingSlot ? (
+              <>
+              <ModificaOrario
+                key={String(bookingSlot.id)}
+                pren={bookingSlot}
+                campo={slot.campo}
+                altre={prenGiorno.filter(
+                  (p) =>
+                    String(p.campo_id) === String(slot.campo.id) &&
+                    String(p.id) !== String(bookingSlot.id),
+                )}
+                disabilitato={modificaOrario.isPending}
+                onSalva={(inizio, fine) =>
+                  modificaOrario.mutate({ id: bookingSlot.id, inizio, fine })
+                }
+              />
               <SchedaPartita
                 sport={sport}
                 pren={bookingSlot}
@@ -451,6 +531,7 @@ export default function GestionePrenotazioni() {
                     annulla.mutate(bookingSlot.id)
                 }}
               />
+              </>
             ) : (
               <SlotLibero
                 disponibileMin={slot.disponibileMin}
@@ -570,6 +651,148 @@ function durataLabel(min: number): string {
   const h = Math.floor(min / 60)
   const m = min % 60
   return (h ? `${h}h` : '') + (m ? ` ${m}min` : '')
+}
+
+// (Fase 8g · B) Editor degli orari di una prenotazione esistente. Di default è
+// chiuso (un pulsantino); aperto mostra le tendine Inizio/Fine e valida la scelta
+// (durata minima, dentro l'apertura del campo, nessuna sovrapposizione).
+function ModificaOrario({
+  pren,
+  campo,
+  altre,
+  disabilitato,
+  onSalva,
+}: {
+  pren: MiaPrenotazione
+  campo: Campo
+  altre: MiaPrenotazione[]
+  disabilitato: boolean
+  onSalva: (inizio: Date, fine: Date) => void
+}) {
+  const giorno = ymd(new Date(pren.inizio))
+  const [aperto, setAperto] = useState(false)
+  const [oraInizio, setOraInizio] = useState(hhmm(new Date(pren.inizio)))
+  const [oraFine, setOraFine] = useState(hhmm(new Date(pren.fine)))
+  const [errore, setErrore] = useState<string | null>(null)
+
+  const apertura = (campo.apertura || '08:00').slice(0, 5)
+  const chiusura = (campo.chiusura || '22:00').slice(0, 5)
+
+  function salva() {
+    setErrore(null)
+    const iMin = minutiDa(oraInizio)
+    const fMin = minutiDa(oraFine)
+    if (fMin - iMin < 30) {
+      setErrore('La fine deve venire almeno 30 minuti dopo l’inizio.')
+      return
+    }
+    if (iMin < minutiDa(apertura) || fMin > minutiDa(chiusura)) {
+      setErrore(`Orario fuori dall’apertura del campo (${apertura}–${chiusura}).`)
+      return
+    }
+    // Sovrapposizione con un'altra prenotazione dello stesso campo, stesso giorno.
+    for (const a of altre) {
+      const ai = new Date(a.inizio)
+      const af = new Date(a.fine)
+      const aiMin = ai.getHours() * 60 + ai.getMinutes()
+      const afMin = af.getHours() * 60 + af.getMinutes()
+      if (iMin < afMin && fMin > aiMin) {
+        setErrore('Il nuovo orario si sovrappone a un’altra prenotazione del campo.')
+        return
+      }
+    }
+    onSalva(dataConOra(giorno, oraInizio), dataConOra(giorno, oraFine))
+  }
+
+  if (!aperto) {
+    return (
+      <button
+        type="button"
+        className="btn btn-secondario btn-mini mb-4 !mt-0"
+        onClick={() => setAperto(true)}
+      >
+        Modifica orario
+      </button>
+    )
+  }
+
+  return (
+    <div className="mb-4 rounded-xl border border-dashed border-ottone-300 bg-verde-50 px-4 py-3">
+      <div className="flex flex-wrap items-end gap-4">
+        <label className="block">
+          <span className="etichetta !mb-1">Inizio</span>
+          <SelettoreOra
+            valore={oraInizio}
+            onChange={(v) => {
+              setOraInizio(v)
+              setErrore(null)
+            }}
+          />
+        </label>
+        <label className="block">
+          <span className="etichetta !mb-1">Fine</span>
+          <SelettoreOra
+            valore={oraFine}
+            onChange={(v) => {
+              setOraFine(v)
+              setErrore(null)
+            }}
+          />
+        </label>
+      </div>
+      <div className="mt-3 flex items-center gap-2">
+        <button type="button" className="btn btn-mini !mt-0" disabled={disabilitato} onClick={salva}>
+          Salva orario
+        </button>
+        <button
+          type="button"
+          className="btn btn-secondario btn-mini !mt-0"
+          onClick={() => {
+            setAperto(false)
+            setErrore(null)
+            setOraInizio(hhmm(new Date(pren.inizio)))
+            setOraFine(hhmm(new Date(pren.fine)))
+          }}
+        >
+          Annulla
+        </button>
+      </div>
+      {errore && <p className={`mt-2 ${classiErrore}`}>{errore}</p>}
+    </div>
+  )
+}
+
+// Due tendine HH : MM (minuti 00/15/30/45, più il minuto corrente se diverso).
+function SelettoreOra({ valore, onChange }: { valore: string; onChange: (v: string) => void }) {
+  const [h, m] = valore.split(':')
+  const minuti = MINUTI.includes(m) ? MINUTI : [...MINUTI, m].sort()
+  return (
+    <span className="inline-flex items-center gap-1">
+      <select
+        className="campo !mt-0 !w-auto"
+        value={h}
+        onChange={(e) => onChange(`${e.target.value}:${m}`)}
+      >
+        {ORE.map((o) => (
+          <option key={o} value={o}>
+            {o}
+          </option>
+        ))}
+      </select>
+      <span className="text-ink-3">:</span>
+      <select
+        className="campo !mt-0 !w-auto"
+        value={m}
+        onChange={(e) => onChange(`${h}:${e.target.value}`)}
+      >
+        {minuti.map((o) => (
+          <option key={o} value={o}>
+            {o}
+          </option>
+        ))}
+      </select>
+    </span>
+  )
 }
 
 function SlotLibero({
