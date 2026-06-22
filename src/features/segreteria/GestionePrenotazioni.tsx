@@ -73,6 +73,9 @@ export default function GestionePrenotazioni() {
   const [inizioSettimana, setInizioSettimana] = useState<Date>(() => lunedi(new Date()))
   const [giornoSel, setGiornoSel] = useState<string>(() => ymd(new Date()))
   const [slot, setSlot] = useState<SlotScelto | null>(null)
+  // (Fase 8g · B) Editor degli orari aperto? Lo stato sta qui perché il trigger
+  // (icona matita) è nell'intestazione della finestra, separato dall'editor.
+  const [editOrario, setEditOrario] = useState(false)
 
   const campiQuery = useCampi()
   const sociQuery = useSociPubblici()
@@ -286,6 +289,7 @@ export default function GestionePrenotazioni() {
     },
     onSuccess: ({ inizio, fine }) => {
       aggiorna()
+      setEditOrario(false)
       // Riflette subito i nuovi orari nell'intestazione e nella prenotazione aperta.
       setSlot((s) =>
         s && s.booking
@@ -310,6 +314,12 @@ export default function GestionePrenotazioni() {
       else window.alert('Modifica orario non riuscita: ' + messaggioErrore(e))
     },
   })
+
+  // Chiude la finestra e, con essa, l'eventuale editor degli orari.
+  const chiudiFinestra = () => {
+    setSlot(null)
+    setEditOrario(false)
+  }
 
   if (!profilo) return null
 
@@ -460,9 +470,10 @@ export default function GestionePrenotazioni() {
             prenotazioni={prenGiorno.filter((p) => String(p.campo_id) === String(campo.id))}
             etichette={etichette}
             statoDi={statoPren}
-            onSlot={(inizio, fine, booking, disponibileMin) =>
+            onSlot={(inizio, fine, booking, disponibileMin) => {
+              setEditOrario(false)
               setSlot({ campo, inizio, fine, booking, disponibileMin })
-            }
+            }}
           />
           ))}
         </>
@@ -472,22 +483,48 @@ export default function GestionePrenotazioni() {
       {slot && (
         <div
           className="fixed inset-0 z-50 flex justify-center overflow-y-auto overscroll-contain bg-black/40 p-4"
-          onClick={() => setSlot(null)}
+          onClick={chiudiFinestra}
         >
           <div className="card my-auto w-full max-w-xl" onClick={(e) => e.stopPropagation()}>
             <div className="mb-4 flex items-center justify-between gap-3 border-b border-verde-100 pb-3">
               <div>
                 <h2 className="m-0 text-lg font-bold">{slot.campo.nome}</h2>
-                <p className="sub m-0 capitalize">
-                  {slot.inizio.toLocaleDateString('it-IT', {
-                    weekday: 'long',
-                    day: 'numeric',
-                    month: 'long',
-                  })}{' '}
-                  · {oraLocale(slot.inizio)}–{oraLocale(slot.fine)}
+                <p className="sub m-0 flex items-center gap-1 capitalize">
+                  <span>
+                    {slot.inizio.toLocaleDateString('it-IT', {
+                      weekday: 'long',
+                      day: 'numeric',
+                      month: 'long',
+                    })}{' '}
+                    · {oraLocale(slot.inizio)}–{oraLocale(slot.fine)}
+                  </span>
+                  {/* (Fase 8g · B) Matita accanto all'orario: apre l'editor. */}
+                  {bookingSlot && (
+                    <button
+                      type="button"
+                      className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-ink-2 transition hover:bg-black/5 hover:text-verde-700"
+                      title="Modifica orario"
+                      aria-label="Modifica orario"
+                      onClick={() => setEditOrario(true)}
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        className="h-4 w-4"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden="true"
+                      >
+                        <path d="M12 20h9" />
+                        <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                      </svg>
+                    </button>
+                  )}
                 </p>
               </div>
-              <button type="button" className="x text-2xl" title="Chiudi" onClick={() => setSlot(null)}>
+              <button type="button" className="x text-2xl" title="Chiudi" onClick={chiudiFinestra}>
                 ×
               </button>
             </div>
@@ -496,6 +533,8 @@ export default function GestionePrenotazioni() {
               <>
               <ModificaOrario
                 key={String(bookingSlot.id)}
+                aperto={editOrario}
+                onChiudi={() => setEditOrario(false)}
                 pren={bookingSlot}
                 campo={slot.campo}
                 altre={prenGiorno.filter(
@@ -653,24 +692,28 @@ function durataLabel(min: number): string {
   return (h ? `${h}h` : '') + (m ? ` ${m}min` : '')
 }
 
-// (Fase 8g · B) Editor degli orari di una prenotazione esistente. Di default è
-// chiuso (un pulsantino); aperto mostra le tendine Inizio/Fine e valida la scelta
-// (durata minima, dentro l'apertura del campo, nessuna sovrapposizione).
+// (Fase 8g · B) Editor degli orari di una prenotazione esistente. Lo apre la
+// matita accanto all'orario nell'intestazione (stato `aperto` nel padre); mostra
+// le tendine Inizio/Fine e valida la scelta (durata minima, dentro l'apertura
+// del campo, nessuna sovrapposizione).
 function ModificaOrario({
   pren,
   campo,
   altre,
+  aperto,
   disabilitato,
+  onChiudi,
   onSalva,
 }: {
   pren: MiaPrenotazione
   campo: Campo
   altre: MiaPrenotazione[]
+  aperto: boolean
   disabilitato: boolean
+  onChiudi: () => void
   onSalva: (inizio: Date, fine: Date) => void
 }) {
   const giorno = ymd(new Date(pren.inizio))
-  const [aperto, setAperto] = useState(false)
   const [oraInizio, setOraInizio] = useState(hhmm(new Date(pren.inizio)))
   const [oraFine, setOraFine] = useState(hhmm(new Date(pren.fine)))
   const [errore, setErrore] = useState<string | null>(null)
@@ -704,17 +747,7 @@ function ModificaOrario({
     onSalva(dataConOra(giorno, oraInizio), dataConOra(giorno, oraFine))
   }
 
-  if (!aperto) {
-    return (
-      <button
-        type="button"
-        className="btn btn-secondario btn-mini mb-4 !mt-0"
-        onClick={() => setAperto(true)}
-      >
-        Modifica orario
-      </button>
-    )
-  }
+  if (!aperto) return null
 
   return (
     <div className="mb-4 rounded-xl border border-dashed border-ottone-300 bg-verde-50 px-4 py-3">
@@ -748,10 +781,10 @@ function ModificaOrario({
           type="button"
           className="btn btn-secondario btn-mini !mt-0"
           onClick={() => {
-            setAperto(false)
             setErrore(null)
             setOraInizio(hhmm(new Date(pren.inizio)))
             setOraFine(hhmm(new Date(pren.fine)))
+            onChiudi()
           }}
         >
           Annulla
