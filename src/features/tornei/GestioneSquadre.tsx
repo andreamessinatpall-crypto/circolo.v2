@@ -428,7 +428,7 @@ function RigaSquadra({
             }}
           >
             <option value="">— Aggiungi un giocatore —</option>
-            <option value="__ospite__">➕ Ospite (non registrato)…</option>
+            <option value="__ospite__">＋ Ospite (non registrato)…</option>
             {selezionabili.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.etichetta}

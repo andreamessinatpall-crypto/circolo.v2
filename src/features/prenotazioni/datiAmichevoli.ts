@@ -17,6 +17,17 @@ export interface Partecipante {
   confermato: boolean
 }
 
+// (Tappa 11) La colonna "nome_manuale" potrebbe non esistere ancora nel database.
+export function mancaColonnaManuale(error: unknown) {
+  const e = error as { code?: string; message?: string } | null
+  if (!e) return false
+  return (
+    e.code === 'PGRST204' ||
+    e.code === '42703' ||
+    (e.message ?? '').toLowerCase().includes('nome_manuale')
+  )
+}
+
 export interface MiaPrenotazione {
   id: number | string
   campo_id: number | string

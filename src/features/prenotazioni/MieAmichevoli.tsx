@@ -5,7 +5,7 @@ import { useAuth } from '@/auth/useAuth'
 import { mancaTabella, messaggioErrore } from '@/lib/errori'
 import { useAmici } from '@/features/profilo/amici/useAmici'
 import { useCampi } from './datiPrenotazioni'
-import { useMieAmichevoli, useSociPubblici } from './datiAmichevoli'
+import { mancaColonnaManuale, useMieAmichevoli, useSociPubblici } from './datiAmichevoli'
 import { oraLocale } from './orari'
 import type { MiaPrenotazione, Partecipante } from './datiAmichevoli'
 import type { Campo, Sport } from './tipi'
@@ -16,17 +16,6 @@ const ICONA_CAL = (
     <path d="M3 9h18M8 2.5v4M16 2.5v4" />
   </svg>
 )
-
-// (Tappa 11) La colonna "nome_manuale" potrebbe non esistere ancora nel database.
-function mancaColonnaManuale(error: unknown) {
-  const e = error as { code?: string; message?: string } | null
-  if (!e) return false
-  return (
-    e.code === 'PGRST204' ||
-    e.code === '42703' ||
-    (e.message ?? '').toLowerCase().includes('nome_manuale')
-  )
-}
 
 export default function MieAmichevoli({ sport }: { sport: Sport }) {
   const { profilo } = useAuth()
@@ -216,12 +205,14 @@ export default function MieAmichevoli({ sport }: { sport: Sport }) {
                 etichette={etichette}
                 candidati={candidati}
                 staff={staff}
-                admin={admin}
                 mioId={profilo.id}
                 amiciVuoti={!staff && amiciData.amici.length === 0}
                 onAggiungi={(socioId, primo) => aggiungi.mutate({ prenId: p.id, socioId, primo })}
-                onAggiungiOspite={(nome) => aggiungiOspite.mutate({ prenId: p.id, nome })}
-                onConferma={(id, valore) => conferma.mutate({ id, valore })}
+                // Nelle partite normali gli ospiti e la conferma sono solo per l'admin.
+                onAggiungiOspite={
+                  admin ? (nome) => aggiungiOspite.mutate({ prenId: p.id, nome }) : undefined
+                }
+                onConferma={admin ? (id, valore) => conferma.mutate({ id, valore }) : undefined}
                 onRimuovi={(part) => rimuovi.mutate(part.id)}
                 onAnnulla={() => {
                   const quando =
@@ -253,7 +244,6 @@ export function SchedaPartita({
   etichette,
   candidati,
   staff,
-  admin = false,
   mioId,
   amiciVuoti,
   onAggiungi,
@@ -269,7 +259,6 @@ export function SchedaPartita({
   etichette: Map<string, string>
   candidati: { id: string; etichetta: string }[]
   staff: boolean
-  admin?: boolean
   mioId: string
   amiciVuoti: boolean
   onAggiungi: (socioId: string, primo: boolean) => void
@@ -332,7 +321,6 @@ export function SchedaPartita({
               disabilitato={disabilita}
               testoVuoto={testoVuoto}
               onScegli={(id) => onAggiungi(id, false)}
-              admin={admin}
               onOspite={onAggiungiOspite}
             />
           ) : (
@@ -359,7 +347,7 @@ export function SchedaPartita({
                     </span>
                   )}
                   {r.confermato ? (
-                    admin && onConferma ? (
+                    onConferma ? (
                       <button
                         type="button"
                         className="x"
@@ -375,7 +363,7 @@ export function SchedaPartita({
                     )
                   ) : (
                     <>
-                      {admin && onConferma && (
+                      {onConferma && (
                         <button
                           type="button"
                           className="x"
@@ -404,7 +392,6 @@ export function SchedaPartita({
             disabilitato={disabilita}
             testoVuoto={testoVuoto}
             onScegli={(id) => onAggiungi(id, false)}
-            admin={admin}
             onOspite={onAggiungiOspite}
           />
         </>
@@ -424,14 +411,12 @@ function Selettore({
   disabilitato,
   testoVuoto,
   onScegli,
-  admin = false,
   onOspite,
 }: {
   opzioni: { id: string; etichetta: string }[]
   disabilitato: boolean
   testoVuoto: string
   onScegli: (id: string) => void
-  admin?: boolean
   onOspite?: (nome: string) => void
 }) {
   return (
@@ -442,8 +427,8 @@ function Selettore({
         onChange={(e) => {
           const v = e.target.value
           if (!v) return
-          // (Tappa 11) Voce "ospite" (solo admin): chiede il nome in una finestra
-          // a comparsa e aggiunge un giocatore non registrato.
+          // (Tappa 11) Voce "ospite": chiede il nome in una finestra a comparsa
+          // e aggiunge un giocatore non registrato.
           if (v === '__ospite__') {
             const nome = window.prompt('Nome dell’ospite (giocatore non registrato):')
             if (nome && nome.trim()) onOspite?.(nome.trim())
@@ -453,7 +438,7 @@ function Selettore({
         }}
       >
         <option value="">{testoVuoto}</option>
-        {admin && onOspite && <option value="__ospite__">➕ Ospite (non registrato)…</option>}
+        {onOspite && <option value="__ospite__">＋ Ospite (non registrato)…</option>}
         {opzioni.map((o) => (
           <option key={o.id} value={o.id}>
             {o.etichetta}

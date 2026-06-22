@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/auth/useAuth'
 import { mancaTabella, messaggioErrore } from '@/lib/errori'
 import { useCampi } from './datiPrenotazioni'
-import { useMieLezioni, useSociPubblici } from './datiAmichevoli'
+import { mancaColonnaManuale, useMieLezioni, useSociPubblici } from './datiAmichevoli'
 import { SchedaPartita } from './MieAmichevoli'
 import { oraLocale } from './orari'
 import type { MiaPrenotazione, Partecipante } from './datiAmichevoli'
@@ -65,6 +65,26 @@ export default function MieLezioni({ sport }: { sport: Sport }) {
     },
     onSuccess: aggiorna,
     onError: (e: unknown) => window.alert('Rimozione non riuscita: ' + messaggioErrore(e)),
+  })
+
+  // (Tappa 11) Ospite non registrato in una lezione: nessun account, niente punti.
+  const aggiungiOspite = useMutation({
+    mutationFn: async ({ prenId, nome }: { prenId: number | string; nome: string }) => {
+      const { error } = await supabase.from('partecipanti_amichevole').insert({
+        prenotazione_id: prenId,
+        socio_id: null,
+        nome_manuale: nome,
+        confermato: false,
+      })
+      if (error) throw error
+    },
+    onSuccess: aggiorna,
+    onError: (e: unknown) =>
+      window.alert(
+        mancaColonnaManuale(e)
+          ? 'Per aggiungere ospiti esegui lo script tappa11-partecipanti-manuali.sql su Supabase.'
+          : 'Aggiunta non riuscita: ' + messaggioErrore(e),
+      ),
   })
 
   const annulla = useMutation({
@@ -146,6 +166,7 @@ export default function MieLezioni({ sport }: { sport: Sport }) {
                 mioId={profilo.id}
                 amiciVuoti={false}
                 onAggiungi={(socioId) => aggiungi.mutate({ prenId: p.id, socioId })}
+                onAggiungiOspite={(nome) => aggiungiOspite.mutate({ prenId: p.id, nome })}
                 onRimuovi={(part) => rimuovi.mutate(part.id)}
                 onAnnulla={() => {
                   const quando =
