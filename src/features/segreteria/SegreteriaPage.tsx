@@ -3,6 +3,7 @@ import Segnaposto from '@/components/Segnaposto'
 import NuovoSocio from './NuovoSocio'
 import GestioneGiocatori from './GestioneGiocatori'
 import GestioneCampi from './GestioneCampi'
+import ValoriPunti from './ValoriPunti'
 
 // Pannello amministratori. Come nella v1 raccoglie più sezioni; qui sono
 // sotto-schede. Vengono riempite una alla volta lungo la Fase 8.
@@ -37,9 +38,7 @@ export default function SegreteriaPage() {
       {scheda === 'nuovo' && <NuovoSocio />}
       {scheda === 'giocatori' && <GestioneGiocatori />}
       {scheda === 'campi' && <GestioneCampi />}
-      {scheda === 'punti' && (
-        <Segnaposto descrizione="Valori dei punti, crediti e ricalcoli — in arrivo nella Fase 8d." />
-      )}
+      {scheda === 'punti' && <ValoriPunti />}
       {scheda === 'premi' && (
         <Segnaposto descrizione="Modalità premi, catalogo e richieste — in arrivo nella Fase 8f." />
       )}
