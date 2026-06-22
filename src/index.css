@@ -801,6 +801,29 @@
     color: var(--terra);
     outline: 1.5px solid var(--terra);
   }
+  /* (Fase 8g) Slot prenotato cliccabile per gestirlo (presenze, giocatori). */
+  .slot.occupato.gestibile {
+    cursor: pointer;
+    color: var(--ink);
+  }
+  .slot.occupato.gestibile:hover {
+    outline: 1.5px solid var(--v700);
+  }
+  /* Stato della prenotazione leggibile dallo sfondo dello slot:
+     attesa = da confermare (ambra), confermato = tutte le presenze ok (verde). */
+  .slot.occupato.attesa {
+    background: rgba(200, 151, 46, 0.16);
+    border-color: var(--g500);
+    color: var(--g700);
+  }
+  .slot.occupato.confermato {
+    background: var(--v050);
+    border-color: rgba(20, 83, 42, 0.32);
+    color: var(--v700);
+  }
+  .slot.libero.libero-passato {
+    opacity: 0.6;
+  }
   .slot.passato {
     background: transparent;
     color: var(--ink3);
@@ -919,6 +942,24 @@
     font-size: 0.82rem;
     color: var(--ink2);
     margin-top: 8px;
+  }
+
+  /* (Fase 8g) Scheda "incassata" nella finestra del pannello Prenotazioni:
+     niente riquadro proprio (la finestra è già la card), look minimal su bianco.
+     Confermato = capsula verde tenue, sobria. */
+  .amichevole-riga.in-modale {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+  }
+  .in-modale .chip.conf {
+    background: var(--v050);
+    color: var(--v700);
+    border-color: rgba(20, 83, 42, 0.3);
+  }
+  .in-modale .chip.conf .chip-conf svg circle {
+    fill: rgba(20, 83, 42, 0.12);
   }
 
   /* ─── PREMI (Fase 7c) — portate dalla v1 ─────────────── */
@@ -1083,6 +1124,165 @@
     background: transparent;
     color: inherit;
     padding: 0;
+  }
+  /* (Fase 8g) Icona di conferma presenza accanto al nome (pannello admin).
+     Non confermato: cerchio tenue (il check appare al passaggio del mouse).
+     Confermato: la capsula è verde, icona piena bianca. */
+  .chip .chip-conf {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 19px;
+    height: 19px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+  }
+  .chip .chip-conf svg {
+    width: 19px;
+    height: 19px;
+  }
+  .chip .chip-conf svg circle {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    opacity: 0.4;
+  }
+  .chip .chip-conf svg path {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2.4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    opacity: 0;
+  }
+  .chip .chip-conf:hover svg circle {
+    opacity: 0.85;
+  }
+  .chip .chip-conf:hover svg path {
+    opacity: 0.55;
+  }
+  .chip.conf .chip-conf svg circle {
+    opacity: 1;
+    fill: rgba(255, 255, 255, 0.18);
+  }
+  .chip.conf .chip-conf svg path {
+    opacity: 1;
+  }
+  .chip .chip-conf:disabled {
+    cursor: not-allowed;
+    opacity: 0.4;
+  }
+  .chip .chip-conf:disabled svg path {
+    opacity: 0;
+  }
+  /* Lucchetto: presenza non ancora confermabile (prima dell'orario di inizio). */
+  .chip .chip-lock {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 17px;
+    height: 17px;
+    color: var(--ink3);
+  }
+  .chip .chip-lock svg {
+    width: 16px;
+    height: 16px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  /* (Fase 8g) Calendario settimanale del pannello admin "Prenotazioni". */
+  .cal-sett {
+    margin-bottom: 18px;
+  }
+  .cal-sett-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .cal-sett-mese {
+    font-family: var(--font-display, inherit);
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--ink);
+    text-transform: capitalize;
+  }
+  .cal-sett-nav {
+    display: flex;
+    gap: 6px;
+  }
+  .cal-sett-griglia {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
+  }
+  .cal-giorno {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    min-height: 84px;
+    padding: 10px 4px 12px;
+    border-radius: 14px;
+    border: 1.5px solid var(--border2);
+    background: var(--surface);
+    cursor: pointer;
+    transition: border-color 0.15s, box-shadow 0.15s, transform 0.05s;
+  }
+  .cal-giorno:hover {
+    border-color: var(--g500);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+  }
+  .cal-giorno:active {
+    transform: translateY(1px);
+  }
+  .cal-giorno-dow {
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: 700;
+    color: var(--ink3);
+  }
+  .cal-giorno-num {
+    font-size: 1.3rem;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--ink);
+  }
+  .cal-giorno.oggi {
+    border-color: var(--g500);
+  }
+  .cal-giorno.oggi .cal-giorno-num {
+    color: var(--v700);
+  }
+  .cal-giorno.sel {
+    border-color: var(--v700);
+    background: linear-gradient(160deg, var(--v600), var(--v800));
+  }
+  .cal-giorno.sel .cal-giorno-dow,
+  .cal-giorno.sel .cal-giorno-num {
+    color: #fff;
+  }
+  .cal-giorno-badge {
+    margin-top: auto;
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 1px 8px;
+    border-radius: 999px;
+    background: var(--v700);
+    color: #fff;
+  }
+  .cal-giorno.sel .cal-giorno-badge {
+    background: var(--g500);
+    color: var(--v900, #1a3a2a);
   }
   .aggiungi-part {
     display: flex;

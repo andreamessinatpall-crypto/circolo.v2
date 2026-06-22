@@ -4,8 +4,11 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/auth/useAuth'
 import { mancaTabella, messaggioErrore } from '@/lib/errori'
 import { useAmici } from '@/features/profilo/amici/useAmici'
+import { useValoriPunti } from '@/features/segreteria/datiPunti'
+import { useModalitaPremi } from '@/features/premi/datiPremi'
 import { useCampi } from './datiPrenotazioni'
 import { mancaColonnaManuale, useMieAmichevoli, useSociPubblici } from './datiAmichevoli'
+import { assegnaPuntiPresenza, annullaPuntiPresenza } from './puntiPresenze'
 import { oraLocale } from './orari'
 import type { MiaPrenotazione, Partecipante } from './datiAmichevoli'
 import type { Campo, Sport } from './tipi'
@@ -23,6 +26,8 @@ export default function MieAmichevoli({ sport }: { sport: Sport }) {
   const campiQuery = useCampi()
   const sociQuery = useSociPubblici()
   const amiciData = useAmici(profilo?.id ?? '')
+  const valoriQuery = useValoriPunti()
+  const modalitaPremiQuery = useModalitaPremi()
 
   const idCampi = useMemo(
     () => (campiQuery.data ?? []).filter((c) => c.sport === sport).map((c) => c.id),
@@ -46,6 +51,14 @@ export default function MieAmichevoli({ sport }: { sport: Sport }) {
   const aggiorna = () => {
     qc.invalidateQueries({ queryKey: ['amichevoli'] })
     qc.invalidateQueries({ queryKey: ['prenotazioni'] })
+  }
+
+  // Dopo aver mosso punti/crediti: aggiorna i saldi e i riepiloghi a video.
+  const aggiornaSaldi = () => {
+    qc.invalidateQueries({ queryKey: ['soci'] })
+    qc.invalidateQueries({ queryKey: ['saldo-crediti'] })
+    qc.invalidateQueries({ queryKey: ['riepilogo-stat'] })
+    qc.invalidateQueries({ queryKey: ['storico-movimenti'] })
   }
 
   const aggiungi = useMutation({
@@ -105,21 +118,45 @@ export default function MieAmichevoli({ sport }: { sport: Sport }) {
     onError: (e: unknown) =>
       window.alert(
         mancaColonnaManuale(e)
-          ? 'Per aggiungere ospiti esegui lo script tappa11-partecipanti-manuali.sql su Supabase.'
+          ? 'Per aggiungere ospiti esegui lo script tappa15-partecipanti-id.sql su Supabase.'
           : 'Aggiunta non riuscita: ' + messaggioErrore(e),
       ),
   })
 
   // (Tappa 11) Solo l'admin: conferma/annulla la presenza di un partecipante.
+  // (Fase 8d) Confermare assegna punti/crediti; annullare li ritoglie. Gli
+  // ospiti (socio_id null) non hanno account: nessun punto.
   const conferma = useMutation({
-    mutationFn: async ({ id, valore }: { id: number | string; valore: boolean }) => {
+    mutationFn: async ({
+      part,
+      pren,
+      valore,
+    }: {
+      part: Partecipante
+      pren: MiaPrenotazione
+      valore: boolean
+    }) => {
       const { error } = await supabase
         .from('partecipanti_amichevole')
         .update({ confermato: valore })
-        .eq('id', id)
+        .eq('id', part.id)
       if (error) throw error
+      if (part.socio_id && valoriQuery.data) {
+        if (valore)
+          await assegnaPuntiPresenza(
+            pren,
+            part.socio_id,
+            sport,
+            valoriQuery.data,
+            !!modalitaPremiQuery.data,
+          )
+        else await annullaPuntiPresenza(pren.id, part.socio_id)
+      }
     },
-    onSuccess: aggiorna,
+    onSuccess: () => {
+      aggiorna()
+      aggiornaSaldi()
+    },
     onError: (e: unknown) => window.alert('Operazione non riuscita: ' + messaggioErrore(e)),
   })
 
@@ -212,7 +249,9 @@ export default function MieAmichevoli({ sport }: { sport: Sport }) {
                 onAggiungiOspite={
                   admin ? (nome) => aggiungiOspite.mutate({ prenId: p.id, nome }) : undefined
                 }
-                onConferma={admin ? (id, valore) => conferma.mutate({ id, valore }) : undefined}
+                onConferma={
+                  admin ? (part, valore) => conferma.mutate({ part, pren: p, valore }) : undefined
+                }
                 onRimuovi={(part) => rimuovi.mutate(part.id)}
                 onAnnulla={() => {
                   const quando =
@@ -251,6 +290,8 @@ export function SchedaPartita({
   onConferma,
   onRimuovi,
   onAnnulla,
+  confermaCliccando = false,
+  inModale = false,
 }: {
   sport: Sport
   pren: MiaPrenotazione
@@ -263,12 +304,21 @@ export function SchedaPartita({
   amiciVuoti: boolean
   onAggiungi: (socioId: string, primo: boolean) => void
   onAggiungiOspite?: (nome: string) => void
-  onConferma?: (id: number | string, valore: boolean) => void
+  onConferma?: (part: Partecipante, valore: boolean) => void
   onRimuovi: (part: Partecipante) => void
   onAnnulla: () => void
+  // (Fase 8g) Modalità admin: la presenza si conferma con un clic sull'icona
+  // accanto al nome (la capsula diventa verde), e solo dopo l'orario di inizio.
+  confermaCliccando?: boolean
+  // Scheda incassata in una finestra (pannello Prenotazioni admin): niente
+  // riquadro proprio e niente data/ora/campo (sono già nell'intestazione).
+  inModale?: boolean
 }) {
   const inizio = new Date(pren.inizio)
   const fine = new Date(pren.fine)
+  // È iniziata? Solo allora si possono confermare le presenze (modalità admin).
+  const adesso = new Date()
+  const iniziata = inizio <= adesso
   const lista = [...partecipanti].sort((a, b) => Number(b.confermato) - Number(a.confermato))
   const giaIds = new Set(lista.map((r) => r.socio_id).filter((x): x is string => !!x))
   const selezionabili = candidati.filter((c) => !giaIds.has(c.id))
@@ -284,16 +334,24 @@ export function SchedaPartita({
         : '— Aggiungi un amico —'
 
   return (
-    <div className="amichevole-riga">
+    <div className={'amichevole-riga' + (inModale ? ' in-modale' : '')}>
       <div className="amichevole-cap">
         <div>
-          <div className="quando">
-            {inizio.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' })}
-          </div>
-          <div className="orario">
-            {oraLocale(inizio)}–{oraLocale(fine)}
-          </div>
-          <div className="dove">{campo?.nome ?? 'Campo'}</div>
+          {!inModale && (
+            <>
+              <div className="quando">
+                {inizio.toLocaleDateString('it-IT', {
+                  weekday: 'long',
+                  day: 'numeric',
+                  month: 'long',
+                })}
+              </div>
+              <div className="orario">
+                {oraLocale(inizio)}–{oraLocale(fine)}
+              </div>
+              <div className="dove">{campo?.nome ?? 'Campo'}</div>
+            </>
+          )}
           {pren.allenamento ? (
             <>
               <div className="allenamento-badge">Allenamento</div>
@@ -338,21 +396,75 @@ export function SchedaPartita({
           <div className="chips">
             {lista.map((r) => {
               const nome = r.socio_id ? (etichette.get(r.socio_id) ?? 'Socio') : (r.nome_manuale ?? 'Ospite')
+              const ospite = !r.socio_id && (
+                <span className="stato" title="Giocatore non registrato">
+                  ospite
+                </span>
+              )
+
+              // (Fase 8g) Modalità admin: l'intera capsula è il pulsante di
+              // conferma (verde quando confermata), attiva solo dopo l'inizio.
+              if (confermaCliccando && onConferma) {
+                // Non ancora iniziata: lucchetto al posto dell'icona di conferma.
+                if (!iniziata) {
+                  return (
+                    <span key={r.id} className="chip">
+                      <span
+                        className="chip-lock"
+                        title="Confermabile dopo l’orario di inizio"
+                        aria-label="Bloccato"
+                      >
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                          <rect x="5" y="11" width="14" height="9" rx="2" />
+                          <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+                        </svg>
+                      </span>
+                      {nome}
+                      {ospite}
+                      {!r.confermato && (
+                        <button type="button" className="x" title="Togli" onClick={() => onRimuovi(r)}>
+                          ×
+                        </button>
+                      )}
+                    </span>
+                  )
+                }
+                return (
+                  <span key={r.id} className={'chip' + (r.confermato ? ' conf' : '')}>
+                    <button
+                      type="button"
+                      className="chip-conf"
+                      aria-pressed={r.confermato}
+                      title={r.confermato ? 'Annulla la conferma' : 'Conferma la presenza'}
+                      onClick={() => onConferma(r, !r.confermato)}
+                    >
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="12" r="9" />
+                        <path d="M8 12.4l2.6 2.6L16 9" />
+                      </svg>
+                    </button>
+                    {nome}
+                    {ospite}
+                    {!r.confermato && (
+                      <button type="button" className="x" title="Togli" onClick={() => onRimuovi(r)}>
+                        ×
+                      </button>
+                    )}
+                  </span>
+                )
+              }
+
               return (
                 <span key={r.id} className={'chip' + (r.confermato ? ' conf' : '')}>
                   {nome}
-                  {!r.socio_id && (
-                    <span className="stato" title="Giocatore non registrato">
-                      ospite
-                    </span>
-                  )}
+                  {ospite}
                   {r.confermato ? (
                     onConferma ? (
                       <button
                         type="button"
                         className="x"
                         title="Annulla conferma"
-                        onClick={() => onConferma(r.id, false)}
+                        onClick={() => onConferma(r, false)}
                       >
                         ✓
                       </button>
@@ -368,7 +480,7 @@ export function SchedaPartita({
                           type="button"
                           className="x"
                           title="Conferma presenza"
-                          onClick={() => onConferma(r.id, true)}
+                          onClick={() => onConferma(r, true)}
                         >
                           ✓
                         </button>

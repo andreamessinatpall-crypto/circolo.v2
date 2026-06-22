@@ -3,9 +3,12 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/auth/useAuth'
 import { mancaTabella, messaggioErrore } from '@/lib/errori'
+import { useValoriPunti } from '@/features/segreteria/datiPunti'
+import { useModalitaPremi } from '@/features/premi/datiPremi'
 import { useCampi } from './datiPrenotazioni'
 import { mancaColonnaManuale, useMieLezioni, useSociPubblici } from './datiAmichevoli'
 import { SchedaPartita } from './MieAmichevoli'
+import { assegnaPuntiPresenza, annullaPuntiPresenza } from './puntiPresenze'
 import { oraLocale } from './orari'
 import type { MiaPrenotazione, Partecipante } from './datiAmichevoli'
 import type { Campo, Sport } from './tipi'
@@ -22,6 +25,8 @@ export default function MieLezioni({ sport }: { sport: Sport }) {
   const qc = useQueryClient()
   const campiQuery = useCampi()
   const sociQuery = useSociPubblici()
+  const valoriQuery = useValoriPunti()
+  const modalitaPremiQuery = useModalitaPremi()
 
   const idCampi = useMemo(
     () => (campiQuery.data ?? []).filter((c) => c.sport === sport).map((c) => c.id),
@@ -43,6 +48,14 @@ export default function MieLezioni({ sport }: { sport: Sport }) {
   }, [sociQuery.data, profilo])
 
   const aggiorna = () => qc.invalidateQueries({ queryKey: ['lezioni'] })
+
+  // Dopo aver mosso punti/crediti: aggiorna i saldi e i riepiloghi a video.
+  const aggiornaSaldi = () => {
+    qc.invalidateQueries({ queryKey: ['soci'] })
+    qc.invalidateQueries({ queryKey: ['saldo-crediti'] })
+    qc.invalidateQueries({ queryKey: ['riepilogo-stat'] })
+    qc.invalidateQueries({ queryKey: ['storico-movimenti'] })
+  }
 
   const aggiungi = useMutation({
     mutationFn: async ({ prenId, socioId }: { prenId: number | string; socioId: string }) => {
@@ -68,15 +81,39 @@ export default function MieLezioni({ sport }: { sport: Sport }) {
   })
 
   // (Tappa 11) Conferma/annulla la presenza di un partecipante alla lezione.
+  // (Fase 8d) Confermare assegna punti/crediti dell'allenamento; annullare li
+  // ritoglie. Gli ospiti (socio_id null) non hanno account: nessun punto.
   const conferma = useMutation({
-    mutationFn: async ({ id, valore }: { id: number | string; valore: boolean }) => {
+    mutationFn: async ({
+      part,
+      pren,
+      valore,
+    }: {
+      part: Partecipante
+      pren: MiaPrenotazione
+      valore: boolean
+    }) => {
       const { error } = await supabase
         .from('partecipanti_amichevole')
         .update({ confermato: valore })
-        .eq('id', id)
+        .eq('id', part.id)
       if (error) throw error
+      if (part.socio_id && valoriQuery.data) {
+        if (valore)
+          await assegnaPuntiPresenza(
+            pren,
+            part.socio_id,
+            sport,
+            valoriQuery.data,
+            !!modalitaPremiQuery.data,
+          )
+        else await annullaPuntiPresenza(pren.id, part.socio_id)
+      }
     },
-    onSuccess: aggiorna,
+    onSuccess: () => {
+      aggiorna()
+      aggiornaSaldi()
+    },
     onError: (e: unknown) => window.alert('Operazione non riuscita: ' + messaggioErrore(e)),
   })
 
@@ -95,7 +132,7 @@ export default function MieLezioni({ sport }: { sport: Sport }) {
     onError: (e: unknown) =>
       window.alert(
         mancaColonnaManuale(e)
-          ? 'Per aggiungere ospiti esegui lo script tappa11-partecipanti-manuali.sql su Supabase.'
+          ? 'Per aggiungere ospiti esegui lo script tappa15-partecipanti-id.sql su Supabase.'
           : 'Aggiunta non riuscita: ' + messaggioErrore(e),
       ),
   })
@@ -180,7 +217,7 @@ export default function MieLezioni({ sport }: { sport: Sport }) {
                 amiciVuoti={false}
                 onAggiungi={(socioId) => aggiungi.mutate({ prenId: p.id, socioId })}
                 onAggiungiOspite={(nome) => aggiungiOspite.mutate({ prenId: p.id, nome })}
-                onConferma={(id, valore) => conferma.mutate({ id, valore })}
+                onConferma={(part, valore) => conferma.mutate({ part, pren: p, valore })}
                 onRimuovi={(part) => rimuovi.mutate(part.id)}
                 onAnnulla={() => {
                   const quando =

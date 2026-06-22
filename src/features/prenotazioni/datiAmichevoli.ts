@@ -36,6 +36,9 @@ export interface MiaPrenotazione {
   fine: string
   allenamento?: boolean | null
   allenatore_id?: string | null
+  // (Tappa 6) Se valorizzato, è una partita di torneo: i punti li gestisce
+  // features/tornei/punti.ts, quindi la conferma presenze non li tocca.
+  incontro_id?: number | string | null
 }
 
 // Elenco soci attivi (per etichette e selettore). Condivide la cache con gli amici.
