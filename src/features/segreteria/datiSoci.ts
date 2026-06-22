@@ -56,3 +56,20 @@ export async function aggiustaSaldo(
   if (error) return { ok: false, mancaScript: mancaRpc(error), messaggio: error.message }
   return { ok: true }
 }
+
+// Storico movimenti di un socio per l'export CSV admin. L'admin non può leggere
+// direttamente la tabella `movimenti_punti` di un altro socio (RLS), quindi si
+// passa dalla RPC `storico_movimenti` (SECURITY DEFINER, già presente dalla v1).
+export type EsitoStorico =
+  | { ok: true; righe: Record<string, unknown>[] }
+  | { ok: false; mancaScript?: boolean; messaggio?: string }
+
+export async function fetchStoricoSocio(socioId: string): Promise<EsitoStorico> {
+  const { data, error } = await supabase.rpc('storico_movimenti', {
+    p_socio: socioId,
+    p_da: null,
+    p_a: null,
+  })
+  if (error) return { ok: false, mancaScript: mancaRpc(error), messaggio: error.message }
+  return { ok: true, righe: (data ?? []) as Record<string, unknown>[] }
+}

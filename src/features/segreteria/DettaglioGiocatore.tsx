@@ -3,8 +3,12 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { titleCase, dataEstesa } from '@/lib/formato'
 import { classiErrore, classiOk } from '@/components/stili'
+import { costruisciCsv, scaricaCsv } from '@/lib/csv'
 import ModificaGiocatore from './ModificaGiocatore'
-import { aggiustaSaldo, type SocioAdmin } from './datiSoci'
+import { aggiustaSaldo, fetchStoricoSocio, type SocioAdmin } from './datiSoci'
+
+// Colonne da NON esportare nel CSV dei movimenti.
+const COLONNE_NASCOSTE = ['socio_id', 'chiave']
 
 // (Fase 8b) Scheda di dettaglio di un giocatore: saldi, attiva/blocca,
 // modifica dati e aggiustamento manuale dei saldi.
@@ -24,6 +28,7 @@ export default function DettaglioGiocatore({
   const [dPunti, setDPunti] = useState('')
   const [dCrediti, setDCrediti] = useState('')
   const [msg, setMsg] = useState<{ tipo: 'ok' | 'errore'; testo: string } | null>(null)
+  const [msgCsv, setMsgCsv] = useState<{ tipo: 'ok' | 'errore'; testo: string } | null>(null)
 
   const invalida = () => {
     qc.invalidateQueries({ queryKey: ['soci'] })
@@ -66,6 +71,30 @@ export default function DettaglioGiocatore({
       setMsg({ tipo: 'ok', testo: 'Saldi aggiornati.' })
     },
     onError: (e: Error) => setMsg({ tipo: 'errore', testo: e.message }),
+  })
+
+  const esportaCsv = useMutation({
+    mutationFn: async () => {
+      const esito = await fetchStoricoSocio(socio.id)
+      if (!esito.ok) {
+        throw new Error(
+          esito.mancaScript
+            ? 'Storico non ancora attivo: esegui lo script tappa6b-classifica-storico.sql su Supabase.'
+            : 'Impossibile leggere lo storico: ' + (esito.messaggio ?? ''),
+        )
+      }
+      if (esito.righe.length === 0) return { vuoto: true }
+      const csv = costruisciCsv(esito.righe, COLONNE_NASCOSTE)
+      scaricaCsv(`movimenti_${socio.cognome || 'giocatore'}_${socio.nome || ''}.csv`, csv)
+      return { vuoto: false }
+    },
+    onSuccess: (r) =>
+      setMsgCsv(
+        r.vuoto
+          ? { tipo: 'errore', testo: 'Nessun movimento da scaricare.' }
+          : { tipo: 'ok', testo: 'CSV scaricato.' },
+      ),
+    onError: (e: Error) => setMsgCsv({ tipo: 'errore', testo: e.message }),
   })
 
   const nomeCompleto = `${titleCase(socio.cognome)} ${titleCase(socio.nome)}`
@@ -128,6 +157,25 @@ export default function DettaglioGiocatore({
             >
               {socio.attivo ? 'Disattiva' : 'Attiva'}
             </button>
+          )}
+        </div>
+
+        {/* Storico movimenti */}
+        <div className="eyebrow">Storico movimenti</div>
+        <div className="card">
+          <p className="sub m-0 mb-2.5">
+            Scarica un CSV con tutti i movimenti di punti e crediti del giocatore.
+          </p>
+          <button
+            type="button"
+            className="btn btn-secondario !mt-0"
+            disabled={esportaCsv.isPending}
+            onClick={() => esportaCsv.mutate()}
+          >
+            {esportaCsv.isPending ? 'Preparazione…' : 'Scarica CSV'}
+          </button>
+          {msgCsv && (
+            <p className={`mt-3 ${msgCsv.tipo === 'ok' ? classiOk : classiErrore}`}>{msgCsv.testo}</p>
           )}
         </div>
 
