@@ -127,6 +127,18 @@
 
 /* ─── COMPONENTI ───────────────────────────────────────────── */
 @layer components {
+  /* Casella numerica centrata e senza frecce spinner (valori punti/crediti) */
+  .casella-num {
+    text-align: center;
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+  .casella-num::-webkit-outer-spin-button,
+  .casella-num::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
   /* Etichetta (per gli <span> usati come label) */
   .etichetta {
     display: block;

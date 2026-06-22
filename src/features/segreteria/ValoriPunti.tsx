@@ -45,7 +45,7 @@ function BloccoSport({
   children: ReactNode
 }) {
   return (
-    <div className="mb-3 overflow-hidden rounded-xl border border-black/10">
+    <div className="overflow-hidden rounded-xl border border-black/10">
       <div className="flex items-center gap-2 px-3 py-2 text-white" style={{ background: accent }}>
         <span className="text-base leading-none">{icona}</span>
         <span className="text-sm font-semibold">{nome}</span>
@@ -59,8 +59,8 @@ function BloccoSport({
   )
 }
 
-// Una riga: l'azione, una barra tratteggiata che la collega alle sue caselle, e
-// le caselle Punti e Crediti (strette e allineate fra le righe).
+// Una riga: l'azione a sinistra e le caselle Punti/Crediti a destra, allineate
+// (centrate verticalmente) e con il valore centrato nella casella.
 function RigaValore({
   etichetta,
   idBase,
@@ -76,36 +76,36 @@ function RigaValore({
   crediti: string
   setCrediti: (v: string) => void
 }) {
-  const classeInput = '!mt-0 w-14 px-1.5 py-1 text-center'
+  const classeInput = 'casella-num !mt-0 w-14 px-1.5 py-1'
   return (
-    <div className="flex items-center gap-2">
-      <label htmlFor={`${idBase}-punti`} className="whitespace-nowrap text-sm text-ink">
+    <div className="flex items-center justify-between gap-3">
+      <label htmlFor={`${idBase}-punti`} className="text-sm leading-tight text-ink">
         {etichetta}
       </label>
-      {/* Barra di collegamento azione → valori */}
-      <span className="flex-1 border-t border-dashed border-black/20" aria-hidden="true" />
-      <input
-        id={`${idBase}-punti`}
-        type="number"
-        min={0}
-        max={100000}
-        inputMode="numeric"
-        required
-        className={classeInput}
-        value={punti}
-        onChange={(e) => setPunti(e.target.value)}
-      />
-      <input
-        id={`${idBase}-crediti`}
-        type="number"
-        min={0}
-        max={100000}
-        inputMode="numeric"
-        required
-        className={classeInput}
-        value={crediti}
-        onChange={(e) => setCrediti(e.target.value)}
-      />
+      <div className="flex shrink-0 gap-2">
+        <input
+          id={`${idBase}-punti`}
+          type="number"
+          min={0}
+          max={100000}
+          inputMode="numeric"
+          required
+          className={classeInput}
+          value={punti}
+          onChange={(e) => setPunti(e.target.value)}
+        />
+        <input
+          id={`${idBase}-crediti`}
+          type="number"
+          min={0}
+          max={100000}
+          inputMode="numeric"
+          required
+          className={classeInput}
+          value={crediti}
+          onChange={(e) => setCrediti(e.target.value)}
+        />
+      </div>
     </div>
   )
 }
@@ -168,45 +168,47 @@ function FormValori({ valori }: { valori: Valori }) {
         salva.mutate()
       }}
     >
-      <BloccoSport icona="🎾" nome="Padel" accent="linear-gradient(135deg, #0d92ad, #0a4f63)">
-        <RigaValore
-          etichetta="Partita giocata"
-          idBase="pc-partita-padel"
-          punti={partitaPadel}
-          setPunti={setPartitaPadel}
-          crediti={crPartitaPadel}
-          setCrediti={setCrPartitaPadel}
-        />
-        <RigaValore
-          etichetta="Presenza a un allenamento"
-          idBase="pc-allenamento-padel"
-          punti={allenamentoPadel}
-          setPunti={setAllenamentoPadel}
-          crediti={crAllenamentoPadel}
-          setCrediti={setCrAllenamentoPadel}
-        />
-      </BloccoSport>
+      <div className="grid gap-3 md:grid-cols-2">
+        <BloccoSport icona="🎾" nome="Padel" accent="linear-gradient(135deg, #0d92ad, #0a4f63)">
+          <RigaValore
+            etichetta="Partita giocata"
+            idBase="pc-partita-padel"
+            punti={partitaPadel}
+            setPunti={setPartitaPadel}
+            crediti={crPartitaPadel}
+            setCrediti={setCrPartitaPadel}
+          />
+          <RigaValore
+            etichetta="Presenza a un allenamento"
+            idBase="pc-allenamento-padel"
+            punti={allenamentoPadel}
+            setPunti={setAllenamentoPadel}
+            crediti={crAllenamentoPadel}
+            setCrediti={setCrAllenamentoPadel}
+          />
+        </BloccoSport>
 
-      <BloccoSport icona="⚽" nome="Calcio" accent="linear-gradient(135deg, var(--v600), var(--v800))">
-        <RigaValore
-          etichetta="Partita giocata"
-          idBase="pc-partita-calcio"
-          punti={partitaCalcio}
-          setPunti={setPartitaCalcio}
-          crediti={crPartitaCalcio}
-          setCrediti={setCrPartitaCalcio}
-        />
-        <RigaValore
-          etichetta="Presenza a un allenamento"
-          idBase="pc-allenamento-calcio"
-          punti={allenamentoCalcio}
-          setPunti={setAllenamentoCalcio}
-          crediti={crAllenamentoCalcio}
-          setCrediti={setCrAllenamentoCalcio}
-        />
-      </BloccoSport>
+        <BloccoSport icona="⚽" nome="Calcio" accent="linear-gradient(135deg, var(--v600), var(--v800))">
+          <RigaValore
+            etichetta="Partita giocata"
+            idBase="pc-partita-calcio"
+            punti={partitaCalcio}
+            setPunti={setPartitaCalcio}
+            crediti={crPartitaCalcio}
+            setCrediti={setCrPartitaCalcio}
+          />
+          <RigaValore
+            etichetta="Presenza a un allenamento"
+            idBase="pc-allenamento-calcio"
+            punti={allenamentoCalcio}
+            setPunti={setAllenamentoCalcio}
+            crediti={crAllenamentoCalcio}
+            setCrediti={setCrAllenamentoCalcio}
+          />
+        </BloccoSport>
+      </div>
 
-      <button type="submit" className="btn !mt-1" disabled={salva.isPending}>
+      <button type="submit" className="btn mt-4" disabled={salva.isPending}>
         Salva valori
       </button>
       {msg && <p className={`mt-3 ${msg.tipo === 'ok' ? classiOk : classiErrore}`}>{msg.testo}</p>}
