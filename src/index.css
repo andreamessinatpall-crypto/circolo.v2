@@ -1014,11 +1014,9 @@
   }
 
   /* ─── PREMI (Fase 7c) — portate dalla v1 ─────────────── */
-  /* Saldo crediti: banner celebrativo bianco con decori dorati, numero sopra
-     ed etichetta centrata sotto. */
+  /* Saldo crediti: banner sobrio in verde chiaro, numero (verde) sopra ed
+     etichetta centrata sotto. */
   .saldo-crediti {
-    position: relative;
-    overflow: hidden;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -1026,39 +1024,19 @@
     gap: 2px;
     padding: 20px;
     border-radius: 18px;
-    background: #fff;
-    border: 1px solid var(--g300);
-    box-shadow: 0 6px 22px rgba(176, 137, 60, 0.16);
+    background: var(--v050);
+    border: 1px solid var(--v100);
+    box-shadow: var(--ombra-card);
     margin-bottom: 16px;
   }
-  .saldo-crediti::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(120% 80% at 50% 0%, rgba(232, 200, 120, 0.28), transparent 62%);
-    pointer-events: none;
-  }
   .saldo-crediti .num {
-    position: relative;
     font-family: var(--font-display);
     font-weight: 800;
     font-size: 2.8rem;
     line-height: 1;
-    color: var(--g600);
-  }
-  /* Scintille dorate ai lati del numero */
-  .saldo-crediti .num::before,
-  .saldo-crediti .num::after {
-    content: "✦";
-    position: relative;
-    top: -0.5em;
-    margin: 0 0.32em;
-    font-size: 0.8rem;
-    color: var(--g500);
-    opacity: 0.75;
+    color: var(--v700);
   }
   .saldo-crediti .et {
-    position: relative;
     font-size: 0.74rem;
     font-weight: 600;
     text-transform: uppercase;
@@ -1168,25 +1146,24 @@
       left: 130%;
     }
   }
-  /* Pulsante bloccato (crediti insufficienti / esaurito): bianco con lucchetto */
+  /* Pillola "bloccato" (crediti insufficienti / esaurito): piccola, verde chiaro,
+     con lucchetto. Nessun cursore di divieto. */
   .btn-bloccato {
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    justify-content: center;
     gap: 6px;
-    width: 100%;
-    background: #fff;
-    color: var(--ink3);
-    border: 1.5px solid var(--border);
-    border-radius: 12px;
-    padding: 11px 16px;
-    font-weight: 700;
-    font-size: 0.82rem;
-    cursor: not-allowed;
+    background: var(--v050);
+    color: var(--v800);
+    border: 1px solid var(--v100);
+    border-radius: 999px;
+    padding: 5px 12px;
+    font-weight: 600;
+    font-size: 0.8rem;
+    cursor: default;
   }
   .btn-bloccato svg {
-    width: 15px;
-    height: 15px;
+    width: 13px;
+    height: 13px;
   }
   .premio-costo {
     font-family: var(--font-display);

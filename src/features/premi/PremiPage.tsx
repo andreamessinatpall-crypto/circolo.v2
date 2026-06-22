@@ -196,22 +196,15 @@ function CardPremio({
           ? esaurito
             ? 'Esaurito'
             : `${premio.stock} disponibili`
-          : 'Sempre disponibile'}
+          : 'Illimitato'}
       </div>
       <div className="azioni mt-1">
         {esaurito ? (
-          <button type="button" className="btn-bloccato" disabled>
-            Esaurito
-          </button>
+          <span className="btn-bloccato">Esaurito</span>
         ) : insuff ? (
-          <button
-            type="button"
-            className="btn-bloccato"
-            disabled
-            title={`Ti servono ${costo} crediti`}
-          >
-            {LUCCHETTO} {costo} CR
-          </button>
+          <span className="btn-bloccato" title={`Ti servono ${costo} crediti`}>
+            {LUCCHETTO} {costo} crediti
+          </span>
         ) : (
           <button type="button" className="btn-riscatta" disabled={inCorso} onClick={onRiscatta}>
             Riscatta · {costo} CR
