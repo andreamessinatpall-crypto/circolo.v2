@@ -29,25 +29,38 @@ export default function ValoriPunti() {
   )
 }
 
-// Un blocco compatto per sport: intestazione + righe Azione / Punti / Crediti
-// su una griglia a 3 colonne, così le caselle restano allineate e strette.
-function BloccoSport({ icona, nome, children }: { icona: string; nome: string; children: ReactNode }) {
+// Un blocco per sport: tutto ciò che riguarda quello sport sta dentro un riquadro
+// con intestazione colorata (azzurra per Padel, verde per Calcio), così è chiaro
+// che quei valori sono collegati a quello sport. Le intestazioni Punti/Crediti
+// stanno nella barra colorata, allineate alle caselle sotto.
+function BloccoSport({
+  icona,
+  nome,
+  accent,
+  children,
+}: {
+  icona: string
+  nome: string
+  accent: string
+  children: ReactNode
+}) {
   return (
-    <div className="mb-4">
-      <div className="mb-1.5 text-sm font-semibold text-verde-800">
-        {icona} {nome}
+    <div className="mb-3 overflow-hidden rounded-xl border border-black/10">
+      <div className="flex items-center gap-2 px-3 py-2 text-white" style={{ background: accent }}>
+        <span className="text-base leading-none">{icona}</span>
+        <span className="text-sm font-semibold">{nome}</span>
+        <span className="ml-auto flex items-center gap-2 text-[11px] font-medium text-white/85">
+          <span className="w-14 text-center">Punti</span>
+          <span className="w-14 text-center">Crediti</span>
+        </span>
       </div>
-      <div className="grid grid-cols-[1fr_4rem_4rem] items-center gap-x-2 gap-y-1.5">
-        <span />
-        <span className="text-center text-xs font-medium text-ink-3">Punti</span>
-        <span className="text-center text-xs font-medium text-ink-3">Crediti</span>
-        {children}
-      </div>
+      <div className="flex flex-col gap-2 px-3 py-2.5">{children}</div>
     </div>
   )
 }
 
-// Una riga della griglia: etichetta azione + casella punti + casella crediti.
+// Una riga: l'azione, una barra tratteggiata che la collega alle sue caselle, e
+// le caselle Punti e Crediti (strette e allineate fra le righe).
 function RigaValore({
   etichetta,
   idBase,
@@ -63,12 +76,14 @@ function RigaValore({
   crediti: string
   setCrediti: (v: string) => void
 }) {
-  const classeInput = '!mt-0 w-full px-2 py-1.5 text-center'
+  const classeInput = '!mt-0 w-14 px-1.5 py-1 text-center'
   return (
-    <>
-      <label htmlFor={`${idBase}-punti`} className="text-sm text-ink">
+    <div className="flex items-center gap-2">
+      <label htmlFor={`${idBase}-punti`} className="whitespace-nowrap text-sm text-ink">
         {etichetta}
       </label>
+      {/* Barra di collegamento azione → valori */}
+      <span className="flex-1 border-t border-dashed border-black/20" aria-hidden="true" />
       <input
         id={`${idBase}-punti`}
         type="number"
@@ -91,7 +106,7 @@ function RigaValore({
         value={crediti}
         onChange={(e) => setCrediti(e.target.value)}
       />
-    </>
+    </div>
   )
 }
 
@@ -153,7 +168,7 @@ function FormValori({ valori }: { valori: Valori }) {
         salva.mutate()
       }}
     >
-      <BloccoSport icona="🎾" nome="Padel">
+      <BloccoSport icona="🎾" nome="Padel" accent="linear-gradient(135deg, #0d92ad, #0a4f63)">
         <RigaValore
           etichetta="Partita giocata"
           idBase="pc-partita-padel"
@@ -172,7 +187,7 @@ function FormValori({ valori }: { valori: Valori }) {
         />
       </BloccoSport>
 
-      <BloccoSport icona="⚽" nome="Calcio">
+      <BloccoSport icona="⚽" nome="Calcio" accent="linear-gradient(135deg, var(--v600), var(--v800))">
         <RigaValore
           etichetta="Partita giocata"
           idBase="pc-partita-calcio"
