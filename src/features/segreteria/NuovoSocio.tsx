@@ -21,7 +21,6 @@ const schema = z.object({
   sport_preferito: z.enum(['padel', 'calcio', 'entrambi']),
   telefono: z.string().trim().optional(),
   password: z.string().min(8, 'La password provvisoria deve avere almeno 8 caratteri'),
-  is_admin: z.boolean(),
   is_allenatore: z.boolean(),
   e_allenatore: z.boolean(),
 })
@@ -43,7 +42,6 @@ export default function NuovoSocio() {
     defaultValues: {
       genere: 'M',
       sport_preferito: 'entrambi',
-      is_admin: false,
       is_allenatore: false,
       e_allenatore: false,
     },
@@ -85,7 +83,7 @@ export default function NuovoSocio() {
       data_nascita: valori.data_nascita,
       genere: valori.genere,
       sport_preferito: valori.sport_preferito,
-      is_admin: valori.is_admin,
+      is_admin: false,
       is_allenatore: valori.is_allenatore,
       e_allenatore: valori.e_allenatore,
     })
@@ -161,9 +159,6 @@ export default function NuovoSocio() {
         </div>
 
         <div className="mt-4 flex flex-col gap-2.5">
-          <Spunta {...register('is_admin')}>
-            Questo giocatore è anche <strong>amministratore</strong>
-          </Spunta>
           <Spunta {...register('is_allenatore')}>
             <strong>Collaboratore</strong> (può creare e gestire i tornei)
           </Spunta>
