@@ -17,6 +17,17 @@ const ICONA_CAL = (
   </svg>
 )
 
+// (Tappa 11) La colonna "nome_manuale" potrebbe non esistere ancora nel database.
+function mancaColonnaManuale(error: unknown) {
+  const e = error as { code?: string; message?: string } | null
+  if (!e) return false
+  return (
+    e.code === 'PGRST204' ||
+    e.code === '42703' ||
+    (e.message ?? '').toLowerCase().includes('nome_manuale')
+  )
+}
+
 export default function MieAmichevoli({ sport }: { sport: Sport }) {
   const { profilo } = useAuth()
   const qc = useQueryClient()
@@ -81,16 +92,46 @@ export default function MieAmichevoli({ sport }: { sport: Sport }) {
   })
 
   const rimuovi = useMutation({
-    mutationFn: async ({ prenId, socioId }: { prenId: number | string; socioId: string }) => {
-      const { error } = await supabase
-        .from('partecipanti_amichevole')
-        .delete()
-        .eq('prenotazione_id', prenId)
-        .eq('socio_id', socioId)
+    // Rimozione per id della riga: funziona anche per gli ospiti (socio_id null).
+    mutationFn: async (id: number | string) => {
+      const { error } = await supabase.from('partecipanti_amichevole').delete().eq('id', id)
       if (error) throw error
     },
     onSuccess: aggiorna,
     onError: (e: unknown) => window.alert('Rimozione non riuscita: ' + messaggioErrore(e)),
+  })
+
+  // (Tappa 11) Solo l'admin: aggiunge un ospite non registrato (socio_id null).
+  const aggiungiOspite = useMutation({
+    mutationFn: async ({ prenId, nome }: { prenId: number | string; nome: string }) => {
+      const { error } = await supabase.from('partecipanti_amichevole').insert({
+        prenotazione_id: prenId,
+        socio_id: null,
+        nome_manuale: nome,
+        confermato: false,
+      })
+      if (error) throw error
+    },
+    onSuccess: aggiorna,
+    onError: (e: unknown) =>
+      window.alert(
+        mancaColonnaManuale(e)
+          ? 'Per aggiungere ospiti esegui lo script tappa11-partecipanti-manuali.sql su Supabase.'
+          : 'Aggiunta non riuscita: ' + messaggioErrore(e),
+      ),
+  })
+
+  // (Tappa 11) Solo l'admin: conferma/annulla la presenza di un partecipante.
+  const conferma = useMutation({
+    mutationFn: async ({ id, valore }: { id: number | string; valore: boolean }) => {
+      const { error } = await supabase
+        .from('partecipanti_amichevole')
+        .update({ confermato: valore })
+        .eq('id', id)
+      if (error) throw error
+    },
+    onSuccess: aggiorna,
+    onError: (e: unknown) => window.alert('Operazione non riuscita: ' + messaggioErrore(e)),
   })
 
   const annulla = useMutation({
@@ -134,6 +175,7 @@ export default function MieAmichevoli({ sport }: { sport: Sport }) {
   }
 
   const staff = !!(profilo.is_allenatore || profilo.is_admin || profilo.e_allenatore)
+  const admin = !!profilo.is_admin
   const candidati = staff
     ? (sociQuery.data ?? []).filter((s) => s.id !== profilo.id)
     : amiciData.amici.map((a) => ({ id: a.id, etichetta: a.etichetta }))
@@ -174,10 +216,13 @@ export default function MieAmichevoli({ sport }: { sport: Sport }) {
                 etichette={etichette}
                 candidati={candidati}
                 staff={staff}
+                admin={admin}
                 mioId={profilo.id}
                 amiciVuoti={!staff && amiciData.amici.length === 0}
                 onAggiungi={(socioId, primo) => aggiungi.mutate({ prenId: p.id, socioId, primo })}
-                onRimuovi={(socioId) => rimuovi.mutate({ prenId: p.id, socioId })}
+                onAggiungiOspite={(nome) => aggiungiOspite.mutate({ prenId: p.id, nome })}
+                onConferma={(id, valore) => conferma.mutate({ id, valore })}
+                onRimuovi={(part) => rimuovi.mutate(part.id)}
                 onAnnulla={() => {
                   const quando =
                     new Date(p.inizio).toLocaleDateString('it-IT', {
@@ -208,9 +253,12 @@ export function SchedaPartita({
   etichette,
   candidati,
   staff,
+  admin = false,
   mioId,
   amiciVuoti,
   onAggiungi,
+  onAggiungiOspite,
+  onConferma,
   onRimuovi,
   onAnnulla,
 }: {
@@ -221,16 +269,19 @@ export function SchedaPartita({
   etichette: Map<string, string>
   candidati: { id: string; etichetta: string }[]
   staff: boolean
+  admin?: boolean
   mioId: string
   amiciVuoti: boolean
   onAggiungi: (socioId: string, primo: boolean) => void
-  onRimuovi: (socioId: string) => void
+  onAggiungiOspite?: (nome: string) => void
+  onConferma?: (id: number | string, valore: boolean) => void
+  onRimuovi: (part: Partecipante) => void
   onAnnulla: () => void
 }) {
   const inizio = new Date(pren.inizio)
   const fine = new Date(pren.fine)
   const lista = [...partecipanti].sort((a, b) => Number(b.confermato) - Number(a.confermato))
-  const giaIds = new Set(lista.map((r) => r.socio_id))
+  const giaIds = new Set(lista.map((r) => r.socio_id).filter((x): x is string => !!x))
   const selezionabili = candidati.filter((c) => !giaIds.has(c.id))
 
   const cap4 = sport === 'padel' && !pren.allenamento && lista.length >= 4
@@ -281,6 +332,8 @@ export function SchedaPartita({
               disabilitato={disabilita}
               testoVuoto={testoVuoto}
               onScegli={(id) => onAggiungi(id, false)}
+              admin={admin}
+              onOspite={onAggiungiOspite}
             />
           ) : (
             <button
@@ -295,31 +348,64 @@ export function SchedaPartita({
       ) : (
         <>
           <div className="chips">
-            {lista.map((r) => (
-              <span key={r.socio_id} className={'chip' + (r.confermato ? ' conf' : '')}>
-                {etichette.get(r.socio_id) ?? 'Socio'}
-                {r.confermato ? (
-                  <span className="stato" title="Presenza confermata dall'admin">
-                    ✓
-                  </span>
-                ) : (
-                  <button
-                    type="button"
-                    className="x"
-                    title="Togli"
-                    onClick={() => onRimuovi(r.socio_id)}
-                  >
-                    ×
-                  </button>
-                )}
-              </span>
-            ))}
+            {lista.map((r) => {
+              const nome = r.socio_id ? (etichette.get(r.socio_id) ?? 'Socio') : (r.nome_manuale ?? 'Ospite')
+              return (
+                <span key={r.id} className={'chip' + (r.confermato ? ' conf' : '')}>
+                  {nome}
+                  {!r.socio_id && (
+                    <span className="stato" title="Giocatore non registrato">
+                      ospite
+                    </span>
+                  )}
+                  {r.confermato ? (
+                    admin && onConferma ? (
+                      <button
+                        type="button"
+                        className="x"
+                        title="Annulla conferma"
+                        onClick={() => onConferma(r.id, false)}
+                      >
+                        ✓
+                      </button>
+                    ) : (
+                      <span className="stato" title="Presenza confermata dall'admin">
+                        ✓
+                      </span>
+                    )
+                  ) : (
+                    <>
+                      {admin && onConferma && (
+                        <button
+                          type="button"
+                          className="x"
+                          title="Conferma presenza"
+                          onClick={() => onConferma(r.id, true)}
+                        >
+                          ✓
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        className="x"
+                        title="Togli"
+                        onClick={() => onRimuovi(r)}
+                      >
+                        ×
+                      </button>
+                    </>
+                  )}
+                </span>
+              )
+            })}
           </div>
           <Selettore
             opzioni={selezionabili}
             disabilitato={disabilita}
             testoVuoto={testoVuoto}
             onScegli={(id) => onAggiungi(id, false)}
+            admin={admin}
+            onOspite={onAggiungiOspite}
           />
         </>
       )}
@@ -338,11 +424,15 @@ function Selettore({
   disabilitato,
   testoVuoto,
   onScegli,
+  admin = false,
+  onOspite,
 }: {
   opzioni: { id: string; etichetta: string }[]
   disabilitato: boolean
   testoVuoto: string
   onScegli: (id: string) => void
+  admin?: boolean
+  onOspite?: (nome: string) => void
 }) {
   return (
     <div className="aggiungi-part">
@@ -350,10 +440,20 @@ function Selettore({
         value=""
         disabled={disabilitato}
         onChange={(e) => {
-          if (e.target.value) onScegli(e.target.value)
+          const v = e.target.value
+          if (!v) return
+          // (Tappa 11) Voce "ospite" (solo admin): chiede il nome in una finestra
+          // a comparsa e aggiunge un giocatore non registrato.
+          if (v === '__ospite__') {
+            const nome = window.prompt('Nome dell’ospite (giocatore non registrato):')
+            if (nome && nome.trim()) onOspite?.(nome.trim())
+            return
+          }
+          onScegli(v)
         }}
       >
         <option value="">{testoVuoto}</option>
+        {admin && onOspite && <option value="__ospite__">➕ Ospite (non registrato)…</option>}
         {opzioni.map((o) => (
           <option key={o.id} value={o.id}>
             {o.etichetta}

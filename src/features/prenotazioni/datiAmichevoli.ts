@@ -9,8 +9,11 @@ export interface SocioPubblico {
 }
 
 export interface Partecipante {
+  id: number | string
   prenotazione_id: number | string
-  socio_id: string
+  socio_id: string | null
+  // (Tappa 11) Nome di un ospite non registrato (solo quando socio_id è null).
+  nome_manuale?: string | null
   confermato: boolean
 }
 

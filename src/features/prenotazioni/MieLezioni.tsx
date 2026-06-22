@@ -59,12 +59,8 @@ export default function MieLezioni({ sport }: { sport: Sport }) {
   })
 
   const rimuovi = useMutation({
-    mutationFn: async ({ prenId, socioId }: { prenId: number | string; socioId: string }) => {
-      const { error } = await supabase
-        .from('partecipanti_amichevole')
-        .delete()
-        .eq('prenotazione_id', prenId)
-        .eq('socio_id', socioId)
+    mutationFn: async (id: number | string) => {
+      const { error } = await supabase.from('partecipanti_amichevole').delete().eq('id', id)
       if (error) throw error
     },
     onSuccess: aggiorna,
@@ -150,7 +146,7 @@ export default function MieLezioni({ sport }: { sport: Sport }) {
                 mioId={profilo.id}
                 amiciVuoti={false}
                 onAggiungi={(socioId) => aggiungi.mutate({ prenId: p.id, socioId })}
-                onRimuovi={(socioId) => rimuovi.mutate({ prenId: p.id, socioId })}
+                onRimuovi={(part) => rimuovi.mutate(part.id)}
                 onAnnulla={() => {
                   const quando =
                     new Date(p.inizio).toLocaleDateString('it-IT', {
