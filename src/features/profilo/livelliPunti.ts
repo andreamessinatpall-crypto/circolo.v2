@@ -11,14 +11,17 @@ export interface LivelloPunti {
   soglia: number
   colore: string
   emoji: string
+  // Immagine caricata dall'admin (PNG data URL). Se presente ha la priorità
+  // sull'emoji/medaglia disegnata.
+  img: string | null
 }
 
 export const LIVELLI_PUNTI_DEFAULT: LivelloPunti[] = [
-  { nome: 'Esordiente', soglia: 0, colore: '#A8702F', emoji: '🥉' },
-  { nome: 'Promessa', soglia: 100, colore: '#9AA3A0', emoji: '🥈' },
-  { nome: 'Atleta', soglia: 300, colore: '#E0A83A', emoji: '🥇' },
-  { nome: 'Veterano', soglia: 700, colore: '#2E9E6B', emoji: '🏆' },
-  { nome: 'Leggenda', soglia: 1500, colore: '#7C4DFF', emoji: '👑' },
+  { nome: 'Esordiente', soglia: 0, colore: '#A8702F', emoji: '🥉', img: null },
+  { nome: 'Promessa', soglia: 100, colore: '#9AA3A0', emoji: '🥈', img: null },
+  { nome: 'Atleta', soglia: 300, colore: '#E0A83A', emoji: '🥇', img: null },
+  { nome: 'Veterano', soglia: 700, colore: '#2E9E6B', emoji: '🏆', img: null },
+  { nome: 'Leggenda', soglia: 1500, colore: '#7C4DFF', emoji: '👑', img: null },
 ]
 
 const PALETTE = ['#A8702F', '#9AA3A0', '#E0A83A', '#2E9E6B', '#7C4DFF', '#3A7BD5', '#C0392B', '#16A085']
@@ -39,6 +42,7 @@ export function applicaLivelliPunti(arr: unknown): LivelloPunti[] {
             ? l.colore
             : PALETTE[i % PALETTE.length],
         emoji: l.emoji ? String(l.emoji).slice(0, 4) : '🏅',
+        img: typeof l.img === 'string' ? l.img : null,
       }
     })
     .sort((a, b) => a.soglia - b.soglia)

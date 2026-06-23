@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { classiErrore, classiOk } from '@/components/stili'
+import { logoDaFile } from '@/lib/immagini'
 import {
   applicaLivelliPunti,
   salvaLivelliPunti,
@@ -23,7 +24,8 @@ export default function GestioneLivelli() {
       <div className="card">
         <p className="sub m-0 mb-3">
           I livelli si raggiungono in base ai <strong>punti</strong> raccolti. Il primo livello parte
-          sempre da 0.
+          sempre da 0. Per ogni livello puoi caricare un’<strong>immagine</strong> da locale; se non
+          la carichi si usano emoji e colore.
         </p>
         {isLoading ? (
           <p className="text-ink-2">Caricamento…</p>
@@ -43,6 +45,7 @@ interface Riga {
   soglia: string
   colore: string
   emoji: string
+  img: string | null
 }
 
 function EditorLivelli({ iniziali }: { iniziali: LivelloPunti[] }) {
@@ -54,6 +57,7 @@ function EditorLivelli({ iniziali }: { iniziali: LivelloPunti[] }) {
       soglia: String(l.soglia),
       colore: l.colore,
       emoji: l.emoji,
+      img: l.img,
     })),
   )
   const [msg, setMsg] = useState<Esito>(null)
@@ -63,11 +67,33 @@ function EditorLivelli({ iniziali }: { iniziali: LivelloPunti[] }) {
   const aggiungi = () =>
     setRighe((r) => [
       ...r,
-      { id: nuovoId(), nome: `Livello ${r.length + 1}`, soglia: '0', colore: '#2E9E6B', emoji: '🏅' },
+      {
+        id: nuovoId(),
+        nome: `Livello ${r.length + 1}`,
+        soglia: '0',
+        colore: '#2E9E6B',
+        emoji: '🏅',
+        img: null,
+      },
     ])
   const togli = (id: number) => setRighe((r) => r.filter((x) => x.id !== id))
-  const cambia = (id: number, campo: keyof Omit<Riga, 'id'>, val: string) =>
+  const cambia = (id: number, campo: 'nome' | 'soglia' | 'colore' | 'emoji', val: string) =>
     setRighe((r) => r.map((x) => (x.id === id ? { ...x, [campo]: val } : x)))
+  const setImg = (id: number, val: string | null) =>
+    setRighe((r) => r.map((x) => (x.id === id ? { ...x, img: val } : x)))
+
+  // Carica un'immagine da locale, ridimensionata a un piccolo PNG data URL.
+  async function caricaImg(id: number, e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    e.target.value = '' // permette di ricaricare lo stesso file
+    if (!file) return
+    setMsg(null)
+    try {
+      setImg(id, await logoDaFile(file))
+    } catch (err) {
+      setMsg({ tipo: 'errore', testo: err instanceof Error ? err.message : 'Immagine non valida.' })
+    }
+  }
 
   const salva = useMutation({
     mutationFn: async () => {
@@ -77,6 +103,7 @@ function EditorLivelli({ iniziali }: { iniziali: LivelloPunti[] }) {
         soglia: Math.max(0, parseInt(r.soglia, 10) || 0),
         colore: r.colore,
         emoji: r.emoji.trim() || '🏅',
+        img: r.img,
       }))
       const esito = await salvaLivelliPunti(livelli)
       if (!esito.ok)
@@ -101,6 +128,42 @@ function EditorLivelli({ iniziali }: { iniziali: LivelloPunti[] }) {
       <div className="flex flex-col gap-2">
         {righe.map((r, i) => (
           <div key={r.id} className="flex flex-wrap items-end gap-3">
+            {/* Anteprima: immagine caricata, altrimenti emoji su sfondo colore */}
+            <div className="flex flex-col items-center gap-1">
+              <span
+                className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border border-black/10"
+                style={r.img ? undefined : { background: r.colore }}
+              >
+                {r.img ? (
+                  <img src={r.img} alt="" className="h-full w-full object-cover" />
+                ) : (
+                  <span className="text-lg">{r.emoji}</span>
+                )}
+              </span>
+              <div className="flex items-center gap-1">
+                <label className="btn btn-secondario btn-mini !mt-0 cursor-pointer">
+                  {r.img ? 'Cambia' : 'Carica'}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => caricaImg(r.id, e)}
+                  />
+                </label>
+                {r.img && (
+                  <button
+                    type="button"
+                    className="btn btn-pericolo btn-mini !mt-0"
+                    onClick={() => {
+                      setImg(r.id, null)
+                      setMsg(null)
+                    }}
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            </div>
             <label className="block">
               <span className="etichetta !mb-1">Emoji</span>
               <input

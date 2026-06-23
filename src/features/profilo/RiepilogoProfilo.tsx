@@ -68,11 +68,17 @@ export default function RiepilogoProfilo() {
     <div>
       <div className="riep-wow">
         <div className="riep-wow-top">
-          <span
-            className="riep-liv-medal"
-            style={{ borderColor: liv.colore }}
-            dangerouslySetInnerHTML={{ __html: svgMedagliaColore(livN, liv.colore) }}
-          />
+          {liv.img ? (
+            <span className="riep-liv-medal" style={{ borderColor: liv.colore }}>
+              <img src={liv.img} alt="" />
+            </span>
+          ) : (
+            <span
+              className="riep-liv-medal"
+              style={{ borderColor: liv.colore }}
+              dangerouslySetInnerHTML={{ __html: svgMedagliaColore(livN, liv.colore) }}
+            />
+          )}
           <div className="riep-wow-hi">
             <h1>Benvenuto, {profilo.nome}</h1>
             <p className="riep-liv-eyebrow">
