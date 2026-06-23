@@ -118,7 +118,7 @@ function EditorLivelli({ iniziali }: { iniziali: LivelloPunti[] }) {
     <div>
       <div className="flex flex-col gap-2">
         {righe.map((r, i) => (
-          <div key={r.id} className="flex flex-wrap items-center gap-3">
+          <div key={r.id} className="flex flex-wrap items-end gap-3">
             <SlotImmagine
               etichetta="IMG"
               img={r.img}

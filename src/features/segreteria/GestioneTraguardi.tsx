@@ -132,7 +132,7 @@ function EditorTraguardi({ iniziali }: { iniziali: Livello[] }) {
     <div>
       <div className="flex flex-col gap-3">
         {righe.map((r) => (
-          <div key={r.id} className="flex flex-wrap items-center gap-3 border-b border-verde-100 pb-3">
+          <div key={r.id} className="flex flex-wrap items-end gap-3 border-b border-verde-100 pb-3">
             {/* Padel e Calcio in due blocchi impilati */}
             <div className="flex flex-col gap-2">
               <SlotImmagine
