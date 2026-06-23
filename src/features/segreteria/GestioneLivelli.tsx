@@ -8,6 +8,7 @@ import {
   useLivelliPunti,
   type LivelloPunti,
 } from '@/features/profilo/livelliPunti'
+import SlotImmagine from './SlotImmagine'
 
 type Esito = { tipo: 'ok' | 'errore'; testo: string } | null
 
@@ -25,7 +26,7 @@ export default function GestioneLivelli() {
         <p className="sub m-0 mb-3">
           I livelli si raggiungono in base ai <strong>punti</strong> raccolti. Il primo livello parte
           sempre da 0. Per ogni livello puoi caricare un’<strong>immagine</strong> da locale; se non
-          la carichi si usano emoji e colore.
+          la carichi si usa il colore.
         </p>
         {isLoading ? (
           <p className="text-ink-2">Caricamento…</p>
@@ -44,7 +45,6 @@ interface Riga {
   nome: string
   soglia: string
   colore: string
-  emoji: string
   img: string | null
 }
 
@@ -56,7 +56,6 @@ function EditorLivelli({ iniziali }: { iniziali: LivelloPunti[] }) {
       nome: l.nome,
       soglia: String(l.soglia),
       colore: l.colore,
-      emoji: l.emoji,
       img: l.img,
     })),
   )
@@ -67,17 +66,10 @@ function EditorLivelli({ iniziali }: { iniziali: LivelloPunti[] }) {
   const aggiungi = () =>
     setRighe((r) => [
       ...r,
-      {
-        id: nuovoId(),
-        nome: `Livello ${r.length + 1}`,
-        soglia: '0',
-        colore: '#2E9E6B',
-        emoji: '🏅',
-        img: null,
-      },
+      { id: nuovoId(), nome: `Livello ${r.length + 1}`, soglia: '0', colore: '#2E9E6B', img: null },
     ])
   const togli = (id: number) => setRighe((r) => r.filter((x) => x.id !== id))
-  const cambia = (id: number, campo: 'nome' | 'soglia' | 'colore' | 'emoji', val: string) =>
+  const cambia = (id: number, campo: 'nome' | 'soglia' | 'colore', val: string) =>
     setRighe((r) => r.map((x) => (x.id === id ? { ...x, [campo]: val } : x)))
   const setImg = (id: number, val: string | null) =>
     setRighe((r) => r.map((x) => (x.id === id ? { ...x, img: val } : x)))
@@ -102,7 +94,6 @@ function EditorLivelli({ iniziali }: { iniziali: LivelloPunti[] }) {
         nome: r.nome.trim() || 'Livello',
         soglia: Math.max(0, parseInt(r.soglia, 10) || 0),
         colore: r.colore,
-        emoji: r.emoji.trim() || '🏅',
         img: r.img,
       }))
       const esito = await salvaLivelliPunti(livelli)
@@ -128,60 +119,21 @@ function EditorLivelli({ iniziali }: { iniziali: LivelloPunti[] }) {
       <div className="flex flex-col gap-2">
         {righe.map((r, i) => (
           <div key={r.id} className="flex flex-wrap items-end gap-3">
-            {/* Anteprima: immagine caricata, altrimenti emoji su sfondo colore */}
-            <div className="flex flex-col items-center gap-1">
-              <span
-                className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border border-black/10"
-                style={r.img ? undefined : { background: r.colore }}
-              >
-                {r.img ? (
-                  <img src={r.img} alt="" className="h-full w-full object-cover" />
-                ) : (
-                  <span className="text-lg">{r.emoji}</span>
-                )}
-              </span>
-              <div className="flex items-center gap-1">
-                <label className="btn btn-secondario btn-mini !mt-0 cursor-pointer">
-                  {r.img ? 'Cambia' : 'Carica'}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => caricaImg(r.id, e)}
-                  />
-                </label>
-                {r.img && (
-                  <button
-                    type="button"
-                    className="btn btn-pericolo btn-mini !mt-0"
-                    onClick={() => {
-                      setImg(r.id, null)
-                      setMsg(null)
-                    }}
-                  >
-                    ✕
-                  </button>
-                )}
-              </div>
-            </div>
-            <label className="block">
-              <span className="etichetta !mb-1">Emoji</span>
-              <input
-                type="text"
-                maxLength={4}
-                className="casella-num !mt-0 w-14"
-                value={r.emoji}
-                onChange={(e) => {
-                  cambia(r.id, 'emoji', e.target.value)
-                  setMsg(null)
-                }}
-              />
-            </label>
+            <SlotImmagine
+              etichetta="Immagine"
+              img={r.img}
+              colore={r.colore}
+              onCarica={(e) => caricaImg(r.id, e)}
+              onRimuovi={() => {
+                setImg(r.id, null)
+                setMsg(null)
+              }}
+            />
             <label className="block">
               <span className="etichetta !mb-1">Colore</span>
               <input
                 type="color"
-                className="!mt-0 h-9 w-12 rounded-lg border border-verde-100 p-1"
+                className="!mt-0 h-11 w-12 rounded-lg border border-verde-100 p-1"
                 value={r.colore}
                 onChange={(e) => {
                   cambia(r.id, 'colore', e.target.value)
@@ -194,7 +146,7 @@ function EditorLivelli({ iniziali }: { iniziali: LivelloPunti[] }) {
               <input
                 type="text"
                 maxLength={30}
-                className="w-full !mt-0"
+                className="!mt-0 h-11 w-full"
                 value={r.nome}
                 onChange={(e) => {
                   cambia(r.id, 'nome', e.target.value)
@@ -208,7 +160,7 @@ function EditorLivelli({ iniziali }: { iniziali: LivelloPunti[] }) {
                 type="number"
                 min={0}
                 inputMode="numeric"
-                className="casella-num !mt-0 w-24"
+                className="casella-num !mt-0 h-11 w-24"
                 value={i === 0 ? '0' : r.soglia}
                 disabled={i === 0}
                 title={i === 0 ? 'Il primo livello parte sempre da 0' : undefined}
@@ -220,13 +172,14 @@ function EditorLivelli({ iniziali }: { iniziali: LivelloPunti[] }) {
             </label>
             <button
               type="button"
-              className="btn btn-pericolo btn-mini !mt-0"
+              aria-label="Togli livello"
+              className="btn btn-pericolo btn-mini !mt-0 flex h-11 w-11 items-center justify-center !px-0 text-base"
               onClick={() => {
                 togli(r.id)
                 setMsg(null)
               }}
             >
-              Togli
+              ✕
             </button>
           </div>
         ))}

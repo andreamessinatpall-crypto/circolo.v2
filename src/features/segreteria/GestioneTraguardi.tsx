@@ -3,12 +3,12 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { classiErrore, classiOk } from '@/components/stili'
 import { logoDaFile } from '@/lib/immagini'
 import {
-  EMOJI_SPORT,
   applicaBadgeLivelli,
   salvaBadgeLivelli,
   useLivelliPartite,
   type Livello,
 } from '@/features/profilo/badge/badgeDati'
+import SlotImmagine from './SlotImmagine'
 
 type Esito = { tipo: 'ok' | 'errore'; testo: string } | null
 
@@ -135,7 +135,6 @@ function EditorTraguardi({ iniziali }: { iniziali: Livello[] }) {
           <div key={r.id} className="flex flex-wrap items-end gap-3 border-b border-verde-100 pb-3">
             <SlotImmagine
               etichetta="Padel"
-              sportEmoji={EMOJI_SPORT.padel}
               img={r.img_padel}
               colore={r.colore}
               onCarica={(e) => caricaImg(r.id, 'img_padel', e)}
@@ -146,7 +145,6 @@ function EditorTraguardi({ iniziali }: { iniziali: Livello[] }) {
             />
             <SlotImmagine
               etichetta="Calcio"
-              sportEmoji={EMOJI_SPORT.calcio}
               img={r.img_calcio}
               colore={r.colore}
               onCarica={(e) => caricaImg(r.id, 'img_calcio', e)}
@@ -159,7 +157,7 @@ function EditorTraguardi({ iniziali }: { iniziali: Livello[] }) {
               <span className="etichetta !mb-1">Colore</span>
               <input
                 type="color"
-                className="!mt-0 h-9 w-12 rounded-lg border border-verde-100 p-1"
+                className="!mt-0 h-11 w-12 rounded-lg border border-verde-100 p-1"
                 value={r.colore}
                 onChange={(e) => {
                   cambia(r.id, 'colore', e.target.value)
@@ -172,7 +170,7 @@ function EditorTraguardi({ iniziali }: { iniziali: Livello[] }) {
               <input
                 type="text"
                 maxLength={30}
-                className="w-full !mt-0"
+                className="!mt-0 h-11 w-full"
                 value={r.nome}
                 onChange={(e) => {
                   cambia(r.id, 'nome', e.target.value)
@@ -186,7 +184,7 @@ function EditorTraguardi({ iniziali }: { iniziali: Livello[] }) {
                 type="number"
                 min={1}
                 inputMode="numeric"
-                className="casella-num !mt-0 w-24"
+                className="casella-num !mt-0 h-11 w-24"
                 value={r.soglia}
                 onChange={(e) => {
                   cambia(r.id, 'soglia', e.target.value)
@@ -196,13 +194,14 @@ function EditorTraguardi({ iniziali }: { iniziali: Livello[] }) {
             </label>
             <button
               type="button"
-              className="btn btn-pericolo btn-mini !mt-0"
+              aria-label="Togli traguardo"
+              className="btn btn-pericolo btn-mini !mt-0 flex h-11 w-11 items-center justify-center !px-0 text-base"
               onClick={() => {
                 togli(r.id)
                 setMsg(null)
               }}
             >
-              Togli
+              ✕
             </button>
           </div>
         ))}
@@ -226,49 +225,6 @@ function EditorTraguardi({ iniziali }: { iniziali: Livello[] }) {
       </div>
 
       {msg && <p className={`mt-3 ${msg.tipo === 'ok' ? classiOk : classiErrore}`}>{msg.testo}</p>}
-    </div>
-  )
-}
-
-function SlotImmagine({
-  etichetta,
-  sportEmoji,
-  img,
-  colore,
-  onCarica,
-  onRimuovi,
-}: {
-  etichetta: string
-  sportEmoji: string
-  img: string | null
-  colore: string
-  onCarica: (e: React.ChangeEvent<HTMLInputElement>) => void
-  onRimuovi: () => void
-}) {
-  return (
-    <div className="flex flex-col items-center gap-1">
-      <span className="etichetta !mb-0">{etichetta}</span>
-      <span
-        className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border border-black/10"
-        style={img ? undefined : { background: colore }}
-      >
-        {img ? (
-          <img src={img} alt="" className="h-full w-full object-cover" />
-        ) : (
-          <span className="text-lg">{sportEmoji}</span>
-        )}
-      </span>
-      <div className="flex items-center gap-1">
-        <label className="btn btn-secondario btn-mini !mt-0 cursor-pointer">
-          {img ? 'Cambia' : 'Carica'}
-          <input type="file" accept="image/*" className="hidden" onChange={onCarica} />
-        </label>
-        {img && (
-          <button type="button" className="btn btn-pericolo btn-mini !mt-0" onClick={onRimuovi}>
-            ✕
-          </button>
-        )}
-      </div>
     </div>
   )
 }
