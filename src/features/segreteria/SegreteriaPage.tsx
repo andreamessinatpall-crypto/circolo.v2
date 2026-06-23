@@ -9,6 +9,7 @@ import RigeneraPunti from './RigeneraPunti'
 import RigeneraCrediti from './RigeneraCrediti'
 import GestionePremi from './GestionePremi'
 import GestioneLivelli from './GestioneLivelli'
+import GestioneTraguardi from './GestioneTraguardi'
 
 // Pannello amministratori. Come nella v1 raccoglie più sezioni; qui sono
 // sotto-schede. Vengono riempite una alla volta lungo la Fase 8.
@@ -55,7 +56,12 @@ export default function SegreteriaPage() {
         </>
       )}
       {scheda === 'premi' && <GestionePremi />}
-      {scheda === 'livelli' && <GestioneLivelli />}
+      {scheda === 'livelli' && (
+        <>
+          <GestioneLivelli />
+          <GestioneTraguardi />
+        </>
+      )}
     </div>
   )
 }

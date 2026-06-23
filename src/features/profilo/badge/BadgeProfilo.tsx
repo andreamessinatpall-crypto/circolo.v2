@@ -6,9 +6,10 @@ import { sportConsentiti } from '@/auth/ruoli'
 import { mancaRpc, messaggioErrore } from '@/lib/errori'
 import Medaglia from './Medaglia'
 import {
-  LIVELLI_PARTITE,
+  LIVELLI_PARTITE_DEFAULT,
   codiceBadge,
   livelloDaConteggio,
+  useLivelliPartite,
   type Sport,
 } from './badgeDati'
 
@@ -16,6 +17,7 @@ type Conteggi = Record<Sport, number>
 
 export default function BadgeProfilo() {
   const { profilo, ricaricaProfilo } = useAuth()
+  const livelliQuery = useLivelliPartite()
 
   const query = useQuery({
     queryKey: ['mie_partite_per_sport'],
@@ -59,6 +61,7 @@ export default function BadgeProfilo() {
   }
 
   const conteggi = query.data ?? { padel: 0, calcio: 0 }
+  const livelli = livelliQuery.data ?? LIVELLI_PARTITE_DEFAULT
   const sports: Sport[] = profilo.is_admin
     ? ['padel', 'calcio']
     : sportConsentiti(profilo)
@@ -83,7 +86,7 @@ export default function BadgeProfilo() {
 
       {sports.map((sport) => {
         const n = conteggi[sport]
-        const raggiunto = livelloDaConteggio(n)
+        const raggiunto = livelloDaConteggio(n, livelli)
         return (
           <div key={sport} className="mb-6 last:mb-0">
             <div className="badge-titolo-sport">
@@ -91,7 +94,7 @@ export default function BadgeProfilo() {
               {n === 1 ? 'partita' : 'partite'}
             </div>
             <div className="badge-griglia">
-              {LIVELLI_PARTITE.map((l, idx) => {
+              {livelli.map((l, idx) => {
                 const liv = idx + 1
                 const sbloccato = liv <= raggiunto
                 const scelto = profilo.badge_profilo === codiceBadge(sport, liv)

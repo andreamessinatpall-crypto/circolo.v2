@@ -1731,6 +1731,12 @@
     height: 100%;
     display: block;
   }
+  .emblema img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
 
   /* Griglia dei traguardi (badge) */
   .badge-titolo-sport {
