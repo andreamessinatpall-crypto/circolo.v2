@@ -8,10 +8,11 @@ import IntervalliCrediti from './IntervalliCrediti'
 import RigeneraPunti from './RigeneraPunti'
 import RigeneraCrediti from './RigeneraCrediti'
 import GestionePremi from './GestionePremi'
+import GestioneLivelli from './GestioneLivelli'
 
 // Pannello amministratori. Come nella v1 raccoglie più sezioni; qui sono
 // sotto-schede. Vengono riempite una alla volta lungo la Fase 8.
-type SottoScheda = 'nuovo' | 'giocatori' | 'campi' | 'prenotazioni' | 'punti' | 'premi'
+type SottoScheda = 'nuovo' | 'giocatori' | 'campi' | 'prenotazioni' | 'punti' | 'premi' | 'livelli'
 
 const SCHEDE: { id: SottoScheda; label: string }[] = [
   { id: 'nuovo', label: 'Nuovo giocatore' },
@@ -20,6 +21,7 @@ const SCHEDE: { id: SottoScheda; label: string }[] = [
   { id: 'prenotazioni', label: 'Prenotazioni' },
   { id: 'punti', label: 'Punti e crediti' },
   { id: 'premi', label: 'Premi' },
+  { id: 'livelli', label: 'Livelli e traguardi' },
 ]
 
 export default function SegreteriaPage() {
@@ -53,6 +55,7 @@ export default function SegreteriaPage() {
         </>
       )}
       {scheda === 'premi' && <GestionePremi />}
+      {scheda === 'livelli' && <GestioneLivelli />}
     </div>
   )
 }

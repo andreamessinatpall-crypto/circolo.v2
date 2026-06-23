@@ -2,12 +2,13 @@ import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/auth/useAuth'
 import { dataEstesa } from '@/lib/formato'
-import { LIVELLI_PUNTI, livelloDaPunti } from './livelliPunti'
+import { LIVELLI_PUNTI_DEFAULT, livelloDaPunti, useLivelliPunti } from './livelliPunti'
 import { svgMedagliaColore } from './badge/medaglieSvg'
 import AttivitaInProgramma from './AttivitaInProgramma'
 
 export default function RiepilogoProfilo() {
   const { profilo } = useAuth()
+  const livelliQuery = useLivelliPunti()
 
   const stat = useQuery({
     queryKey: ['riepilogo-stat', profilo?.id],
@@ -49,9 +50,10 @@ export default function RiepilogoProfilo() {
   const posizione = stat.data?.posizione ?? null
   const attivita = stat.data?.attivita ?? null
 
-  const livN = livelloDaPunti(punti)
-  const liv = LIVELLI_PUNTI[livN - 1] ?? LIVELLI_PUNTI[0]
-  const prossimo = LIVELLI_PUNTI[livN] // undefined se livello massimo
+  const livelli = livelliQuery.data ?? LIVELLI_PUNTI_DEFAULT
+  const livN = livelloDaPunti(punti, livelli)
+  const liv = livelli[livN - 1] ?? livelli[0]
+  const prossimo = livelli[livN] // undefined se livello massimo
   const pct = prossimo
     ? Math.max(
         0,
