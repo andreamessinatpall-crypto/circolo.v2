@@ -118,9 +118,9 @@ function EditorLivelli({ iniziali }: { iniziali: LivelloPunti[] }) {
     <div>
       <div className="flex flex-col gap-2">
         {righe.map((r, i) => (
-          <div key={r.id} className="flex flex-wrap items-end gap-3">
+          <div key={r.id} className="flex flex-wrap items-start gap-3">
             <SlotImmagine
-              etichetta="Immagine"
+              etichetta="IMG"
               img={r.img}
               colore={r.colore}
               onCarica={(e) => caricaImg(r.id, e)}
@@ -170,17 +170,22 @@ function EditorLivelli({ iniziali }: { iniziali: LivelloPunti[] }) {
                 }}
               />
             </label>
-            <button
-              type="button"
-              aria-label="Togli livello"
-              className="btn btn-pericolo btn-mini !mt-0 flex h-11 w-11 items-center justify-center !px-0 text-base"
-              onClick={() => {
-                togli(r.id)
-                setMsg(null)
-              }}
-            >
-              ✕
-            </button>
+            <div>
+              <span className="etichetta !mb-1 block" aria-hidden="true">
+                {' '}
+              </span>
+              <button
+                type="button"
+                aria-label="Togli livello"
+                className="btn btn-pericolo btn-mini !mt-0 flex h-11 w-11 items-center justify-center !px-0 text-base"
+                onClick={() => {
+                  togli(r.id)
+                  setMsg(null)
+                }}
+              >
+                ✕
+              </button>
+            </div>
           </div>
         ))}
       </div>

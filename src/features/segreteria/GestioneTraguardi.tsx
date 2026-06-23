@@ -132,27 +132,30 @@ function EditorTraguardi({ iniziali }: { iniziali: Livello[] }) {
     <div>
       <div className="flex flex-col gap-3">
         {righe.map((r) => (
-          <div key={r.id} className="flex flex-wrap items-end gap-3 border-b border-verde-100 pb-3">
-            <SlotImmagine
-              etichetta="Padel"
-              img={r.img_padel}
-              colore={r.colore}
-              onCarica={(e) => caricaImg(r.id, 'img_padel', e)}
-              onRimuovi={() => {
-                setImg(r.id, 'img_padel', null)
-                setMsg(null)
-              }}
-            />
-            <SlotImmagine
-              etichetta="Calcio"
-              img={r.img_calcio}
-              colore={r.colore}
-              onCarica={(e) => caricaImg(r.id, 'img_calcio', e)}
-              onRimuovi={() => {
-                setImg(r.id, 'img_calcio', null)
-                setMsg(null)
-              }}
-            />
+          <div key={r.id} className="flex flex-wrap items-start gap-3 border-b border-verde-100 pb-3">
+            {/* Padel e Calcio in due blocchi impilati */}
+            <div className="flex flex-col gap-2">
+              <SlotImmagine
+                etichetta="Padel"
+                img={r.img_padel}
+                colore={r.colore}
+                onCarica={(e) => caricaImg(r.id, 'img_padel', e)}
+                onRimuovi={() => {
+                  setImg(r.id, 'img_padel', null)
+                  setMsg(null)
+                }}
+              />
+              <SlotImmagine
+                etichetta="Calcio"
+                img={r.img_calcio}
+                colore={r.colore}
+                onCarica={(e) => caricaImg(r.id, 'img_calcio', e)}
+                onRimuovi={() => {
+                  setImg(r.id, 'img_calcio', null)
+                  setMsg(null)
+                }}
+              />
+            </div>
             <label className="block">
               <span className="etichetta !mb-1">Colore</span>
               <input
@@ -192,17 +195,22 @@ function EditorTraguardi({ iniziali }: { iniziali: Livello[] }) {
                 }}
               />
             </label>
-            <button
-              type="button"
-              aria-label="Togli traguardo"
-              className="btn btn-pericolo btn-mini !mt-0 flex h-11 w-11 items-center justify-center !px-0 text-base"
-              onClick={() => {
-                togli(r.id)
-                setMsg(null)
-              }}
-            >
-              ✕
-            </button>
+            <div>
+              <span className="etichetta !mb-1 block" aria-hidden="true">
+                {' '}
+              </span>
+              <button
+                type="button"
+                aria-label="Togli traguardo"
+                className="btn btn-pericolo btn-mini !mt-0 flex h-11 w-11 items-center justify-center !px-0 text-base"
+                onClick={() => {
+                  togli(r.id)
+                  setMsg(null)
+                }}
+              >
+                ✕
+              </button>
+            </div>
           </div>
         ))}
       </div>
