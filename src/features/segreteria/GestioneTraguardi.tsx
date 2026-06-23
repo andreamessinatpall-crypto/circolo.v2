@@ -132,7 +132,7 @@ function EditorTraguardi({ iniziali }: { iniziali: Livello[] }) {
     <div>
       <div className="flex flex-col gap-3">
         {righe.map((r) => (
-          <div key={r.id} className="flex flex-wrap items-start gap-3 border-b border-verde-100 pb-3">
+          <div key={r.id} className="flex flex-wrap items-center gap-3 border-b border-verde-100 pb-3">
             {/* Padel e Calcio in due blocchi impilati */}
             <div className="flex flex-col gap-2">
               <SlotImmagine
@@ -157,7 +157,7 @@ function EditorTraguardi({ iniziali }: { iniziali: Livello[] }) {
               />
             </div>
             <label className="block">
-              <span className="etichetta !mb-1">Colore</span>
+              <span className="etichetta !mb-1 whitespace-nowrap">Colore</span>
               <input
                 type="color"
                 className="!mt-0 h-11 w-12 rounded-lg border border-verde-100 p-1"
@@ -169,7 +169,7 @@ function EditorTraguardi({ iniziali }: { iniziali: Livello[] }) {
               />
             </label>
             <label className="block min-w-[8rem] flex-1">
-              <span className="etichetta !mb-1">Nome</span>
+              <span className="etichetta !mb-1 whitespace-nowrap">Nome</span>
               <input
                 type="text"
                 maxLength={30}
@@ -182,7 +182,7 @@ function EditorTraguardi({ iniziali }: { iniziali: Livello[] }) {
               />
             </label>
             <label className="block">
-              <span className="etichetta !mb-1">Partite (soglia)</span>
+              <span className="etichetta !mb-1 whitespace-nowrap">Partite (soglia)</span>
               <input
                 type="number"
                 min={1}
@@ -196,7 +196,7 @@ function EditorTraguardi({ iniziali }: { iniziali: Livello[] }) {
               />
             </label>
             <div>
-              <span className="etichetta !mb-1 block" aria-hidden="true">
+              <span className="etichetta !mb-1 block h-5" aria-hidden="true">
                 {' '}
               </span>
               <button

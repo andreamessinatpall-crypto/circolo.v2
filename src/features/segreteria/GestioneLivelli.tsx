@@ -118,7 +118,7 @@ function EditorLivelli({ iniziali }: { iniziali: LivelloPunti[] }) {
     <div>
       <div className="flex flex-col gap-2">
         {righe.map((r, i) => (
-          <div key={r.id} className="flex flex-wrap items-start gap-3">
+          <div key={r.id} className="flex flex-wrap items-center gap-3">
             <SlotImmagine
               etichetta="IMG"
               img={r.img}
@@ -130,7 +130,7 @@ function EditorLivelli({ iniziali }: { iniziali: LivelloPunti[] }) {
               }}
             />
             <label className="block">
-              <span className="etichetta !mb-1">Colore</span>
+              <span className="etichetta !mb-1 whitespace-nowrap">Colore</span>
               <input
                 type="color"
                 className="!mt-0 h-11 w-12 rounded-lg border border-verde-100 p-1"
@@ -142,7 +142,7 @@ function EditorLivelli({ iniziali }: { iniziali: LivelloPunti[] }) {
               />
             </label>
             <label className="block min-w-[8rem] flex-1">
-              <span className="etichetta !mb-1">Nome</span>
+              <span className="etichetta !mb-1 whitespace-nowrap">Nome</span>
               <input
                 type="text"
                 maxLength={30}
@@ -155,7 +155,7 @@ function EditorLivelli({ iniziali }: { iniziali: LivelloPunti[] }) {
               />
             </label>
             <label className="block">
-              <span className="etichetta !mb-1">Punti (soglia)</span>
+              <span className="etichetta !mb-1 whitespace-nowrap">Punti (soglia)</span>
               <input
                 type="number"
                 min={0}
@@ -171,7 +171,7 @@ function EditorLivelli({ iniziali }: { iniziali: LivelloPunti[] }) {
               />
             </label>
             <div>
-              <span className="etichetta !mb-1 block" aria-hidden="true">
+              <span className="etichetta !mb-1 block h-5" aria-hidden="true">
                 {' '}
               </span>
               <button

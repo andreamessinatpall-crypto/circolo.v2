@@ -46,7 +46,7 @@ export default function SlotImmagine({
 }) {
   return (
     <div>
-      <span className="etichetta !mb-1 block">{etichetta}</span>
+      <span className="etichetta !mb-1 block whitespace-nowrap">{etichetta}</span>
       <div className="flex items-center gap-1.5">
         <span
           className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border border-black/10"
