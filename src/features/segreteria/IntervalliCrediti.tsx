@@ -105,6 +105,7 @@ function EditorIntervalli({ iniziali }: { iniziali: Intervallo[] }) {
               <span className="etichetta !mb-1">Dal</span>
               <input
                 type="date"
+                max="9999-12-31"
                 className="campo !mt-0 !w-auto"
                 value={r.da}
                 onChange={(e) => {
@@ -117,6 +118,7 @@ function EditorIntervalli({ iniziali }: { iniziali: Intervallo[] }) {
               <span className="etichetta !mb-1">Al</span>
               <input
                 type="date"
+                max="9999-12-31"
                 className="campo !mt-0 !w-auto"
                 value={r.a}
                 onChange={(e) => {

@@ -15,6 +15,7 @@ const schema = z.object({
   telefono: z.string().trim().optional(),
   data_nascita: z.string().optional(),
   sport_preferito: z.enum(['padel', 'calcio', 'entrambi']),
+  mostra_in_classifica: z.boolean(),
 })
 
 type DatiForm = z.infer<typeof schema>
@@ -32,6 +33,7 @@ export default function DatiProfilo() {
       telefono: profilo?.telefono ?? '',
       data_nascita: profilo?.data_nascita ?? '',
       sport_preferito: profilo?.sport_preferito ?? 'entrambi',
+      mostra_in_classifica: profilo?.mostra_in_classifica ?? false,
     },
   })
 
@@ -44,6 +46,7 @@ export default function DatiProfilo() {
           telefono: v.telefono?.trim() || null,
           data_nascita: v.data_nascita || null,
           sport_preferito: v.sport_preferito,
+          mostra_in_classifica: v.mostra_in_classifica,
         })
         .eq('id', profilo.id)
       if (error) throw error
@@ -101,7 +104,7 @@ export default function DatiProfilo() {
         <input id="dati-telefono" type="tel" {...register('telefono')} />
 
         <label htmlFor="dati-data-nascita">Data di nascita</label>
-        <input id="dati-data-nascita" type="date" {...register('data_nascita')} />
+        <input id="dati-data-nascita" type="date" max="9999-12-31" {...register('data_nascita')} />
 
         <label htmlFor="dati-sport">Sport preferito</label>
         <select id="dati-sport" {...register('sport_preferito')}>
@@ -109,6 +112,21 @@ export default function DatiProfilo() {
           <option value="padel">Padel</option>
           <option value="calcio">Calcio</option>
         </select>
+
+        <label className="dati-check-row">
+          <input
+            id="dati-mostra-classifica"
+            type="checkbox"
+            className="dati-check"
+            {...register('mostra_in_classifica')}
+          />
+          <span>
+            <span className="dati-check-titolo">Mostra il mio nome nella classifica del club</span>
+            <span className="dati-check-sub">
+              Se disattivato, il tuo nome appare come «Giocatore» per chi non è tuo amico.
+            </span>
+          </span>
+        </label>
 
         {msg && (
           <p className={`mt-4 ${msg.tipo === 'ok' ? classiOk : classiErrore}`}>{msg.testo}</p>

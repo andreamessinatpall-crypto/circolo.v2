@@ -301,22 +301,24 @@ function CampoGriglia({
 
             if (p) {
               // Slot occupato da una prenotazione.
+              const tipo = p.incontro_id ? 'torneo' : p.allenamento ? 'allenamento' : 'partita'
+              const labelTipo = p.incontro_id ? 'Torneo' : p.allenamento ? 'Allenamento' : null
               if (passato) {
-                classe += ' occupato'
-                chi = isAdmin ? p.etichetta ?? 'Prenotato' : mio ? 'Tua' : 'Prenotato'
+                classe += ' occupato tipo-' + tipo
+                chi = labelTipo ?? (isAdmin ? p.etichetta ?? 'Prenotato' : mio ? 'Tua' : 'Prenotato')
                 disabilitato = true
               } else if (mio) {
-                classe += ' mio'
+                classe += ' mio tipo-' + tipo
                 chi = 'Tua · tocca per annullare'
                 onClick = () => onAnnulla(p, campo, s.inizio)
               } else {
-                classe += ' occupato'
+                classe += ' occupato tipo-' + tipo
                 if (isAdmin) {
                   classe += ' annullabile'
-                  chi = p.etichetta ?? 'Prenotato'
+                  chi = labelTipo ?? (p.etichetta ?? 'Prenotato')
                   onClick = () => onAnnulla(p, campo, s.inizio, p.etichetta ?? undefined)
                 } else {
-                  chi = 'Prenotato'
+                  chi = labelTipo ?? 'Prenotato'
                   disabilitato = true
                 }
               }

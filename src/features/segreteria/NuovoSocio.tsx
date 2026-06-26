@@ -105,7 +105,7 @@ export default function NuovoSocio() {
   return (
     <div>
       <div className="eyebrow">Iscrizione nuovo giocatore</div>
-      <form onSubmit={handleSubmit(onSubmit)} className="card">
+      <form onSubmit={handleSubmit(onSubmit)} className="card form-verde">
         <p className="sub mb-3">
           Crea l'accesso di un nuovo socio. L'account è attivo subito: comunicagli email e
           password provvisoria.
@@ -128,7 +128,7 @@ export default function NuovoSocio() {
 
           <Campo errore={errors.data_nascita?.message}>
             <label>Data di nascita</label>
-            <input type="date" className={classiInput} {...register('data_nascita')} />
+            <input type="date" max="9999-12-31" className={classiInput} {...register('data_nascita')} />
           </Campo>
           <Campo>
             <label>Genere</label>
@@ -170,7 +170,7 @@ export default function NuovoSocio() {
         {erroreGenerale && <p className={`mt-4 ${classiErrore}`}>{erroreGenerale}</p>}
         {successo && <p className={`mt-4 ${classiOk}`}>{successo}</p>}
 
-        <button type="submit" className="btn btn-oro btn-block mt-5" disabled={isSubmitting}>
+        <button type="submit" className="btn btn-giallo btn-block mt-5" disabled={isSubmitting}>
           {isSubmitting ? 'Iscrizione in corso…' : 'Iscrivi giocatore'}
         </button>
       </form>

@@ -22,6 +22,11 @@ const schema = z
     nome: z.string().trim().min(1, 'Inserisci il nome'),
     data_inizio: z.string().optional(),
     data_fine: z.string().optional(),
+    durata_minuti: z.coerce.number().int().min(30).max(240),
+    max_squadre: z.preprocess(
+      (v) => (v === '' || v === null || v === undefined ? null : Number(v)),
+      z.number().int().min(2).max(500).nullable(),
+    ),
   })
   .refine((v) => !(v.data_inizio && v.data_fine && v.data_fine < v.data_inizio), {
     message: 'La data fine non può precedere la data inizio.',
@@ -63,6 +68,8 @@ export default function ImpostazioniTorneo({
       nome: torneo.nome,
       data_inizio: (torneo.data_inizio ?? '').slice(0, 10),
       data_fine: (torneo.data_fine ?? '').slice(0, 10),
+      durata_minuti: torneo.durata_minuti ?? 90,
+      max_squadre: torneo.max_squadre ?? null,
     },
   })
 
@@ -73,6 +80,8 @@ export default function ImpostazioniTorneo({
       nome: torneo.nome,
       data_inizio: (torneo.data_inizio ?? '').slice(0, 10),
       data_fine: (torneo.data_fine ?? '').slice(0, 10),
+      durata_minuti: torneo.durata_minuti ?? 90,
+      max_squadre: torneo.max_squadre ?? null,
     })
     setBase(puntiBase(torneo))
     setGironi(puntiGironiArray(torneo))
@@ -88,6 +97,8 @@ export default function ImpostazioniTorneo({
       nome: v.nome,
       data_inizio: v.data_inizio || null,
       data_fine: v.data_fine || null,
+      durata_minuti: v.durata_minuti,
+      max_squadre: v.max_squadre ?? null,
       punti_iscrizione: baseVal.iscrizione,
       punti_vittoria: baseVal.vittoria,
       punti_torneo: baseVal.torneo,
@@ -118,6 +129,8 @@ export default function ImpostazioniTorneo({
       nome: v.nome,
       data_inizio: v.data_inizio || null,
       data_fine: v.data_fine || null,
+      durata_minuti: v.durata_minuti,
+      max_squadre: v.max_squadre ?? null,
       punti_iscrizione: baseVal.iscrizione,
       punti_vittoria: baseVal.vittoria,
       punti_torneo: baseVal.torneo,
@@ -170,16 +183,38 @@ export default function ImpostazioniTorneo({
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label>Data inizio (facoltativa)</label>
-                  <input type="date" className={classiInput} {...register('data_inizio')} />
+                  <input type="date" max="9999-12-31" className={classiInput} {...register('data_inizio')} />
                 </div>
                 <div>
                   <label>Data fine (facoltativa)</label>
-                  <input type="date" className={classiInput} {...register('data_fine')} />
+                  <input type="date" max="9999-12-31" className={classiInput} {...register('data_fine')} />
                   {errors.data_fine && (
                     <p className="mt-1 text-xs text-red-700">{errors.data_fine.message}</p>
                   )}
                 </div>
               </div>
+
+              <label>Durata partita</label>
+              <select className={classiInput} {...register('durata_minuti')}>
+                <option value={60}>1h (60 min)</option>
+                <option value={75}>1h15 (75 min)</option>
+                <option value={90}>1h30 (90 min)</option>
+                <option value={105}>1h45 (105 min)</option>
+                <option value={120}>2h (120 min)</option>
+              </select>
+
+              <label>Squadre massime (vuoto = illimitato)</label>
+              <input
+                type="number"
+                min={2}
+                max={500}
+                placeholder="Es. 8"
+                className={classiInput}
+                {...register('max_squadre')}
+              />
+              {errors.max_squadre && (
+                <p className="mt-1 text-xs text-red-700">{errors.max_squadre.message as string}</p>
+              )}
 
               <div className="eyebrow" style={{ marginTop: 16 }}>
                 Punti di questo torneo

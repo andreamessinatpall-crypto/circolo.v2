@@ -1,4 +1,4 @@
-export type StatoTorneo = 'bozza' | 'in_corso' | 'concluso'
+export type StatoTorneo = 'bozza' | 'in_programma' | 'in_corso' | 'concluso'
 
 // (Fase 7b) Una terna di punti: iscrizione, partita vinta, vittoria torneo.
 // Sono i punti "base" del torneo; con più gironi ogni girone può avere la sua.
@@ -28,6 +28,8 @@ export interface Torneo {
   // JSON tipo { "1": {iscrizione, vittoria, torneo}, "2": {...} }. Quando manca
   // un girone si usano i punti base (le tre colonne qui sopra).
   punti_gironi: Record<string, PuntiSet> | null
+  durata_minuti: number | null
+  max_squadre: number | null
 }
 
 export interface Squadra {
@@ -90,8 +92,17 @@ export interface RigaClassifica {
 
 export const STATI_TORNEO: Record<StatoTorneo, string> = {
   bozza: 'Bozza',
+  in_programma: 'In programma',
   in_corso: 'In corso',
   concluso: 'Concluso',
+}
+
+export interface RichiestaIscrizione {
+  id: number | string
+  torneo_id: number | string
+  richiedente_id: string
+  componenti: string[]
+  creata_il: string
 }
 
 export const FORMATI_TORNEO: Record<string, string> = {

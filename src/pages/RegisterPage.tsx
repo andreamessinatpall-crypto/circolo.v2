@@ -102,7 +102,7 @@ export default function RegisterPage() {
           </Campo>
           <Campo errore={errors.data_nascita?.message}>
             <label>Data di nascita</label>
-            <input type="date" className={classiInput} {...register('data_nascita')} />
+            <input type="date" max="9999-12-31" className={classiInput} {...register('data_nascita')} />
           </Campo>
 
           <Campo>

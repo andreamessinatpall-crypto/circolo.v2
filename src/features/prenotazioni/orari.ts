@@ -24,7 +24,11 @@ export function dataDa(ymdStr: string, ora: string): Date {
 }
 
 // Orari di inizio degli slot in base ad apertura/chiusura del campo.
-export function orariCampo(campo: { apertura: string | null; chiusura: string | null }): string[] {
+// durataMn sovrascrive SLOT_MINUTI (usato per i tornei con durata personalizzata).
+export function orariCampo(
+  campo: { apertura: string | null; chiusura: string | null },
+  durataMn: number = SLOT_MINUTI,
+): string[] {
   const ap = (campo.apertura || '08:30').slice(0, 5)
   const ch = (campo.chiusura || '22:00').slice(0, 5)
   const [ha, ma] = ap.split(':').map(Number)
@@ -32,9 +36,9 @@ export function orariCampo(campo: { apertura: string | null; chiusura: string | 
   let t = ha * 60 + ma
   const fine = hc * 60 + mc
   const out: string[] = []
-  while (t + SLOT_MINUTI <= fine) {
+  while (t + durataMn <= fine) {
     out.push(String(Math.floor(t / 60)).padStart(2, '0') + ':' + String(t % 60).padStart(2, '0'))
-    t += SLOT_MINUTI
+    t += durataMn
   }
   return out
 }

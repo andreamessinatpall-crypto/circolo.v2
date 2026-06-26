@@ -437,23 +437,36 @@ export function SchedaPartita({
                   )
                 }
                 return (
-                  <span key={r.id} className={'chip' + (r.confermato ? ' conf' : '')}>
-                    <button
-                      type="button"
-                      className="chip-conf"
-                      aria-pressed={r.confermato}
-                      title={r.confermato ? 'Annulla la conferma' : 'Conferma la presenza'}
-                      onClick={() => onConferma(r, !r.confermato)}
-                    >
+                  <span
+                    key={r.id}
+                    role="button"
+                    tabIndex={0}
+                    className={'chip chip-clickable' + (r.confermato ? ' conf' : '')}
+                    aria-pressed={r.confermato}
+                    title={r.confermato ? 'Annulla la conferma' : 'Conferma la presenza'}
+                    onClick={() => onConferma(r, !r.confermato)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        onConferma(r, !r.confermato)
+                      }
+                    }}
+                  >
+                    <span className="chip-conf" aria-hidden="true">
                       <svg viewBox="0 0 24 24" aria-hidden="true">
                         <circle cx="12" cy="12" r="9" />
                         <path d="M8 12.4l2.6 2.6L16 9" />
                       </svg>
-                    </button>
+                    </span>
                     {nome}
                     {ospite}
                     {!r.confermato && (
-                      <button type="button" className="x" title="Togli" onClick={() => onRimuovi(r)}>
+                      <button
+                        type="button"
+                        className="x"
+                        title="Togli"
+                        onClick={(e) => { e.stopPropagation(); onRimuovi(r) }}
+                      >
                         ×
                       </button>
                     )}

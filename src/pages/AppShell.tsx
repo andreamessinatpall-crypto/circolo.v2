@@ -20,13 +20,11 @@ function vociMenu(p: Socio, premiVisibile: boolean): Voce[] {
       { path: '/prenotazioni', label: 'Prenotazioni' },
       { path: '/soci', label: 'Giocatori' },
       { path: '/tornei', label: 'Tornei' },
-      { path: '/statistiche', label: 'Statistiche' },
     ]
   }
   const voci: Voce[] = [{ path: '/profilo', label: 'Profilo' }]
   if (puoGestirePrenotazioni(p)) {
     voci.push({ path: '/prenotazioni', label: 'Prenotazioni' })
-    voci.push({ path: '/statistiche', label: 'Statistiche' })
   } else {
     voci.push({ path: '/prenota', label: 'Prenota' })
   }
@@ -83,6 +81,23 @@ export default function AppShell() {
             <span className="tag" style={{ color: 'var(--terra)' }}>
               Istruttore
             </span>
+          )}
+          {puoGestirePrenotazioni(profilo) && (
+            <NavLink
+              to="/statistiche"
+              title="Statistiche"
+              className={({ isActive }) =>
+                'flex items-center rounded-lg border border-white/25 p-1.5 text-white/70 transition hover:border-white/45 hover:bg-white/10 hover:text-white' +
+                (isActive ? ' border-white/45 bg-white/10 text-white' : '')
+              }
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <line x1="18" y1="20" x2="18" y2="10" />
+                <line x1="12" y1="20" x2="12" y2="4" />
+                <line x1="6" y1="20" x2="6" y2="14" />
+                <line x1="2" y1="20" x2="22" y2="20" />
+              </svg>
+            </NavLink>
           )}
           {profilo.is_admin && (
             <NavLink

@@ -19,6 +19,8 @@ export interface PrenotazioneGiorno {
   inizio: string
   fine: string
   etichetta: string | null
+  incontro_id?: number | string | null
+  allenamento?: boolean | null
 }
 
 export interface Impostazioni {

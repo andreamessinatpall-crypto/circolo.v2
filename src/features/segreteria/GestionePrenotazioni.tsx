@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/auth/useAuth'
 import { classiErrore, classiOk } from '@/components/stili'
@@ -36,6 +36,15 @@ function ymd(d: Date): string {
   return `${d.getFullYear()}-${m}-${g}`
 }
 const DOW = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom']
+
+// "Nome Cognome" → "Cognome N."
+function cogIniz(etichetta: string): string {
+  const p = etichetta.trim().split(/\s+/)
+  if (p.length < 2) return etichetta
+  const cognome = p[p.length - 1]
+  const iniz = p[0][0]?.toUpperCase() ?? ''
+  return iniz ? `${cognome} ${iniz}.` : cognome
+}
 
 // (Fase 8g · B) Modifica manuale degli orari: tendine HH : MM (minuti 00/15/30/45).
 const ORE = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'))
@@ -81,6 +90,18 @@ export default function GestionePrenotazioni() {
 
   const campiQuery = useCampi()
   const sociQuery = useSociPubblici()
+  const istruttoriQuery = useQuery({
+    queryKey: ['istruttori-attivi'],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('istruttori_attivi')
+      if (error) throw error
+      return ((data ?? []) as Array<{ id: string; cognome: string; nome: string }>).map((s) => ({
+        id: s.id,
+        etichetta: `${s.cognome} ${s.nome}`.trim(),
+      }))
+    },
+  })
+  const istruttori = istruttoriQuery.data ?? []
   const valoriQuery = useValoriPunti()
   const modalitaPremiQuery = useModalitaPremi()
   const intervalliQuery = useIntervalliCrediti()
@@ -226,11 +247,13 @@ export default function GestionePrenotazioni() {
       inizio,
       durataMin,
       allenamento,
+      istruttoreId,
     }: {
       campo: Campo
       inizio: Date
       durataMin: number
       allenamento: boolean
+      istruttoreId?: string
     }) => {
       const fine = new Date(inizio.getTime() + durataMin * 60000)
       const dati: Record<string, unknown> = {
@@ -241,7 +264,7 @@ export default function GestionePrenotazioni() {
       }
       if (allenamento) {
         dati.allenamento = true
-        dati.allenatore_id = profilo!.id
+        dati.allenatore_id = istruttoreId ?? profilo!.id
       }
       const { data, error } = await supabase.from('prenotazioni').insert(dati).select('*').single()
       if (error) throw error
@@ -277,6 +300,18 @@ export default function GestionePrenotazioni() {
       setSlot(null)
     },
     onError: (e: unknown) => window.alert('Annullamento non riuscito: ' + messaggioErrore(e)),
+  })
+
+  const modificaIstruttore = useMutation({
+    mutationFn: async ({ prenId, istruttoreId }: { prenId: number | string; istruttoreId: string }) => {
+      const { error } = await supabase
+        .from('prenotazioni')
+        .update({ allenatore_id: istruttoreId })
+        .eq('id', prenId)
+      if (error) throw error
+    },
+    onSuccess: aggiorna,
+    onError: (e: unknown) => window.alert('Modifica istruttore non riuscita: ' + messaggioErrore(e)),
   })
 
   // (Fase 8g · B) Modifica manuale degli orari di una prenotazione esistente.
@@ -589,6 +624,7 @@ export default function GestionePrenotazioni() {
                 <span className="etichetta !mb-1">Dal</span>
                 <input
                   type="date"
+                  max="9999-12-31"
                   className="campo !mt-0 !w-auto"
                   value={csvDal}
                   onChange={(e) => { setCsvDal(e.target.value); setMsgCsv(null) }}
@@ -598,6 +634,7 @@ export default function GestionePrenotazioni() {
                 <span className="etichetta !mb-1">Al</span>
                 <input
                   type="date"
+                  max="9999-12-31"
                   className="campo !mt-0 !w-auto"
                   value={csvAl}
                   onChange={(e) => { setCsvAl(e.target.value); setMsgCsv(null) }}
@@ -689,6 +726,17 @@ export default function GestionePrenotazioni() {
                   modificaOrario.mutate({ id: bookingSlot.id, inizio, fine })
                 }
               />
+              {bookingSlot.allenamento && istruttori.length > 0 && (
+                <CambiaIstruttore
+                  key={`istr-${bookingSlot.id}-${bookingSlot.allenatore_id ?? ''}`}
+                  istruttoreAttualeId={bookingSlot.allenatore_id ?? ''}
+                  istruttori={istruttori}
+                  disabilitato={modificaIstruttore.isPending}
+                  onSalva={(istrId) =>
+                    modificaIstruttore.mutate({ prenId: bookingSlot.id, istruttoreId: istrId })
+                  }
+                />
+              )}
               <SchedaPartita
                 sport={sport}
                 pren={bookingSlot}
@@ -717,8 +765,9 @@ export default function GestionePrenotazioni() {
               <SlotLibero
                 disponibileMin={slot.disponibileMin}
                 disabilitato={crea.isPending}
-                onCrea={(allenamento, durataMin) =>
-                  crea.mutate({ campo: slot.campo, inizio: slot.inizio, durataMin, allenamento })
+                istruttori={istruttori}
+                onCrea={(allenamento, durataMin, istruttoreId) =>
+                  crea.mutate({ campo: slot.campo, inizio: slot.inizio, durataMin, allenamento, istruttoreId })
                 }
               />
             )}
@@ -786,7 +835,7 @@ function CampoSlots({
                 ? 'Torneo'
                 : p.allenamento
                   ? 'Allenamento'
-                  : (etichette.get(p.socio_id) ?? 'Prenotato')
+                  : cogIniz(etichette.get(p.socio_id) ?? 'Prenotato')
             } else {
               // Blocco libero "corto" (< 1h30): buco fra prenotazioni, colore diverso.
               classe += ' libero' + (passato ? ' libero-passato' : '')
@@ -970,17 +1019,65 @@ function SelettoreOra({ valore, onChange }: { valore: string; onChange: (v: stri
   )
 }
 
+function CambiaIstruttore({
+  istruttoreAttualeId,
+  istruttori,
+  disabilitato,
+  onSalva,
+}: {
+  istruttoreAttualeId: string
+  istruttori: { id: string; etichetta: string }[]
+  disabilitato: boolean
+  onSalva: (istruttoreId: string) => void
+}) {
+  const [istrId, setIstrId] = useState(istruttoreAttualeId)
+  const cambiato = istrId !== istruttoreAttualeId
+
+  return (
+    <div className="mb-4 rounded-xl border border-dashed border-verde-200 bg-verde-50 px-4 py-3">
+      <span className="etichetta !mb-1 block">Istruttore</span>
+      <div className="flex items-center gap-2">
+        <select
+          className="campo !mt-0 flex-1"
+          value={istrId}
+          onChange={(e) => setIstrId(e.target.value)}
+        >
+          <option value="">— Nessuno —</option>
+          {istruttori.map((i) => (
+            <option key={i.id} value={i.id}>
+              {i.etichetta}
+            </option>
+          ))}
+        </select>
+        {cambiato && istrId && (
+          <button
+            type="button"
+            className="btn btn-mini !mt-0"
+            disabled={disabilitato}
+            onClick={() => onSalva(istrId)}
+          >
+            Salva
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
 function SlotLibero({
   disponibileMin,
   disabilitato,
+  istruttori,
   onCrea,
 }: {
   disponibileMin: number
   disabilitato: boolean
-  onCrea: (allenamento: boolean, durataMin: number) => void
+  istruttori: { id: string; etichetta: string }[]
+  onCrea: (allenamento: boolean, durataMin: number, istruttoreId?: string) => void
 }) {
   const puo90 = disponibileMin >= 90
   const puo60 = disponibileMin >= 60
+  const [istrId, setIstrId] = useState('')
 
   return (
     <div>
@@ -996,14 +1093,36 @@ function SlotLibero({
         </button>
       )}
       {puo60 && (
-        <button
-          type="button"
-          className="btn btn-secondario btn-block"
-          disabled={disabilitato}
-          onClick={() => onCrea(true, 60)}
-        >
-          🏋️ Allenamento · 1h
-        </button>
+        <>
+          {istruttori.length > 0 && (
+            <div className="mb-2">
+              <label className="etichetta !mb-1">Istruttore</label>
+              <select
+                className="campo !mt-0 w-full"
+                value={istrId}
+                onChange={(e) => setIstrId(e.target.value)}
+              >
+                <option value="">— Seleziona istruttore —</option>
+                {istruttori.map((i) => (
+                  <option key={i.id} value={i.id}>
+                    {i.etichetta}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          <button
+            type="button"
+            className="btn btn-secondario btn-block"
+            disabled={disabilitato || (istruttori.length > 0 && !istrId)}
+            onClick={() => onCrea(true, 60, istrId || undefined)}
+          >
+            🏋️ Allenamento · 1h
+          </button>
+          {istruttori.length > 0 && !istrId && (
+            <p className="mt-1.5 text-xs text-ink-3">Seleziona un istruttore per creare l'allenamento.</p>
+          )}
+        </>
       )}
       {!puo60 && (
         <p className="sub">Spazio troppo corto ({durataLabel(disponibileMin)}) per una sessione.</p>

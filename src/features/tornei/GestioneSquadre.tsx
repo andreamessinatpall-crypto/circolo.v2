@@ -6,7 +6,7 @@ import { logoDaFile } from '@/lib/immagini'
 import { useSociPubblici } from '@/features/prenotazioni/datiAmichevoli'
 import { nomeSquadraElegante } from './gironi'
 import { annullaPuntiIscrizione, assegnaPuntiIscrizione } from './punti'
-import type { Componente, Squadra, Torneo } from './tipi'
+import type { Componente, RichiestaIscrizione, Squadra, Torneo } from './tipi'
 
 // Cognome del socio: in v2 non abbiamo un campo separato, quindi prendiamo
 // l'ultima parola dell'etichetta (Nome Cognome).
@@ -60,11 +60,13 @@ export default function GestioneSquadre({
   squadre,
   compBySquadra,
   assegnati,
+  richieste = [],
 }: {
   torneo: Torneo
   squadre: Squadra[]
   compBySquadra: Record<string, Componente[]>
   assegnati: Set<string>
+  richieste?: RichiestaIscrizione[]
 }) {
   const qc = useQueryClient()
   const sociQuery = useSociPubblici()
@@ -237,10 +239,97 @@ export default function GestioneSquadre({
     onError: (e: unknown) => window.alert('Non riuscito: ' + messaggioErrore(e)),
   })
 
+  const accettaRichiesta = useMutation({
+    mutationFn: async (r: RichiestaIscrizione) => {
+      // Crea una squadra con nome provvisorio, poi aggiunge tutti i componenti.
+      const { data: sq, error: errSq } = await supabase
+        .from('squadre')
+        .insert({ torneo_id: torneo.id, nome: 'Nuova squadra' })
+        .select('id')
+        .single()
+      if (errSq) throw errSq
+      const squadraId = sq.id
+      const tuttiIds = [r.richiedente_id, ...r.componenti]
+      for (let i = 0; i < tuttiIds.length; i++) {
+        const riga: Record<string, unknown> = {
+          squadra_id: squadraId,
+          socio_id: tuttiIds[i],
+          torneo_id: torneo.id,
+          riserva: i >= 2, // i primi 2 titolari, gli altri riserve
+        }
+        const { error } = await supabase.from('squadra_componenti').insert(riga)
+        if (error && !error.message?.toLowerCase().includes('riserva')) throw error
+      }
+      // Aggiorno il nome della coppia/squadra in base ai cognomi.
+      await aggiornaNomeCoppia(squadraId)
+      // Rimuovo la richiesta.
+      await supabase.from('richieste_iscrizione').delete().eq('id', r.id)
+    },
+    onSuccess: aggiorna,
+    onError: (e: unknown) => window.alert('Non riuscito: ' + messaggioErrore(e)),
+  })
+
+  const eliminaRichiesta = useMutation({
+    mutationFn: async (id: number | string) => {
+      const { error } = await supabase.from('richieste_iscrizione').delete().eq('id', id)
+      if (error) throw error
+    },
+    onSuccess: aggiorna,
+    onError: (e: unknown) => window.alert('Non riuscito: ' + messaggioErrore(e)),
+  })
+
   if (sociQuery.isLoading) return <p className="sub">Caricamento soci…</p>
 
   return (
     <div>
+      {richieste.length > 0 && (
+        <div className="mb-5">
+          <div className="eyebrow mb-2">
+            Richieste di iscrizione ({richieste.length})
+          </div>
+          <div className="flex flex-col gap-2">
+            {richieste.map((r) => {
+              const tutti = [r.richiedente_id, ...r.componenti]
+              return (
+                <div key={r.id} className="richiesta-riga">
+                  <div className="richiesta-nomi">
+                    {tutti.map((id, i) => (
+                      <span key={id} className="richiesta-nome">
+                        {i > 0 && <span className="richiesta-sep">·</span>}
+                        {etichette.get(id) ?? 'Giocatore'}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="richiesta-data">
+                    {new Date(r.creata_il).toLocaleDateString('it-IT', { day: 'numeric', month: 'short' })}
+                  </div>
+                  <div className="flex gap-2 mt-2">
+                    <button
+                      type="button"
+                      className="btn btn-mini"
+                      disabled={accettaRichiesta.isPending}
+                      onClick={() => accettaRichiesta.mutate(r)}
+                    >
+                      Crea squadra
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-pericolo btn-mini"
+                      disabled={eliminaRichiesta.isPending}
+                      onClick={() => {
+                        if (window.confirm('Eliminare questa richiesta?')) eliminaRichiesta.mutate(r.id)
+                      }}
+                    >
+                      Elimina
+                    </button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
       <div className="mb-3">
         <button
           type="button"

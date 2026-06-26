@@ -7,6 +7,7 @@ import { useSociPubblici } from '@/features/prenotazioni/datiAmichevoli'
 import { oraLocale } from '@/features/prenotazioni/orari'
 
 const SPORT_LABEL: Record<string, string> = { padel: 'Padel', calcio: 'Calcio' }
+const SPORT_ICONA: Record<string, string> = { padel: '🎾', calcio: '⚽' }
 
 const ICONA_CAL = (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
@@ -148,6 +149,16 @@ export default function AttivitaInProgramma() {
 
   const label = (id: string) => etichette.get(id) ?? 'Giocatore'
 
+  // "Mario Rossi" → "Rossi M."
+  function fmtP(id: string): string {
+    const s = label(id).trim()
+    const i = s.indexOf(' ')
+    if (i < 0) return s
+    const nome = s.slice(0, i)
+    const cognome = s.slice(i + 1)
+    return `${cognome} ${nome[0].toUpperCase()}.`
+  }
+
   // Raggruppa per giorno.
   const gruppi: { giorno: string; etichetta: string; att: Attivita[] }[] = []
   for (const m of lista) {
@@ -181,16 +192,11 @@ export default function AttivitaInProgramma() {
                     <div className="orario">
                       {oraLocale(new Date(m.inizio))}–{oraLocale(new Date(m.fine))}
                     </div>
-                    <div className="dove">
-                      {(m.campo_nome ?? 'Campo') + ' · ' + (SPORT_LABEL[m.sport] ?? m.sport)}
+                    <div className="att-sport">
+                      <span className="att-sport-ic">{SPORT_ICONA[m.sport] ?? '🎾'}</span>
+                      {SPORT_LABEL[m.sport] ?? m.sport}
+                      <span className="att-campo">{m.campo_nome ?? 'Campo'}</span>
                     </div>
-                    {m.allenamento ? (
-                      <div className="allenamento-badge">Allenamento</div>
-                    ) : m.torneo_nome ? (
-                      <div className="torneo-badge">{m.torneo_nome}</div>
-                    ) : (
-                      <div className="partita-badge">Partita</div>
-                    )}
                     {m.allenamento && m.allenatore_id && (
                       <div className="dove">Istruttore: {label(m.allenatore_id)}</div>
                     )}
@@ -198,12 +204,19 @@ export default function AttivitaInProgramma() {
                       <div className="dove">Prenotato da {label(m.prenotante_id)}</div>
                     )}
                   </div>
-                  {m.sport === 'padel' && <span className="part-conta">{m.parti.length}/4</span>}
+                  {m.allenamento ? (
+                    <div className="allenamento-badge" style={{ marginTop: 0 }}>Allenamento</div>
+                  ) : m.torneo_nome ? (
+                    <div className="torneo-badge" style={{ marginTop: 0 }}>{m.torneo_nome}</div>
+                  ) : (
+                    <div className="partita-badge" style={{ marginTop: 0 }}>Partita</div>
+                  )}
                 </div>
-                <div className="chips">
-                  {m.parti.map((r) => (
-                    <span key={r.socio_id} className="chip">
-                      {label(r.socio_id)}
+                <div className="att-parti">
+                  {m.parti.map((r, i) => (
+                    <span key={r.socio_id}>
+                      {i > 0 && <span className="att-parti-sep">·</span>}
+                      {fmtP(r.socio_id)}
                     </span>
                   ))}
                 </div>

@@ -41,6 +41,24 @@ export function usePrenotazioniAdminIntervallo(
         if (errP) throw errP
         parts = (data ?? []) as Partecipante[]
       }
+
+      // Risolve il nome del torneo per le prenotazioni di incontri.
+      const conIncontro = lista.filter((p) => p.incontro_id)
+      if (conIncontro.length) {
+        const incontroIds = conIncontro.map((p) => p.incontro_id as number | string)
+        const { data: inc } = await supabase
+          .from('incontri')
+          .select('id, torneo:tornei(nome)')
+          .in('id', incontroIds)
+        const nomePerIncontro = new Map<string, string>()
+        for (const r of (inc ?? []) as Array<{ id: number | string; torneo: { nome: string } | null }>) {
+          if (r.torneo?.nome) nomePerIncontro.set(String(r.id), r.torneo.nome)
+        }
+        for (const p of lista) {
+          if (p.incontro_id) p.torneo_nome = nomePerIncontro.get(String(p.incontro_id)) ?? null
+        }
+      }
+
       return { lista, parts }
     },
   })

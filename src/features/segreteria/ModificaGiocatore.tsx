@@ -155,7 +155,7 @@ export default function ModificaGiocatore({
           </div>
           <div>
             <label>Data di nascita</label>
-            <input type="date" className={classiInput} {...register('data_nascita')} />
+            <input type="date" max="9999-12-31" className={classiInput} {...register('data_nascita')} />
           </div>
         </div>
 

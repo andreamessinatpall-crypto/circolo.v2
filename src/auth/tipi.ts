@@ -20,4 +20,5 @@ export interface Socio {
   e_allenatore: boolean | null
   data_iscrizione: string | null
   badge_profilo: string | null
+  mostra_in_classifica: boolean | null
 }

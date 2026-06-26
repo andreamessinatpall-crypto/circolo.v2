@@ -129,6 +129,7 @@ function ModaleProgramma({
   const qc = useQueryClient()
   const campiQuery = useCampi()
   const staff = !!profilo && puoGestireTornei(profilo)
+  const durataMn = torneo.durata_minuti ?? SLOT_MINUTI
 
   const campiSport = (campiQuery.data ?? []).filter(
     (c) => c.sport === torneo.sport && c.in_servizio !== false,
@@ -146,7 +147,7 @@ function ModaleProgramma({
   // Prenotazioni del giorno: servono a togliere gli slot già occupati.
   const prenGiorno = usePrenotazioniGiorno(giorno)
 
-  // Slot liberi = orari del campo, futuri e non occupati su quel campo.
+  // Staff può programmare anche nel passato; i soci vedono solo slot futuri.
   const adesso = new Date()
   const occupati = new Set(
     (prenGiorno.data ?? [])
@@ -154,9 +155,9 @@ function ModaleProgramma({
       .map((p) => new Date(p.inizio).getTime()),
   )
   const slot = campo
-    ? orariCampo(campo).filter((o) => {
+    ? orariCampo(campo, durataMn).filter((o) => {
         const inizio = dataDa(giorno, o)
-        return inizio > adesso && !occupati.has(inizio.getTime())
+        return (staff || inizio > adesso) && !occupati.has(inizio.getTime())
       })
     : []
 
@@ -164,7 +165,7 @@ function ModaleProgramma({
     mutationFn: async () => {
       if (!campo || !ora) throw new Error('Scegli un campo e un orario disponibile.')
       const inizio = dataDa(giorno, ora)
-      const fine = new Date(inizio.getTime() + SLOT_MINUTI * 60000)
+      const fine = new Date(inizio.getTime() + durataMn * 60000)
       // Se sto riprogrammando, libero prima la vecchia prenotazione collegata.
       await supabase.from('prenotazioni').delete().eq('incontro_id', m.id)
       const { data, error } = await supabase
@@ -274,7 +275,8 @@ function ModaleProgramma({
             <input
               type="date"
               className="campo"
-              min={oggi}
+              {...(!staff && { min: oggi })}
+              max="9999-12-31"
               value={giorno}
               onChange={(e) => setGiorno(e.target.value)}
             />
@@ -290,7 +292,7 @@ function ModaleProgramma({
               </option>
               {slot.map((o) => (
                 <option key={o} value={o}>
-                  {o}–{oraLocale(new Date(dataDa(giorno, o).getTime() + SLOT_MINUTI * 60000))}
+                  {o}–{oraLocale(new Date(dataDa(giorno, o).getTime() + durataMn * 60000))}
                 </option>
               ))}
             </select>

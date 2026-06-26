@@ -161,6 +161,11 @@ const schema = z
     data_inizio: z.string().optional(),
     data_fine: z.string().optional(),
     numero_gironi: z.coerce.number().int().min(1).max(12),
+    durata_minuti: z.coerce.number().int().min(30).max(240),
+    max_squadre: z.preprocess(
+      (v) => (v === '' || v === null || v === undefined ? null : Number(v)),
+      z.number().int().min(2).max(500).nullable(),
+    ),
   })
   .refine((v) => !(v.data_inizio && v.data_fine && v.data_fine < v.data_inizio), {
     message: 'La data fine non può precedere la data inizio.',
@@ -193,6 +198,8 @@ function NuovoTorneo({ onCreato }: { onCreato: (id: number | string) => void }) 
       sport: 'padel',
       formato: 'girone',
       numero_gironi: 1,
+      durata_minuti: 90,
+      max_squadre: null,
     },
   })
 
@@ -213,6 +220,8 @@ function NuovoTorneo({ onCreato }: { onCreato: (id: number | string) => void }) 
       data_fine: v.data_fine || null,
       creato_da: profilo!.id,
       numero_gironi: v.numero_gironi,
+      durata_minuti: v.durata_minuti,
+      max_squadre: v.max_squadre ?? null,
       punti_iscrizione: puntiBaseVal.iscrizione,
       punti_vittoria: puntiBaseVal.vittoria,
       punti_torneo: puntiBaseVal.torneo,
@@ -249,7 +258,7 @@ function NuovoTorneo({ onCreato }: { onCreato: (id: number | string) => void }) 
   return (
     <>
       <div className="eyebrow">Nuovo torneo</div>
-      <form onSubmit={handleSubmit(onSubmit)} className="card">
+      <form onSubmit={handleSubmit(onSubmit)} className="card form-verde">
         <label>Nome torneo</label>
         <input className={classiInput} {...register('nome')} />
         {errors.nome && <p className="mt-1 text-xs text-red-700">{errors.nome.message}</p>}
@@ -274,14 +283,36 @@ function NuovoTorneo({ onCreato }: { onCreato: (id: number | string) => void }) 
           ))}
         </select>
 
+        <label>Durata partita</label>
+        <select className={classiInput} {...register('durata_minuti')}>
+          <option value={60}>1h (60 min)</option>
+          <option value={75}>1h15 (75 min)</option>
+          <option value={90}>1h30 (90 min)</option>
+          <option value={105}>1h45 (105 min)</option>
+          <option value={120}>2h (120 min)</option>
+        </select>
+
+        <label>Squadre massime (vuoto = illimitato)</label>
+        <input
+          type="number"
+          min={2}
+          max={500}
+          placeholder="Es. 8"
+          className={classiInput}
+          {...register('max_squadre')}
+        />
+        {errors.max_squadre && (
+          <p className="mt-1 text-xs text-red-700">{errors.max_squadre.message as string}</p>
+        )}
+
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label>Data inizio (facoltativa)</label>
-            <input type="date" className={classiInput} {...register('data_inizio')} />
+            <input type="date" max="9999-12-31" className={classiInput} {...register('data_inizio')} />
           </div>
           <div>
             <label>Data fine (facoltativa)</label>
-            <input type="date" className={classiInput} {...register('data_fine')} />
+            <input type="date" max="9999-12-31" className={classiInput} {...register('data_fine')} />
             {errors.data_fine && (
               <p className="mt-1 text-xs text-red-700">{errors.data_fine.message}</p>
             )}
@@ -309,7 +340,7 @@ function NuovoTorneo({ onCreato }: { onCreato: (id: number | string) => void }) 
           <p className={`mt-4 ${msg.tipo === 'ok' ? classiOk : classiErrore}`}>{msg.testo}</p>
         )}
 
-        <button type="submit" className="btn mt-4" disabled={isSubmitting}>
+        <button type="submit" className="btn btn-oro btn-riflesso btn-block mt-4" disabled={isSubmitting}>
           {isSubmitting ? 'Creazione…' : 'Crea torneo'}
         </button>
         <p className="sub mt-3">
@@ -379,6 +410,7 @@ function DettaglioTorneo({
           squadre={squadre}
           compBySquadra={dati.perSquadraComp}
           assegnati={assegnati}
+          richieste={dati.richiestePerTorneo[String(torneo.id)] ?? []}
         />
       </Sezione>
 
@@ -487,9 +519,7 @@ function DettaglioTorneo({
             onChange={(e) => cambiaStato.mutate(e.target.value as StatoTorneo)}
           >
             {Object.entries(STATI_TORNEO).map(([k, v]) => (
-              <option key={k} value={k}>
-                {v}
-              </option>
+              <option key={k} value={k}>{v}</option>
             ))}
           </select>
         ) : (
