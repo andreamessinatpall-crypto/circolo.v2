@@ -106,8 +106,8 @@ export default function DatiProfilo() {
         <label htmlFor="dati-sport">Sport preferito</label>
         <select id="dati-sport" {...register('sport_preferito')}>
           <option value="entrambi">Padel e Calcio</option>
-          <option value="padel">Solo Padel</option>
-          <option value="calcio">Solo Calcio</option>
+          <option value="padel">Padel</option>
+          <option value="calcio">Calcio</option>
         </select>
 
         {msg && (

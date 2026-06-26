@@ -1,25 +1,29 @@
-import { LIVELLI_PARTITE_DEFAULT, useLivelliPartite, type Sport } from './badgeDati'
+import { COLORE_SPORT, TRAGUARDI_DEFAULT, useTraguardi, type Sport, type VariabileTraguardo } from './badgeDati'
 import { svgEmblema } from './medaglieSvg'
 
-// Emblema rotondo del livello (griglia traguardi e avatar nell'header). Se
-// l'admin ha caricato un'immagine per quel livello/sport la mostra, altrimenti
-// disegna l'emblema con il colore del livello.
+// Emblema rotondo del traguardo (griglia badge e avatar nell'header).
+// Se l'admin ha caricato un'immagine per quel traguardo la mostra,
+// altrimenti disegna l'emblema SVG col colore dello sport.
 export default function Medaglia({
+  variabile = 'partite',
   sport,
-  liv,
+  soglia,
   size = 66,
   bloccato = false,
 }: {
+  variabile?: VariabileTraguardo
   sport: Sport
-  liv: number
+  soglia: number
   size?: number
   bloccato?: boolean
 }) {
-  const { data } = useLivelliPartite()
-  const livelli = data ?? LIVELLI_PARTITE_DEFAULT
-  const l = livelli[liv - 1]
-  const colore = l?.colore ?? '#9AA3A0'
-  const img = l ? (sport === 'calcio' ? l.img_calcio : l.img_padel) : null
+  const { data } = useTraguardi()
+  const traguardi = data ?? TRAGUARDI_DEFAULT
+  const t = traguardi.find(
+    x => x.variabile === variabile && x.sport === sport && x.soglia === soglia,
+  )
+  const img = t?.img ?? null
+  const colore = COLORE_SPORT[sport]
 
   const stile = {
     width: size,

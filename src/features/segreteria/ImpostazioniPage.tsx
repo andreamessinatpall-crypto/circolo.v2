@@ -1,8 +1,5 @@
 import { useState } from 'react'
-import NuovoSocio from './NuovoSocio'
-import GestioneGiocatori from './GestioneGiocatori'
 import GestioneCampi from './GestioneCampi'
-import GestionePrenotazioni from './GestionePrenotazioni'
 import ValoriPunti from './ValoriPunti'
 import IntervalliCrediti from './IntervalliCrediti'
 import RigeneraPunti from './RigeneraPunti'
@@ -11,26 +8,24 @@ import GestionePremi from './GestionePremi'
 import GestioneLivelli from './GestioneLivelli'
 import GestioneTraguardi from './GestioneTraguardi'
 
-// Pannello amministratori. Come nella v1 raccoglie più sezioni; qui sono
-// sotto-schede. Vengono riempite una alla volta lungo la Fase 8.
-type SottoScheda = 'nuovo' | 'giocatori' | 'campi' | 'prenotazioni' | 'punti' | 'premi' | 'livelli'
+// Tab "Impostazioni" dell'admin: raccoglie tutta la configurazione del circolo
+// che prima stava sparsa in segreteria (campi, valori punti/crediti, catalogo
+// premi, livelli e traguardi).
+type Scheda = 'campi' | 'punti' | 'premi' | 'livelli'
 
-const SCHEDE: { id: SottoScheda; label: string }[] = [
-  { id: 'nuovo', label: 'Nuovo giocatore' },
-  { id: 'giocatori', label: 'Giocatori' },
+const SCHEDE: { id: Scheda; label: string }[] = [
   { id: 'campi', label: 'Campi e regole' },
-  { id: 'prenotazioni', label: 'Prenotazioni' },
   { id: 'punti', label: 'Punti e crediti' },
   { id: 'premi', label: 'Premi' },
   { id: 'livelli', label: 'Livelli e traguardi' },
 ]
 
-export default function SegreteriaPage() {
-  const [scheda, setScheda] = useState<SottoScheda>('nuovo')
+export default function ImpostazioniPage() {
+  const [scheda, setScheda] = useState<Scheda>('campi')
 
   return (
     <div>
-      <nav className="mb-4 flex flex-wrap gap-1.5" aria-label="Sezioni segreteria">
+      <nav className="mb-4 flex flex-wrap gap-1.5" aria-label="Sezioni impostazioni">
         {SCHEDE.map((s) => (
           <button
             key={s.id}
@@ -43,10 +38,7 @@ export default function SegreteriaPage() {
         ))}
       </nav>
 
-      {scheda === 'nuovo' && <NuovoSocio />}
-      {scheda === 'giocatori' && <GestioneGiocatori />}
       {scheda === 'campi' && <GestioneCampi />}
-      {scheda === 'prenotazioni' && <GestionePrenotazioni />}
       {scheda === 'punti' && (
         <>
           <ValoriPunti />

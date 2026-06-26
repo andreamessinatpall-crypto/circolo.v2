@@ -123,6 +123,9 @@ function RigaSocio({
           {titleCase(socio.cognome)} {titleCase(socio.nome)}
           {socio.is_admin && <span className="pill bg-ottone-100 text-ottone-700">A</span>}
           {socio.is_allenatore && <span className="pill bg-verde-100 text-verde-700">C</span>}
+          {socio.e_allenatore && !socio.is_allenatore && (
+            <span className="pill bg-terra/10 text-terra">I</span>
+          )}
           {!socio.attivo && <span className="pill off">Non attivo</span>}
         </div>
         <div className="text-sm text-ink-2">

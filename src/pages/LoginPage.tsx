@@ -65,7 +65,7 @@ export default function LoginPage() {
 
           {errore && <p className={`mt-3 ${classiErrore}`}>{errore}</p>}
 
-          <button type="submit" className="btn btn-oro btn-block mt-5" disabled={inCorso}>
+          <button type="submit" className="btn btn-oro btn-riflesso btn-block mt-5" disabled={inCorso}>
             {inCorso ? 'Accesso in corso…' : 'Entra in campo'}
           </button>
         </form>

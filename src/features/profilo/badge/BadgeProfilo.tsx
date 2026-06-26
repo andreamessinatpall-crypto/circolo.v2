@@ -6,20 +6,23 @@ import { sportConsentiti } from '@/auth/ruoli'
 import { mancaRpc, messaggioErrore } from '@/lib/errori'
 import Medaglia from './Medaglia'
 import {
-  LIVELLI_PARTITE_DEFAULT,
   codiceBadge,
-  livelloDaConteggio,
-  useLivelliPartite,
+  EMOJI_SPORT,
+  LABEL_VARIABILE,
+  TRAGUARDI_DEFAULT,
+  VARIABILI,
+  useTraguardi,
   type Sport,
+  type VariabileTraguardo,
 } from './badgeDati'
 
 type Conteggi = Record<Sport, number>
 
 export default function BadgeProfilo() {
   const { profilo, ricaricaProfilo } = useAuth()
-  const livelliQuery = useLivelliPartite()
+  const traguardiQuery = useTraguardi()
 
-  const query = useQuery({
+  const partiteQuery = useQuery({
     queryKey: ['mie_partite_per_sport'],
     queryFn: async () => {
       const { data, error } = await supabase.rpc('mie_partite_per_sport')
@@ -46,32 +49,59 @@ export default function BadgeProfilo() {
 
   if (!profilo) return null
 
-  if (query.isLoading) {
-    return <Contenitore>Caricamento…</Contenitore>
-  }
+  if (partiteQuery.isLoading) return <Contenitore>Caricamento…</Contenitore>
 
-  if (query.error) {
+  if (partiteQuery.error) {
     return (
       <Contenitore>
-        {mancaRpc(query.error)
+        {mancaRpc(partiteQuery.error)
           ? 'Badge non ancora attivi: esegui lo script tappa5-badge-premi.sql su Supabase.'
-          : 'Impossibile caricare i traguardi: ' + messaggioErrore(query.error)}
+          : 'Impossibile caricare i traguardi: ' + messaggioErrore(partiteQuery.error)}
       </Contenitore>
     )
   }
 
-  const conteggi = query.data ?? { padel: 0, calcio: 0 }
-  const livelli = livelliQuery.data ?? LIVELLI_PARTITE_DEFAULT
-  const sports: Sport[] = profilo.is_admin
-    ? ['padel', 'calcio']
-    : sportConsentiti(profilo)
+  const conteggi = partiteQuery.data ?? { padel: 0, calcio: 0 }
+  const traguardi = traguardiQuery.data ?? TRAGUARDI_DEFAULT
+  const sports: Sport[] = profilo.is_admin ? ['padel', 'calcio'] : sportConsentiti(profilo)
+
+  // Conteggio per variabile × sport (solo "partite" ha dati reali per ora)
+  function conteggio(variabile: VariabileTraguardo, sport: Sport): number {
+    if (variabile === 'partite') return conteggi[sport]
+    return 0
+  }
+
+  function etichettaConteggio(variabile: VariabileTraguardo, sport: Sport): string {
+    const n = conteggio(variabile, sport)
+    if (variabile === 'partite') return `${n} ${n === 1 ? 'partita' : 'partite'}`
+    if (variabile === 'allenamenti') return `${n} ${n === 1 ? 'allenamento' : 'allenamenti'}`
+    if (variabile === 'tornei') return `${n} ${n === 1 ? 'torneo' : 'tornei'}`
+    return `${n} ${n === 1 ? 'amico' : 'amici'}`
+  }
+
+  function etichettaBadge(
+    variabile: VariabileTraguardo,
+    sbloccato: boolean,
+    scelto: boolean,
+    soglia: number,
+  ): string {
+    if (scelto) return 'In uso'
+    if (sbloccato) return 'Sbloccato'
+    const unita: Record<VariabileTraguardo, string> = {
+      partite: 'partite',
+      allenamenti: 'allenamenti',
+      tornei: 'tornei',
+      amici: 'amici',
+    }
+    return `${soglia} ${unita[variabile]}`
+  }
 
   return (
     <div className="card">
       <div className="mb-4 flex items-start justify-between gap-3">
         <p className="max-w-prose text-sm text-ink-2">
-          Sblocchi i traguardi giocando partite. Tocca un traguardo sbloccato per usarlo
-          come <strong>immagine del profilo</strong>.
+          Sblocchi i traguardi giocando, allenandoti e partecipando. Tocca un traguardo sbloccato
+          per usarlo come <strong>immagine del profilo</strong>.
         </p>
         {profilo.badge_profilo && (
           <button
@@ -84,46 +114,75 @@ export default function BadgeProfilo() {
         )}
       </div>
 
-      {sports.map((sport) => {
-        const n = conteggi[sport]
-        const raggiunto = livelloDaConteggio(n, livelli)
+      {VARIABILI.map(variabile => {
+        // Per questa variabile mostra solo gli sport a cui il socio ha accesso
+        // e per cui esistono traguardi configurati
+        const sezioni = sports
+          .map(sport => ({
+            sport,
+            lista: traguardi
+              .filter(t => t.variabile === variabile && t.sport === sport)
+              .sort((a, b) => a.soglia - b.soglia),
+          }))
+          .filter(s => s.lista.length > 0)
+
+        if (sezioni.length === 0) return null
+
         return (
-          <div key={sport} className="mb-6 last:mb-0">
-            <div className="badge-titolo-sport">
-              {sport === 'padel' ? '🎾 Padel' : '⚽ Calcio'} · {n}{' '}
-              {n === 1 ? 'partita' : 'partite'}
+          <div key={variabile} className="mb-6 last:mb-0">
+            <div className="badge-titolo-sport" style={{ fontSize: '0.78rem', marginBottom: 12 }}>
+              {LABEL_VARIABILE[variabile]}
             </div>
-            <div className="badge-griglia">
-              {livelli.map((l, idx) => {
-                const liv = idx + 1
-                const sbloccato = liv <= raggiunto
-                const scelto = profilo.badge_profilo === codiceBadge(sport, liv)
-                return (
-                  <button
-                    key={liv}
-                    type="button"
-                    disabled={!sbloccato || salvaAvatar.isPending}
-                    onClick={() => salvaAvatar.mutate(codiceBadge(sport, liv))}
-                    className={
-                      'badge-cella ' +
-                      (sbloccato ? 'sbloccato' : 'bloccato') +
-                      (scelto ? ' scelto' : '')
-                    }
-                  >
-                    <div className="badge-medaglia">
-                      <Medaglia sport={sport} liv={liv} size={66} />
-                    </div>
-                    <div className="badge-nome">{l.nome}</div>
-                    <div className="badge-soglia">
-                      {sbloccato ? (scelto ? 'In uso' : 'Sbloccato') : l.soglia + ' partite'}
-                    </div>
-                  </button>
-                )
-              })}
-            </div>
+
+            {sezioni.map(({ sport, lista }) => {
+              const n = conteggio(variabile, sport)
+              return (
+                <div key={sport} className="mb-4 last:mb-0">
+                  <div className="badge-titolo-sport">
+                    {EMOJI_SPORT[sport]} {sport === 'padel' ? 'Padel' : 'Calcio'} ·{' '}
+                    {etichettaConteggio(variabile, sport)}
+                  </div>
+                  <div className="badge-griglia">
+                    {lista.map(t => {
+                      const sbloccato = n >= t.soglia
+                      const codice = codiceBadge(t)
+                      const scelto = profilo.badge_profilo === codice
+                      return (
+                        <button
+                          key={codice}
+                          type="button"
+                          disabled={!sbloccato || salvaAvatar.isPending}
+                          onClick={() => salvaAvatar.mutate(codice)}
+                          className={
+                            'badge-cella ' +
+                            (sbloccato ? 'sbloccato' : 'bloccato') +
+                            (scelto ? ' scelto' : '')
+                          }
+                        >
+                          <div className="badge-medaglia">
+                            <Medaglia
+                              variabile={variabile}
+                              sport={sport}
+                              soglia={t.soglia}
+                              size={66}
+                              bloccato={!sbloccato}
+                            />
+                          </div>
+                          <div className="badge-nome">{t.nome}</div>
+                          <div className="badge-soglia">
+                            {etichettaBadge(variabile, sbloccato, scelto, t.soglia)}
+                          </div>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )
+            })}
           </div>
         )
       })}
+
       <p className="mt-2 text-xs text-ink-3">
         Tocca una medaglia sbloccata per usarla come immagine del profilo.
       </p>

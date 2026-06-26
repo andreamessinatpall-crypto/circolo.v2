@@ -2,14 +2,16 @@ import { useState } from 'react'
 import { useAuth } from '@/auth/useAuth'
 import GrigliaPrenotazioni from './GrigliaPrenotazioni'
 import MieAmichevoli from './MieAmichevoli'
-import MieLezioni from './MieLezioni'
+import VistaLezioni from './VistaLezioni'
 import type { Sport } from './tipi'
 
-type Sub = 'prenota' | 'mie' | 'lezioni'
+type Sub = 'prenota' | 'mie'
+type FiltroMie = 'tutte' | 'lezioni'
 
 export default function SportPage({ sport }: { sport: Sport }) {
   const { profilo } = useAuth()
   const [sub, setSub] = useState<Sub>('prenota')
+  const [filtroMie, setFiltroMie] = useState<FiltroMie>('tutte')
   const label = sport === 'padel' ? 'Padel' : 'Calcio'
   const istruttore = !!(profilo?.e_allenatore && !profilo.is_admin)
 
@@ -30,15 +32,6 @@ export default function SportPage({ sport }: { sport: Sport }) {
         >
           Le mie prenotazioni
         </button>
-        {istruttore && (
-          <button
-            type="button"
-            className={'subtab-btn' + (sub === 'lezioni' ? ' attivo' : '')}
-            onClick={() => setSub('lezioni')}
-          >
-            Le mie lezioni
-          </button>
-        )}
       </nav>
 
       {sub === 'prenota' && (
@@ -52,18 +45,37 @@ export default function SportPage({ sport }: { sport: Sport }) {
 
       {sub === 'mie' && (
         <>
-          <div className="eyebrow">{label} · Le tue partite</div>
-          <div className="card">
-            <MieAmichevoli sport={sport} />
+          <div className="eyebrow">
+            {label} · {filtroMie === 'lezioni' ? 'Le tue lezioni' : 'Le tue partite'}
           </div>
-        </>
-      )}
 
-      {sub === 'lezioni' && istruttore && (
-        <>
-          <div className="eyebrow">{label} · Le mie lezioni</div>
+          {/* Filtro riservato all'istruttore: alterna tutte le prenotazioni e
+              i soli allenamenti di cui è istruttore (in sola lettura). */}
+          {istruttore && (
+            <nav className="mb-3 flex flex-wrap gap-1.5" aria-label="Filtro prenotazioni">
+              <button
+                type="button"
+                className={'subtab-btn' + (filtroMie === 'tutte' ? ' attivo' : '')}
+                onClick={() => setFiltroMie('tutte')}
+              >
+                Tutte
+              </button>
+              <button
+                type="button"
+                className={'subtab-btn' + (filtroMie === 'lezioni' ? ' attivo' : '')}
+                onClick={() => setFiltroMie('lezioni')}
+              >
+                Lezioni
+              </button>
+            </nav>
+          )}
+
           <div className="card">
-            <MieLezioni sport={sport} />
+            {istruttore && filtroMie === 'lezioni' ? (
+              <VistaLezioni sport={sport} />
+            ) : (
+              <MieAmichevoli sport={sport} />
+            )}
           </div>
         </>
       )}

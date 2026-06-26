@@ -20,6 +20,8 @@ export interface SocioAdmin {
   e_allenatore: boolean | null
   punti: number | null
   crediti: number | null
+  punti_bloccati: boolean | null
+  crediti_bloccati: boolean | null
 }
 
 // Tutti i soci (l'admin li legge grazie alle policy RLS).
@@ -54,6 +56,16 @@ export async function aggiustaSaldo(
     p_tipo: 'aggiustamento',
   })
   if (error) return { ok: false, mancaScript: mancaRpc(error), messaggio: error.message }
+  return { ok: true }
+}
+
+export async function impostaBlocco(
+  socioId: string,
+  campo: 'punti_bloccati' | 'crediti_bloccati',
+  valore: boolean,
+): Promise<{ ok: boolean; messaggio?: string }> {
+  const { error } = await supabase.from('soci').update({ [campo]: valore }).eq('id', socioId)
+  if (error) return { ok: false, messaggio: error.message }
   return { ok: true }
 }
 

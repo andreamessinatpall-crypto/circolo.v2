@@ -3,10 +3,14 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { classiErrore, classiOk } from '@/components/stili'
 import { logoDaFile } from '@/lib/immagini'
 import {
-  applicaBadgeLivelli,
-  salvaBadgeLivelli,
-  useLivelliPartite,
-  type Livello,
+  applicaTraguardi,
+  LABEL_VARIABILE,
+  salvaTraguardi,
+  useTraguardi,
+  VARIABILI,
+  type Sport,
+  type Traguardo,
+  type VariabileTraguardo,
 } from '@/features/profilo/badge/badgeDati'
 import SlotImmagine from './SlotImmagine'
 
@@ -15,26 +19,27 @@ type Esito = { tipo: 'ok' | 'errore'; testo: string } | null
 const MSG_PERMESSO =
   'Permesso negato dal database: serve la policy admin sulle impostazioni (script tappa13-campi-rls.sql).'
 
-// (Fase 8e · blocco 2) Segreteria · traguardi di partita configurabili, con
-// immagini per Padel e Calcio.
 export default function GestioneTraguardi() {
-  const { data, isLoading, error } = useLivelliPartite()
+  const { data, isLoading, error } = useTraguardi()
 
   return (
     <div>
-      <div className="eyebrow">Traguardi di partita</div>
+      <div className="eyebrow">Traguardi</div>
       <div className="card">
-        <p className="sub m-0 mb-3">
-          I traguardi si sbloccano col numero di <strong>partite confermate</strong>. Per ogni
-          traguardo puoi caricare un’<strong>immagine</strong> distinta per Padel e Calcio; se non la
-          carichi si usa l’emblema col colore.
+        <p className="sub m-0 mb-4">
+          Configura i traguardi per <strong>Partite giocate</strong>,{' '}
+          <strong>Allenamenti fatti</strong>, <strong>Tornei vinti</strong> e{' '}
+          <strong>Numero di amici</strong>, separati per Padel e Calcio.
         </p>
         {isLoading ? (
           <p className="text-ink-2">Caricamento…</p>
         ) : error ? (
           <p className={classiErrore}>Impossibile caricare i traguardi: {error.message}</p>
         ) : (
-          <EditorTraguardi key={(data ?? []).map((l) => l.nome + l.soglia).join('|')} iniziali={data ?? []} />
+          <EditorTraguardi
+            key={(data ?? []).map(t => t.variabile + t.sport + t.soglia).join('|')}
+            iniziali={data ?? []}
+          />
         )}
       </div>
     </div>
@@ -43,58 +48,47 @@ export default function GestioneTraguardi() {
 
 interface Riga {
   id: number
-  nome: string
+  variabile: VariabileTraguardo
+  sport: Sport
   soglia: string
-  colore: string
-  img_padel: string | null
-  img_calcio: string | null
+  nome: string
+  img: string | null
 }
 
-function EditorTraguardi({ iniziali }: { iniziali: Livello[] }) {
+function EditorTraguardi({ iniziali }: { iniziali: Traguardo[] }) {
   const qc = useQueryClient()
   const [righe, setRighe] = useState<Riga[]>(() =>
-    iniziali.map((l, i) => ({
+    iniziali.map((t, i) => ({
       id: i,
-      nome: l.nome,
-      soglia: String(l.soglia),
-      colore: l.colore,
-      img_padel: l.img_padel,
-      img_calcio: l.img_calcio,
+      variabile: t.variabile,
+      sport: t.sport,
+      soglia: String(t.soglia),
+      nome: t.nome,
+      img: t.img,
     })),
   )
   const [msg, setMsg] = useState<Esito>(null)
   const idRef = useRef(iniziali.length || 1)
   const nuovoId = () => idRef.current++
 
-  const aggiungi = () =>
-    setRighe((r) => [
+  const aggiungi = (variabile: VariabileTraguardo, sport: Sport) =>
+    setRighe(r => [
       ...r,
-      {
-        id: nuovoId(),
-        nome: `Livello ${r.length + 1}`,
-        soglia: '1',
-        colore: '#2E9E6B',
-        img_padel: null,
-        img_calcio: null,
-      },
+      { id: nuovoId(), variabile, sport, soglia: '1', nome: '', img: null },
     ])
-  const togli = (id: number) => setRighe((r) => r.filter((x) => x.id !== id))
-  const cambia = (id: number, campo: 'nome' | 'soglia' | 'colore', val: string) =>
-    setRighe((r) => r.map((x) => (x.id === id ? { ...x, [campo]: val } : x)))
-  const setImg = (id: number, campo: 'img_padel' | 'img_calcio', val: string | null) =>
-    setRighe((r) => r.map((x) => (x.id === id ? { ...x, [campo]: val } : x)))
+  const togli = (id: number) => setRighe(r => r.filter(x => x.id !== id))
+  const cambia = (id: number, campo: 'nome' | 'soglia' | 'sport', val: string) =>
+    setRighe(r => r.map(x => (x.id === id ? { ...x, [campo]: val } : x)))
+  const setImg = (id: number, val: string | null) =>
+    setRighe(r => r.map(x => (x.id === id ? { ...x, img: val } : x)))
 
-  async function caricaImg(
-    id: number,
-    campo: 'img_padel' | 'img_calcio',
-    e: React.ChangeEvent<HTMLInputElement>,
-  ) {
+  async function caricaImg(id: number, e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     e.target.value = ''
     if (!file) return
     setMsg(null)
     try {
-      setImg(id, campo, await logoDaFile(file))
+      setImg(id, await logoDaFile(file))
     } catch (err) {
       setMsg({ tipo: 'errore', testo: err instanceof Error ? err.message : 'Immagine non valida.' })
     }
@@ -102,15 +96,14 @@ function EditorTraguardi({ iniziali }: { iniziali: Livello[] }) {
 
   const salva = useMutation({
     mutationFn: async () => {
-      if (righe.length === 0) throw new Error('Serve almeno un traguardo.')
-      const livelli: Livello[] = righe.map((r) => ({
-        nome: r.nome.trim() || 'Livello',
+      const traguardi: Traguardo[] = righe.map(r => ({
+        variabile: r.variabile,
+        sport: r.sport,
         soglia: Math.max(1, parseInt(r.soglia, 10) || 1),
-        colore: r.colore,
-        img_padel: r.img_padel,
-        img_calcio: r.img_calcio,
+        nome: r.nome.trim() || LABEL_VARIABILE[r.variabile],
+        img: r.img,
       }))
-      const esito = await salvaBadgeLivelli(livelli)
+      const esito = await salvaTraguardi(traguardi)
       if (!esito.ok)
         throw new Error(
           esito.mancaPermesso
@@ -119,106 +112,127 @@ function EditorTraguardi({ iniziali }: { iniziali: Livello[] }) {
               ? 'Manca la colonna badge_livelli: esegui lo script tappa17-livelli-badge.sql su Supabase.'
               : 'Salvataggio non riuscito: ' + (esito.messaggio ?? ''),
         )
-      return applicaBadgeLivelli(livelli)
+      return applicaTraguardi(traguardi)
     },
-    onSuccess: (puliti) => {
+    onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['badge-livelli'] })
-      setMsg({ tipo: 'ok', testo: `Traguardi salvati (${puliti.length}).` })
+      setMsg({ tipo: 'ok', testo: 'Traguardi salvati.' })
     },
     onError: (e: Error) => setMsg({ tipo: 'errore', testo: e.message }),
   })
 
   return (
     <div>
-      <div className="flex flex-col gap-3">
-        {righe.map((r) => (
-          <div key={r.id} className="flex flex-wrap items-end gap-3 border-b border-verde-100 pb-3">
-            {/* Padel e Calcio in due blocchi impilati */}
-            <div className="flex flex-col gap-2">
-              <SlotImmagine
-                etichetta="Padel"
-                img={r.img_padel}
-                colore={r.colore}
-                onCarica={(e) => caricaImg(r.id, 'img_padel', e)}
-                onRimuovi={() => {
-                  setImg(r.id, 'img_padel', null)
-                  setMsg(null)
-                }}
-              />
-              <SlotImmagine
-                etichetta="Calcio"
-                img={r.img_calcio}
-                colore={r.colore}
-                onCarica={(e) => caricaImg(r.id, 'img_calcio', e)}
-                onRimuovi={() => {
-                  setImg(r.id, 'img_calcio', null)
-                  setMsg(null)
-                }}
-              />
+      <div className="flex flex-col gap-8">
+        {VARIABILI.map(variabile => {
+          const gruppo = righe.filter(r => r.variabile === variabile)
+          return (
+            <div key={variabile}>
+              {/* Intestazione sezione */}
+              <div className="mb-3 flex items-center gap-2">
+                <span className="font-display text-sm font-semibold uppercase tracking-wide text-verde-700">
+                  {LABEL_VARIABILE[variabile]}
+                </span>
+                <div className="flex-1 border-t border-verde-100" />
+              </div>
+
+              {/* Righe traguardo */}
+              <div className="flex flex-col gap-3">
+                {gruppo.length === 0 && (
+                  <p className="text-sm italic text-ink-3">Nessun traguardo configurato.</p>
+                )}
+                {gruppo.map(r => (
+                  <div key={r.id} className="flex flex-wrap items-end gap-3">
+                    <SlotImmagine
+                      etichetta="IMG"
+                      img={r.img}
+                      colore={r.sport === 'padel' ? '#2E9E6B' : '#E0A83A'}
+                      onCarica={e => caricaImg(r.id, e)}
+                      onRimuovi={() => {
+                        setImg(r.id, null)
+                        setMsg(null)
+                      }}
+                    />
+                    <label className="block !my-0">
+                      <span className="etichetta !mb-1 whitespace-nowrap">Sport</span>
+                      <select
+                        className="!mt-0 h-11 w-28"
+                        value={r.sport}
+                        onChange={e => {
+                          cambia(r.id, 'sport', e.target.value)
+                          setMsg(null)
+                        }}
+                      >
+                        <option value="padel">Padel</option>
+                        <option value="calcio">Calcio</option>
+                      </select>
+                    </label>
+                    <label className="block !my-0 min-w-[8rem] flex-1">
+                      <span className="etichetta !mb-1 whitespace-nowrap">Nome</span>
+                      <input
+                        type="text"
+                        maxLength={30}
+                        className="!mt-0 h-11 w-full"
+                        placeholder={LABEL_VARIABILE[variabile]}
+                        value={r.nome}
+                        onChange={e => {
+                          cambia(r.id, 'nome', e.target.value)
+                          setMsg(null)
+                        }}
+                      />
+                    </label>
+                    <label className="block !my-0">
+                      <span className="etichetta !mb-1 whitespace-nowrap">Numero</span>
+                      <input
+                        type="number"
+                        min={1}
+                        inputMode="numeric"
+                        className="casella-num !mt-0 h-11 w-24"
+                        value={r.soglia}
+                        onChange={e => {
+                          cambia(r.id, 'soglia', e.target.value)
+                          setMsg(null)
+                        }}
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      aria-label="Togli traguardo"
+                      className="btn btn-pericolo btn-mini !mt-0 flex h-11 w-11 shrink-0 items-center justify-center !px-0 text-base"
+                      onClick={() => {
+                        togli(r.id)
+                        setMsg(null)
+                      }}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              {/* Pulsanti aggiungi per questa tipologia */}
+              <div className="mt-3 flex gap-2">
+                <button
+                  type="button"
+                  className="btn btn-secondario btn-mini !mt-0"
+                  onClick={() => aggiungi(variabile, 'padel')}
+                >
+                  + Padel
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-secondario btn-mini !mt-0"
+                  onClick={() => aggiungi(variabile, 'calcio')}
+                >
+                  + Calcio
+                </button>
+              </div>
             </div>
-            <label className="block">
-              <span className="etichetta !mb-1 whitespace-nowrap">Colore</span>
-              <input
-                type="color"
-                className="!mt-0 h-11 w-12 rounded-lg border border-verde-100 p-1"
-                value={r.colore}
-                onChange={(e) => {
-                  cambia(r.id, 'colore', e.target.value)
-                  setMsg(null)
-                }}
-              />
-            </label>
-            <label className="block min-w-[8rem] flex-1">
-              <span className="etichetta !mb-1 whitespace-nowrap">Nome</span>
-              <input
-                type="text"
-                maxLength={30}
-                className="!mt-0 h-11 w-full"
-                value={r.nome}
-                onChange={(e) => {
-                  cambia(r.id, 'nome', e.target.value)
-                  setMsg(null)
-                }}
-              />
-            </label>
-            <label className="block">
-              <span className="etichetta !mb-1 whitespace-nowrap">Partite (soglia)</span>
-              <input
-                type="number"
-                min={1}
-                inputMode="numeric"
-                className="casella-num !mt-0 h-11 w-24"
-                value={r.soglia}
-                onChange={(e) => {
-                  cambia(r.id, 'soglia', e.target.value)
-                  setMsg(null)
-                }}
-              />
-            </label>
-            <div>
-              <span className="etichetta !mb-1 block h-5" aria-hidden="true">
-                {' '}
-              </span>
-              <button
-                type="button"
-                aria-label="Togli traguardo"
-                className="btn btn-pericolo btn-mini !mt-0 flex h-11 w-11 items-center justify-center !px-0 text-base"
-                onClick={() => {
-                  togli(r.id)
-                  setMsg(null)
-                }}
-              >
-                ✕
-              </button>
-            </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
 
-      <div className="mt-3 flex flex-wrap items-center gap-2">
-        <button type="button" className="btn btn-secondario !mt-0" onClick={aggiungi}>
-          ＋ Aggiungi traguardo
-        </button>
+      <div className="mt-6 border-t border-verde-100 pt-4">
         <button
           type="button"
           className="btn !mt-0"

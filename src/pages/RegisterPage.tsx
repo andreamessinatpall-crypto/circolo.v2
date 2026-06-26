@@ -136,7 +136,7 @@ export default function RegisterPage() {
         {erroreGenerale && <p className={`mt-4 ${classiErrore}`}>{erroreGenerale}</p>}
         {successo && <p className={`mt-4 ${classiOk}`}>{successo}</p>}
 
-        <button type="submit" className="btn btn-oro btn-block mt-5" disabled={isSubmitting}>
+        <button type="submit" className="btn btn-oro btn-riflesso btn-block mt-5" disabled={isSubmitting}>
           {isSubmitting ? 'Invio in corso…' : 'Crea account'}
         </button>
 

@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/auth/useAuth'
+import { puoGestirePrenotazioni, prenotaSenzaLimite } from '@/auth/ruoli'
 import { messaggioErrore } from '@/lib/errori'
 import { useCampi, useImpostazioni, usePrenotazioniGiorno } from './datiPrenotazioni'
 import { oraLocale, ymd } from './orari'
@@ -42,7 +43,7 @@ export default function GrigliaPrenotazioni({ sport }: { sport: Sport }) {
       if (!profilo) throw new Error('Profilo non disponibile')
       // Limite di prenotazioni attive per socio (0 = nessun limite; staff esente).
       const limite = sport === 'padel' ? imp.maxPadel : imp.maxCalcio
-      const senzaLimite = profilo.is_admin || profilo.is_allenatore
+      const senzaLimite = prenotaSenzaLimite(profilo)
       if (limite > 0 && !senzaLimite) {
         const idCampiSport = campiSport.map((c) => c.id)
         const { count } = await supabase
@@ -61,7 +62,9 @@ export default function GrigliaPrenotazioni({ sport }: { sport: Sport }) {
       }
       if (allenamento) {
         dati.allenamento = true
-        if (profilo.e_allenatore || profilo.is_allenatore) dati.allenatore_id = profilo.id
+        // Chi è istruttore (o gestisce le prenotazioni) si auto-assegna come
+        // istruttore dell'allenamento, così gli compare nella vista Lezioni.
+        if (profilo.e_allenatore || puoGestirePrenotazioni(profilo)) dati.allenatore_id = profilo.id
       }
       const { data: creata, error } = await supabase
         .from('prenotazioni')
@@ -124,8 +127,9 @@ export default function GrigliaPrenotazioni({ sport }: { sport: Sport }) {
     if (window.confirm(domanda)) annulla.mutate(p.id)
   }
 
-  // Lo staff (admin/collaboratore/istruttore) sceglie tra prenotazione e allenamento.
-  const staff = !!(profilo?.is_allenatore || profilo?.is_admin || profilo?.e_allenatore)
+  // Chi sceglie tra prenotazione "partita" e "allenamento": admin, collaboratore
+  // e istruttore. Il socio normale prenota direttamente una partita.
+  const staff = !!(profilo && (puoGestirePrenotazioni(profilo) || profilo.e_allenatore))
   function apriPrenota(campo: Campo, inizio: Date, fine: Date) {
     if (staff) setScelta({ campo, inizio, fine })
     else prenota.mutate({ campo, inizio, fine, allenamento: false })

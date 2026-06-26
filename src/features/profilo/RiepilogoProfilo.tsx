@@ -17,11 +17,11 @@ export default function RiepilogoProfilo() {
       // Punti e crediti dalla riga del socio (se le colonne non esistono, 0).
       const { data: me } = await supabase
         .from('soci')
-        .select('punti, crediti')
+        .select('punti, crediti, punti_bloccati, crediti_bloccati')
         .eq('id', profilo!.id)
         .maybeSingle()
-      const punti = Number(me?.punti) || 0
-      const crediti = Number(me?.crediti) || 0
+      const punti = me?.punti_bloccati ? 0 : Number(me?.punti) || 0
+      const crediti = me?.crediti_bloccati ? 0 : Number(me?.crediti) || 0
 
       // Posizione in classifica.
       let posizione: number | null = null

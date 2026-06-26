@@ -362,6 +362,8 @@ export function SchedaPartita({
                 <div className="dove">Istruttore: {etichette.get(pren.allenatore_id) ?? '—'}</div>
               )}
             </>
+          ) : pren.torneo_nome ? (
+            <div className="torneo-badge">{pren.torneo_nome}</div>
           ) : (
             <div className="partita-badge">Partita</div>
           )}
@@ -374,7 +376,9 @@ export function SchedaPartita({
           <div className="part-vuoto">
             {staff
               ? 'Aggiungi i giocatori di questa partita.'
-              : 'Indica gli altri giocatori di questa partita: verrai aggiunto in automatico.'}
+              : pren.incontro_id
+                ? 'I giocatori vengono gestiti dall\'organizzatore del torneo.'
+                : 'Indica gli altri giocatori di questa partita: verrai aggiunto in automatico.'}
           </div>
           {staff ? (
             <Selettore
@@ -384,7 +388,7 @@ export function SchedaPartita({
               onScegli={(id) => onAggiungi(id, false)}
               onOspite={onAggiungiOspite}
             />
-          ) : (
+          ) : !pren.incontro_id ? (
             <button
               type="button"
               className="btn btn-secondario btn-mini mt-2"
@@ -392,7 +396,7 @@ export function SchedaPartita({
             >
               Indica i giocatori
             </button>
-          )}
+          ) : null}
         </>
       ) : (
         <>
@@ -502,13 +506,15 @@ export function SchedaPartita({
               )
             })}
           </div>
-          <Selettore
-            opzioni={selezionabili}
-            disabilitato={disabilita}
-            testoVuoto={testoVuoto}
-            onScegli={(id) => onAggiungi(id, false)}
-            onOspite={onAggiungiOspite}
-          />
+          {(staff || !pren.incontro_id) && (
+            <Selettore
+              opzioni={selezionabili}
+              disabilitato={disabilita}
+              testoVuoto={testoVuoto}
+              onScegli={(id) => onAggiungi(id, false)}
+              onOspite={onAggiungiOspite}
+            />
+          )}
         </>
       )}
 

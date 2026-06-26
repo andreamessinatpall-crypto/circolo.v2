@@ -5,14 +5,10 @@ import { titleCase, dataEstesa } from '@/lib/formato'
 import { classiErrore, classiOk } from '@/components/stili'
 import { costruisciCsv, scaricaCsv } from '@/lib/csv'
 import ModificaGiocatore from './ModificaGiocatore'
-import { aggiustaSaldo, fetchStoricoSocio, type SocioAdmin } from './datiSoci'
+import { aggiustaSaldo, fetchStoricoSocio, impostaBlocco, type SocioAdmin } from './datiSoci'
 
-// Colonne da NON esportare nel CSV dei movimenti.
-// "quando" è identica a "data_evento", quindi la escludiamo.
 const COLONNE_NASCOSTE = ['socio_id', 'chiave', 'quando']
 
-// (Fase 8b) Scheda di dettaglio di un giocatore: saldi, attiva/blocca,
-// modifica dati e aggiustamento manuale dei saldi.
 export default function DettaglioGiocatore({
   socio,
   modalitaPremi,
@@ -26,8 +22,6 @@ export default function DettaglioGiocatore({
 }) {
   const qc = useQueryClient()
   const [modifica, setModifica] = useState(false)
-  const [dPunti, setDPunti] = useState('')
-  const [dCrediti, setDCrediti] = useState('')
   const [msg, setMsg] = useState<{ tipo: 'ok' | 'errore'; testo: string } | null>(null)
   const [msgCsv, setMsgCsv] = useState<{ tipo: 'ok' | 'errore'; testo: string } | null>(null)
 
@@ -44,19 +38,28 @@ export default function DettaglioGiocatore({
         .eq('id', socio.id)
       if (error) throw error
     },
-    onSuccess: () => {
-      invalida()
-      onChiudi()
-    },
+    onSuccess: () => { invalida(); onChiudi() },
     onError: (e: Error) => setMsg({ tipo: 'errore', testo: 'Operazione non riuscita: ' + e.message }),
   })
 
-  const applica = useMutation({
-    mutationFn: async () => {
-      const p = parseInt(dPunti, 10) || 0
-      const c = modalitaPremi ? parseInt(dCrediti, 10) || 0 : 0
-      if (!p && !c) throw new Error('Inserisci una variazione.')
-      const esito = await aggiustaSaldo(socio.id, p, c, modalitaPremi)
+  const blocca = useMutation({
+    mutationFn: async ({
+      campo,
+      valore,
+    }: {
+      campo: 'punti_bloccati' | 'crediti_bloccati'
+      valore: boolean
+    }) => {
+      const esito = await impostaBlocco(socio.id, campo, valore)
+      if (!esito.ok) throw new Error(esito.messaggio ?? 'Operazione non riuscita.')
+    },
+    onSuccess: () => invalida(),
+    onError: (e: Error) => setMsg({ tipo: 'errore', testo: e.message }),
+  })
+
+  const aggiusta = useMutation({
+    mutationFn: async ({ deltaPunti, deltaCrediti }: { deltaPunti: number; deltaCrediti: number }) => {
+      const esito = await aggiustaSaldo(socio.id, deltaPunti, deltaCrediti, modalitaPremi)
       if (!esito.ok) {
         throw new Error(
           esito.mancaScript
@@ -65,12 +68,7 @@ export default function DettaglioGiocatore({
         )
       }
     },
-    onSuccess: () => {
-      invalida()
-      setDPunti('')
-      setDCrediti('')
-      setMsg({ tipo: 'ok', testo: 'Saldi aggiornati.' })
-    },
+    onSuccess: () => { invalida(); setMsg({ tipo: 'ok', testo: 'Saldi aggiornati.' }) },
     onError: (e: Error) => setMsg({ tipo: 'errore', testo: e.message }),
   })
 
@@ -126,23 +124,42 @@ export default function DettaglioGiocatore({
         </div>
 
         <div className="mt-2 flex flex-wrap gap-1.5">
-          {socio.is_admin && (
-            <span className="pill bg-ottone-100 text-ottone-700">Admin</span>
-          )}
-          {socio.is_allenatore && (
-            <span className="pill bg-verde-100 text-verde-700">Collaboratore</span>
-          )}
-          {socio.e_allenatore && (
-            <span className="pill bg-verde-100 text-verde-700">Istruttore</span>
+          {socio.is_admin && <span className="pill bg-ottone-100 text-ottone-700">Admin</span>}
+          {socio.is_allenatore && <span className="pill bg-verde-100 text-verde-700">Collaboratore</span>}
+          {socio.e_allenatore && !socio.is_allenatore && (
+            <span className="pill bg-terra/10 text-terra">Istruttore</span>
           )}
           {!socio.attivo && <span className="pill off">Non attivo</span>}
         </div>
 
-        {/* Saldi */}
+        {/* Saldi con +/- inline */}
         <div className="mt-4 flex gap-3">
-          <Saldo etichetta="Punti" valore={socio.punti ?? 0} />
-          {modalitaPremi && <Saldo etichetta="Crediti" valore={socio.crediti ?? 0} />}
+          <SaldoInterattivo
+            etichetta="Punti"
+            valore={socio.punti ?? 0}
+            bloccato={!!socio.punti_bloccati}
+            disabled={aggiusta.isPending || blocca.isPending}
+            onAggiusta={(delta) => aggiusta.mutate({ deltaPunti: delta, deltaCrediti: 0 })}
+            onToggleBlocco={() =>
+              blocca.mutate({ campo: 'punti_bloccati', valore: !socio.punti_bloccati })
+            }
+          />
+          {modalitaPremi && (
+            <SaldoInterattivo
+              etichetta="Crediti"
+              valore={socio.crediti ?? 0}
+              bloccato={!!socio.crediti_bloccati}
+              disabled={aggiusta.isPending || blocca.isPending}
+              onAggiusta={(delta) => aggiusta.mutate({ deltaPunti: 0, deltaCrediti: delta })}
+              onToggleBlocco={() =>
+                blocca.mutate({ campo: 'crediti_bloccati', valore: !socio.crediti_bloccati })
+              }
+            />
+          )}
         </div>
+        {msg && (
+          <p className={`mt-2 ${msg.tipo === 'ok' ? classiOk : classiErrore}`}>{msg.testo}</p>
+        )}
 
         {/* Azioni principali */}
         <div className="mt-4 flex flex-wrap gap-2">
@@ -179,47 +196,6 @@ export default function DettaglioGiocatore({
             <p className={`mt-3 ${msgCsv.tipo === 'ok' ? classiOk : classiErrore}`}>{msgCsv.testo}</p>
           )}
         </div>
-
-        {/* Aggiusta i saldi a mano */}
-        <div className="eyebrow">Aggiusta i saldi a mano</div>
-        <div className="card">
-          <p className="sub m-0 mb-2.5">
-            {modalitaPremi
-              ? 'Inserisci una variazione (anche negativa). I crediti si toccano solo a modalità premi accesa.'
-              : 'Inserisci una variazione di punti (anche negativa).'}
-          </p>
-          <div className="flex flex-wrap items-center gap-2">
-            <input
-              type="number"
-              inputMode="numeric"
-              placeholder="±punti"
-              className="!mt-0 !w-24"
-              value={dPunti}
-              onChange={(e) => setDPunti(e.target.value)}
-            />
-            {modalitaPremi && (
-              <input
-                type="number"
-                inputMode="numeric"
-                placeholder="±crediti"
-                className="!mt-0 !w-24"
-                value={dCrediti}
-                onChange={(e) => setDCrediti(e.target.value)}
-              />
-            )}
-            <button
-              type="button"
-              className="btn btn-secondario !mt-0"
-              disabled={applica.isPending}
-              onClick={() => applica.mutate()}
-            >
-              Applica
-            </button>
-          </div>
-          {msg && (
-            <p className={`mt-3 ${msg.tipo === 'ok' ? classiOk : classiErrore}`}>{msg.testo}</p>
-          )}
-        </div>
       </div>
 
       {modifica && <ModificaGiocatore socio={socio} onChiudi={() => setModifica(false)} />}
@@ -227,11 +203,103 @@ export default function DettaglioGiocatore({
   )
 }
 
-function Saldo({ etichetta, valore }: { etichetta: string; valore: number }) {
+function IconaPower({ size = 18 }: { size?: number }) {
   return (
-    <div className="flex-1 rounded-xl border border-verde-100 bg-verde-50 px-4 py-3 text-center">
-      <div className="font-display text-2xl font-bold text-verde-800">{valore}</div>
-      <div className="text-xs uppercase tracking-wide text-ink-3">{etichetta}</div>
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      aria-hidden="true"
+    >
+      <path d="M12 3v9" />
+      <path d="M6.4 6.4a8 8 0 1 0 11.2 0" />
+    </svg>
+  )
+}
+
+function SaldoInterattivo({
+  etichetta,
+  valore,
+  bloccato,
+  disabled,
+  onAggiusta,
+  onToggleBlocco,
+}: {
+  etichetta: string
+  valore: number
+  bloccato: boolean
+  disabled: boolean
+  onAggiusta: (delta: number) => void
+  onToggleBlocco: () => void
+}) {
+  const [importo, setImporto] = useState('')
+  const delta = Math.abs(parseInt(importo, 10) || 0)
+
+  return (
+    <div
+      className={
+        'relative flex flex-1 flex-col items-center rounded-xl border px-4 py-3 ' +
+        (bloccato ? 'border-terra/20 bg-terra/5' : 'border-verde-100 bg-verde-50')
+      }
+    >
+      <button
+        type="button"
+        aria-label={bloccato ? `Sblocca ${etichetta}` : `Blocca ${etichetta}`}
+        disabled={disabled}
+        onClick={onToggleBlocco}
+        className={
+          'absolute right-2 top-2 transition disabled:cursor-default disabled:opacity-50 ' +
+          (bloccato ? 'text-terra hover:text-terra/70' : 'text-ink-3 hover:text-ink')
+        }
+      >
+        <IconaPower size={15} />
+      </button>
+
+      <div
+        className={
+          'font-display text-2xl font-bold ' +
+          (bloccato ? 'text-ink-3' : 'text-verde-800')
+        }
+      >
+        {valore}
+      </div>
+      <div className="mb-2 text-xs uppercase tracking-wide text-ink-3">{etichetta}</div>
+
+      {!bloccato && (
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            aria-label={`Riduci ${etichetta}`}
+            disabled={disabled || delta === 0}
+            onClick={() => onAggiusta(-delta)}
+            className="flex h-7 w-7 items-center justify-center rounded-full border border-verde-200 bg-white text-sm font-bold text-verde-800 transition hover:bg-verde-100 disabled:cursor-default disabled:border-verde-100 disabled:bg-verde-50 disabled:text-ink-3"
+          >
+            −
+          </button>
+          <input
+            type="number"
+            min={0}
+            inputMode="numeric"
+            placeholder="0"
+            className="casella-num !mt-0 h-7 !w-14 rounded-lg border border-verde-100 text-sm"
+            value={importo}
+            onChange={(e) => setImporto(e.target.value)}
+          />
+          <button
+            type="button"
+            aria-label={`Aumenta ${etichetta}`}
+            disabled={disabled || delta === 0}
+            onClick={() => onAggiusta(+delta)}
+            className="flex h-7 w-7 items-center justify-center rounded-full border border-verde-200 bg-white text-sm font-bold text-verde-800 transition hover:bg-verde-100 disabled:cursor-default disabled:border-verde-100 disabled:bg-verde-50 disabled:text-ink-3"
+          >
+            +
+          </button>
+        </div>
+      )}
     </div>
   )
 }

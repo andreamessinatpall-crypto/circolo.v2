@@ -36,6 +36,7 @@ interface Attivita {
   parti: { socio_id: string; confermato: boolean }[]
   allenamento: boolean
   allenatore_id: string | null
+  torneo_nome: string | null
 }
 
 export default function AttivitaInProgramma() {
@@ -64,6 +65,7 @@ export default function AttivitaInProgramma() {
             parti: [],
             allenamento: false,
             allenatore_id: null,
+            torneo_nome: null,
           })
         }
         map.get(k)!.parti.push({ socio_id: r.socio_id, confermato: r.confermato })
@@ -72,22 +74,43 @@ export default function AttivitaInProgramma() {
         (a, b) => new Date(a.inizio).getTime() - new Date(b.inizio).getTime(),
       )
 
-      // Segna allenamenti e relativo istruttore.
+      // Segna allenamenti, istruttore e incontro_id.
       const ids = [...map.keys()]
       if (ids.length) {
         const { data: tipi } = await supabase
           .from('prenotazioni')
-          .select('id, allenamento, allenatore_id')
+          .select('id, allenamento, allenatore_id, incontro_id')
           .in('id', ids)
+        const incontroIds: (number | string)[] = []
         for (const t of (tipi ?? []) as Array<{
           id: number | string
           allenamento: boolean | null
           allenatore_id: string | null
+          incontro_id: number | string | null
         }>) {
           const a = map.get(String(t.id))
           if (a) {
             a.allenamento = !!t.allenamento
             a.allenatore_id = t.allenatore_id ?? null
+          }
+          if (t.incontro_id) incontroIds.push(t.incontro_id)
+        }
+
+        // Risolve il nome del torneo per le prenotazioni di incontri.
+        if (incontroIds.length) {
+          const { data: inc } = await supabase
+            .from('incontri')
+            .select('id, torneo:tornei(nome)')
+            .in('id', incontroIds)
+          const nomePerIncontro = new Map<string, string>()
+          for (const r of (inc ?? []) as Array<{ id: number | string; torneo: { nome: string } | null }>) {
+            if (r.torneo?.nome) nomePerIncontro.set(String(r.id), r.torneo.nome)
+          }
+          for (const t of (tipi ?? []) as Array<{ id: number | string; incontro_id: number | string | null }>) {
+            if (t.incontro_id) {
+              const a = map.get(String(t.id))
+              if (a) a.torneo_nome = nomePerIncontro.get(String(t.incontro_id)) ?? null
+            }
           }
         }
       }
@@ -163,6 +186,8 @@ export default function AttivitaInProgramma() {
                     </div>
                     {m.allenamento ? (
                       <div className="allenamento-badge">Allenamento</div>
+                    ) : m.torneo_nome ? (
+                      <div className="torneo-badge">{m.torneo_nome}</div>
                     ) : (
                       <div className="partita-badge">Partita</div>
                     )}

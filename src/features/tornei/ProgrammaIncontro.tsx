@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/auth/useAuth'
@@ -57,17 +58,19 @@ export function BottoneProgramma({
       >
         {etichetta}
       </button>
-      {aperto && (
-        <ModaleProgramma
-          torneo={torneo}
-          m={m}
-          nomi={nomi}
-          compCasa={compCasa}
-          compOspite={compOspite}
-          titolo={titolo}
-          onChiudi={() => setAperto(false)}
-        />
-      )}
+      {aperto &&
+        createPortal(
+          <ModaleProgramma
+            torneo={torneo}
+            m={m}
+            nomi={nomi}
+            compCasa={compCasa}
+            compOspite={compOspite}
+            titolo={titolo}
+            onChiudi={() => setAperto(false)}
+          />,
+          document.body,
+        )}
     </>
   )
 }

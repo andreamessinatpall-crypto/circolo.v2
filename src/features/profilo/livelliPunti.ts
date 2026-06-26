@@ -23,7 +23,7 @@ export const LIVELLI_PUNTI_DEFAULT: LivelloPunti[] = [
   { nome: 'Leggenda', soglia: 1500, colore: '#7C4DFF', img: null },
 ]
 
-const PALETTE = ['#A8702F', '#9AA3A0', '#E0A83A', '#2E9E6B', '#7C4DFF', '#3A7BD5', '#C0392B', '#16A085']
+export const PALETTE = ['#A8702F', '#9AA3A0', '#E0A83A', '#2E9E6B', '#7C4DFF', '#3A7BD5', '#C0392B', '#16A085']
 
 // Normalizza una lista di livelli (come la v1): nomi non vuoti, soglie intere
 // ≥ 0, colori validi, ordinati per soglia; il primo livello parte sempre da 0.

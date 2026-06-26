@@ -40,7 +40,7 @@ export default function SlotImmagine({
 }: {
   etichetta: string
   img: string | null
-  colore: string
+  colore?: string
   onCarica: (e: ChangeEvent<HTMLInputElement>) => void
   onRimuovi: () => void
 }) {
@@ -50,7 +50,7 @@ export default function SlotImmagine({
       <div className="flex items-center gap-1.5">
         <span
           className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border border-black/10"
-          style={img ? undefined : { background: colore }}
+          style={img ? undefined : { background: colore ?? '#2E9E6B' }}
         >
           {img && <img src={img} alt="" className="h-full w-full object-cover" />}
         </span>

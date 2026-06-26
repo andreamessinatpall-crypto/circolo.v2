@@ -144,8 +144,8 @@ export default function ModificaGiocatore({
             <label>Sport preferito</label>
             <select className={classiInput} {...register('sport_preferito')}>
               <option value="entrambi">Padel e Calcio</option>
-              <option value="padel">Solo Padel</option>
-              <option value="calcio">Solo Calcio</option>
+              <option value="padel">Padel</option>
+              <option value="calcio">Calcio</option>
             </select>
           </div>
 

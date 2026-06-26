@@ -6,17 +6,20 @@ import RegisterPage from '@/pages/RegisterPage'
 import BloccoPage from '@/pages/BloccoPage'
 import AppShell from '@/pages/AppShell'
 import ProfiloPage from '@/features/profilo/ProfiloPage'
-import PadelPage from '@/features/prenotazioni/PadelPage'
-import CalcioPage from '@/features/prenotazioni/CalcioPage'
+import PrenotaPage from '@/features/prenotazioni/PrenotaPage'
 import TorneiPage from '@/features/tornei/TorneiPage'
 import PremiPage from '@/features/premi/PremiPage'
-import SegreteriaPage from '@/features/segreteria/SegreteriaPage'
+import SociPage from '@/features/segreteria/SociPage'
+import ImpostazioniPage from '@/features/segreteria/ImpostazioniPage'
+import GestionePrenotazioni from '@/features/segreteria/GestionePrenotazioni'
+import StatistichePage from '@/features/segreteria/StatistichePage'
+import { puoGestirePrenotazioni } from '@/auth/ruoli'
 
 // Manda l'utente alla sua schermata di partenza:
 // l'admin alla Segreteria, il socio al Profilo.
 function RedirezioneIniziale() {
   const { profilo } = useAuth()
-  return <Navigate to={profilo?.is_admin ? '/segreteria' : '/profilo'} replace />
+  return <Navigate to={profilo?.is_admin ? '/prenotazioni' : '/profilo'} replace />
 }
 
 // Mostra la schermata giusta in base allo stato di autenticazione.
@@ -41,12 +44,16 @@ function App() {
     <Routes>
       <Route element={<AppShell />}>
         <Route path="/profilo" element={<ProfiloPage />} />
-        <Route path="/padel" element={<PadelPage />} />
-        <Route path="/calcio" element={<CalcioPage />} />
+        <Route path="/prenota" element={<PrenotaPage />} />
         <Route path="/tornei" element={<TorneiPage />} />
         <Route path="/premi" element={<PremiPage />} />
-        {profilo?.is_admin && (
-          <Route path="/segreteria" element={<SegreteriaPage />} />
+        {profilo?.is_admin && <Route path="/soci" element={<SociPage />} />}
+        {profilo?.is_admin && <Route path="/impostazioni" element={<ImpostazioniPage />} />}
+        {profilo && puoGestirePrenotazioni(profilo) && (
+          <Route path="/prenotazioni" element={<GestionePrenotazioni />} />
+        )}
+        {profilo && puoGestirePrenotazioni(profilo) && (
+          <Route path="/statistiche" element={<StatistichePage />} />
         )}
         <Route path="*" element={<RedirezioneIniziale />} />
       </Route>

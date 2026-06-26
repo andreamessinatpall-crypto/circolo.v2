@@ -268,14 +268,13 @@ function RigaRisultato({
         {dPren ? (
           // C'è una prenotazione: mostro data (e l'ora se non ancora disputata).
           <span className={'chip-data' + (disputata ? '' : ' prog')}>
-            {(disputata ? 'Giocata · ' : '📅 ') +
+            {(disputata ? '' : '📅 ') +
               dPren.toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'long' }) +
               ' · ' +
               dPren.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
           </span>
         ) : m.data_disputata ? (
           <span className="chip-data">
-            Giocata ·{' '}
             {new Date(m.data_disputata + 'T00:00:00').toLocaleDateString('it-IT', {
               weekday: 'short',
               day: 'numeric',
@@ -315,12 +314,15 @@ function RigaRisultato({
         </div>
       )}
 
-      {gestore &&
-        (torneo.sport === 'padel' ? (
+      {gestore && dPren ? (
+        torneo.sport === 'padel' ? (
           <EditorPadel m={m} salva={salva.mutate} inSalvataggio={salva.isPending} />
         ) : (
           <EditorCalcio m={m} salva={salva.mutate} inSalvataggio={salva.isPending} />
-        ))}
+        )
+      ) : gestore && !dPren ? (
+        <p className="match-avviso">Programma l'incontro prima di inserire il risultato.</p>
+      ) : null}
     </div>
   )
 }
@@ -337,13 +339,10 @@ function EditorCalcio({
 }) {
   const [casa, setCasa] = useState(m.punti_casa == null ? '' : String(m.punti_casa))
   const [ospite, setOspite] = useState(m.punti_ospite == null ? '' : String(m.punti_ospite))
-  const [data, setData] = useState(m.data_disputata ?? '')
 
   function onSalva() {
-    const patch: Partial<Incontro> = { data_disputata: data || null }
-    // Entrambi vuoti = azzero il risultato (la data resta).
     if (casa.trim() === '' && ospite.trim() === '') {
-      salva({ ...patch, punti_casa: null, punti_ospite: null })
+      salva({ punti_casa: null, punti_ospite: null })
       return
     }
     const a = parseInt(casa, 10)
@@ -352,7 +351,7 @@ function EditorCalcio({
       window.alert('Inserisci due punteggi validi (numeri ≥ 0).')
       return
     }
-    salva({ ...patch, punti_casa: a, punti_ospite: b })
+    salva({ punti_casa: a, punti_ospite: b })
   }
 
   return (
@@ -372,8 +371,6 @@ function EditorCalcio({
         value={ospite}
         onChange={(e) => setOspite(e.target.value)}
       />
-      <label className="mini">Giocata il</label>
-      <input type="date" value={data} onChange={(e) => setData(e.target.value)} />
       <button type="button" className="btn btn-secondario" onClick={onSalva} disabled={inSalvataggio}>
         Salva
       </button>
@@ -398,7 +395,6 @@ function EditorPadel({
       ? m.set_punteggi.map((s) => ({ casa: String(s.casa), ospite: String(s.ospite) }))
       : [{ casa: '', ospite: '' }]
   const [sets, setSets] = useState<RigaSet[]>(iniziali)
-  const [data, setData] = useState(m.data_disputata ?? '')
 
   const aggiorna = (i: number, campo: 'casa' | 'ospite', val: string) =>
     setSets((prev) => prev.map((r, j) => (j === i ? { ...r, [campo]: val } : r)))
@@ -406,11 +402,9 @@ function EditorPadel({
   const aggiungiSet = () => setSets((prev) => [...prev, { casa: '', ospite: '' }])
 
   function onSalva() {
-    const patch: Partial<Incontro> = { data_disputata: data || null }
     const nonVuoti = sets.filter((s) => s.casa.trim() !== '' || s.ospite.trim() !== '')
-    // Tutti vuoti = azzero il risultato (la data resta).
     if (!nonVuoti.length) {
-      salva({ ...patch, punti_casa: null, punti_ospite: null, set_punteggi: null })
+      salva({ punti_casa: null, punti_ospite: null, set_punteggi: null })
       return
     }
     const validi: SetPunteggio[] = []
@@ -432,7 +426,7 @@ function EditorPadel({
       window.alert('Risultato in parità di set: nel padel deve esserci una coppia vincitrice.')
       return
     }
-    salva({ ...patch, punti_casa: v.casa, punti_ospite: v.ospite, set_punteggi: validi })
+    salva({ punti_casa: v.casa, punti_ospite: v.ospite, set_punteggi: validi })
   }
 
   return (
@@ -472,8 +466,6 @@ function EditorPadel({
           </div>
         ))}
       </div>
-      <label className="mini">Giocata il</label>
-      <input type="date" value={data} onChange={(e) => setData(e.target.value)} />
       <button type="button" className="btn btn-secondario" onClick={onSalva} disabled={inSalvataggio}>
         Salva
       </button>

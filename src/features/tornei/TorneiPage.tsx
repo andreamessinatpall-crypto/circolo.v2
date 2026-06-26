@@ -33,6 +33,8 @@ export default function TorneiPage() {
   const { profilo } = useAuth()
   const torneiQuery = useTornei()
   const [sel, setSel] = useState<string | null>(null)
+  // null = lista conclusi, stringa = id del concluso aperto
+  const [selConcluso, setSelConcluso] = useState<string | null>(null)
 
   if (!profilo) return null
   if (torneiQuery.isLoading) return <p className="sub">Caricamento…</p>
@@ -51,17 +53,25 @@ export default function TorneiPage() {
   const visibili = gestore
     ? d.tornei
     : d.tornei.filter((t) => d.assegnati[String(t.id)]?.has(profilo.id))
-  const attivi = visibili.filter((t) => t.stato !== 'concluso')
 
+  const attivi   = visibili.filter((t) => t.stato !== 'concluso')
+  const conclusi = visibili.filter((t) => t.stato === 'concluso')
+
+  // Voci nav: tornei attivi + tab fissa "Conclusi" + "Nuovo" per gestori.
   const voci = attivi.map((t) => ({ id: String(t.id), label: iconaSport(t.sport) + ' ' + t.nome }))
   if (gestore) voci.push({ id: 'nuovo', label: '＋ Nuovo torneo' })
 
-  if (voci.length === 0) {
-    return <p className="sub">Non sei iscritto a nessun torneo al momento.</p>
-  }
+  const mostraConclusi = sel === '__conclusi__'
+  const selCorrente = sel && (mostraConclusi || voci.some((v) => v.id === sel))
+    ? sel
+    : voci[0]?.id ?? '__conclusi__'
+  const torneoSel = attivi.find((t) => String(t.id) === selCorrente)
 
-  const selCorrente = sel && voci.some((v) => v.id === sel) ? sel : voci[0].id
-  const torneoSel = visibili.find((t) => String(t.id) === selCorrente)
+  // Torneo concluso aperto nel dettaglio.
+  const torneoConcluso = conclusi.find((t) => String(t.id) === selConcluso)
+
+  const fmt = (s: string) =>
+    new Date(s + 'T00:00:00').toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' })
 
   return (
     <div>
@@ -76,9 +86,65 @@ export default function TorneiPage() {
             {v.label}
           </button>
         ))}
+        {/* Tab fissa Conclusi — sempre visibile se ci sono conclusi o se è admin */}
+        {(conclusi.length > 0 || gestore) && (
+          <button
+            type="button"
+            className={'subtab-btn concluso' + (mostraConclusi ? ' attivo' : '')}
+            onClick={() => { setSel('__conclusi__'); setSelConcluso(null) }}
+          >
+            Conclusi
+          </button>
+        )}
       </nav>
 
-      {selCorrente === 'nuovo' ? (
+      {mostraConclusi ? (
+        torneoConcluso ? (
+          /* Dettaglio torneo concluso */
+          <div>
+            <button
+              type="button"
+              className="btn btn-secondario btn-mini !mt-0 mb-4"
+              onClick={() => setSelConcluso(null)}
+            >
+              ← Tutti i conclusi
+            </button>
+            <DettaglioTorneo torneo={torneoConcluso} gestore={gestore} dati={d} />
+          </div>
+        ) : (
+          /* Lista tornei conclusi */
+          conclusi.length === 0 ? (
+            <p className="sub">
+              {gestore
+                ? 'Nessun torneo concluso. Quando un torneo viene marcato "Concluso" apparirà qui.'
+                : 'Non hai partecipato a nessun torneo concluso.'}
+            </p>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {conclusi.map((t) => {
+                let periodo = ''
+                if (t.data_inizio && t.data_fine) periodo = fmt(t.data_inizio) + ' – ' + fmt(t.data_fine)
+                else if (t.data_inizio) periodo = 'dal ' + fmt(t.data_inizio)
+                else if (t.data_fine) periodo = 'fino al ' + fmt(t.data_fine)
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    className="torneo-concluso-riga"
+                    onClick={() => setSelConcluso(String(t.id))}
+                  >
+                    <span className="torneo-concluso-nome">
+                      {iconaSport(t.sport)} {t.nome}
+                    </span>
+                    {periodo && <span className="torneo-concluso-periodo">{periodo}</span>}
+                    <span className="torneo-concluso-arrow">›</span>
+                  </button>
+                )
+              })}
+            </div>
+          )
+        )
+      ) : selCorrente === 'nuovo' ? (
         <NuovoTorneo onCreato={(id) => setSel(String(id))} />
       ) : torneoSel ? (
         <DettaglioTorneo torneo={torneoSel} gestore={gestore} dati={d} />

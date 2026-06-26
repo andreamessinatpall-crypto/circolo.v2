@@ -339,6 +339,32 @@
     transform: translateY(-1px);
   }
 
+  /* Riflesso "specchio" dorato che scorre (stesso effetto di .btn-riscatta),
+     da abbinare a un CTA come "Entra in campo" / "Crea account". Sfondo oro
+     UNIFORME (niente gradiente) così il riflesso risalta di più. */
+  .btn-riflesso {
+    position: relative;
+    overflow: hidden;
+    background: #FFD700;
+    color: var(--v900);
+  }
+  .btn-riflesso:hover:not(:disabled) {
+    background: #FFE033;
+    color: var(--v900);
+  }
+  .btn-riflesso::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -60%;
+    width: 38%;
+    height: 100%;
+    background: linear-gradient(105deg, transparent, rgba(255, 255, 255, 0.75), transparent);
+    transform: skewX(-20deg);
+    animation: brilla-oro 3.5s ease-in-out infinite;
+    pointer-events: none;
+  }
+
   /* Pulsante piccolo (per le righe di lista) */
   .btn-mini {
     padding: 7px 16px;
@@ -429,6 +455,468 @@
     color: #fff;
     border-color: var(--v700);
   }
+  .subtab-btn.concluso {
+    color: var(--ink3);
+    border-color: var(--border);
+    border-style: dashed;
+  }
+  .subtab-btn.concluso:hover {
+    color: var(--ink2);
+    border-color: var(--ink3);
+    background: transparent;
+  }
+  .subtab-btn.concluso.attivo {
+    background: var(--ink3);
+    border-color: var(--ink3);
+    border-style: solid;
+    color: #fff;
+  }
+
+  /* Lista righe tornei conclusi */
+  .torneo-concluso-riga {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 14px;
+    padding: 14px 18px;
+    text-align: left;
+    cursor: pointer;
+    transition: border-color 0.14s, background 0.14s;
+  }
+  .torneo-concluso-riga:hover {
+    border-color: var(--v300);
+    background: var(--v050);
+  }
+  .torneo-concluso-nome {
+    flex: 1;
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--ink);
+  }
+  .torneo-concluso-periodo {
+    font-size: 0.78rem;
+    color: var(--ink3);
+  }
+  .torneo-concluso-arrow {
+    font-size: 1.1rem;
+    color: var(--ink3);
+    line-height: 1;
+  }
+
+  /* ════ Dashboard Statistiche ════ */
+  .stat-page {
+    padding-bottom: 48px;
+  }
+  .stat-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    padding: 80px 0;
+    color: var(--ink3);
+    font-family: var(--font-display);
+    font-size: 0.9rem;
+  }
+  .stat-loading-spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid var(--border2);
+    border-top-color: #0d9488;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Header pagina */
+  .stat-header {
+    margin-bottom: 22px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border2);
+  }
+  .stat-header-titolo {
+    font-family: var(--font-display);
+    font-size: 1.7rem;
+    font-weight: 900;
+    letter-spacing: -0.025em;
+    color: var(--v900);
+  }
+  .stat-header-sub {
+    font-size: 0.76rem;
+    color: var(--ink3);
+    margin-top: 2px;
+  }
+
+  /* ── Hero: 3 card grandi in cima ── */
+  .stat-hero {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 28px;
+  }
+  .stat-hero-card {
+    position: relative;
+    border: none;
+    border-radius: 20px;
+    padding: 22px 20px 18px;
+    text-align: left;
+    cursor: pointer;
+    overflow: hidden;
+    transition: transform 0.14s, box-shadow 0.14s;
+  }
+  .stat-hero-card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 85% 15%, rgba(255,255,255,0.22) 0%, transparent 55%);
+    pointer-events: none;
+  }
+  .stat-hero-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.22);
+  }
+  .stat-hero-card.teal   { background: linear-gradient(135deg, #0d9488 0%, #0891b2 100%); color: #fff; }
+  .stat-hero-card.indigo { background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); color: #fff; }
+  .stat-hero-card.amber  { background: linear-gradient(135deg, #d97706 0%, #b45309 100%); color: #fff; }
+  .stat-hero-val {
+    font-family: var(--font-display);
+    font-size: 3.2rem;
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: -0.03em;
+    margin-bottom: 6px;
+  }
+  .stat-hero-lbl {
+    font-size: 0.8rem;
+    font-weight: 600;
+    opacity: 0.85;
+    white-space: nowrap;
+  }
+  .stat-hero-delta {
+    margin-top: 10px;
+    font-size: 0.73rem;
+    font-weight: 700;
+    opacity: 0.92;
+  }
+  .stat-hero-delta.up   { color: #86efac; }
+  .stat-hero-delta.down { color: #fca5a5; }
+  .stat-hero-caret {
+    position: absolute;
+    right: 14px;
+    bottom: 14px;
+    font-size: 1.3rem;
+    opacity: 0.35;
+  }
+
+  /* ── Sezione sub-header ── */
+  .stat-sezione {
+    margin-bottom: 28px;
+  }
+  .stat-sezione-header {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-family: var(--font-display);
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    color: var(--ink3);
+    margin-bottom: 10px;
+  }
+  .stat-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .stat-dot.teal   { background: #0d9488; }
+  .stat-dot.purple { background: #7c3aed; }
+
+  /* ── Card grid ── */
+  .stat-griglia {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 10px;
+  }
+  .stat-card2 {
+    position: relative;
+    background: #fff;
+    border: 1px solid var(--border2);
+    border-top-width: 3px;
+    border-radius: 14px;
+    padding: 20px 14px 32px;
+    text-align: center;
+    transition: transform 0.12s, box-shadow 0.12s;
+    cursor: default;
+  }
+  /* le combo card non hanno la freccia assoluta in basso: reset padding */
+  .stat-card2.stat-combo {
+    padding: 16px 14px 16px;
+    text-align: left;
+  }
+  .stat-card2.click {
+    cursor: pointer;
+  }
+  .stat-card2.click:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 18px rgba(0,0,0,0.10);
+  }
+  .stat-card2.teal   { border-top-color: #0d9488; }
+  .stat-card2.indigo { border-top-color: #4f46e5; }
+  .stat-card2.purple { border-top-color: #7c3aed; }
+  .stat-card2.verde  { border-top-color: #16a34a; }
+  .stat-card2.amber  { border-top-color: #d97706; }
+  .stat-card2.sky    { border-top-color: #0284c7; }
+  .stat-card2.rose   { border-top-color: #e11d48; }
+  .stat-card2-val {
+    font-family: var(--font-display);
+    font-size: 2rem;
+    font-weight: 800;
+    line-height: 1.1;
+    color: var(--v800);
+    white-space: nowrap;
+  }
+  .stat-card2-val.s {
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1.35;
+    white-space: normal;
+  }
+  .stat-card2-lbl {
+    font-size: 0.67rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--ink3);
+    margin-top: 3px;
+  }
+  .stat-card2-arr {
+    position: absolute;
+    bottom: 9px;
+    right: 11px;
+    font-size: 0.95rem;
+    color: var(--ink3);
+    opacity: 0.4;
+  }
+
+  /* ── Combo card (span 2 colonne, numeri prominenti) ── */
+  .stat-combo {
+    grid-column: span 2;
+  }
+  .stat-combo-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .stat-combo-arr {
+    font-size: 1rem;
+    color: var(--ink3);
+    opacity: 0.4;
+    flex-shrink: 0;
+  }
+  .stat-combo-row {
+    display: flex;
+  }
+  .stat-combo-slot {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 4px 8px 2px;
+    border-right: 1px solid var(--border2);
+  }
+  .stat-combo-slot:last-child {
+    border-right: none;
+  }
+  .stat-combo-slot-n {
+    font-family: var(--font-display);
+    font-size: 1.9rem;
+    font-weight: 900;
+    line-height: 1;
+    color: var(--v800);
+  }
+  .stat-combo-slot-lbl {
+    font-size: 0.64rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--ink3);
+    margin-top: 5px;
+    white-space: nowrap;
+  }
+
+  /* ── Overlay / Modale ── */
+  .stat-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    background: rgba(0,0,0,0.48);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    animation: stat-fade 0.15s ease;
+  }
+  @keyframes stat-fade {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  .stat-modale {
+    position: relative;
+    background: #fff;
+    border-radius: 22px;
+    padding: 30px 28px 26px;
+    width: 100%;
+    max-width: 500px;
+    max-height: 88vh;
+    overflow-y: auto;
+    animation: stat-up 0.18s cubic-bezier(.22,.88,.26,1);
+  }
+  @keyframes stat-up {
+    from { transform: translateY(14px); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+  }
+  .stat-modale-x {
+    position: absolute;
+    right: 14px;
+    top: 14px;
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: var(--ink3);
+    cursor: pointer;
+    line-height: 1;
+    padding: 2px 7px;
+    border-radius: 8px;
+    transition: background 0.1s, color 0.1s;
+  }
+  .stat-modale-x:hover { background: var(--surface); color: var(--ink); }
+  .stat-modal-head {
+    margin-bottom: 20px;
+  }
+  .stat-modal-titolo {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--ink3);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 4px;
+  }
+  .stat-modal-kpi {
+    font-family: var(--font-display);
+    font-size: 3.4rem;
+    font-weight: 900;
+    color: var(--v800);
+    line-height: 1;
+    letter-spacing: -0.03em;
+  }
+  .stat-modal-sub {
+    font-size: 0.82rem;
+    color: var(--ink3);
+    margin-top: 4px;
+  }
+  .stat-modal-delta {
+    font-size: 0.88rem;
+    font-weight: 700;
+    margin: 0 0 16px;
+  }
+  .stat-modal-delta.up   { color: #16a34a; }
+  .stat-modal-delta.down { color: #e11d48; }
+
+  /* ── Bar chart ── */
+  .stat-chart {
+    margin-top: 4px;
+  }
+  .stat-chart-titolo {
+    font-family: var(--font-display);
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--ink3);
+    margin-bottom: 12px;
+  }
+  .stat-chart-riga {
+    display: grid;
+    grid-template-columns: 76px 1fr 62px;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 9px;
+  }
+  .stat-chart-lbl {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--ink2);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .stat-chart-track {
+    height: 10px;
+    border-radius: 999px;
+    background: var(--border2);
+    overflow: hidden;
+  }
+  .stat-chart-fill {
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #0d9488, #0891b2);
+    min-width: 2px;
+    transition: width 0.6s cubic-bezier(.22,.88,.26,1);
+  }
+  .stat-chart-val {
+    font-size: 0.76rem;
+    font-weight: 700;
+    color: var(--ink);
+    text-align: right;
+    white-space: nowrap;
+  }
+  .stat-chart-perc {
+    font-weight: 500;
+    color: var(--ink3);
+  }
+
+  /* ── Progress bar ── */
+  .stat-progress {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-top: 16px;
+  }
+  .stat-progress-track {
+    flex: 1;
+    height: 16px;
+    border-radius: 999px;
+    background: var(--border2);
+    overflow: hidden;
+  }
+  .stat-progress-fill {
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #0d9488, #0891b2);
+    min-width: 4px;
+    transition: width 0.7s cubic-bezier(.22,.88,.26,1);
+  }
+  .stat-progress-num {
+    font-family: var(--font-display);
+    font-size: 1.4rem;
+    font-weight: 900;
+    color: var(--v800);
+    min-width: 52px;
+    text-align: right;
+  }
+
+  /* responsive: hero a colonna singola su mobile */
+  @media (max-width: 600px) {
+    .stat-hero { grid-template-columns: 1fr; }
+    .stat-hero-val { font-size: 2.4rem; }
+  }
 
   /* Avatar */
   .avatar {
@@ -500,16 +988,22 @@
     z-index: 1;
     flex: 1 1 auto;
     display: flex;
+    flex-wrap: nowrap;
     justify-content: center;
     align-items: center;
     gap: 4px;
     overflow-x: auto;
     scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    /* padding laterale per non tagliare la prima/ultima tab su mobile */
+    padding: 0 8px;
   }
   .header-tabs::-webkit-scrollbar {
     display: none;
   }
   .header-tab {
+    flex-shrink: 0;
+    white-space: nowrap;
     font-family: var(--font-display);
     text-transform: uppercase;
     letter-spacing: 0.08em;
@@ -1116,9 +1610,9 @@
     font-size: 0.8rem;
     letter-spacing: 0.03em;
     text-transform: uppercase;
-    color: #3a2a06;
-    background: linear-gradient(135deg, #f6df97, #c8972f 55%, #a9781f);
-    box-shadow: 0 3px 10px rgba(176, 137, 60, 0.35);
+    color: var(--v900);
+    background: #FFD700;
+    box-shadow: 0 3px 10px rgba(220, 180, 0, 0.4);
     cursor: pointer;
   }
   .btn-riscatta::after {
@@ -1239,6 +1733,34 @@
     border: 1px solid rgba(20, 83, 42, 0.28);
     border-radius: 999px;
     padding: 3px 10px;
+  }
+  .torneo-badge {
+    position: relative;
+    overflow: hidden;
+    display: inline-block;
+    margin-top: 6px;
+    font-size: 0.7rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--v900);
+    background: #FFD700;
+    border: none;
+    border-radius: 999px;
+    padding: 3px 10px;
+    box-shadow: 0 2px 8px rgba(220, 180, 0, 0.4);
+  }
+  .torneo-badge::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -60%;
+    width: 38%;
+    height: 100%;
+    background: linear-gradient(105deg, transparent, rgba(255, 255, 255, 0.75), transparent);
+    transform: skewX(-20deg);
+    animation: brilla-oro 3.5s ease-in-out infinite;
+    pointer-events: none;
   }
   .chips {
     display: flex;
@@ -1641,14 +2163,14 @@
     color: #1a1a1a;
   }
 
-  /* (Fase 6c) Nome squadra/coppia evidenziato su fondo ottone. */
+  /* (Fase 6c) Nome squadra/coppia evidenziato su fondo giallo brillante. */
   .chip-squadra {
     display: inline-block;
     padding: 3px 11px;
     border-radius: 999px;
-    background: linear-gradient(135deg, var(--g300), var(--g400));
-    border: 1px solid var(--g500);
-    color: var(--v900);
+    background: #FFD700;
+    border: 1px solid #c8a800;
+    color: #3a2800;
     font-family: var(--font-display);
     font-weight: 700;
     letter-spacing: 0.01em;
@@ -2200,6 +2722,12 @@
   }
   .match-prog button {
     margin-top: 0;
+  }
+  .match-avviso {
+    margin: 8px 0 0;
+    font-size: 0.78rem;
+    color: var(--ink3);
+    font-style: italic;
   }
 
   /* (Fase 6e) Loghi squadre di calcio, accanto al nome */
