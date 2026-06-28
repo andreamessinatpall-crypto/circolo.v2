@@ -301,24 +301,28 @@ function CampoGriglia({
 
             if (p) {
               // Slot occupato da una prenotazione.
-              const tipo = p.incontro_id ? 'torneo' : p.allenamento ? 'allenamento' : 'partita'
-              const labelTipo = p.incontro_id ? 'Torneo' : p.allenamento ? 'Allenamento' : null
+              const eTorneo = !!(p.incontro_id || p.torneo_id)
+              const tipo = eTorneo ? 'torneo' : p.allenamento ? 'allenamento' : 'partita'
+              const labelTorneo = eTorneo ? (p.torneo_nome ?? 'Torneo') : null
+              const labelTipo = labelTorneo ?? (p.allenamento ? 'Allenamento' : null)
               if (passato) {
                 classe += ' occupato tipo-' + tipo
                 chi = labelTipo ?? (isAdmin ? p.etichetta ?? 'Prenotato' : mio ? 'Tua' : 'Prenotato')
                 disabilitato = true
-              } else if (mio) {
+              } else if (mio && !eTorneo) {
+                // Gli slot torneo non sono cancellabili dalla griglia: vanno gestiti
+                // dalla pagina del torneo, quindi ricadono sempre nel ramo "occupato".
                 classe += ' mio tipo-' + tipo
                 chi = 'Tua · tocca per annullare'
                 onClick = () => onAnnulla(p, campo, s.inizio)
               } else {
                 classe += ' occupato tipo-' + tipo
-                if (isAdmin) {
+                if (isAdmin && !eTorneo) {
                   classe += ' annullabile'
                   chi = labelTipo ?? (p.etichetta ?? 'Prenotato')
                   onClick = () => onAnnulla(p, campo, s.inizio, p.etichetta ?? undefined)
                 } else {
-                  chi = labelTipo ?? 'Prenotato'
+                  chi = labelTipo ?? (isAdmin ? p.etichetta ?? 'Prenotato' : 'Prenotato')
                   disabilitato = true
                 }
               }
@@ -350,6 +354,11 @@ function CampoGriglia({
                   {oraLocale(s.inizio)}–{oraLocale(s.fine)}
                 </span>
                 <span className="chi">{chi}</span>
+                {p?.giocatori_torneo && (
+                  <span className="sub" style={{ fontSize: '0.72em', lineHeight: 1.3, whiteSpace: 'normal' }}>
+                    {p.giocatori_torneo}
+                  </span>
+                )}
               </button>
             )
           })}

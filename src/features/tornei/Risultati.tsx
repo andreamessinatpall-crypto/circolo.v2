@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { messaggioErrore } from '@/lib/errori'
@@ -18,6 +18,7 @@ import {
   squadreDelGirone,
   unitaTorneo,
 } from './gironi'
+import { SIMBOLO_ANDATA, SIMBOLO_RITORNO } from './eliminazione'
 import { assegnaPuntiPartita, assegnaPuntiVittoriaAuto } from './punti'
 import { NomeSquadra } from './NomeSquadra'
 import { BottoneAnnullaProgrammazione, BottoneProgramma } from './ProgrammaIncontro'
@@ -47,44 +48,105 @@ export default function Risultati({
   gironeFiltro?: number | null
 }) {
   const n = numGironi(torneo)
+  // Tutti i useState prima di qualsiasi return condizionale (Hooks rules)
+  const [giroSel, setGiroSel] = useState<number | null>(null)
+  const [giornataSel, setGiornataSel] = useState<number | null>(null)
 
   if (!incontri.length) {
     return (
       <p className="part-vuoto">
         {gestore
-          ? 'Calendario non ancora generato. Vai in “Gestione torneo” e premi “Genera calendario”.'
+          ? 'Calendario non ancora generato. Vai in "Gestione torneo" e premi "Genera calendario".'
           : 'Calendario non ancora disponibile.'}
       </p>
     )
   }
 
+  // Girone singolo: filtri per giornata
   if (n <= 1) {
+    const giornate = perGiornata(incontri)
+    const incFiltrati =
+      giornataSel != null ? incontri.filter((m) => m.round === giornataSel) : incontri
+    const ar = !!(torneo as { andata_ritorno?: boolean | null }).andata_ritorno
+    const maxRound = giornate.length ? giornate[giornate.length - 1].round : 0
+    const numAndata = ar ? Math.floor(maxRound / 2) : maxRound
+    const etGiornata = (round: number) => {
+      if (!ar) return 'G. ' + round
+      if (round <= numAndata) return 'G. ' + round + ' ' + SIMBOLO_ANDATA
+      return 'G. ' + (round - numAndata) + ' ' + SIMBOLO_RITORNO
+    }
     return (
-      <GironeRisultati
-        torneo={torneo}
-        squadre={squadre}
-        incontri={incontri}
-        gestore={gestore}
-        prenByIncontro={prenByIncontro}
-        miaSquadraId={miaSquadraId}
-        squadreTorneo={squadre}
-        incontriTorneo={incontri}
-        compBySquadra={compBySquadra}
-      />
+      <div>
+        {giornate.length > 1 && (
+          <div className="round-filtri">
+            <button
+              type="button"
+              className={`round-chip${giornataSel === null ? ' attivo' : ''}`}
+              onClick={() => setGiornataSel(null)}
+            >
+              Tutte
+            </button>
+            {giornate.map(({ round }) => (
+              <button
+                key={round}
+                type="button"
+                className={`round-chip${giornataSel === round ? ' attivo' : ''}`}
+                onClick={() => setGiornataSel(giornataSel === round ? null : round)}
+              >
+                {etGiornata(round)}
+              </button>
+            ))}
+          </div>
+        )}
+        <GironeRisultati
+          torneo={torneo}
+          squadre={squadre}
+          incontri={incFiltrati}
+          gestore={gestore}
+          prenByIncontro={prenByIncontro}
+          miaSquadraId={miaSquadraId}
+          squadreTorneo={squadre}
+          incontriTorneo={incontri}
+          compBySquadra={compBySquadra}
+        />
+      </div>
     )
   }
 
-  const gironi =
-    gironeFiltro != null ? [gironeFiltro] : Array.from({ length: n }, (_, i) => i + 1)
+  // Gironi multipli: filtri per girone
+  const filtroAttivo = gironeFiltro ?? giroSel
+  const gironi = filtroAttivo != null ? [filtroAttivo] : Array.from({ length: n }, (_, i) => i + 1)
+  const mostraBottoni = gironeFiltro == null
 
   return (
     <div>
+      {mostraBottoni && (
+        <div className="round-filtri">
+          <button
+            type="button"
+            className={`round-chip${giroSel === null ? ' attivo' : ''}`}
+            onClick={() => setGiroSel(null)}
+          >
+            Tutti
+          </button>
+          {Array.from({ length: n }, (_, i) => i + 1).map((g) => (
+            <button
+              key={g}
+              type="button"
+              className={`round-chip${giroSel === g ? ' attivo' : ''}`}
+              onClick={() => setGiroSel(giroSel === g ? null : g)}
+            >
+              {nomeGirone(torneo, g)}
+            </button>
+          ))}
+        </div>
+      )}
+
       {gironi.map((g) => {
         const sg = squadreDelGirone(torneo, squadre, g)
         return (
           <div key={g}>
-            {/* Con "Tutti" mostro il nome del girone; se è filtrato lo indicano i tasti. */}
-            {gironeFiltro == null && (
+            {filtroAttivo == null && (
               <div className="eyebrow" style={{ marginTop: 18 }}>
                 {nomeGirone(torneo, g)}
               </div>
@@ -140,16 +202,24 @@ function GironeRisultati({
     return <p className="sub">Nessun incontro in questo girone.</p>
   }
 
+  const ar = !!(torneo as { andata_ritorno?: boolean | null }).andata_ritorno
+  const maxRoundG = Math.max(...incontri.map((m) => m.round))
+  const numAndataG = ar ? Math.floor(maxRoundG / 2) : maxRoundG
+
   return (
     <div>
       {perGiornata(incontri).map(({ round, partite }) => {
         const giocate = partite.filter(incontroDisputato).length
+        const numGiornata = ar
+          ? (round <= numAndataG ? round : round - numAndataG)
+          : round
+        const simbolo = ar ? ' ' + (round <= numAndataG ? SIMBOLO_ANDATA : SIMBOLO_RITORNO) : ''
         return (
           <div key={round}>
             <div className="giornata-band">
-              <span className="g-num">{round}</span>
+              <span className="g-num">{numGiornata}</span>
               <div className="g-lab">
-                <b>Giornata</b>
+                <b>{'Giornata' + simbolo}</b>
               </div>
               <span className="g-stato">
                 {giocate === partite.length ? 'Completata' : giocate + '/' + partite.length + ' giocate'}

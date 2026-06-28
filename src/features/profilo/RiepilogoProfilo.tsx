@@ -10,11 +10,13 @@ export default function RiepilogoProfilo() {
   const { profilo } = useAuth()
   const livelliQuery = useLivelliPunti()
 
+  const collaboratore = !!profilo?.is_allenatore && !profilo?.is_admin
+  const istruttore    = !!profilo?.e_allenatore && !profilo?.is_allenatore && !profilo?.is_admin
+
   const stat = useQuery({
     queryKey: ['riepilogo-stat', profilo?.id],
     enabled: !!profilo,
     queryFn: async () => {
-      // Punti e crediti dalla riga del socio (se le colonne non esistono, 0).
       const { data: me } = await supabase
         .from('soci')
         .select('punti, crediti, punti_bloccati, crediti_bloccati')
@@ -23,32 +25,77 @@ export default function RiepilogoProfilo() {
       const punti = me?.punti_bloccati ? 0 : Number(me?.punti) || 0
       const crediti = me?.crediti_bloccati ? 0 : Number(me?.crediti) || 0
 
-      // Posizione in classifica.
       let posizione: number | null = null
       const { data: cls } = await supabase.rpc('classifica_visibile')
       const righe = (cls ?? []) as Array<{ is_me?: boolean; posizione?: number }>
       const mia = righe.find((r) => r.is_me)
       if (mia?.posizione != null) posizione = mia.posizione
 
-      // Attività: amichevoli confermate.
       let attivita: number | null = null
-      const { data: att, error: errAtt } = await supabase
-        .from('partecipanti_amichevole')
-        .select('prenotazione_id')
-        .eq('socio_id', profilo!.id)
-        .eq('confermato', true)
-      if (!errAtt && att) attivita = att.length
+      let prenotazioniOggi: number | null = null
+      let daConfermare: number | null = null
+      let allenamenti: number | null = null
 
-      return { punti, crediti, posizione, attivita }
+      if (collaboratore) {
+        const oggi = new Date()
+        const inizioGiorno = new Date(oggi.getFullYear(), oggi.getMonth(), oggi.getDate()).toISOString()
+        const fineGiorno   = new Date(oggi.getFullYear(), oggi.getMonth(), oggi.getDate() + 1).toISOString()
+        const { count: cOggi } = await supabase
+          .from('prenotazioni')
+          .select('*', { count: 'exact', head: true })
+          .gte('inizio', inizioGiorno)
+          .lt('inizio', fineGiorno)
+        prenotazioniOggi = cOggi ?? 0
+
+        const { data: prenOggi } = await supabase
+          .from('prenotazioni')
+          .select('id')
+          .gte('inizio', inizioGiorno)
+          .lt('inizio', fineGiorno)
+        const ids = (prenOggi ?? []).map((p: { id: number | string }) => p.id)
+        if (ids.length > 0) {
+          const { data: nonConf } = await supabase
+            .from('partecipanti_amichevole')
+            .select('prenotazione_id')
+            .in('prenotazione_id', ids)
+            .eq('confermato', false)
+          daConfermare = new Set((nonConf ?? []).map((r: { prenotazione_id: number | string }) => r.prenotazione_id)).size
+        } else {
+          daConfermare = 0
+        }
+      } else if (istruttore) {
+        const { count: cAll } = await supabase
+          .from('prenotazioni')
+          .select('*', { count: 'exact', head: true })
+          .eq('allenamento', true)
+          .eq('allenatore_id', profilo!.id)
+        allenamenti = cAll ?? 0
+
+        const { data: att, error: errAtt } = await supabase
+          .from('partecipanti_amichevole')
+          .select('prenotazione_id')
+          .eq('socio_id', profilo!.id)
+          .eq('confermato', true)
+        if (!errAtt && att) attivita = att.length
+      } else {
+        const { data: att, error: errAtt } = await supabase
+          .from('partecipanti_amichevole')
+          .select('prenotazione_id')
+          .eq('socio_id', profilo!.id)
+          .eq('confermato', true)
+        if (!errAtt && att) attivita = att.length
+      }
+
+      return { punti, crediti, posizione, attivita, prenotazioniOggi, daConfermare, allenamenti }
     },
   })
 
   if (!profilo) return null
 
-  const punti = stat.data?.punti ?? 0
-  const crediti = stat.data?.crediti ?? 0
+  const punti     = stat.data?.punti ?? 0
+  const crediti   = stat.data?.crediti ?? 0
   const posizione = stat.data?.posizione ?? null
-  const attivita = stat.data?.attivita ?? null
+  const attivita  = stat.data?.attivita ?? null
 
   const livelli = livelliQuery.data ?? LIVELLI_PUNTI_DEFAULT
   const livN = livelloDaPunti(punti, livelli)
@@ -116,8 +163,22 @@ export default function RiepilogoProfilo() {
         <div className="riep-griglia">
           <Stat valore={String(punti)} nome="Punti" />
           <Stat valore={posizione != null ? posizione + 'º' : '—'} nome="Posizione" />
-          <Stat valore={attivita != null ? String(attivita) : '—'} nome="Attività" />
-          <Stat valore={String(crediti)} nome="Crediti" />
+          {collaboratore ? (
+            <>
+              <Stat valore={stat.data?.prenotazioniOggi != null ? String(stat.data.prenotazioniOggi) : '—'} nome="Oggi" />
+              <Stat valore={stat.data?.daConfermare != null ? String(stat.data.daConfermare) : '—'} nome="Da confermare" />
+            </>
+          ) : istruttore ? (
+            <>
+              <Stat valore={attivita != null ? String(attivita) : '—'} nome="Attività" />
+              <Stat valore={stat.data?.allenamenti != null ? String(stat.data.allenamenti) : '—'} nome="Allenamenti" />
+            </>
+          ) : (
+            <>
+              <Stat valore={attivita != null ? String(attivita) : '—'} nome="Attività" />
+              <Stat valore={String(crediti)} nome="Crediti" />
+            </>
+          )}
         </div>
       </div>
 

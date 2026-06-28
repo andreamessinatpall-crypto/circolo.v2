@@ -21,10 +21,13 @@ import {
   gironeSquadra,
   incontriDelGirone,
   numGironi,
+  puntiBase,
   puntiDelGirone,
   squadreDelGirone,
 } from './gironi'
-import type { Componente, Incontro, Squadra, Torneo } from './tipi'
+import { numTurniEliminazione, vincitoreEliminazione } from './eliminazione'
+import { calcolaClassificaAmericano } from './americano'
+import type { AmericanoPartita, Componente, Incontro, Squadra, Torneo } from './tipi'
 
 // Iscrizione: punti al socio in base al girone della sua squadra.
 // Azzera + riassegna, così è sicuro richiamarla anche dopo un cambio di girone.
@@ -100,18 +103,34 @@ export async function assegnaPuntiPartita(
   return esito
 }
 
-// Vittoria torneo AUTOMATICA, un vincitore per ogni girone: quando il
-// calendario di un girone è completo, accredita i punti vittoria di quel girone
-// ai membri della squadra prima nella sua classifica. Se non è (più) completo,
-// azzera l'assegnazione di quel girone. Da richiamare dopo ogni salvataggio.
+// Vittoria torneo AUTOMATICA.
+// - Girone all'italiana: un vincitore per ogni girone (primo in classifica).
+// - Eliminazione diretta: il vincitore della Finale.
+// In entrambi i casi: se la condizione non è (più) soddisfatta, azzera i punti.
 export async function assegnaPuntiVittoriaAuto(
   torneo: Torneo,
   squadre: Squadra[],
   incontri: Incontro[],
   compBySquadra: Record<string, Componente[]>,
 ): Promise<EsitoPunti> {
-  const n = numGironi(torneo)
   let esito: EsitoPunti = { ok: true }
+
+  if (torneo.formato === 'eliminazione') {
+    const chiave = `torneo:${torneo.id}:vittoria:1`
+    const vincId = vincitoreEliminazione(incontri, numTurniEliminazione(squadre.length))
+    if (!vincId) {
+      await azzeraChiave(chiave)
+      return esito
+    }
+    const membri = (compBySquadra[String(vincId)] ?? [])
+      .map((c) => c.socio_id)
+      .filter((x): x is string => !!x)
+    const p = puntiBase(torneo).torneo
+    return assegnaPuntiVittoriaGirone(chiave, torneo, p, membri)
+  }
+
+  // Girone all'italiana: un vincitore per girone.
+  const n = numGironi(torneo)
   for (let g = 1; g <= n; g++) {
     const chiave = `torneo:${torneo.id}:vittoria:${g}`
     const sg = squadreDelGirone(torneo, squadre, g)
@@ -128,7 +147,7 @@ export async function assegnaPuntiVittoriaAuto(
     }
     const membri = (compBySquadra[String(classifica[0].id)] ?? [])
       .map((c) => c.socio_id)
-      .filter((x): x is string => !!x) // esclude i componenti manuali
+      .filter((x): x is string => !!x)
     const p = puntiDelGirone(torneo, g).torneo
     const r = await assegnaPuntiVittoriaGirone(chiave, torneo, p, membri)
     if (!r.ok) esito = r
@@ -150,6 +169,53 @@ async function assegnaPuntiVittoriaGirone(
       socioId: sid,
       punti,
       motivo: 'Vittoria torneo',
+      chiave,
+      dataEvento: torneo.data_inizio,
+      sport: torneo.sport,
+      tipo: 'torneo',
+    })
+    if (!r.ok) esito = r
+  }
+  return esito
+}
+
+// Assegna i punti circolo per un torneo Americano:
+//  - iscrizione: a ogni giocatore registrato (idempotente, già chiamato all'iscrizione)
+//  - posizione: in base alla classifica finale, usando torneo.punti_posizioni
+export async function assegnaPuntiAmericano(
+  torneo: Torneo,
+  giocatori: Squadra[],
+  partite: AmericanoPartita[],
+  compBySquadra: Record<string, Componente[]>,
+): Promise<EsitoPunti> {
+  let esito: EsitoPunti = { ok: true }
+
+  // Iscrizione: ricalcola per tutti i giocatori.
+  for (const g of giocatori) {
+    for (const c of compBySquadra[String(g.id)] ?? []) {
+      if (!c.socio_id) continue
+      const r = await assegnaPuntiIscrizione(torneo, g, c.socio_id)
+      if (!r.ok) esito = r
+    }
+  }
+
+  // Posizione: assegna in base alla classifica finale.
+  const pp = torneo.punti_posizioni ?? {}
+  if (!Object.keys(pp).length || !partite.length) return esito
+
+  const classifica = calcolaClassificaAmericano(giocatori, partite)
+  for (let i = 0; i < classifica.length; i++) {
+    const pos = i + 1
+    const punti = pp[String(pos)] ?? 0
+    const chiave = `americano:${torneo.id}:pos:${pos}:${classifica[i].id}`
+    await azzeraChiave(chiave)
+    if (!punti) continue
+    const comp = compBySquadra[String(classifica[i].id)]?.[0]
+    if (!comp?.socio_id) continue
+    const r = await assegnaMovimento({
+      socioId: comp.socio_id,
+      punti,
+      motivo: `${pos}° posto torneo Americano`,
       chiave,
       dataEvento: torneo.data_inizio,
       sport: torneo.sport,

@@ -30,6 +30,22 @@ export interface Torneo {
   punti_gironi: Record<string, PuntiSet> | null
   durata_minuti: number | null
   max_squadre: number | null
+  // (Tappa 27) Slot unico per tornei Americano: campo + inizio + fine.
+  americano_campo_id: number | string | null
+  americano_inizio: string | null
+  americano_fine: string | null
+  // (Tappa 28) Punti per posizione in classifica (solo americano).
+  // JSON: { "1": 10, "2": 6, "3": 3 }
+  punti_posizioni: Record<string, number> | null
+  // (Tappa 24) Seed del bracket per eliminazione diretta: array di squadra_id|null
+  // di lunghezza = prossima potenza di 2 rispetto alle squadre. null = bye.
+  bracket_seed: (number | string | null)[] | null
+  // (Tappa 31) Modalità andata e ritorno: ogni accoppiamento si gioca due volte.
+  andata_ritorno: boolean | null
+  // (Tappa 31) Solo eliminazione: finale in gara secca anche con andata_ritorno.
+  finale_secca: boolean | null
+  // (Tappa 31) Solo eliminazione: aggiunge la partita per il 3°/4° posto.
+  terzo_posto: boolean | null
 }
 
 export interface Squadra {
@@ -107,6 +123,25 @@ export interface RichiestaIscrizione {
 
 export const FORMATI_TORNEO: Record<string, string> = {
   girone: "Girone all'italiana",
+  eliminazione: 'Eliminazione diretta',
+  americano: 'Americano',
+}
+
+// Partita del formato Americano: 4 giocatori individuali (2 coppie dinamiche per round).
+// p1+p2 (lato "casa") vs p3+p4 (lato "ospite"). I giocatori sono record di squadre
+// con un solo componente ciascuno.
+export interface AmericanoPartita {
+  id: number | string
+  torneo_id: number | string
+  round: number
+  campo: number
+  p1_id: number | string
+  p2_id: number | string
+  p3_id: number | string
+  p4_id: number | string
+  punti_casa: number | null
+  punti_ospite: number | null
+  data_disputata?: string | null
 }
 
 export const SPORT_LABEL: Record<string, string> = { padel: 'Padel', calcio: 'Calcio' }

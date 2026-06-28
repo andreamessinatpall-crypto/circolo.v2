@@ -4,6 +4,7 @@ import { useTornei } from '@/features/tornei/datiTornei'
 import type { DatiTornei } from '@/features/tornei/datiTornei'
 import ClassificaTorneo from '@/features/tornei/ClassificaTorneo'
 import Risultati from '@/features/tornei/Risultati'
+import TabelloneEliminazione from '@/features/tornei/TabelloneEliminazione'
 import Sezione from '@/components/Sezione'
 import { incontroDisputato } from '@/features/tornei/calendario'
 import { numGironi, unitaTorneo } from '@/features/tornei/gironi'
@@ -89,11 +90,8 @@ function CardTorneo({ torneo, dati }: { torneo: Torneo; dati: DatiTornei }) {
 
       {aperto && (
         <div className="torneo-club-body">
-          <Sezione titolo="Classifica">
-            <ClassificaTorneo torneo={torneo} squadre={squadre} incontri={incontri} />
-          </Sezione>
-          <Sezione titolo="Calendario e risultati" apertaIniziale={false}>
-            <Risultati
+          {torneo.formato === 'eliminazione' ? (
+            <TabelloneEliminazione
               torneo={torneo}
               squadre={squadre}
               incontri={incontri}
@@ -101,7 +99,23 @@ function CardTorneo({ torneo, dati }: { torneo: Torneo; dati: DatiTornei }) {
               prenByIncontro={dati.prenByIncontro}
               compBySquadra={dati.perSquadraComp}
             />
-          </Sezione>
+          ) : (
+            <>
+              <Sezione titolo="Classifica">
+                <ClassificaTorneo torneo={torneo} squadre={squadre} incontri={incontri} />
+              </Sezione>
+              <Sezione titolo="Calendario e risultati" apertaIniziale={false}>
+                <Risultati
+                  torneo={torneo}
+                  squadre={squadre}
+                  incontri={incontri}
+                  gestore={false}
+                  prenByIncontro={dati.prenByIncontro}
+                  compBySquadra={dati.perSquadraComp}
+                />
+              </Sezione>
+            </>
+          )}
         </div>
       )}
     </div>

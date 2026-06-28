@@ -22,11 +22,6 @@ function inizioSettimana(): string {
   const dow = (d.getDay() + 6) % 7
   return new Date(d.getFullYear(), d.getMonth(), d.getDate() - dow).toISOString()
 }
-function giorni30Fa(): string {
-  const d = new Date()
-  d.setDate(d.getDate() - 30)
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate()).toISOString()
-}
 
 const MESI = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic']
 const DOW = ['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab']
@@ -41,15 +36,6 @@ type PrenRow = {
   campo_id: string | number | null
   allenamento: boolean | null
   incontro_id: number | string | null
-}
-type SocioRow = {
-  id: string
-  attivo: boolean
-  sport_preferito: string
-  is_admin: boolean
-  is_allenatore: boolean | null
-  e_allenatore: boolean | null
-  created_at?: string | null
 }
 
 // ── Hooks dati ────────────────────────────────────────────────────────────────
@@ -108,6 +94,19 @@ function useStatPren() {
         .sort((a, b) => b[1] - a[1])
         .map(([id, n]) => ({ nome: campiById.get(id) ?? 'Campo ' + id, count: n }))
 
+      const oraCount = new Map<number, number>()
+      for (const p of mese) {
+        const h = new Date(p.inizio).getHours()
+        oraCount.set(h, (oraCount.get(h) ?? 0) + 1)
+      }
+      const oraRanking = [...oraCount.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .map(([h, n]) => ({
+          label: `${String(h).padStart(2, '0')}:00–${String(h + 1).padStart(2, '0')}:00`,
+          count: n,
+        }))
+      const fasciaTop = oraRanking[0]?.label ?? '—'
+
       const giornoTop = dowOrd.reduce((a, b) => b.count > a.count ? b : a, dowOrd[0])
       const oreAnno = lista.reduce(
         (acc, p) => acc + (new Date(p.fine).getTime() - new Date(p.inizio).getTime()) / 3600000, 0)
@@ -123,6 +122,8 @@ function useStatPren() {
         torneoCount,
         partite: mese.length - allenamenti - torneoCount,
         campoTop: campiRanking[0]?.nome ?? '—',
+        fasciaTop,
+        oraRanking,
         giornoTop: giornoTop?.label ?? '—',
         percConferma: totaliPart > 0 ? Math.round(confermati / totaliPart * 100) : null,
         confermati,
@@ -139,42 +140,33 @@ function useStatGioc() {
   return useQuery({
     queryKey: ['stat-gioc'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('soci')
-        .select('id, attivo, sport_preferito, is_admin, is_allenatore, e_allenatore, created_at')
+      const { data, error } = await supabase.rpc('stat_giocatori')
       if (error) throw error
-      const soci = (data ?? []) as SocioRow[]
-
-      const { data: prenR } = await supabase.from('prenotazioni').select('id').gte('inizio', giorni30Fa())
-      const prenIds = (prenR ?? []).map(p => p.id)
-      const attiviIds = new Set<string>()
-      if (prenIds.length) {
-        const { data: parts } = await supabase
-          .from('partecipanti_amichevole').select('socio_id').in('prenotazione_id', prenIds)
-        for (const p of parts ?? []) if (p.socio_id) attiviIds.add(p.socio_id)
+      const r = data as {
+        totale: number
+        nuoviMese: number
+        attiviUltimi30: number
+        padel: number
+        calcio: number
+        entrambi: number
+        staff: number
+        adminCount: number
+        collaboratori: number
+        istruttori: number
+        giocatori: number
       }
-
-      const attivi = soci.filter(s => s.attivo)
-      const daInizioMese = inizioMese()
-
-      // Breakdown per ruolo
-      const adminCount     = attivi.filter(s => s.is_admin).length
-      const collaboratori  = attivi.filter(s => !!s.is_allenatore && !s.is_admin).length
-      const istruttori     = attivi.filter(s => !!s.e_allenatore && !s.is_allenatore && !s.is_admin).length
-      const giocatori      = attivi.length - adminCount - collaboratori - istruttori
-
       return {
-        totale: attivi.length,
-        nuoviMese: attivi.filter(s => s.created_at && s.created_at >= daInizioMese).length,
-        attiviUltimi30: attivi.filter(s => attiviIds.has(s.id)).length,
-        padel:   attivi.filter(s => s.sport_preferito === 'padel').length,
-        calcio:  attivi.filter(s => s.sport_preferito === 'calcio').length,
-        entrambi: attivi.filter(s => !s.sport_preferito || (s.sport_preferito !== 'padel' && s.sport_preferito !== 'calcio')).length,
-        staff: attivi.filter(s => s.is_admin || s.is_allenatore || s.e_allenatore).length,
-        giocatori,
-        collaboratori,
-        istruttori,
-        adminCount,
+        totale:        Number(r.totale),
+        nuoviMese:     Number(r.nuoviMese),
+        attiviUltimi30:Number(r.attiviUltimi30),
+        padel:         Number(r.padel),
+        calcio:        Number(r.calcio),
+        entrambi:      Number(r.entrambi),
+        staff:         Number(r.staff),
+        adminCount:    Number(r.adminCount),
+        collaboratori: Number(r.collaboratori),
+        istruttori:    Number(r.istruttori),
+        giocatori:     Number(r.giocatori),
       }
     },
   })
@@ -249,7 +241,7 @@ export default function StatistichePage() {
           {p.percConferma !== null && (
             <Card2 accent="rose" val={p.percConferma + '%'} lbl="Presenze confermate" onClick={() => setModale('presenze')} />
           )}
-          <Card2 accent="amber" val={p.campoTop} lbl="Campo più usato" piccolo onClick={() => setModale('campi')} />
+          <Card2 accent="amber" val={p.fasciaTop} lbl="Fascia più prenotata" piccolo onClick={() => setModale('fasce')} />
           <Card2 accent="sky"   val={p.giornoTop} lbl="Giorno più affollato"     onClick={() => setModale('giorni')} />
         </div>
       </div>
@@ -310,6 +302,13 @@ export default function StatistichePage() {
               <ModaleTitolo titolo="Affollamento per giorno" kpi={p.giornoTop} kpiLabel="giorno di punta" />
               <p className="stat-modal-sub">Prenotazioni nel mese corrente per giorno della settimana</p>
               <BarChart dati={p.dowOrd.map(d => ({ label: d.label, val: d.count }))} percentuale />
+            </>
+          )}
+          {modale === 'fasce' && (
+            <>
+              <ModaleTitolo titolo="Prenotazioni per fascia oraria" kpi={p.fasciaTop} kpiLabel="fascia più prenotata" />
+              <BarChart titolo="Distribuzione oraria — mese corrente"
+                dati={p.oraRanking.map(o => ({ label: o.label, val: o.count }))} percentuale />
             </>
           )}
           {modale === 'campi' && (

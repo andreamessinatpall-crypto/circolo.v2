@@ -1,11 +1,14 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/auth/useAuth'
 import { messaggioErrore } from '@/lib/errori'
 import { classiErrore, classiInput, classiOk } from '@/components/stili'
+import NumeroInput from '@/components/NumeroInput'
+import { useCampi } from '@/features/prenotazioni/datiPrenotazioni'
 import { costruisciPuntiGironi, numGironi, puntiBase, puntiGironiArray } from './gironi'
 import { ricalcolaPuntiTorneo } from './punti'
 import EditorPuntiTorneo from './EditorPuntiTorneo'
@@ -47,13 +50,53 @@ export default function ImpostazioniTorneo({
   incontri: Incontro[]
   compBySquadra: Record<string, Componente[]>
 }) {
+  const { profilo } = useAuth()
   const qc = useQueryClient()
+  const campiQuery = useCampi()
+  const isAmericano = torneo.formato === 'americano'
+  const isEliminazione = torneo.formato === 'eliminazione'
   const [aperto, setAperto] = useState(false)
   const [msg, setMsg] = useState<{ tipo: 'ok' | 'errore'; testo: string } | null>(null)
+
+  // Stato locale per il blocco orario americano.
+  const inizioStr = torneo.americano_inizio ? new Date(torneo.americano_inizio) : null
+  const fineStr   = torneo.americano_fine   ? new Date(torneo.americano_fine)   : null
+  const [amCampoId, setAmCampoId] = useState(String(torneo.americano_campo_id ?? ''))
+  const [amData,    setAmData]    = useState(inizioStr ? inizioStr.toISOString().slice(0, 10) : '')
+  const [amOraInizio, setAmOraInizio] = useState(
+    inizioStr ? inizioStr.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', hour12: false }) : ''
+  )
+  const [amOraFine, setAmOraFine] = useState(
+    fineStr ? fineStr.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', hour12: false }) : ''
+  )
+  // Controllo disponibilità slot americano: esclude la prenotazione di questo torneo.
+  const slotDisponibile = useQuery({
+    queryKey: ['am-disponibilita', amCampoId, amData, amOraInizio, amOraFine, torneo.id],
+    enabled: !!(amCampoId && amData && amOraInizio && amOraFine && amOraFine > amOraInizio),
+    queryFn: async () => {
+      const inizio = new Date(`${amData}T${amOraInizio}`).toISOString()
+      const fine   = new Date(`${amData}T${amOraFine}`).toISOString()
+      const { data } = await supabase
+        .from('prenotazioni')
+        .select('id, inizio, fine, torneo_id')
+        .eq('campo_id', Number(amCampoId))
+        .lt('inizio', fine)
+        .gt('fine', inizio)
+      const rows = (data ?? []) as Array<{ id: unknown; inizio: string; fine: string; torneo_id: string | null }>
+      // Escludi la prenotazione di questo stesso torneo.
+      return rows.filter((r) => String(r.torneo_id) !== String(torneo.id))
+    },
+  })
+
   // I punti stanno fuori da react-hook-form (con più gironi sono dinamici).
   const [base, setBase] = useState<PuntiSet>(() => puntiBase(torneo))
   const [gironi, setGironi] = useState<PuntiSet[]>(() => puntiGironiArray(torneo))
   const [puntiTocchi, setPuntiTocchi] = useState(false)
+
+  // (Tappa 31) Opzioni andata/ritorno, finale secca, terzo posto.
+  const [andataRitorno, setAndataRitorno] = useState(!!(torneo as { andata_ritorno?: boolean | null }).andata_ritorno)
+  const [finaleSecca, setFinaleSecca] = useState(!!(torneo as { finale_secca?: boolean | null }).finale_secca)
+  const [terzoPosto, setTerzoPosto] = useState(!!(torneo as { terzo_posto?: boolean | null }).terzo_posto)
 
   const numeroGironi = numGironi(torneo)
 
@@ -86,6 +129,9 @@ export default function ImpostazioniTorneo({
     setBase(puntiBase(torneo))
     setGironi(puntiGironiArray(torneo))
     setPuntiTocchi(false)
+    setAndataRitorno(!!(torneo as { andata_ritorno?: boolean | null }).andata_ritorno)
+    setFinaleSecca(!!(torneo as { finale_secca?: boolean | null }).finale_secca)
+    setTerzoPosto(!!(torneo as { terzo_posto?: boolean | null }).terzo_posto)
     setAperto(true)
   }
 
@@ -93,17 +139,34 @@ export default function ImpostazioniTorneo({
     setMsg(null)
     const puntiGironi = costruisciPuntiGironi(numeroGironi, gironi)
     const baseVal = numeroGironi > 1 ? (gironi[0] ?? base) : base
+
+    let durata = v.durata_minuti
+    if (isAmericano && amOraInizio && amOraFine) {
+      const [hi, mi] = amOraInizio.split(':').map(Number)
+      const [hf, mf] = amOraFine.split(':').map(Number)
+      const diff = (hf * 60 + mf) - (hi * 60 + mi)
+      if (diff > 0) durata = diff
+    }
+
     const payload: Record<string, unknown> = {
       nome: v.nome,
-      data_inizio: v.data_inizio || null,
-      data_fine: v.data_fine || null,
-      durata_minuti: v.durata_minuti,
+      data_inizio: isAmericano ? (amData || null) : (v.data_inizio || null),
+      data_fine:   isAmericano ? (amData || null) : (v.data_fine   || null),
+      durata_minuti: durata,
       max_squadre: v.max_squadre ?? null,
       punti_iscrizione: baseVal.iscrizione,
       punti_vittoria: baseVal.vittoria,
       punti_torneo: baseVal.torneo,
+      andata_ritorno: andataRitorno,
+      finale_secca: isEliminazione ? finaleSecca : false,
+      terzo_posto: isEliminazione ? terzoPosto : false,
     }
     if (puntiGironi) payload.punti_gironi = puntiGironi
+    if (isAmericano) {
+      payload.americano_campo_id = amCampoId ? Number(amCampoId) : null
+      payload.americano_inizio = amData && amOraInizio ? new Date(`${amData}T${amOraInizio}`).toISOString() : null
+      payload.americano_fine   = amData && amOraFine   ? new Date(`${amData}T${amOraFine}`).toISOString()   : null
+    }
 
     const { error } = await supabase.from('tornei').update(payload).eq('id', torneo.id)
 
@@ -123,20 +186,32 @@ export default function ImpostazioniTorneo({
       return
     }
 
+    // Ricrea la prenotazione per il blocco orario americano.
+    if (isAmericano && amCampoId && amData && amOraInizio && amOraFine && profilo) {
+      await supabase.from('prenotazioni').delete().eq('torneo_id', torneo.id)
+      await supabase.from('prenotazioni').insert({
+        campo_id: Number(amCampoId),
+        socio_id: profilo.id,
+        inizio: new Date(`${amData}T${amOraInizio}`).toISOString(),
+        fine:   new Date(`${amData}T${amOraFine}`).toISOString(),
+        torneo_id: torneo.id,
+      })
+    }
+
     // Ricalcola i punti già assegnati con le nuove regole.
     const torneoNuovo: Torneo = {
       ...torneo,
       nome: v.nome,
-      data_inizio: v.data_inizio || null,
-      data_fine: v.data_fine || null,
-      durata_minuti: v.durata_minuti,
+      data_inizio: isAmericano ? (amData || null) : (v.data_inizio || null),
+      data_fine:   isAmericano ? (amData || null) : (v.data_fine   || null),
+      durata_minuti: durata,
       max_squadre: v.max_squadre ?? null,
       punti_iscrizione: baseVal.iscrizione,
       punti_vittoria: baseVal.vittoria,
       punti_torneo: baseVal.torneo,
       punti_gironi: puntiGironi ?? torneo.punti_gironi,
     }
-    await ricalcolaPuntiTorneo(torneoNuovo, squadre, incontri, compBySquadra)
+    if (!isAmericano) await ricalcolaPuntiTorneo(torneoNuovo, squadre, incontri, compBySquadra)
 
     qc.invalidateQueries({ queryKey: ['tornei'] })
     setPuntiTocchi(false)
@@ -180,64 +255,185 @@ export default function ImpostazioniTorneo({
               <input className={classiInput} {...register('nome')} />
               {errors.nome && <p className="mt-1 text-xs text-red-700">{errors.nome.message}</p>}
 
-              <div className="grid grid-cols-2 gap-3">
+              {isAmericano ? (
                 <div>
-                  <label>Data inizio (facoltativa)</label>
-                  <input type="date" max="9999-12-31" className={classiInput} {...register('data_inizio')} />
-                </div>
-                <div>
-                  <label>Data fine (facoltativa)</label>
-                  <input type="date" max="9999-12-31" className={classiInput} {...register('data_fine')} />
-                  {errors.data_fine && (
-                    <p className="mt-1 text-xs text-red-700">{errors.data_fine.message}</p>
+                  <div className="eyebrow mb-2">Data e orario</div>
+                  <label>Campo</label>
+                  <select
+                    className={classiInput}
+                    value={amCampoId}
+                    onChange={(e) => setAmCampoId(e.target.value)}
+                  >
+                    <option value="">— Seleziona campo —</option>
+                    {(campiQuery.data ?? [])
+                      .filter((c) => c.sport === 'padel' && c.in_servizio !== false)
+                      .map((c) => (
+                        <option key={c.id} value={String(c.id)}>{c.nome}</option>
+                      ))}
+                  </select>
+                  <div className="mt-1">
+                    <label>Data</label>
+                    <input
+                      type="date"
+                      max="9999-12-31"
+                      className={classiInput}
+                      value={amData}
+                      onChange={(e) => setAmData(e.target.value)}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 mt-2">
+                    <div>
+                      <label>Orario inizio</label>
+                      <select
+                        className={classiInput}
+                        value={amOraInizio}
+                        onChange={(e) => setAmOraInizio(e.target.value)}
+                      >
+                        <option value="">—</option>
+                        {Array.from({ length: 36 }, (_, i) => {
+                          const h = Math.floor(i / 2) + 6
+                          const m = i % 2 === 0 ? '00' : '30'
+                          const val = `${String(h).padStart(2, '0')}:${m}`
+                          return <option key={val} value={val}>{val}</option>
+                        })}
+                      </select>
+                    </div>
+                    <div>
+                      <label>Orario fine</label>
+                      <select
+                        className={classiInput}
+                        value={amOraFine}
+                        onChange={(e) => setAmOraFine(e.target.value)}
+                      >
+                        <option value="">—</option>
+                        {Array.from({ length: 36 }, (_, i) => {
+                          const h = Math.floor(i / 2) + 6
+                          const m = i % 2 === 0 ? '00' : '30'
+                          const val = `${String(h).padStart(2, '0')}:${m}`
+                          return <option key={val} value={val}>{val}</option>
+                        })}
+                      </select>
+                    </div>
+                  </div>
+                  {amCampoId && amData && amOraInizio && amOraFine && amOraFine > amOraInizio && (
+                    <div className="mt-2">
+                      {slotDisponibile.isFetching ? (
+                        <p className="sub" style={{ fontSize: '0.8rem' }}>Verifica disponibilità…</p>
+                      ) : slotDisponibile.data && slotDisponibile.data.length > 0 ? (
+                        <p className="sub" style={{ color: 'var(--errore)', fontSize: '0.82rem' }}>
+                          ⚠️ Il campo è già occupato in questo orario ({slotDisponibile.data.length} prenotazione/i in conflitto).
+                        </p>
+                      ) : slotDisponibile.data ? (
+                        <p className="sub" style={{ color: 'var(--ok, #1a6b3c)', fontSize: '0.82rem' }}>
+                          Slot disponibile
+                        </p>
+                      ) : null}
+                    </div>
                   )}
                 </div>
-              </div>
-
-              <label>Durata partita</label>
-              <select className={classiInput} {...register('durata_minuti')}>
-                <option value={60}>1h (60 min)</option>
-                <option value={75}>1h15 (75 min)</option>
-                <option value={90}>1h30 (90 min)</option>
-                <option value={105}>1h45 (105 min)</option>
-                <option value={120}>2h (120 min)</option>
-              </select>
+              ) : (
+                <>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label>Data inizio (facoltativa)</label>
+                      <input type="date" max="9999-12-31" className={classiInput} {...register('data_inizio')} />
+                    </div>
+                    <div>
+                      <label>Data fine (facoltativa)</label>
+                      <input type="date" max="9999-12-31" className={classiInput} {...register('data_fine')} />
+                      {errors.data_fine && (
+                        <p className="mt-1 text-xs text-red-700">{errors.data_fine.message}</p>
+                      )}
+                    </div>
+                  </div>
+                  <label>Durata partita</label>
+                  <select className={classiInput} {...register('durata_minuti')}>
+                    <option value={60}>1h (60 min)</option>
+                    <option value={75}>1h15 (75 min)</option>
+                    <option value={90}>1h30 (90 min)</option>
+                    <option value={105}>1h45 (105 min)</option>
+                    <option value={120}>2h (120 min)</option>
+                  </select>
+                </>
+              )}
 
               <label>Squadre massime (vuoto = illimitato)</label>
-              <input
-                type="number"
+              <NumeroInput
                 min={2}
                 max={500}
                 placeholder="Es. 8"
-                className={classiInput}
                 {...register('max_squadre')}
               />
               {errors.max_squadre && (
                 <p className="mt-1 text-xs text-red-700">{errors.max_squadre.message as string}</p>
               )}
 
-              <div className="eyebrow" style={{ marginTop: 16 }}>
-                Punti di questo torneo
+              {!isAmericano && (
+                <>
+                  <div className="eyebrow" style={{ marginTop: 16 }}>
+                    Punti di questo torneo
+                  </div>
+                  <p className="sub mb-2">
+                    {numeroGironi > 1
+                      ? 'Punti per ciascun girone. Il numero di gironi si cambia nella sezione "Gironi".'
+                      : 'Valgono solo per questo torneo.'}
+                  </p>
+                  <EditorPuntiTorneo
+                    torneo={torneo}
+                    numeroGironi={numeroGironi}
+                    base={base}
+                    setBase={(p) => {
+                      setBase(p)
+                      setPuntiTocchi(true)
+                    }}
+                    gironi={gironi}
+                    setGironi={(a) => {
+                      setGironi(a)
+                      setPuntiTocchi(true)
+                    }}
+                  />
+                </>
+              )}
+
+              {/* ── (Tappa 31) Sola andata / Andata e ritorno ─────── */}
+              <div className="opzione-grid" style={{ marginTop: 16 }}>
+                <button
+                  type="button"
+                  className={`opzione-btn${!andataRitorno ? ' attivo' : ''}`}
+                  onClick={() => { setAndataRitorno(false); setFinaleSecca(false) }}
+                >
+                  <span className="opzione-btn-icon">→</span>
+                  <span className="opzione-btn-nome">Sola{' '}andata</span>
+                </button>
+                <button
+                  type="button"
+                  className={`opzione-btn${andataRitorno ? ' attivo' : ''}`}
+                  onClick={() => setAndataRitorno(true)}
+                >
+                  <span className="opzione-btn-icon">⇄</span>
+                  <span className="opzione-btn-nome">Andata{' '}e ritorno</span>
+                </button>
+                {isEliminazione && andataRitorno && (
+                  <button
+                    type="button"
+                    className={`opzione-btn${finaleSecca ? ' attivo' : ''}`}
+                    onClick={() => setFinaleSecca(!finaleSecca)}
+                  >
+                    <span className="opzione-btn-icon">⚡</span>
+                    <span className="opzione-btn-nome">Finale{' '}secca</span>
+                  </button>
+                )}
+                {isEliminazione && (
+                  <button
+                    type="button"
+                    className={`opzione-btn${terzoPosto ? ' attivo' : ''}`}
+                    onClick={() => setTerzoPosto(!terzoPosto)}
+                  >
+                    <span className="opzione-btn-icon">🥉</span>
+                    <span className="opzione-btn-nome">3°/4°{' '}posto</span>
+                  </button>
+                )}
               </div>
-              <p className="sub mb-2">
-                {numeroGironi > 1
-                  ? 'Punti per ciascun girone. Il numero di gironi si cambia nella sezione “Gironi”.'
-                  : 'Valgono solo per questo torneo.'}
-              </p>
-              <EditorPuntiTorneo
-                torneo={torneo}
-                numeroGironi={numeroGironi}
-                base={base}
-                setBase={(p) => {
-                  setBase(p)
-                  setPuntiTocchi(true)
-                }}
-                gironi={gironi}
-                setGironi={(a) => {
-                  setGironi(a)
-                  setPuntiTocchi(true)
-                }}
-              />
 
               {msg && (
                 <p className={`mt-4 ${msg.tipo === 'ok' ? classiOk : classiErrore}`}>{msg.testo}</p>
@@ -247,7 +443,14 @@ export default function ImpostazioniTorneo({
                 <button
                   type="submit"
                   className="btn"
-                  disabled={isSubmitting || (!isDirty && !puntiTocchi)}
+                  disabled={
+                    isSubmitting ||
+                    (!isAmericano && !isDirty && !puntiTocchi &&
+                      andataRitorno === !!(torneo as { andata_ritorno?: boolean | null }).andata_ritorno &&
+                      finaleSecca   === !!(torneo as { finale_secca?: boolean | null }).finale_secca &&
+                      terzoPosto    === !!(torneo as { terzo_posto?: boolean | null }).terzo_posto) ||
+                    (isAmericano && !!(slotDisponibile.data && slotDisponibile.data.length > 0))
+                  }
                 >
                   {isSubmitting ? 'Salvataggio…' : 'Salva modifiche'}
                 </button>

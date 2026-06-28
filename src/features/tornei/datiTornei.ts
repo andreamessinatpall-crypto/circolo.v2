@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
-import type { Componente, Incontro, RichiestaIscrizione, Squadra, Torneo } from './tipi'
+import type { AmericanoPartita, Componente, Incontro, RichiestaIscrizione, Squadra, Torneo } from './tipi'
 
 export interface DatiTornei {
   tornei: Torneo[]
@@ -12,6 +12,8 @@ export interface DatiTornei {
   prenByIncontro: Record<string, string>
   // Richieste di iscrizione per torneo (visibili al richiedente + staff).
   richiestePerTorneo: Record<string, RichiestaIscrizione[]>
+  // Partite americano per torneo (tappa 25).
+  perTorneoAmericano: Record<string, AmericanoPartita[]>
 }
 
 // Carica tornei + squadre + componenti e li raggruppa (come datiTornei della v1).
@@ -72,6 +74,20 @@ export function useTornei() {
         }
       }
 
+      // Partite americano: solo per i tornei con formato "americano".
+      // Se la tabella non esiste ancora (tappa25-americano.sql non eseguito), vuoto.
+      const perTorneoAmericano: Record<string, AmericanoPartita[]> = {}
+      const americanoIds = lista.filter((t) => t.formato === 'americano').map((t) => t.id)
+      if (americanoIds.length) {
+        const { data: ap } = await supabase
+          .from('americano_partite')
+          .select('*')
+          .in('torneo_id', americanoIds)
+        for (const m of (ap ?? []) as AmericanoPartita[]) {
+          ;(perTorneoAmericano[String(m.torneo_id)] ??= []).push(m)
+        }
+      }
+
       const perTorneoSquadre: Record<string, Squadra[]> = {}
       const perSquadraComp: Record<string, Componente[]> = {}
       const perTorneoIncontri: Record<string, Incontro[]> = {}
@@ -97,6 +113,7 @@ export function useTornei() {
         assegnati,
         prenByIncontro,
         richiestePerTorneo,
+        perTorneoAmericano,
       }
     },
   })

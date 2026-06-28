@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useRef } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { eDuplicato, messaggioErrore } from '@/lib/errori'
@@ -330,14 +330,22 @@ export default function GestioneSquadre({
         </div>
       )}
 
-      <div className="mb-3">
+      <div className="mb-3" style={{ display: 'flex', alignItems: 'center' }}>
         <button
           type="button"
           className="btn btn-secondario"
           onClick={() => crea.mutate('Nuova squadra')}
+          disabled={torneo.max_squadre != null && squadre.length >= torneo.max_squadre}
         >
           Aggiungi squadra
         </button>
+        <span className="sub" style={{ marginLeft: 'auto' }}>
+          {torneo.max_squadre != null
+            ? `${squadre.length}/${torneo.max_squadre} ${squadre.length === 1 ? 'squadra iscritta' : 'squadre iscritte'}`
+            : squadre.length > 0
+              ? `${squadre.length} ${squadre.length === 1 ? 'squadra iscritta' : 'squadre iscritte'}`
+              : null}
+        </span>
       </div>
 
       <div className="schede-griglia">
@@ -396,6 +404,8 @@ function RigaSquadra({
   onRimuovi: (comp: Componente) => void
   onLogo: (dataUrl: string | null) => void
 }) {
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
   // Titolari prima, riserve in fondo.
   const ordinati = componenti
     .slice()
@@ -442,35 +452,91 @@ function RigaSquadra({
       </div>
 
       {torneo.sport === 'calcio' && (
-        <div className="logo-riga">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '10px 0' }}>
           {squadra.logo_url ? (
-            <img className="logo-squadra grande" src={squadra.logo_url} alt={'Logo ' + squadra.nome} />
+            <img
+              className="logo-squadra grande"
+              src={squadra.logo_url}
+              alt={'Logo ' + squadra.nome}
+              style={{ display: 'block', flexShrink: 0 }}
+            />
           ) : (
-            <span className="logo-segnaposto grande" aria-hidden>
+            <span className="logo-segnaposto grande" aria-hidden style={{ flexShrink: 0 }}>
               ⚽
             </span>
           )}
-          <label className="btn btn-secondario btn-mini cursor-pointer">
-            {squadra.logo_url ? 'Cambia logo' : 'Carica logo'}
-            <input
-              type="file"
-              accept="image/*"
-              hidden
-              onChange={async (e) => {
-                const file = e.target.files?.[0]
-                e.target.value = '' // così si può ricaricare lo stesso file
-                if (!file) return
-                try {
-                  onLogo(await logoDaFile(file))
-                } catch (err) {
-                  window.alert(messaggioErrore(err))
-                }
-              }}
-            />
-          </label>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            style={{ display: 'none' }}
+            onChange={async (e) => {
+              const file = e.target.files?.[0]
+              e.target.value = ''
+              if (!file) return
+              try {
+                onLogo(await logoDaFile(file))
+              } catch (err) {
+                window.alert(messaggioErrore(err))
+              }
+            }}
+          />
+          <button
+            type="button"
+            title={squadra.logo_url ? 'Cambia logo' : 'Carica logo'}
+            onClick={() => fileInputRef.current?.click()}
+            style={{
+              flexShrink: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 48,
+              height: 48,
+              boxSizing: 'border-box',
+              borderRadius: 10,
+              border: '1px solid var(--border)',
+              background: 'transparent',
+              color: 'var(--ink-2)',
+              cursor: 'pointer',
+              transition: 'background 0.15s',
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-2, #f0f0f0)')}
+            onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+          >
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+              <circle cx="12" cy="13" r="4"/>
+            </svg>
+          </button>
           {squadra.logo_url && (
-            <button type="button" className="btn btn-pericolo btn-mini" onClick={() => onLogo(null)}>
-              Rimuovi
+            <button
+              type="button"
+              title="Rimuovi logo"
+              onClick={() => onLogo(null)}
+              style={{
+                flexShrink: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 48,
+                height: 48,
+                boxSizing: 'border-box',
+                borderRadius: 10,
+                border: '1px solid var(--border)',
+                background: 'transparent',
+                color: 'var(--errore, #b91c1c)',
+                cursor: 'pointer',
+                transition: 'background 0.15s',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(185,28,28,0.08)')}
+              onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+            >
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <polyline points="3 6 5 6 21 6"/>
+                <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                <path d="M10 11v6M14 11v6"/>
+                <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+              </svg>
             </button>
           )}
         </div>

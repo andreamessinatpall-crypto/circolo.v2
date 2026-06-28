@@ -21,6 +21,9 @@ export interface PrenotazioneGiorno {
   etichetta: string | null
   incontro_id?: number | string | null
   allenamento?: boolean | null
+  torneo_id?: string | null
+  torneo_nome?: string | null
+  giocatori_torneo?: string | null
 }
 
 export interface Impostazioni {

@@ -80,21 +80,25 @@ export default function AttivitaInProgramma() {
       if (ids.length) {
         const { data: tipi } = await supabase
           .from('prenotazioni')
-          .select('id, allenamento, allenatore_id, incontro_id')
+          .select('id, allenamento, allenatore_id, incontro_id, torneo_id')
           .in('id', ids)
         const incontroIds: (number | string)[] = []
-        for (const t of (tipi ?? []) as Array<{
+        const torneoIds: string[] = []
+        const pren2 = (tipi ?? []) as Array<{
           id: number | string
           allenamento: boolean | null
           allenatore_id: string | null
           incontro_id: number | string | null
-        }>) {
+          torneo_id: string | null
+        }>
+        for (const t of pren2) {
           const a = map.get(String(t.id))
           if (a) {
             a.allenamento = !!t.allenamento
             a.allenatore_id = t.allenatore_id ?? null
           }
           if (t.incontro_id) incontroIds.push(t.incontro_id)
+          else if (t.torneo_id) torneoIds.push(t.torneo_id)
         }
 
         // Risolve il nome del torneo per le prenotazioni di incontri.
@@ -104,13 +108,26 @@ export default function AttivitaInProgramma() {
             .select('id, torneo:tornei(nome)')
             .in('id', incontroIds)
           const nomePerIncontro = new Map<string, string>()
-          for (const r of (inc ?? []) as Array<{ id: number | string; torneo: { nome: string } | null }>) {
+          for (const r of (inc ?? []) as unknown as Array<{ id: number | string; torneo: { nome: string } | null }>) {
             if (r.torneo?.nome) nomePerIncontro.set(String(r.id), r.torneo.nome)
           }
-          for (const t of (tipi ?? []) as Array<{ id: number | string; incontro_id: number | string | null }>) {
+          for (const t of pren2) {
             if (t.incontro_id) {
               const a = map.get(String(t.id))
               if (a) a.torneo_nome = nomePerIncontro.get(String(t.incontro_id)) ?? null
+            }
+          }
+        }
+
+        // Risolve il nome per le prenotazioni americano (torneo_id diretto).
+        if (torneoIds.length) {
+          const { data: torn } = await supabase.from('tornei').select('id, nome').in('id', torneoIds)
+          const nomePerTorneo = new Map<string, string>()
+          for (const t of (torn ?? []) as Array<{ id: string; nome: string }>) nomePerTorneo.set(String(t.id), t.nome)
+          for (const t of pren2) {
+            if (t.torneo_id && !t.incontro_id) {
+              const a = map.get(String(t.id))
+              if (a) a.torneo_nome = nomePerTorneo.get(String(t.torneo_id)) ?? null
             }
           }
         }

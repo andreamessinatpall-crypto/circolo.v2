@@ -320,16 +320,25 @@ export default function GestionePrenotazioni() {
       id,
       inizio,
       fine,
+      torneoId,
     }: {
       id: number | string
       inizio: Date
       fine: Date
+      torneoId?: string | null
     }) => {
       const { error } = await supabase
         .from('prenotazioni')
         .update({ inizio: inizio.toISOString(), fine: fine.toISOString() })
         .eq('id', id)
       if (error) throw error
+      // Se la prenotazione appartiene a un torneo americano, aggiorna anche il torneo.
+      if (torneoId) {
+        await supabase.from('tornei').update({
+          americano_inizio: inizio.toISOString(),
+          americano_fine: fine.toISOString(),
+        }).eq('id', torneoId)
+      }
       return { inizio, fine }
     },
     onSuccess: ({ inizio, fine }) => {
@@ -418,7 +427,7 @@ export default function GestionePrenotazioni() {
 
       const righe = lista.map((p) => {
         const pp = partsByPren.get(String(p.id)) ?? []
-        const tipo = p.incontro_id ? 'Torneo' : p.allenamento ? 'Allenamento' : 'Partita'
+        const tipo = (p.incontro_id || (p as Record<string, unknown>).torneo_id) ? 'Torneo' : p.allenamento ? 'Allenamento' : 'Partita'
         const nomeCampo = p.campo ? (p.campo as { nome: string }).nome : ''
         const sportCampo = p.campo ? (p.campo as { sport: string }).sport : ''
         const prenotante = p.socio_id ? (nomi.get(p.socio_id as string) ?? String(p.socio_id)) : ''
@@ -451,6 +460,21 @@ export default function GestionePrenotazioni() {
       ),
     onError: (e: unknown) =>
       setMsgCsv({ tipo: 'errore', testo: 'Esportazione non riuscita: ' + messaggioErrore(e) }),
+  })
+
+  // Giocatori del torneo americano: caricati quando lo slot aperto ha torneo_id.
+  const torneoSlotId = slot?.booking?.torneo_id ?? null
+  const giocatoriTorneoQuery = useQuery({
+    queryKey: ['torneo-slot-players', torneoSlotId],
+    enabled: !!torneoSlotId,
+    queryFn: async () => {
+      const { data: sqs } = await supabase
+        .from('squadre')
+        .select('nome')
+        .eq('torneo_id', torneoSlotId!)
+        .order('id')
+      return (sqs ?? []).map((s: { nome: string }) => s.nome).sort()
+    },
   })
 
   if (!profilo) return null
@@ -723,43 +747,63 @@ export default function GestionePrenotazioni() {
                 )}
                 disabilitato={modificaOrario.isPending}
                 onSalva={(inizio, fine) =>
-                  modificaOrario.mutate({ id: bookingSlot.id, inizio, fine })
+                  modificaOrario.mutate({ id: bookingSlot.id, inizio, fine, torneoId: bookingSlot.torneo_id })
                 }
               />
-              {bookingSlot.allenamento && istruttori.length > 0 && (
-                <CambiaIstruttore
-                  key={`istr-${bookingSlot.id}-${bookingSlot.allenatore_id ?? ''}`}
-                  istruttoreAttualeId={bookingSlot.allenatore_id ?? ''}
-                  istruttori={istruttori}
-                  disabilitato={modificaIstruttore.isPending}
-                  onSalva={(istrId) =>
-                    modificaIstruttore.mutate({ prenId: bookingSlot.id, istruttoreId: istrId })
+              {bookingSlot.torneo_id ? (
+                /* Slot torneo americano: mostra la lista giocatori iscritti */
+                <div className="mt-2">
+                  <div className="eyebrow mb-2">Giocatori iscritti al torneo</div>
+                  {giocatoriTorneoQuery.isLoading ? (
+                    <p className="sub">Caricamento…</p>
+                  ) : !giocatoriTorneoQuery.data?.length ? (
+                    <p className="sub">Nessun giocatore iscritto.</p>
+                  ) : (
+                    <div className="chips">
+                      {giocatoriTorneoQuery.data.map((nome) => (
+                        <span key={nome} className="chip">{nome}</span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <>
+                {bookingSlot.allenamento && istruttori.length > 0 && (
+                  <CambiaIstruttore
+                    key={`istr-${bookingSlot.id}-${bookingSlot.allenatore_id ?? ''}`}
+                    istruttoreAttualeId={bookingSlot.allenatore_id ?? ''}
+                    istruttori={istruttori}
+                    disabilitato={modificaIstruttore.isPending}
+                    onSalva={(istrId) =>
+                      modificaIstruttore.mutate({ prenId: bookingSlot.id, istruttoreId: istrId })
+                    }
+                  />
+                )}
+                <SchedaPartita
+                  sport={sport}
+                  pren={bookingSlot}
+                  campo={slot.campo}
+                  partecipanti={partsByPren.get(String(bookingSlot.id)) ?? []}
+                  etichette={etichette}
+                  candidati={candidati}
+                  staff
+                  mioId={profilo.id}
+                  amiciVuoti={false}
+                  confermaCliccando
+                  inModale
+                  onAggiungi={(socioId) => aggiungi.mutate({ prenId: bookingSlot.id, socioId })}
+                  onAggiungiOspite={(nome) => aggiungiOspite.mutate({ prenId: bookingSlot.id, nome })}
+                  onConferma={(part, valore) =>
+                    conferma.mutate({ part, pren: bookingSlot, valore })
                   }
+                  onRimuovi={(part) => rimuovi.mutate(part.id)}
+                  onAnnulla={() => {
+                    if (window.confirm(`Annullare la prenotazione su ${slot.campo.nome}?`))
+                      annulla.mutate(bookingSlot.id)
+                  }}
                 />
+                </>
               )}
-              <SchedaPartita
-                sport={sport}
-                pren={bookingSlot}
-                campo={slot.campo}
-                partecipanti={partsByPren.get(String(bookingSlot.id)) ?? []}
-                etichette={etichette}
-                candidati={candidati}
-                staff
-                mioId={profilo.id}
-                amiciVuoti={false}
-                confermaCliccando
-                inModale
-                onAggiungi={(socioId) => aggiungi.mutate({ prenId: bookingSlot.id, socioId })}
-                onAggiungiOspite={(nome) => aggiungiOspite.mutate({ prenId: bookingSlot.id, nome })}
-                onConferma={(part, valore) =>
-                  conferma.mutate({ part, pren: bookingSlot, valore })
-                }
-                onRimuovi={(part) => rimuovi.mutate(part.id)}
-                onAnnulla={() => {
-                  if (window.confirm(`Annullare la prenotazione su ${slot.campo.nome}?`))
-                    annulla.mutate(bookingSlot.id)
-                }}
-              />
               </>
             ) : (
               <SlotLibero
@@ -829,10 +873,11 @@ function CampoSlots({
             let stato: 'confermato' | 'attesa' | null = null
             if (p) {
               stato = statoDi(p.id)
-              const tipo = p.incontro_id ? 'torneo' : p.allenamento ? 'allenamento' : 'partita'
+              const eTorneo = !!(p.incontro_id || p.torneo_id)
+              const tipo = eTorneo ? 'torneo' : p.allenamento ? 'allenamento' : 'partita'
               classe += ' occupato gestibile tipo-' + tipo
-              chi = p.incontro_id
-                ? 'Torneo'
+              chi = eTorneo
+                ? (p.torneo_nome ?? 'Torneo')
                 : p.allenamento
                   ? 'Allenamento'
                   : cogIniz(etichette.get(p.socio_id) ?? 'Prenotato')

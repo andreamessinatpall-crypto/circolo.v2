@@ -2,27 +2,38 @@ import { useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/auth/useAuth'
 import { puoGestireTornei } from '@/auth/ruoli'
 import { mancaTabella, messaggioErrore } from '@/lib/errori'
 import { classiErrore, classiInput, classiOk } from '@/components/stili'
+import NumeroInput from '@/components/NumeroInput'
 import { useTornei } from './datiTornei'
+import { useCampi } from '@/features/prenotazioni/datiPrenotazioni'
 import type { DatiTornei } from './datiTornei'
 import GestioneSquadre from './GestioneSquadre'
 import GestioneGironi from './GestioneGironi'
 import GestioneCalendario from './GestioneCalendario'
+import GestioneCalendarioEliminazione from './GestioneCalendarioEliminazione'
 import ClassificaTorneo from './ClassificaTorneo'
 import PodioTorneo from './PodioTorneo'
 import Risultati from './Risultati'
+import TabelloneEliminazione from './TabelloneEliminazione'
 import RiepilogoPunti from './RiepilogoPunti'
 import ImpostazioniTorneo from './ImpostazioniTorneo'
 import EditorPuntiTorneo from './EditorPuntiTorneo'
+import EditorPuntiPosizioni from './EditorPuntiPosizioni'
+import GestioneGiocatoriAmericano from './GestioneGiocatoriAmericano'
+import GestioneAmericano from './GestioneAmericano'
+import ClassificaAmericano from './ClassificaAmericano'
+import PodioAmericano from './PodioAmericano'
 import Sezione from '@/components/Sezione'
 import { costruisciPuntiGironi, nomeGirone, numGironi } from './gironi'
 import { FORMATI_TORNEO, STATI_TORNEO } from './tipi'
 import type { PuntiSet, StatoTorneo, Torneo } from './tipi'
+import { azzeraChiave } from '@/lib/punti'
+import { assegnaPuntiAmericano } from './punti'
 
 // Terna di punti tutta a zero (default dei form).
 const puntiZero = (): PuntiSet => ({ iscrizione: 0, vittoria: 0, torneo: 0 })
@@ -61,10 +72,13 @@ export default function TorneiPage() {
   const voci = attivi.map((t) => ({ id: String(t.id), label: iconaSport(t.sport) + ' ' + t.nome }))
   if (gestore) voci.push({ id: 'nuovo', label: '＋ Nuovo torneo' })
 
-  const mostraConclusi = sel === '__conclusi__'
-  const selCorrente = sel && (mostraConclusi || voci.some((v) => v.id === sel))
+  // selCorrente: id valido tra i navigabili, oppure fallback
+  const selCorrente = sel && (sel === '__conclusi__' || sel === 'nuovo' || voci.some((v) => v.id === sel))
     ? sel
     : voci[0]?.id ?? '__conclusi__'
+  // mostraConclusi derivato da selCorrente (non da sel) per evitare pagine bianche
+  // quando selCorrente cade su '__conclusi__' per fallback ma sel punta a un id nuovo
+  const mostraConclusi = selCorrente === '__conclusi__'
   const torneoSel = attivi.find((t) => String(t.id) === selCorrente)
 
   // Torneo concluso aperto nel dettaglio.
@@ -109,7 +123,7 @@ export default function TorneiPage() {
             >
               ← Tutti i conclusi
             </button>
-            <DettaglioTorneo torneo={torneoConcluso} gestore={gestore} dati={d} />
+            <DettaglioTorneo key={String(torneoConcluso.id)} torneo={torneoConcluso} gestore={gestore} dati={d} onCancellato={() => setSelConcluso(null)} />
           </div>
         ) : (
           /* Lista tornei conclusi */
@@ -147,8 +161,20 @@ export default function TorneiPage() {
       ) : selCorrente === 'nuovo' ? (
         <NuovoTorneo onCreato={(id) => setSel(String(id))} />
       ) : torneoSel ? (
-        <DettaglioTorneo torneo={torneoSel} gestore={gestore} dati={d} />
-      ) : null}
+        <DettaglioTorneo
+          key={String(torneoSel.id)}
+          torneo={torneoSel}
+          gestore={gestore}
+          dati={d}
+          onCancellato={() => {
+            // Naviga subito alla prossima destinazione valida senza passare per null
+            const next = attivi.find((t) => String(t.id) !== String(torneoSel.id))
+            setSel(next ? String(next.id) : gestore ? 'nuovo' : '__conclusi__')
+          }}
+        />
+      ) : (
+        <p className="sub">Caricamento…</p>
+      )}
     </div>
   )
 }
@@ -157,11 +183,11 @@ const schema = z
   .object({
     nome: z.string().trim().min(1, 'Inserisci il nome'),
     sport: z.enum(['padel', 'calcio']),
-    formato: z.enum(['girone']),
+    formato: z.enum(['girone', 'eliminazione', 'americano']),
     data_inizio: z.string().optional(),
     data_fine: z.string().optional(),
     numero_gironi: z.coerce.number().int().min(1).max(12),
-    durata_minuti: z.coerce.number().int().min(30).max(240),
+    durata_minuti: z.coerce.number().int().min(1).max(1440),
     max_squadre: z.preprocess(
       (v) => (v === '' || v === null || v === undefined ? null : Number(v)),
       z.number().int().min(2).max(500).nullable(),
@@ -185,12 +211,44 @@ function NuovoTorneo({ onCreato }: { onCreato: (id: number | string) => void }) 
   // (una terna per girone). base = terna unica usata con un solo girone.
   const [base, setBase] = useState<PuntiSet>(puntiZero)
   const [gironi, setGironi] = useState<PuntiSet[]>(() => Array.from({ length: 12 }, puntiZero))
+  // Ore e minuti separati per gli input liberi; il valore totale va in durata_minuti.
+  const [durataOre, setDurataOre] = useState(1)
+  const [durataMin, setDurataMin] = useState(30)
+  const [puntiIscrizioneAm, setPuntiIscrizioneAm] = useState(0)
+  const [puntiPosizioniAm, setPuntiPosizioniAm] = useState<Record<string, number>>({})
+  // Slot americano: campo + data + orario inizio/fine.
+  const [amCampoId, setAmCampoId] = useState('')
+  const [amData, setAmData] = useState('')
+  const [amOraInizio, setAmOraInizio] = useState('')
+  const [amOraFine, setAmOraFine] = useState('')
+  const campiQuery = useCampi()
+  // (Tappa 31) Andata/ritorno, finale secca, terzo posto.
+  const [andataRitorno, setAndataRitorno] = useState(false)
+  const [finaleSecca, setFinaleSecca] = useState(false)
+  const [terzoPosto, setTerzoPosto] = useState(false)
+
+  const slotDisponibile = useQuery({
+    queryKey: ['am-disponibilita', amCampoId, amData, amOraInizio, amOraFine],
+    enabled: !!(amCampoId && amData && amOraInizio && amOraFine && amOraFine > amOraInizio),
+    queryFn: async () => {
+      const inizio = new Date(`${amData}T${amOraInizio}`).toISOString()
+      const fine   = new Date(`${amData}T${amOraFine}`).toISOString()
+      const { data } = await supabase
+        .from('prenotazioni')
+        .select('id, inizio, fine')
+        .eq('campo_id', Number(amCampoId))
+        .lt('inizio', fine)
+        .gt('fine', inizio)
+      return (data ?? []) as Array<{ id: unknown; inizio: string; fine: string }>
+    },
+  })
 
   const {
     register,
     handleSubmit,
     reset,
     control,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<FormTorneoIn, unknown, FormTorneoOut>({
     resolver: zodResolver(schema),
@@ -203,30 +261,52 @@ function NuovoTorneo({ onCreato }: { onCreato: (id: number | string) => void }) 
     },
   })
 
+  const sportRaw = useWatch({ control, name: 'sport' })
+  const formattoRaw = useWatch({ control, name: 'formato' })
+  const isEliminazione = formattoRaw === 'eliminazione'
+  const isAmericano = formattoRaw === 'americano'
   const numeroGironiRaw = useWatch({ control, name: 'numero_gironi' })
-  const numeroGironi = Math.min(12, Math.max(1, Number(numeroGironiRaw) || 1))
+  const numeroGironi = (isEliminazione || isAmericano) ? 1 : Math.min(12, Math.max(1, Number(numeroGironiRaw) || 1))
 
   async function onSubmit(v: FormTorneoOut) {
     setMsg(null)
-    // Con più gironi: i punti base diventano quelli del 1º girone (fallback) e
-    // si salva la mappa punti_gironi; con un solo girone si usa solo la terna base.
     const puntiGironi = costruisciPuntiGironi(v.numero_gironi, gironi)
     const puntiBaseVal = v.numero_gironi > 1 ? (gironi[0] ?? puntiZero()) : base
+
+    // Per l'americano calcola durata dal blocco orario; fallback 120 min.
+    let durata = v.durata_minuti
+    if (v.formato === 'americano' && amOraInizio && amOraFine) {
+      const [hi, mi] = amOraInizio.split(':').map(Number)
+      const [hf, mf] = amOraFine.split(':').map(Number)
+      const diff = (hf * 60 + mf) - (hi * 60 + mi)
+      if (diff > 0) durata = diff
+    }
+
     const payload: Record<string, unknown> = {
       nome: v.nome,
       sport: v.sport,
       formato: v.formato,
-      data_inizio: v.data_inizio || null,
-      data_fine: v.data_fine || null,
+      data_inizio: v.formato === 'americano' ? (amData || null) : (v.data_inizio || null),
+      data_fine: v.formato === 'americano' ? (amData || null) : (v.data_fine || null),
       creato_da: profilo!.id,
       numero_gironi: v.numero_gironi,
-      durata_minuti: v.durata_minuti,
+      durata_minuti: durata,
       max_squadre: v.max_squadre ?? null,
       punti_iscrizione: puntiBaseVal.iscrizione,
       punti_vittoria: puntiBaseVal.vittoria,
       punti_torneo: puntiBaseVal.torneo,
+      andata_ritorno: andataRitorno,
+      finale_secca: v.formato === 'eliminazione' ? finaleSecca : false,
+      terzo_posto: v.formato === 'eliminazione' ? terzoPosto : false,
     }
     if (puntiGironi) payload.punti_gironi = puntiGironi
+    if (v.formato === 'americano') {
+      payload.americano_campo_id = amCampoId ? Number(amCampoId) : null
+      payload.americano_inizio = amData && amOraInizio ? new Date(`${amData}T${amOraInizio}`).toISOString() : null
+      payload.americano_fine   = amData && amOraFine   ? new Date(`${amData}T${amOraFine}`).toISOString()   : null
+      payload.punti_iscrizione = puntiIscrizioneAm
+      payload.punti_posizioni  = Object.keys(puntiPosizioniAm).length ? puntiPosizioniAm : null
+    }
 
     const { data, error } = await supabase.from('tornei').insert(payload).select('id').single()
 
@@ -234,8 +314,7 @@ function NuovoTorneo({ onCreato }: { onCreato: (id: number | string) => void }) 
       const err = error as { code?: string; message?: string }
       const m = (err.message ?? '').toLowerCase()
       const mancaPuntiGironi = puntiGironi != null && (err.code === '42703' || m.includes('punti_gironi'))
-      const mancaCol =
-        err.code === '42703' || m.includes('punti_iscrizione') || m.includes('data_fine')
+      const mancaCol = err.code === '42703' || m.includes('punti_iscrizione') || m.includes('data_fine')
       setMsg({
         tipo: 'errore',
         testo: mancaPuntiGironi
@@ -248,118 +327,421 @@ function NuovoTorneo({ onCreato }: { onCreato: (id: number | string) => void }) 
       })
       return
     }
+
+    // Crea la prenotazione che blocca lo slot nel calendario.
+    if (v.formato === 'americano' && amCampoId && amData && amOraInizio && amOraFine && data?.id) {
+      await supabase.from('prenotazioni').insert({
+        campo_id: Number(amCampoId),
+        socio_id: profilo!.id,
+        inizio: new Date(`${amData}T${amOraInizio}`).toISOString(),
+        fine:   new Date(`${amData}T${amOraFine}`).toISOString(),
+        torneo_id: data.id,
+      })
+    }
+
     reset()
     setBase(puntiZero())
     setGironi(Array.from({ length: 12 }, puntiZero))
-    qc.invalidateQueries({ queryKey: ['tornei'] })
+    setAmCampoId(''); setAmData(''); setAmOraInizio(''); setAmOraFine('')
+    setPuntiIscrizioneAm(0); setPuntiPosizioniAm({})
+    setAndataRitorno(false); setFinaleSecca(false); setTerzoPosto(false)
+    // Aspetta che il refetch completi: così il nuovo torneo è già in cache
+    // quando onCreato naviga verso il suo ID, evitando la pagina bianca.
+    await qc.invalidateQueries({ queryKey: ['tornei'] })
     if (data?.id != null) onCreato(data.id)
   }
+
+  const orarioOpts = Array.from({ length: 36 }, (_, i) => {
+    const h = Math.floor(i / 2) + 6
+    const m = i % 2 === 0 ? '00' : '30'
+    return `${String(h).padStart(2, '0')}:${m}`
+  })
 
   return (
     <>
       <div className="eyebrow">Nuovo torneo</div>
       <form onSubmit={handleSubmit(onSubmit)} className="card form-verde">
-        <label>Nome torneo</label>
-        <input className={classiInput} {...register('nome')} />
+
+        {/* ── Nome ──────────────────────────────────────────────── */}
+        <label style={{ marginTop: 0 }}>Nome torneo</label>
+        <input
+          className={classiInput}
+          placeholder="Es. Trofeo Estate 2025"
+          {...register('nome')}
+        />
         {errors.nome && <p className="mt-1 text-xs text-red-700">{errors.nome.message}</p>}
 
+        {/* ── Sport ─────────────────────────────────────────────── */}
         <label>Sport</label>
-        <select className={classiInput} {...register('sport')}>
-          <option value="padel">Padel</option>
-          <option value="calcio">Calcio</option>
-        </select>
+        <div className="seg-group">
+          <button
+            type="button"
+            className={`seg-btn${sportRaw === 'padel' ? ' attivo' : ''}`}
+            onClick={() => setValue('sport', 'padel')}
+          >
+            🎾 Padel
+          </button>
+          <button
+            type="button"
+            className={`seg-btn${sportRaw === 'calcio' ? ' attivo' : ''}`}
+            onClick={() => {
+              setValue('sport', 'calcio')
+              if (formattoRaw === 'americano') setValue('formato', 'girone')
+            }}
+          >
+            ⚽ Calcio
+          </button>
+        </div>
+        {/* campi nascosti per react-hook-form */}
+        <input type="hidden" {...register('sport')} />
+        <input type="hidden" {...register('formato')} />
 
+        {/* ── Formato ───────────────────────────────────────────── */}
         <label>Formato</label>
-        <select className={classiInput} {...register('formato')}>
-          <option value="girone">Girone all'italiana</option>
-        </select>
+        <div className="formato-grid">
+          <button
+            type="button"
+            className={`formato-btn${formattoRaw === 'girone' ? ' attivo' : ''}`}
+            onClick={() => setValue('formato', 'girone')}
+          >
+            <span className="formato-icon">◉</span>
+            <span className="formato-nome">Girone{' '}all'italiana</span>
+          </button>
+          <button
+            type="button"
+            className={`formato-btn${formattoRaw === 'eliminazione' ? ' attivo' : ''}`}
+            onClick={() => setValue('formato', 'eliminazione')}
+          >
+            <span className="formato-icon">⚡</span>
+            <span className="formato-nome">Eliminazione{' '}diretta</span>
+          </button>
+          {sportRaw === 'padel' && (
+            <button
+              type="button"
+              className={`formato-btn${formattoRaw === 'americano' ? ' attivo' : ''}`}
+              onClick={() => setValue('formato', 'americano')}
+            >
+              <span className="formato-icon">↺</span>
+              <span className="formato-nome">Americano</span>
+            </button>
+          )}
+        </div>
 
-        <label>Numero di gironi</label>
-        <select className={classiInput} {...register('numero_gironi')}>
-          {Array.from({ length: 12 }, (_, i) => i + 1).map((i) => (
-            <option key={i} value={i}>
-              {i === 1 ? 'Girone unico' : i + ' gironi'}
-            </option>
-          ))}
-        </select>
+        {/* ── Sola andata / Andata e ritorno ───────────────────── */}
+        <div className="opzione-grid">
+          <button
+            type="button"
+            className={`opzione-btn${!andataRitorno ? ' attivo' : ''}`}
+            onClick={() => { setAndataRitorno(false); setFinaleSecca(false) }}
+          >
+            <span className="opzione-btn-icon">→</span>
+            <span className="opzione-btn-nome">Sola{' '}andata</span>
+          </button>
+          <button
+            type="button"
+            className={`opzione-btn${andataRitorno ? ' attivo' : ''}`}
+            onClick={() => setAndataRitorno(true)}
+          >
+            <span className="opzione-btn-icon">⇄</span>
+            <span className="opzione-btn-nome">Andata{' '}e ritorno</span>
+          </button>
+          {isEliminazione && andataRitorno && (
+            <button
+              type="button"
+              className={`opzione-btn${finaleSecca ? ' attivo' : ''}`}
+              onClick={() => setFinaleSecca(!finaleSecca)}
+            >
+              <span className="opzione-btn-icon">⚡</span>
+              <span className="opzione-btn-nome">Finale{' '}secca</span>
+            </button>
+          )}
+          {isEliminazione && (
+            <button
+              type="button"
+              className={`opzione-btn${terzoPosto ? ' attivo' : ''}`}
+              onClick={() => setTerzoPosto(!terzoPosto)}
+            >
+              <span className="opzione-btn-icon">🥉</span>
+              <span className="opzione-btn-nome">3°/4°{' '}posto</span>
+            </button>
+          )}
+        </div>
 
-        <label>Durata partita</label>
-        <select className={classiInput} {...register('durata_minuti')}>
-          <option value={60}>1h (60 min)</option>
-          <option value={75}>1h15 (75 min)</option>
-          <option value={90}>1h30 (90 min)</option>
-          <option value={105}>1h45 (105 min)</option>
-          <option value={120}>2h (120 min)</option>
-        </select>
+        {/* ── Parametri ─────────────────────────────────────────── */}
+        <div className="eyebrow">Parametri</div>
 
-        <label>Squadre massime (vuoto = illimitato)</label>
-        <input
-          type="number"
-          min={2}
-          max={500}
-          placeholder="Es. 8"
-          className={classiInput}
-          {...register('max_squadre')}
-        />
-        {errors.max_squadre && (
-          <p className="mt-1 text-xs text-red-700">{errors.max_squadre.message as string}</p>
-        )}
-
-        <div className="grid grid-cols-2 gap-3">
+        <div
+          className="param-grid"
+          style={{
+            gridTemplateColumns: isAmericano
+              ? '1fr'
+              : isEliminazione
+              ? '1fr 1fr'
+              : '1fr 1fr 1fr',
+          }}
+        >
+          {/* Num. squadre / giocatori */}
           <div>
-            <label>Data inizio (facoltativa)</label>
-            <input type="date" max="9999-12-31" className={classiInput} {...register('data_inizio')} />
-          </div>
-          <div>
-            <label>Data fine (facoltativa)</label>
-            <input type="date" max="9999-12-31" className={classiInput} {...register('data_fine')} />
-            {errors.data_fine && (
-              <p className="mt-1 text-xs text-red-700">{errors.data_fine.message}</p>
+            <span className="param-label">{isAmericano ? 'Num. giocatori' : 'Num. squadre'}</span>
+            <NumeroInput
+              min={isAmericano ? 4 : 2}
+              max={500}
+              step={isAmericano ? 4 : 1}
+              placeholder="—"
+              style={{ textAlign: 'center' }}
+              {...register('max_squadre')}
+              onBlur={(e) => {
+                if (isAmericano) {
+                  const v = parseInt(e.target.value) || 4
+                  const snapped = Math.max(4, Math.round(v / 4) * 4)
+                  e.target.value = String(snapped)
+                  setValue('max_squadre', snapped)
+                }
+                register('max_squadre').onBlur(e)
+              }}
+            />
+            {errors.max_squadre && (
+              <p className="mt-1 text-xs text-red-700">{errors.max_squadre.message as string}</p>
             )}
           </div>
+
+          {/* Durata partita */}
+          {!isAmericano && (
+            <div>
+              <span className="param-label">Durata partita</span>
+              <div className="durata-wrap">
+                <NumeroInput
+                  min={0}
+                  max={23}
+                  inputMode="numeric"
+                  style={{ textAlign: 'center' }}
+                  value={durataOre}
+                  onChange={(e) => {
+                    const ore = Math.max(0, parseInt(e.target.value) || 0)
+                    setDurataOre(ore)
+                    setValue('durata_minuti', ore * 60 + durataMin)
+                  }}
+                />
+                <span className="durata-sep">h</span>
+                <NumeroInput
+                  min={0}
+                  max={59}
+                  inputMode="numeric"
+                  style={{ textAlign: 'center' }}
+                  value={durataMin}
+                  onChange={(e) => {
+                    const min = Math.min(59, Math.max(0, parseInt(e.target.value) || 0))
+                    setDurataMin(min)
+                    setValue('durata_minuti', durataOre * 60 + min)
+                  }}
+                />
+                <span className="durata-sep">min</span>
+              </div>
+            </div>
+          )}
+
+          {/* Num. gironi */}
+          {!isEliminazione && !isAmericano && (
+            <div>
+              <span className="param-label">Num. gironi</span>
+              <NumeroInput
+                min={1}
+                max={12}
+                inputMode="numeric"
+                style={{ textAlign: 'center' }}
+                {...register('numero_gironi')}
+                onChange={(e) => {
+                  const v = parseInt(e.target.value) || 1
+                  e.target.value = String(Math.min(12, Math.max(1, v)))
+                  register('numero_gironi').onChange(e)
+                }}
+              />
+              {errors.numero_gironi && (
+                <p className="mt-1 text-xs text-red-700">{errors.numero_gironi.message as string}</p>
+              )}
+            </div>
+          )}
         </div>
 
-        <div className="eyebrow" style={{ marginTop: 16 }}>
-          Punti di questo torneo
-        </div>
-        <p className="sub mb-2">
-          {numeroGironi > 1
-            ? 'Valgono solo per questo torneo. Con più gironi puoi dare punti diversi a ogni girone.'
-            : 'Valgono solo per questo torneo.'}
-        </p>
-        <EditorPuntiTorneo
-          torneo={{ nomi_gironi: null }}
-          numeroGironi={numeroGironi}
-          base={base}
-          setBase={setBase}
-          gironi={gironi}
-          setGironi={setGironi}
-        />
+        {/* ── Data e orario ─────────────────────────────────────── */}
+        {isAmericano ? (
+          <>
+            <div className="eyebrow">Campo e orario</div>
+            <span className="param-label" style={{ marginBottom: 4 }}>Campo</span>
+            <select
+              className={classiInput}
+              value={amCampoId}
+              onChange={(e) => setAmCampoId(e.target.value)}
+            >
+              <option value="">— Seleziona campo —</option>
+              {(campiQuery.data ?? [])
+                .filter((c) => c.sport === 'padel' && c.in_servizio !== false)
+                .map((c) => (
+                  <option key={c.id} value={String(c.id)}>{c.nome}</option>
+                ))}
+            </select>
 
+            <div className="grid grid-cols-3 gap-3 mt-3">
+              <div>
+                <span className="param-label">Data</span>
+                <input
+                  type="date"
+                  max="9999-12-31"
+                  className={classiInput}
+                  value={amData}
+                  onChange={(e) => setAmData(e.target.value)}
+                />
+              </div>
+              <div>
+                <span className="param-label">Inizio</span>
+                <select
+                  className={classiInput}
+                  value={amOraInizio}
+                  onChange={(e) => {
+                    setAmOraInizio(e.target.value)
+                    if (e.target.value && amOraFine) {
+                      const [hi, mi] = e.target.value.split(':').map(Number)
+                      const [hf, mf] = amOraFine.split(':').map(Number)
+                      const diff = (hf * 60 + mf) - (hi * 60 + mi)
+                      if (diff > 0) setValue('durata_minuti', diff)
+                    }
+                  }}
+                >
+                  <option value="">—</option>
+                  {orarioOpts.map((val) => <option key={val} value={val}>{val}</option>)}
+                </select>
+              </div>
+              <div>
+                <span className="param-label">Fine</span>
+                <select
+                  className={classiInput}
+                  value={amOraFine}
+                  onChange={(e) => {
+                    setAmOraFine(e.target.value)
+                    if (amOraInizio && e.target.value) {
+                      const [hi, mi] = amOraInizio.split(':').map(Number)
+                      const [hf, mf] = e.target.value.split(':').map(Number)
+                      const diff = (hf * 60 + mf) - (hi * 60 + mi)
+                      if (diff > 0) setValue('durata_minuti', diff)
+                    }
+                  }}
+                >
+                  <option value="">—</option>
+                  {orarioOpts.map((val) => <option key={val} value={val}>{val}</option>)}
+                </select>
+              </div>
+            </div>
+
+            {amCampoId && amData && amOraInizio && amOraFine && amOraFine > amOraInizio && (
+              <div className="mt-2">
+                {slotDisponibile.isFetching ? (
+                  <p className="sub" style={{ fontSize: '0.8rem' }}>Verifica disponibilità…</p>
+                ) : slotDisponibile.data && slotDisponibile.data.length > 0 ? (
+                  <p className="sub" style={{ color: 'var(--errore)', fontSize: '0.82rem' }}>
+                    ⚠️ Campo già occupato in questo orario ({slotDisponibile.data.length} conflitto/i).
+                  </p>
+                ) : slotDisponibile.data ? (
+                  <p className="sub" style={{ color: '#86efac', fontSize: '0.82rem' }}>
+                    ✓ Slot disponibile
+                  </p>
+                ) : null}
+              </div>
+            )}
+          </>
+        ) : (
+          <>
+            <div className="eyebrow">Date</div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <span className="param-label">Data inizio (facoltativa)</span>
+                <input type="date" max="9999-12-31" className={classiInput} {...register('data_inizio')} />
+              </div>
+              <div>
+                <span className="param-label">Data fine (facoltativa)</span>
+                <input type="date" max="9999-12-31" className={classiInput} {...register('data_fine')} />
+                {errors.data_fine && (
+                  <p className="mt-1 text-xs text-red-700">{errors.data_fine.message}</p>
+                )}
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* ── Punti ─────────────────────────────────────────────── */}
+        <div className="eyebrow">Punti</div>
+
+        {isAmericano ? (
+          <>
+            <div style={{ maxWidth: 180 }}>
+              <span className="param-label">Punti iscrizione</span>
+              <NumeroInput
+                min={0}
+                style={{ textAlign: 'center' }}
+                value={puntiIscrizioneAm}
+                onChange={(e) => setPuntiIscrizioneAm(Math.max(0, parseInt(e.target.value) || 0))}
+              />
+            </div>
+            <span className="param-label" style={{ marginTop: 14, display: 'block' }}>
+              Punti per posizione in classifica
+            </span>
+            <EditorPuntiPosizioni value={puntiPosizioniAm} onChange={setPuntiPosizioniAm} />
+          </>
+        ) : (
+          <>
+            <p className="sub" style={{ marginTop: 0, marginBottom: 10, fontSize: '0.82rem' }}>
+              {numeroGironi > 1
+                ? 'Valgono solo per questo torneo. Con più gironi puoi assegnare punti diversi per ciascuno.'
+                : 'Valgono solo per questo torneo.'}
+            </p>
+            <EditorPuntiTorneo
+              torneo={{ nomi_gironi: null }}
+              numeroGironi={numeroGironi}
+              base={base}
+              setBase={setBase}
+              gironi={gironi}
+              setGironi={setGironi}
+            />
+          </>
+        )}
+
+
+        {/* ── Messaggio ed azione ───────────────────────────────── */}
         {msg && (
           <p className={`mt-4 ${msg.tipo === 'ok' ? classiOk : classiErrore}`}>{msg.testo}</p>
         )}
 
-        <button type="submit" className="btn btn-oro btn-riflesso btn-block mt-4" disabled={isSubmitting}>
-          {isSubmitting ? 'Creazione…' : 'Crea torneo'}
+        <button
+          type="submit"
+          className="btn btn-riflesso btn-block"
+          style={{ marginTop: 24 }}
+          disabled={
+            isSubmitting ||
+            (isAmericano && !!(slotDisponibile.data && slotDisponibile.data.length > 0))
+          }
+        >
+          {isSubmitting ? 'Creazione in corso…' : 'Crea torneo'}
         </button>
-        <p className="sub mt-3">
-          Il torneo nasce in <strong>Bozza</strong>. Dopo aver inserito le coppie/squadre,
-          mettilo <strong>In corso</strong> per renderlo visibile ai soci.
+
+        <p className="sub" style={{ marginTop: 12, fontSize: '0.8rem', opacity: 0.75 }}>
+          Il torneo nasce in <strong>Bozza</strong> — diventa visibile ai soci solo quando
+          lo porti <strong>In corso</strong>.
         </p>
       </form>
     </>
   )
 }
 
+
 function DettaglioTorneo({
   torneo,
   gestore,
   dati,
+  onCancellato,
 }: {
   torneo: Torneo
   gestore: boolean
   dati: DatiTornei
+  onCancellato: () => void
 }) {
   const qc = useQueryClient()
   const { profilo } = useAuth()
@@ -372,7 +754,31 @@ function DettaglioTorneo({
   const squadre = dati.perTorneoSquadre[String(torneo.id)] ?? []
   const incontri = dati.perTorneoIncontri[String(torneo.id)] ?? []
   const assegnati = dati.assegnati[String(torneo.id)] ?? new Set<string>()
+  const americanoPartite = dati.perTorneoAmericano[String(torneo.id)] ?? []
   const n = numGironi(torneo)
+
+  const isEliminazione = torneo.formato === 'eliminazione'
+  const isAmericano = torneo.formato === 'americano'
+
+  // Stato locale per i punti del torneo americano (gestione inline nella schedaGestione).
+  const [amPtIscr, setAmPtIscr] = useState(torneo.punti_iscrizione ?? 0)
+  const [amPtPos, setAmPtPos] = useState<Record<string, number>>(torneo.punti_posizioni ?? {})
+  const [amPtMsg, setAmPtMsg] = useState<{ tipo: 'ok' | 'errore'; testo: string } | null>(null)
+
+  const salvaPuntiAm = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from('tornei').update({
+        punti_iscrizione: amPtIscr,
+        punti_posizioni: Object.keys(amPtPos).length ? amPtPos : null,
+      }).eq('id', torneo.id)
+      if (error) throw error
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['tornei'] })
+      setAmPtMsg({ tipo: 'ok', testo: 'Punti salvati.' })
+    },
+    onError: (e: unknown) => setAmPtMsg({ tipo: 'errore', testo: messaggioErrore(e) }),
+  })
 
   // (Fase 6e) La squadra/coppia del socio in questo torneo (per il bottone "Sfida").
   const miaSquadraId = squadre.find((s) =>
@@ -383,10 +789,51 @@ function DettaglioTorneo({
     mutationFn: async (stato: StatoTorneo) => {
       const { error } = await supabase.from('tornei').update({ stato }).eq('id', torneo.id)
       if (error) throw error
+      // Assegna i punti per posizione quando il torneo americano viene concluso.
+      if (stato === 'concluso' && isAmericano) {
+        await assegnaPuntiAmericano(torneo, squadre, americanoPartite, dati.perSquadraComp)
+      }
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['tornei'] }),
     onError: (e: unknown) => window.alert('Aggiornamento non riuscito: ' + messaggioErrore(e)),
   })
+
+  const cancella = useMutation({
+    mutationFn: async () => {
+      // Azzera tutte le chiavi punti prima di eliminare i record.
+      for (const m of incontri) await azzeraChiave(`partita:${m.id}`)
+      const ng = numGironi(torneo)
+      for (let g = 1; g <= ng; g++) await azzeraChiave(`torneo:${torneo.id}:vittoria:${g}`)
+      for (const s of squadre) {
+        for (const c of dati.perSquadraComp[String(s.id)] ?? []) {
+          if (c.socio_id) await azzeraChiave(`iscr:${s.id}:${c.socio_id}`)
+        }
+      }
+      // Libera le prenotazioni collegate agli incontri di questo torneo.
+      const incontroIds = incontri.map((m) => m.id)
+      if (incontroIds.length > 0)
+        await supabase.from('prenotazioni').delete().in('incontro_id', incontroIds)
+      // Elimina in ordine: figli prima del padre.
+      await supabase.from('incontri').delete().eq('torneo_id', torneo.id)
+      await supabase.from('americano_partite').delete().eq('torneo_id', torneo.id)
+      await supabase.from('richieste_iscrizione').delete().eq('torneo_id', torneo.id)
+      await supabase.from('squadra_componenti').delete().eq('torneo_id', torneo.id)
+      await supabase.from('squadre').delete().eq('torneo_id', torneo.id)
+      const { error } = await supabase.from('tornei').delete().eq('id', torneo.id)
+      if (error) throw error
+    },
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ['tornei'] })
+      onCancellato()
+    },
+    onError: (e: unknown) => window.alert('Cancellazione non riuscita: ' + messaggioErrore(e)),
+  })
+
+  function avviaCancellazione() {
+    if (!window.confirm(`Cancellare il torneo "${torneo.nome}"?\n\nVerranno eliminati definitivamente squadre, incontri e risultati. Questa azione non è reversibile.`)) return
+    if (!window.confirm('Conferma definitiva: cancellare tutto?')) return
+    cancella.mutate()
+  }
 
   const fmt = (s: string) =>
     new Date(s + 'T00:00:00').toLocaleDateString('it-IT', {
@@ -395,42 +842,114 @@ function DettaglioTorneo({
       year: 'numeric',
     })
   let periodo = ''
-  if (torneo.data_inizio && torneo.data_fine)
-    periodo = ' · dal ' + fmt(torneo.data_inizio) + ' al ' + fmt(torneo.data_fine)
-  else if (torneo.data_inizio) periodo = ' · dal ' + fmt(torneo.data_inizio)
-  else if (torneo.data_fine) periodo = ' · fino al ' + fmt(torneo.data_fine)
+  if (isAmericano) {
+    if (torneo.americano_inizio) {
+      const d = new Date(torneo.americano_inizio)
+      const dataStr = d.toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' })
+      const oraI = d.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })
+      const oraF = torneo.americano_fine
+        ? new Date(torneo.americano_fine).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })
+        : null
+      periodo = ' · il ' + dataStr + ' · ' + oraI + (oraF ? '–' + oraF : '')
+    } else if (torneo.data_inizio) {
+      periodo = ' · il ' + fmt(torneo.data_inizio)
+    }
+  } else {
+    if (torneo.data_inizio && torneo.data_fine)
+      periodo = ' · dal ' + fmt(torneo.data_inizio) + ' al ' + fmt(torneo.data_fine)
+    else if (torneo.data_inizio) periodo = ' · dal ' + fmt(torneo.data_inizio)
+    else if (torneo.data_fine) periodo = ' · fino al ' + fmt(torneo.data_fine)
+  }
 
   // Contenuto della scheda "Gestione torneo" (solo organizzatori).
-  // Ordine: prima le squadre iscritte, poi i gironi, infine la modifica regole.
   const schedaGestione = (
     <div>
-      <Sezione titolo="Squadre iscritte">
-        <GestioneSquadre
-          torneo={torneo}
-          squadre={squadre}
-          compBySquadra={dati.perSquadraComp}
-          assegnati={assegnati}
-          richieste={dati.richiestePerTorneo[String(torneo.id)] ?? []}
-        />
+      <Sezione titolo={isAmericano ? 'Giocatori iscritti' : 'Squadre iscritte'}>
+        {isAmericano ? (
+          <GestioneGiocatoriAmericano
+            torneo={torneo}
+            giocatori={squadre}
+            compBySquadra={dati.perSquadraComp}
+            assegnati={assegnati}
+          />
+        ) : (
+          <GestioneSquadre
+            torneo={torneo}
+            squadre={squadre}
+            compBySquadra={dati.perSquadraComp}
+            assegnati={assegnati}
+            richieste={dati.richiestePerTorneo[String(torneo.id)] ?? []}
+          />
+        )}
       </Sezione>
 
-      <Sezione titolo="Gironi">
-        <GestioneGironi
-          torneo={torneo}
-          squadre={squadre}
-          incontri={incontri}
-          compBySquadra={dati.perSquadraComp}
-        />
-      </Sezione>
+      {!isEliminazione && !isAmericano && (
+        <Sezione titolo="Gironi">
+          <GestioneGironi
+            torneo={torneo}
+            squadre={squadre}
+            incontri={incontri}
+            compBySquadra={dati.perSquadraComp}
+          />
+        </Sezione>
+      )}
 
-      <Sezione titolo="Calendario">
-        <GestioneCalendario
-          torneo={torneo}
-          squadre={squadre}
-          incontri={incontri}
-          compBySquadra={dati.perSquadraComp}
-        />
-      </Sezione>
+      {isAmericano ? (
+        <Sezione titolo="📅 Turni">
+          <GestioneAmericano
+            torneo={torneo}
+            giocatori={squadre}
+            partite={americanoPartite}
+            gestore={true}
+            soloControlli={true}
+          />
+        </Sezione>
+      ) : (
+        <Sezione titolo={isEliminazione ? 'Tabellone' : 'Calendario'}>
+          {isEliminazione ? (
+            <GestioneCalendarioEliminazione
+              torneo={torneo}
+              squadre={squadre}
+              incontri={incontri}
+            />
+          ) : (
+            <GestioneCalendario
+              torneo={torneo}
+              squadre={squadre}
+              incontri={incontri}
+              compBySquadra={dati.perSquadraComp}
+            />
+          )}
+        </Sezione>
+      )}
+
+      {isAmericano && (
+        <Sezione titolo="Punti di questo torneo">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label>Punti iscrizione</label>
+              <NumeroInput
+                min={0}
+                value={amPtIscr}
+                onChange={(e) => { setAmPtIscr(Math.max(0, parseInt(e.target.value) || 0)); setAmPtMsg(null) }}
+              />
+            </div>
+          </div>
+          <label className="mt-3 block">Punti per posizione in classifica</label>
+          <EditorPuntiPosizioni value={amPtPos} onChange={(v) => { setAmPtPos(v); setAmPtMsg(null) }} />
+          {amPtMsg && (
+            <p className={`mt-3 ${amPtMsg.tipo === 'ok' ? classiOk : classiErrore}`}>{amPtMsg.testo}</p>
+          )}
+          <button
+            type="button"
+            className="btn mt-3"
+            disabled={salvaPuntiAm.isPending}
+            onClick={() => salvaPuntiAm.mutate()}
+          >
+            {salvaPuntiAm.isPending ? 'Salvataggio…' : 'Salva punti'}
+          </button>
+        </Sezione>
+      )}
 
       <Sezione titolo="Riepilogo punti">
         <RiepilogoPunti
@@ -438,6 +957,7 @@ function DettaglioTorneo({
           squadre={squadre}
           incontri={incontri}
           compBySquadra={dati.perSquadraComp}
+          americanoPartite={americanoPartite}
         />
       </Sezione>
 
@@ -449,15 +969,61 @@ function DettaglioTorneo({
           compBySquadra={dati.perSquadraComp}
         />
       </div>
+
+      <div className="mt-6 border-t border-[var(--border)] pt-4">
+        <div className="eyebrow" style={{ color: 'var(--errore)' }}>Zona pericolosa</div>
+        <p className="sub mt-2 mb-3">
+          La cancellazione è definitiva e irreversibile: rimuove squadre, incontri, risultati e tutti i punti assegnati.
+        </p>
+        <button
+          type="button"
+          className="btn btn-pericolo"
+          onClick={avviaCancellazione}
+          disabled={cancella.isPending}
+        >
+          {cancella.isPending ? 'Cancellazione…' : '🗑️ Cancella torneo'}
+        </button>
+      </div>
     </div>
   )
 
   // Contenuto della scheda "Risultati e Classifica" (visibile a tutti).
-  // Calendario e risultati arriveranno con la Fase 6d.
-  const schedaRisultati = (
+  const schedaRisultati = isAmericano ? (
     <div>
-      {/* (Fase 7c) Con più gironi: tasti per scegliere quale girone vedere
-          (controllano podio, classifica e calendario). */}
+      <PodioAmericano giocatori={squadre} partite={americanoPartite} />
+      <Sezione titolo="🏆 Classifica">
+        <ClassificaAmericano
+          giocatori={squadre}
+          partite={americanoPartite}
+        />
+      </Sezione>
+      <Sezione titolo="📅 Turni e risultati">
+        <GestioneAmericano
+          torneo={torneo}
+          giocatori={squadre}
+          partite={americanoPartite}
+          gestore={false}
+          puoModificare={gestore}
+        />
+      </Sezione>
+    </div>
+  ) : isEliminazione ? (
+    <div>
+      <Sezione titolo="🏆 Tabellone">
+        <TabelloneEliminazione
+          torneo={torneo}
+          squadre={squadre}
+          incontri={incontri}
+          gestore={gestore}
+          prenByIncontro={dati.prenByIncontro}
+          miaSquadraId={miaSquadraId}
+          compBySquadra={dati.perSquadraComp}
+        />
+      </Sezione>
+    </div>
+  ) : (
+    <div>
+      {/* (Fase 7c) Con più gironi: tasti per scegliere quale girone vedere. */}
       {n > 1 && (
         <nav className="mb-4 flex flex-wrap gap-1.5" aria-label="Scegli il girone">
           <button

@@ -185,9 +185,7 @@ export default function GestioneGironi({
             <div>
               {squadre.map((s) => (
                 <div key={s.id} className="comp-riga">
-                  <span className="nome">
-                    <span className="chip-squadra">{nomeSquadraElegante(s.nome)}</span>
-                  </span>
+                  <span className="nome">{nomeSquadraElegante(s.nome)}</span>
                   <select
                     className={classiInput}
                     style={{ width: 'auto', marginTop: 0 }}

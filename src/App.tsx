@@ -9,6 +9,7 @@ import ProfiloPage from '@/features/profilo/ProfiloPage'
 import PrenotaPage from '@/features/prenotazioni/PrenotaPage'
 import TorneiPage from '@/features/tornei/TorneiPage'
 import PremiPage from '@/features/premi/PremiPage'
+import GestionePremi from '@/features/segreteria/GestionePremi'
 import SociPage from '@/features/segreteria/SociPage'
 import ImpostazioniPage from '@/features/segreteria/ImpostazioniPage'
 import GestionePrenotazioni from '@/features/segreteria/GestionePrenotazioni'
@@ -46,7 +47,12 @@ function App() {
         <Route path="/profilo" element={<ProfiloPage />} />
         <Route path="/prenota" element={<PrenotaPage />} />
         <Route path="/tornei" element={<TorneiPage />} />
-        <Route path="/premi" element={<PremiPage />} />
+        {profilo?.is_allenatore && !profilo?.is_admin && (
+          <Route path="/premi" element={<GestionePremi />} />
+        )}
+        {!profilo?.is_allenatore && !profilo?.e_allenatore && !profilo?.is_admin && (
+          <Route path="/premi" element={<PremiPage />} />
+        )}
         {profilo?.is_admin && <Route path="/soci" element={<SociPage />} />}
         {profilo?.is_admin && <Route path="/impostazioni" element={<ImpostazioniPage />} />}
         {profilo && puoGestirePrenotazioni(profilo) && (

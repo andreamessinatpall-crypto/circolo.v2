@@ -1,4 +1,4 @@
-import { classiInput } from '@/components/stili'
+import NumeroInput from '@/components/NumeroInput'
 import { nomeGirone } from './gironi'
 import type { PuntiSet, Torneo } from './tipi'
 
@@ -32,7 +32,12 @@ export default function EditorPuntiTorneo({
             valore={gironi[i] ?? { iscrizione: 0, vittoria: 0, torneo: 0 }}
             onChange={(p) => {
               const next = gironi.slice()
-              next[i] = p
+              if (i === 0) {
+                // Propaga automaticamente a tutti i gironi successivi
+                for (let j = 0; j < numeroGironi; j++) next[j] = p
+              } else {
+                next[i] = p
+              }
               setGironi(next)
             }}
           />
@@ -52,10 +57,8 @@ function TernaPunti({
   const campo = (k: keyof PuntiSet, etichetta: string) => (
     <div>
       <label>{etichetta}</label>
-      <input
-        type="number"
+      <NumeroInput
         min={0}
-        className={classiInput}
         value={valore[k]}
         onChange={(e) => onChange({ ...valore, [k]: Math.max(0, Number(e.target.value) || 0) })}
       />

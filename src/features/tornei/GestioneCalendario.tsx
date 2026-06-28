@@ -70,9 +70,11 @@ export default function GestioneCalendario({
       }
 
       // Costruisco le righe: per ogni girone, ogni turno è una "giornata" (round).
+      const andataRitorno = !!(torneo as { andata_ritorno?: boolean | null }).andata_ritorno
       const righe: Partial<Incontro>[] = []
       for (const g of gironiPieni) {
         const turni = generaTurni(perGirone[g])
+        const numAndata = turni.length
         turni.forEach((round, idx) =>
           round.forEach(([casa, ospite]) => {
             const riga: Partial<Incontro> = {
@@ -95,6 +97,29 @@ export default function GestioneCalendario({
               if (vecchio.data_disputata !== undefined) riga.data_disputata = vecchio.data_disputata
             }
             righe.push(riga)
+            // In andata e ritorno aggiungo subito il ritorno (home/away invertiti).
+            if (andataRitorno) {
+              const rigaR: Partial<Incontro> = {
+                torneo_id: torneo.id,
+                round: numAndata + idx + 1,
+                casa_id: ospite,
+                ospite_id: casa,
+                girone: g,
+              }
+              // Mantieni anche il risultato del ritorno (chiave con teams swappati).
+              const vecchioR = mantieni ? perCoppia.get(chiaveCoppia(ospite, casa)) : undefined
+              if (vecchioR) {
+                const stessoVerso = String(vecchioR.casa_id) === String(ospite)
+                rigaR.punti_casa = stessoVerso ? vecchioR.punti_casa : vecchioR.punti_ospite
+                rigaR.punti_ospite = stessoVerso ? vecchioR.punti_ospite : vecchioR.punti_casa
+                if (vecchioR.set_punteggi !== undefined)
+                  rigaR.set_punteggi = stessoVerso
+                    ? vecchioR.set_punteggi
+                    : ribaltaSet(vecchioR.set_punteggi)
+                if (vecchioR.data_disputata !== undefined) rigaR.data_disputata = vecchioR.data_disputata
+              }
+              righe.push(rigaR)
+            }
           }),
         )
       }

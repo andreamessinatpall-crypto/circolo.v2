@@ -51,11 +51,23 @@ export function usePrenotazioniAdminIntervallo(
           .select('id, torneo:tornei(nome)')
           .in('id', incontroIds)
         const nomePerIncontro = new Map<string, string>()
-        for (const r of (inc ?? []) as Array<{ id: number | string; torneo: { nome: string } | null }>) {
+        for (const r of (inc ?? []) as unknown as Array<{ id: number | string; torneo: { nome: string } | null }>) {
           if (r.torneo?.nome) nomePerIncontro.set(String(r.id), r.torneo.nome)
         }
         for (const p of lista) {
           if (p.incontro_id) p.torneo_nome = nomePerIncontro.get(String(p.incontro_id)) ?? null
+        }
+      }
+
+      // Risolve il nome per le prenotazioni americano (torneo_id diretto).
+      const conTorneo = lista.filter((p) => p.torneo_id && !p.incontro_id)
+      if (conTorneo.length) {
+        const torneoIds = conTorneo.map((p) => p.torneo_id as string)
+        const { data: torn } = await supabase.from('tornei').select('id, nome').in('id', torneoIds)
+        const nomePerTorneo = new Map<string, string>()
+        for (const t of (torn ?? []) as Array<{ id: string; nome: string }>) nomePerTorneo.set(String(t.id), t.nome)
+        for (const p of lista) {
+          if (p.torneo_id && !p.incontro_id) p.torneo_nome = nomePerTorneo.get(String(p.torneo_id)) ?? null
         }
       }
 

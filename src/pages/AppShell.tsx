@@ -12,8 +12,6 @@ interface Voce {
   label: string
 }
 
-// premiVisibile: il socio vede la tab Premi solo a "modalità premi" accesa;
-// l'admin la vede sempre (la gestione lato segreteria arriva in Fase 8).
 function vociMenu(p: Socio, premiVisibile: boolean): Voce[] {
   if (p.is_admin) {
     return [
@@ -22,6 +20,9 @@ function vociMenu(p: Socio, premiVisibile: boolean): Voce[] {
       { path: '/tornei', label: 'Tornei' },
     ]
   }
+  const collaboratore = !!p.is_allenatore && !p.is_admin
+  const istruttore    = !!p.e_allenatore && !p.is_allenatore && !p.is_admin
+
   const voci: Voce[] = [{ path: '/profilo', label: 'Profilo' }]
   if (puoGestirePrenotazioni(p)) {
     voci.push({ path: '/prenotazioni', label: 'Prenotazioni' })
@@ -29,7 +30,11 @@ function vociMenu(p: Socio, premiVisibile: boolean): Voce[] {
     voci.push({ path: '/prenota', label: 'Prenota' })
   }
   voci.push({ path: '/tornei', label: 'Tornei' })
-  if (premiVisibile) voci.push({ path: '/premi', label: 'Premi' })
+  if (collaboratore) {
+    voci.push({ path: '/premi', label: 'Premi' })
+  } else if (!istruttore && premiVisibile) {
+    voci.push({ path: '/premi', label: 'Premi' })
+  }
   return voci
 }
 
