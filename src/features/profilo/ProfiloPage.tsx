@@ -8,25 +8,35 @@ import SociPage from '@/features/segreteria/SociPage'
 
 type SottoScheda = 'riepilogo' | 'club' | 'dati' | 'amici' | 'giocatori'
 
-const BASE: { id: SottoScheda; label: string }[] = [
-  { id: 'riepilogo', label: 'Riepilogo' },
-  { id: 'club',      label: 'Club' },
-  { id: 'dati',      label: 'I miei dati' },
-]
-
 export default function ProfiloPage() {
   const { profilo } = useAuth()
   const [scheda, setScheda] = useState<SottoScheda>('riepilogo')
 
   const collaboratore = !!profilo?.is_allenatore && !profilo?.is_admin
   const istruttore    = !!profilo?.e_allenatore && !profilo?.is_allenatore && !profilo?.is_admin
-  const regolare      = !collaboratore && !istruttore && !profilo?.is_admin
 
-  const schede = [
-    ...BASE,
-    ...(collaboratore ? [{ id: 'giocatori' as SottoScheda, label: 'Giocatori' }] : []),
-    ...(regolare      ? [{ id: 'amici'     as SottoScheda, label: 'Amici'      }] : []),
-  ]
+  let schede: { id: SottoScheda; label: string }[]
+  if (collaboratore) {
+    schede = [
+      { id: 'riepilogo', label: 'Riepilogo' },
+      { id: 'giocatori', label: 'Giocatori' },
+      { id: 'dati',      label: 'I miei dati' },
+      { id: 'club',      label: 'Club' },
+    ]
+  } else if (istruttore) {
+    schede = [
+      { id: 'riepilogo', label: 'Riepilogo' },
+      { id: 'dati',      label: 'I miei dati' },
+      { id: 'club',      label: 'Club' },
+    ]
+  } else {
+    schede = [
+      { id: 'riepilogo', label: 'Riepilogo' },
+      { id: 'amici',     label: 'Amici' },
+      { id: 'club',      label: 'Club' },
+      { id: 'dati',      label: 'I miei dati' },
+    ]
+  }
 
   return (
     <div>

@@ -1,8 +1,11 @@
 import { useState } from 'react'
+import type { ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { messaggioErrore } from '@/lib/errori'
 import { titleCase } from '@/lib/formato'
+import { useAuth } from '@/auth/useAuth'
+import { LIVELLI_PUNTI_DEFAULT, livelloDaPunti } from './livelliPunti'
 import BadgeProfilo from './badge/BadgeProfilo'
 import { TorneiInCorso, TorneiInProgramma } from './TorneiClub'
 
@@ -15,20 +18,79 @@ interface RigaClassifica {
 
 const TOP = 10
 
+function podioEmoji(pos: number): string | null {
+  if (pos === 1) return '🥇'
+  if (pos === 2) return '🥈'
+  if (pos === 3) return '🥉'
+  return null
+}
+
 function RigaCl({ r }: { r: RigaClassifica }) {
+  const podio = podioEmoji(r.posizione)
+  const lv = livelloDaPunti(r.punti ?? 0, LIVELLI_PUNTI_DEFAULT)
+  const cfg = LIVELLI_PUNTI_DEFAULT[lv - 1]
   return (
     <div className={'classifica-riga' + (r.is_me ? ' io' : '')}>
-      <span className="cl-pos">{r.posizione}º</span>
+      {podio
+        ? <span className="cl-podio">{podio}</span>
+        : <span className="cl-pos">{r.posizione}º</span>}
       <span className="cl-nick">
-        {r.etichetta ? titleCase(String(r.etichetta)) : '—'}
+        {r.etichetta ? titleCase(String(r.etichetta)) : cfg.nome}
       </span>
       <span className="cl-punti">{r.punti ?? 0} pt</span>
     </div>
   )
 }
 
+function Ico({ d, children }: { d?: string; children?: ReactNode }) {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      {d ? <path d={d} /> : children}
+    </svg>
+  )
+}
+
+const IcoTrofeo = <Ico d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18M4 22h16M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22M18 2H6v7a6 6 0 0 0 12 0V2z" />
+const IcoZap = <Ico><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></Ico>
+const IcoCal = <Ico><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></Ico>
+const IcoAward = <Ico><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></Ico>
+
+function SezClub({
+  icona,
+  titolo,
+  badge,
+  children,
+}: {
+  icona?: ReactNode
+  titolo: string
+  badge?: ReactNode
+  children: ReactNode
+}) {
+  return (
+    <section>
+      <div className="club-sez-header">
+        {icona && <span className="club-sez-icona">{icona}</span>}
+        <h2 className="club-sez-titolo">{titolo}</h2>
+        {badge}
+      </div>
+      {children}
+    </section>
+  )
+}
+
 export default function ClubProfilo() {
   const [espanso, setEspanso] = useState(false)
+  const { profilo, ricaricaProfilo } = useAuth()
+  const istruttore = !!profilo?.e_allenatore && !profilo?.is_allenatore && !profilo?.is_admin
+  const [mostraNome, setMostraNome] = useState(profilo?.mostra_in_classifica ?? false)
+
+  async function handleToggleMostraNome() {
+    const nuovo = !mostraNome
+    setMostraNome(nuovo)
+    await supabase.from('soci').update({ mostra_in_classifica: nuovo }).eq('id', profilo!.id)
+    await ricaricaProfilo()
+    query.refetch()
+  }
 
   const query = useQuery({
     queryKey: ['classifica_visibile'],
@@ -43,64 +105,78 @@ export default function ClubProfilo() {
   const mia = lista.find((r) => r.is_me)
   const mioIdx = lista.findIndex((r) => r.is_me)
 
-  // L'utente è fuori dalla top-10 se il suo indice nella lista è >= TOP.
   const miaFuori = mioIdx >= TOP
-  // Righe "nascoste" tra la top-10 e la riga dell'utente.
   const gapCount = miaFuori ? mioIdx - TOP : 0
-  // Righe dopo la riga dell'utente (se fuori top-10) o dopo la top-10.
   const altriCount = miaFuori
     ? lista.length - mioIdx - 1
     : Math.max(0, lista.length - TOP)
-
   const haRigheNascoste = lista.length > TOP
 
   return (
-    <div>
-      <div className="eyebrow">Classifica del club</div>
-      <div className="bacheca">
-        {query.isLoading && <p className="text-sm">Caricamento…</p>}
+    <div className="club-page">
 
-        {query.error && (
-          <p className="text-sm">
-            Classifica non disponibile: potrebbe servire lo script dei punti su Supabase.
-            <span className="mt-1 block text-xs opacity-80">
-              Dettaglio: {messaggioErrore(query.error)}
-            </span>
-          </p>
-        )}
-
-        {!query.isLoading && !query.error && lista.length === 0 && (
-          <p className="text-sm">
-            Nessun socio da mostrare: gioca qualche partita per comparire in classifica.
-          </p>
-        )}
-
-        {!query.error && lista.length > 0 && (
-          <>
-            <div className="mb-3 text-sm">
-              La tua posizione:{' '}
-              <strong>{mia ? mia.posizione + 'º' : 'non in classifica'}</strong>
+      {/* ── Hero banner ──────────────────────────────────────── */}
+      {!istruttore && !query.isLoading && !query.error && lista.length > 0 && (
+        <div className="club-hero">
+          <div className="club-hero-sx">
+            <div className="club-hero-kicker">La tua posizione</div>
+            <div className="club-hero-pos">
+              {mia ? `${mia.posizione}°` : '—'}
             </div>
+            <div className="club-hero-pos-sub">
+              {mia ? `${mia.punti ?? 0} punti` : 'Non ancora in classifica'}
+            </div>
+          </div>
+          <div className="club-hero-stats">
+            <div className="club-hero-stat">
+              <span className="club-hero-stat-num">{lista.length}</span>
+              <span className="club-hero-stat-lbl">Iscritti</span>
+            </div>
+            <div className="club-hero-div" />
+            <div className="club-hero-stat">
+              <span className="club-hero-stat-num">{lista[0]?.punti ?? 0}</span>
+              <span className="club-hero-stat-lbl">Top score</span>
+            </div>
+          </div>
+        </div>
+      )}
 
+      {/* ── Classifica ───────────────────────────────────────── */}
+      <SezClub icona={IcoTrofeo} titolo="Classifica del club">
+        <div className="bacheca">
+          {query.isLoading && <p className="text-sm">Caricamento…</p>}
+
+          {query.error && (
+            <p className="text-sm">
+              Classifica non disponibile: potrebbe servire lo script dei punti su Supabase.
+              <span className="mt-1 block text-xs opacity-80">
+                Dettaglio: {messaggioErrore(query.error)}
+              </span>
+            </p>
+          )}
+
+          {!query.isLoading && !query.error && lista.length === 0 && (
+            <p className="text-sm">
+              Nessun socio da mostrare: gioca qualche partita per comparire in classifica.
+            </p>
+          )}
+
+          {!query.error && lista.length > 0 && (
             <div className="flex flex-col gap-0.5">
               {espanso ? (
                 lista.map((r, i) => <RigaCl key={i} r={r} />)
               ) : (
                 <>
-                  {/* Top 10 sempre visibili */}
                   {lista.slice(0, TOP).map((r, i) => <RigaCl key={i} r={r} />)}
 
                   {miaFuori ? (
                     <>
-                      {/* Espandi verso l'alto (righe tra top-10 e utente) */}
                       {gapCount > 0 && (
                         <button className="cl-espandi" onClick={() => setEspanso(true)}>
                           ▼ {gapCount} {gapCount === 1 ? 'giocatore' : 'giocatori'}
                         </button>
                       )}
-                      {/* Riga dell'utente sempre visibile */}
                       {mioIdx >= 0 && <RigaCl r={lista[mioIdx]} />}
-                      {/* Espandi verso il basso (righe dopo utente) */}
                       {altriCount > 0 && (
                         <button className="cl-espandi" onClick={() => setEspanso(true)}>
                           ▼ {altriCount} {altriCount === 1 ? 'altro' : 'altri'}
@@ -108,7 +184,6 @@ export default function ClubProfilo() {
                       )}
                     </>
                   ) : (
-                    /* Utente in top-10 o non in classifica: espandi tutto ciò che è oltre */
                     altriCount > 0 && (
                       <button className="cl-espandi" onClick={() => setEspanso(true)}>
                         ▼ {altriCount} {altriCount === 1 ? 'altro' : 'altri'}
@@ -118,29 +193,55 @@ export default function ClubProfilo() {
                 </>
               )}
 
-              {/* Bottone comprimi (solo quando espanso e ci sono righe extra) */}
               {espanso && haRigheNascoste && (
                 <button className="cl-espandi cl-comprimi" onClick={() => setEspanso(false)}>
                   ▲ Comprimi
                 </button>
               )}
             </div>
-          </>
-        )}
-      </div>
+          )}
+        </div>
+      </SezClub>
 
-      <div className="eyebrow">Tornei in corso</div>
-      <div className="card">
-        <TorneiInCorso />
-      </div>
+      {/* ── Visibilità in classifica ─────────────────────────── */}
+      {!istruttore && profilo && (
+        <div className="card" style={{ marginTop: '-0.25rem' }}>
+          <label className="dati-check-row" style={{ margin: 0 }}>
+            <input
+              type="checkbox"
+              className="dati-check"
+              checked={mostraNome}
+              onChange={handleToggleMostraNome}
+            />
+            <span>
+              <span className="dati-check-titolo">Mostra il mio nome nella classifica</span>
+              <span className="dati-check-sub">Se disattivato, comparirà solo il livello.</span>
+            </span>
+          </label>
+        </div>
+      )}
 
-      <div className="eyebrow">Tornei in programma</div>
-      <div className="card">
-        <TorneiInProgramma />
-      </div>
+      {/* ── I tuoi traguardi ─────────────────────────────────── */}
+      {!istruttore && (
+        <SezClub icona={IcoAward} titolo="I tuoi traguardi">
+          <BadgeProfilo />
+        </SezClub>
+      )}
 
-      <div className="eyebrow">I tuoi traguardi</div>
-      <BadgeProfilo />
+      {/* ── Tornei in corso ──────────────────────────────────── */}
+      <SezClub icona={IcoZap} titolo="Tornei in corso">
+        <div className="card">
+          <TorneiInCorso />
+        </div>
+      </SezClub>
+
+      {/* ── Tornei in programma ──────────────────────────────── */}
+      <SezClub icona={IcoCal} titolo="Tornei in programma">
+        <div className="card">
+          <TorneiInProgramma />
+        </div>
+      </SezClub>
+
     </div>
   )
 }

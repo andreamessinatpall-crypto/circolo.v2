@@ -5,7 +5,7 @@ import { titleCase, dataEstesa } from '@/lib/formato'
 import { classiErrore, classiOk } from '@/components/stili'
 import { costruisciCsv, scaricaCsv } from '@/lib/csv'
 import ModificaGiocatore from './ModificaGiocatore'
-import { aggiustaSaldo, fetchStoricoSocio, impostaBlocco, type SocioAdmin } from './datiSoci'
+import { aggiustaSaldo, completaCancellazione, fetchStoricoSocio, impostaBlocco, type SocioAdmin } from './datiSoci'
 
 const COLONNE_NASCOSTE = ['socio_id', 'chiave', 'quando']
 
@@ -96,7 +96,18 @@ export default function DettaglioGiocatore({
     onError: (e: Error) => setMsgCsv({ tipo: 'errore', testo: e.message }),
   })
 
+  const cancella = useMutation({
+    mutationFn: () => completaCancellazione(socio.id),
+    onSuccess: (r) => {
+      if (!r.ok) { setMsg({ tipo: 'errore', testo: r.messaggio ?? 'Operazione non riuscita.' }); return }
+      invalida()
+      onChiudi()
+    },
+    onError: (e: Error) => setMsg({ tipo: 'errore', testo: e.message }),
+  })
+
   const nomeCompleto = `${titleCase(socio.cognome)} ${titleCase(socio.nome)}`
+  const haCancellazione = !!socio.richiesta_cancellazione
 
   return (
     <div
@@ -108,9 +119,15 @@ export default function DettaglioGiocatore({
           <div>
             <h2 className="m-0 text-xl">{nomeCompleto}</h2>
             <p className="sub mt-1">
-              {socio.email}
-              {socio.telefono ? ` · ${socio.telefono}` : ''}
-              {socio.data_nascita ? ` · nato/a il ${dataEstesa(socio.data_nascita)}` : ''}
+              {(socio.email ?? '').endsWith('@cancellato.invalid')
+                ? 'Account anonimizzato'
+                : [
+                    socio.email,
+                    socio.telefono,
+                    socio.data_nascita ? `nato/a il ${dataEstesa(socio.data_nascita)}` : null,
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')}
             </p>
           </div>
           <button
@@ -130,7 +147,36 @@ export default function DettaglioGiocatore({
             <span className="pill bg-terra/10 text-terra">Istruttore</span>
           )}
           {!socio.attivo && <span className="pill off">Non attivo</span>}
+          {haCancellazione && (
+            <span className="pill bg-red-100 text-red-700 font-semibold">
+              Richiesta cancellazione
+            </span>
+          )}
         </div>
+
+        {/* Sezione richiesta cancellazione (GDPR Art. 17) */}
+        {haCancellazione && (
+          <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4">
+            <p className="mb-1 text-sm font-semibold text-red-800">
+              Richiesta di cancellazione account
+            </p>
+            <p className="mb-3 text-xs text-red-700">
+              Richiesta inviata il{' '}
+              {new Date(socio.richiesta_cancellazione!).toLocaleDateString('it-IT')}.
+              Completare entro 30 giorni (art. 17 GDPR): clicca "Completa cancellazione"
+              per anonimizzare i dati, poi elimina l'utente da{' '}
+              <strong>Supabase Dashboard → Authentication → Users</strong>.
+            </p>
+            <button
+              type="button"
+              className="btn btn-pericolo btn-mini"
+              disabled={cancella.isPending}
+              onClick={() => cancella.mutate()}
+            >
+              {cancella.isPending ? 'Elaborazione…' : 'Completa cancellazione'}
+            </button>
+          </div>
+        )}
 
         {/* Saldi con +/- inline */}
         <div className="mt-4 flex gap-3">

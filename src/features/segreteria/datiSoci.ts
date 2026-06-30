@@ -22,6 +22,7 @@ export interface SocioAdmin {
   crediti: number | null
   punti_bloccati: boolean | null
   crediti_bloccati: boolean | null
+  richiesta_cancellazione: string | null
 }
 
 // Tutti i soci (l'admin li legge grazie alle policy RLS).
@@ -84,4 +85,28 @@ export async function fetchStoricoSocio(socioId: string): Promise<EsitoStorico> 
   })
   if (error) return { ok: false, mancaScript: mancaRpc(error), messaggio: error.message }
   return { ok: true, righe: (data ?? []) as Record<string, unknown>[] }
+}
+
+// Anonimizza i dati personali di un socio che ha richiesto la cancellazione
+// (GDPR Art. 17). Dopo questa operazione l'admin deve eliminare l'utente
+// da Supabase Dashboard → Authentication → Users.
+export async function completaCancellazione(
+  socioId: string,
+): Promise<{ ok: boolean; messaggio?: string }> {
+  const { error } = await supabase
+    .from('soci')
+    .update({
+      nome: 'Utente',
+      cognome: 'Cancellato',
+      email: `cancellato-${socioId}@cancellato.invalid`,
+      telefono: null,
+      data_nascita: null,
+      genere: null,
+      attivo: false,
+      mostra_in_classifica: false,
+      richiesta_cancellazione: null,
+    })
+    .eq('id', socioId)
+  if (error) return { ok: false, messaggio: error.message }
+  return { ok: true }
 }

@@ -14,10 +14,10 @@ import { oraLocale } from './orari'
 import type { MiaPrenotazione, Partecipante } from './datiAmichevoli'
 import type { Campo, Sport } from './tipi'
 
-const ICONA_CAL = (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-    <rect x="3" y="4.5" width="18" height="16" rx="2.5" />
-    <path d="M3 9h18M8 2.5v4M16 2.5v4" />
+const ICONA_GIORNO = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
+    <circle cx="12" cy="12" r="4" />
+    <path d="M12 2v2.5M12 19.5V22M4.22 4.22l1.77 1.77M18.01 18.01l1.77 1.77M2 12h2.5M19.5 12H22M4.22 19.78l1.77-1.77M18.01 5.99l1.77-1.77" />
   </svg>
 )
 
@@ -231,7 +231,7 @@ export default function MieAmichevoli({ sport }: { sport: Sport }) {
       {gruppi.map((g) => (
         <div key={g.giorno} className="gruppo-giorno">
           <div className="giorno-partite">
-            {ICONA_CAL}
+            {ICONA_GIORNO}
             <span>{g.etichetta}</span>
           </div>
           <div className="schede-griglia">
@@ -334,26 +334,22 @@ export function SchedaPartita({
       ? 'Aggiungi prima degli amici dal Profilo'
       : staff
         ? '— Aggiungi giocatori —'
-        : '— Aggiungi un amico —'
+        : 'Iscrivi un amico'
 
   return (
     <div className={'amichevole-riga' + (inModale ? ' in-modale' : '')}>
       <div className="amichevole-cap">
         <div>
           {!inModale && (
-            <>
-              <div className="quando">
-                {inizio.toLocaleDateString('it-IT', {
-                  weekday: 'long',
-                  day: 'numeric',
-                  month: 'long',
-                })}
-              </div>
-              <div className="orario">
-                {oraLocale(inizio)}–{oraLocale(fine)}
-              </div>
-              <div className="dove">{campo?.nome ?? 'Campo'}</div>
-            </>
+            <div className="orario">
+              {oraLocale(inizio)}–{oraLocale(fine)}
+              {campo && (
+                <>
+                  <span className="orario-sep">·</span>
+                  <span className="orario-campo">{campo.nome}</span>
+                </>
+              )}
+            </div>
           )}
           {pren.allenamento ? (
             <>

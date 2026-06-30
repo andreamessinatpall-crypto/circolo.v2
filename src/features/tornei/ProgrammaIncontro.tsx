@@ -37,6 +37,7 @@ export function BottoneProgramma({
   compOspite,
   etichetta,
   classe = 'btn-secondario',
+  classeCompleta,
   titolo = 'Programma incontro',
 }: {
   torneo: Torneo
@@ -46,6 +47,7 @@ export function BottoneProgramma({
   compOspite: Componente[]
   etichetta: string
   classe?: string
+  classeCompleta?: string
   titolo?: string
 }) {
   const [aperto, setAperto] = useState(false)
@@ -53,7 +55,7 @@ export function BottoneProgramma({
     <>
       <button
         type="button"
-        className={'btn btn-mini ' + classe}
+        className={classeCompleta ?? ('btn btn-mini ' + classe)}
         onClick={() => setAperto(true)}
       >
         {etichetta}

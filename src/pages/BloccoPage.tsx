@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/auth/useAuth'
 import { classiCard } from '@/components/stili'
 
@@ -6,6 +7,12 @@ import { classiCard } from '@/components/stili'
 //  - registrazione in attesa di approvazione dalla segreteria.
 export default function BloccoPage() {
   const { blocco, esci } = useAuth()
+  const navigate = useNavigate()
+
+  async function handleEsci() {
+    await esci()
+    navigate('/login', { replace: true })
+  }
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-6 p-6">
@@ -17,7 +24,7 @@ export default function BloccoPage() {
 
         <button
           type="button"
-          onClick={() => esci()}
+          onClick={handleEsci}
           className="mt-6 text-sm font-semibold text-verde-700 hover:underline"
         >
           Esci

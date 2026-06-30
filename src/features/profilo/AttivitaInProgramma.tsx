@@ -9,10 +9,10 @@ import { oraLocale } from '@/features/prenotazioni/orari'
 const SPORT_LABEL: Record<string, string> = { padel: 'Padel', calcio: 'Calcio' }
 const SPORT_ICONA: Record<string, string> = { padel: '🎾', calcio: '⚽' }
 
-const ICONA_CAL = (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-    <rect x="3" y="4.5" width="18" height="16" rx="2.5" />
-    <path d="M3 9h18M8 2.5v4M16 2.5v4" />
+const ICONA_GIORNO = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
+    <circle cx="12" cy="12" r="4" />
+    <path d="M12 2v2.5M12 19.5V22M4.22 4.22l1.77 1.77M18.01 18.01l1.77 1.77M2 12h2.5M19.5 12H22M4.22 19.78l1.77-1.77M18.01 5.99l1.77-1.77" />
   </svg>
 )
 
@@ -157,10 +157,7 @@ export default function AttivitaInProgramma() {
   const lista = query.data ?? []
   if (lista.length === 0) {
     return (
-      <p className="sub">
-        Non hai attività in programma. Prenota un campo e indica i giocatori, oppure fatti
-        aggiungere da un amico.
-      </p>
+      <p className="sub">Non hai attività in programma. Prenota un campo.</p>
     )
   }
 
@@ -198,7 +195,7 @@ export default function AttivitaInProgramma() {
       {gruppi.map((g) => (
         <div key={g.giorno} className="gruppo-giorno">
           <div className="giorno-partite">
-            {ICONA_CAL}
+            {ICONA_GIORNO}
             <span>{g.etichetta}</span>
           </div>
           <div className="flex flex-col gap-3">
@@ -212,6 +209,7 @@ export default function AttivitaInProgramma() {
                     <div className="att-sport">
                       <span className="att-sport-ic">{SPORT_ICONA[m.sport] ?? '🎾'}</span>
                       {SPORT_LABEL[m.sport] ?? m.sport}
+                      <span className="att-parti-sep">·</span>
                       <span className="att-campo">{m.campo_nome ?? 'Campo'}</span>
                     </div>
                     {m.allenamento && m.allenatore_id && (

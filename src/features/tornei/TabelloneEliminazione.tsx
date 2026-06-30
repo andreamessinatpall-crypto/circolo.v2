@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { messaggioErrore } from '@/lib/errori'
@@ -206,6 +206,13 @@ export default function TabelloneEliminazione({
     ? Math.round(Math.log2(seed.length))
     : N >= 2 ? numTurniEliminazione(N) : 0
   const totDbRounds = ar ? numDbRoundsAR(totRound, finaleSecca) : totRound
+
+  // Larghezza esplicita del bracket — bypassa il bug di Safari mobile dove
+  // width:max-content su flex con figli overflow:hidden restituisce quasi 0.
+  const BS_COL = 162, BS_FINAL = 172, BS_GAP = 48, BS_PAD = 28
+  const numHalfCols = Math.max(totRound - 1, 0)
+  const halfW = numHalfCols * BS_COL + Math.max(numHalfCols - 1, 0) * BS_GAP
+  const bracketW = BS_FINAL + (numHalfCols > 0 ? 2 * (halfW + BS_GAP) : 0) + 2 * BS_PAD
   // Escludi il terzo posto (girone=0) dal calcolo del turno corrente.
   const bracketIncontri = incontri.filter((m) => Number(m.girone || 0) !== 0)
   const turnoAtt = turnoCorrenteEliminazione(bracketIncontri)
@@ -254,6 +261,35 @@ export default function TabelloneEliminazione({
     }
   }, [bracketIncontri])
 
+  // Bug Safari mobile: align-items:stretch non propaga alle colonne fuori dal
+  // viewport iniziale (quelle a x > larghezza schermo). Le colonne esterne
+  // (Finale, Semi) rimangono alla loro altezza minima invece di estendersi come
+  // la colonna R16. useLayoutEffect è sincrono (prima del paint) → nessun flash.
+  useLayoutEffect(() => {
+    const finalEl = finalColRef.current
+    if (!finalEl) return
+    const grafEl = finalEl.parentElement
+    if (!grafEl) return
+    const cols = Array.from(grafEl.querySelectorAll<HTMLElement>('.bs-col'))
+    if (cols.length === 0) return
+    const maxH = Math.max(...cols.map(c => c.offsetHeight))
+    if (maxH > 0) cols.forEach(c => { c.style.height = maxH + 'px' })
+  }, [])
+
+  // Centra il Finale nella finestra scorrevole all'apertura
+  useEffect(() => {
+    const finalEl = finalColRef.current
+    if (!finalEl) return
+    requestAnimationFrame(() => {
+      const scrollEl = finalEl.closest('.bs-scroll') as HTMLElement | null
+      if (!scrollEl) return
+      const finalRect = finalEl.getBoundingClientRect()
+      const scrollRect = scrollEl.getBoundingClientRect()
+      const relLeft = finalRect.left - scrollRect.left + scrollEl.scrollLeft
+      scrollEl.scrollLeft = relLeft - (scrollEl.clientWidth - finalEl.offsetWidth) / 2
+    })
+  }, [])
+
   const nomi: Record<string, string> = {}
   const loghi: Record<string, string | null> = {}
   for (const s of squadre) {
@@ -288,10 +324,10 @@ export default function TabelloneEliminazione({
       )}
 
       {/* ── 1. BRACKET GRAFICO (SPLIT) ─────────────────────────────── */}
-      <div className="bs-grafico">
+      <div className="bs-scroll">
+      <div className="bs-grafico" style={{ width: bracketW }}>
         {/* Metà sinistra: round 1 → round N-1 */}
-        <div className="bs-half">
-          {Array.from({ length: Math.max(totRound - 1, 0) }, (_, i) => i + 1).map((round) => {
+        {Array.from({ length: Math.max(totRound - 1, 0) }, (_, i) => i + 1).map((round) => {
             const numSlotsTotal = bracketSize / Math.pow(2, round)
             const halfSlots = numSlotsTotal / 2
             // In AR mode: "in corso" se siamo ancora nei db-round di questo bracket round
@@ -349,7 +385,6 @@ export default function TabelloneEliminazione({
               </div>
             )
           })}
-        </div>
 
         {/* Finale: colonna centrale */}
         {totRound > 0 && (() => {
@@ -399,8 +434,7 @@ export default function TabelloneEliminazione({
         })()}
 
         {/* Metà destra: round N-1 → round 1 (ordine DOM: interno → esterno) */}
-        <div className="bs-half">
-          {Array.from({ length: Math.max(totRound - 1, 0) }, (_, i) => totRound - 1 - i).map((round) => {
+        {Array.from({ length: Math.max(totRound - 1, 0) }, (_, i) => totRound - 1 - i).map((round) => {
             const numSlotsTotal = bracketSize / Math.pow(2, round)
             const halfSlots = numSlotsTotal / 2
             const startSlot = halfSlots + 1
@@ -459,8 +493,8 @@ export default function TabelloneEliminazione({
               </div>
             )
           })}
-        </div>
       </div>
+      </div>{/* /bs-scroll */}
 
       {/* ── Barra navigazione fasi (cerchi simmetrici) ──────────────── */}
       {totRound > 1 && (

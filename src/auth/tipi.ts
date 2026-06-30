@@ -21,4 +21,5 @@ export interface Socio {
   data_iscrizione: string | null
   badge_profilo: string | null
   mostra_in_classifica: boolean | null
+  punti: number | null
 }

@@ -351,12 +351,7 @@ function RigaRisultato({
               month: 'long',
             })}
           </span>
-        ) : (
-          <span className="chip-data attesa">Da programmare</span>
-        )}
-
-        {/* (Fase 6e) socio padel: organizza la propria partita scegliendo campo+orario. */}
-        {puoSfidare && (
+        ) : puoSfidare ? (
           <BottoneProgramma
             torneo={torneo}
             m={m}
@@ -365,7 +360,10 @@ function RigaRisultato({
             compOspite={compBySquadra[String(m.ospite_id)] ?? []}
             etichetta="Sfida"
             titolo="Organizza la sfida"
+            classeCompleta="chip-data sfida"
           />
+        ) : (
+          <span className="chip-data attesa">Da programmare</span>
         )}
       </div>
 

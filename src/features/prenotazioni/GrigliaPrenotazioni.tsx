@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/auth/useAuth'
 import { puoGestirePrenotazioni, prenotaSenzaLimite } from '@/auth/ruoli'
@@ -12,11 +13,19 @@ import type { Campo, PrenotazioneGiorno, Sport } from './tipi'
 export default function GrigliaPrenotazioni({ sport }: { sport: Sport }) {
   const { profilo } = useAuth()
   const qc = useQueryClient()
+  const location = useLocation()
+  const navigate = useNavigate()
   const impQuery = useImpostazioni()
   const campiQuery = useCampi()
   const [giorno, setGiorno] = useState(() => ymd(new Date()))
   const [scelta, setScelta] = useState<{ campo: Campo; inizio: Date; fine: Date } | null>(null)
+  const [offset, setOffset] = useState(0)
   const prenQuery = usePrenotazioniGiorno(giorno)
+  // ID amico da pre-aggiungere alla prenotazione (passato da AmiciProfilo via state).
+  // Usato una volta sola: dopo la prima prenotazione lo azzerizziamo.
+  const amicoIdRef = useRef<string | null>(
+    (location.state as { amicoId?: string } | null)?.amicoId ?? null,
+  )
 
   const imp = impQuery.data ?? { giorniAnticipo: 6, maxPadel: 0, maxCalcio: 0 }
 
@@ -34,11 +43,13 @@ export default function GrigliaPrenotazioni({ sport }: { sport: Sport }) {
       inizio,
       fine,
       allenamento,
+      amicoId,
     }: {
       campo: Campo
       inizio: Date
       fine: Date
       allenamento: boolean
+      amicoId?: string | null
     }) => {
       if (!profilo) throw new Error('Profilo non disponibile')
       // Limite di prenotazioni attive per socio (0 = nessun limite; staff esente).
@@ -73,16 +84,25 @@ export default function GrigliaPrenotazioni({ sport }: { sport: Sport }) {
         .single()
       if (error) throw error
       // Nelle partite normali il prenotante è subito tra i giocatori.
+      // Se è stata avviata da AmiciProfilo, aggiungiamo subito anche l'amico.
       if (!allenamento && creata) {
+        const righe: { prenotazione_id: number; socio_id: string; confermato: boolean }[] = [
+          { prenotazione_id: creata.id, socio_id: profilo.id, confermato: false },
+        ]
+        if (amicoId) {
+          righe.push({ prenotazione_id: creata.id, socio_id: amicoId, confermato: false })
+        }
         await supabase
           .from('partecipanti_amichevole')
-          .upsert([{ prenotazione_id: creata.id, socio_id: profilo.id, confermato: false }], {
-            onConflict: 'prenotazione_id,socio_id',
-            ignoreDuplicates: true,
-          })
+          .upsert(righe, { onConflict: 'prenotazione_id,socio_id', ignoreDuplicates: true })
       }
     },
     onSuccess: () => {
+      // Pulisce lo state di navigazione per non ripetere l'auto-aggiunta in booking successivi
+      if (amicoIdRef.current) {
+        amicoIdRef.current = null
+        navigate(location.pathname + location.search, { replace: true, state: {} })
+      }
       qc.invalidateQueries({ queryKey: ['prenotazioni'] })
       qc.invalidateQueries({ queryKey: ['amichevoli'] })
     },
@@ -132,7 +152,11 @@ export default function GrigliaPrenotazioni({ sport }: { sport: Sport }) {
   const staff = !!(profilo && (puoGestirePrenotazioni(profilo) || profilo.e_allenatore))
   function apriPrenota(campo: Campo, inizio: Date, fine: Date) {
     if (staff) setScelta({ campo, inizio, fine })
-    else prenota.mutate({ campo, inizio, fine, allenamento: false })
+    else {
+      const amico = amicoIdRef.current
+      amicoIdRef.current = null
+      prenota.mutate({ campo, inizio, fine, allenamento: false, amicoId: amico })
+    }
   }
 
   if (!profilo) return null
@@ -147,30 +171,75 @@ export default function GrigliaPrenotazioni({ sport }: { sport: Sport }) {
   }
 
   const adesso = new Date()
+  const DOW_IT = ['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab']
   const giorni = Array.from({ length: imp.giorniAnticipo + 1 }, (_, i) => {
     const g = new Date(adesso.getFullYear(), adesso.getMonth(), adesso.getDate() + i)
     return {
       chiave: ymd(g),
-      label:
-        i === 0
-          ? 'Oggi'
-          : g.toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short' }),
+      dow: DOW_IT[g.getDay()],
+      num: g.getDate(),
+      isOggi: i === 0,
     }
   })
 
+  const WINDOW = 7
+  const haNav = giorni.length > WINDOW
+  const visibili = giorni.slice(offset, offset + WINDOW)
+  const puoSx = offset > 0
+  const puoDx = offset + WINDOW < giorni.length
+
+  function navSx() {
+    setOffset((o) => Math.max(0, o - WINDOW))
+  }
+  function navDx() {
+    setOffset((o) => Math.min(giorni.length - WINDOW, o + WINDOW))
+  }
+
   return (
     <div>
-      <div className="giorni">
-        {giorni.map((g) => (
+      <div className={haNav ? 'giorni-nav' : ''}>
+        {haNav && (
           <button
-            key={g.chiave}
             type="button"
-            className={'giorno-btn' + (g.chiave === giorno ? ' attivo' : '')}
-            onClick={() => setGiorno(g.chiave)}
+            className="giorni-freccia"
+            onClick={navSx}
+            disabled={!puoSx}
+            aria-label="Giorni precedenti"
           >
-            {g.label}
+            ‹
           </button>
-        ))}
+        )}
+        <div
+          className="giorni"
+          style={{ gridTemplateColumns: `repeat(${haNav ? WINDOW : visibili.length}, 1fr)` }}
+        >
+          {visibili.map((g) => (
+            <button
+              key={g.chiave}
+              type="button"
+              className={
+                'giorno-btn' +
+                (g.chiave === giorno ? ' attivo' : '') +
+                (g.isOggi ? ' oggi' : '')
+              }
+              onClick={() => setGiorno(g.chiave)}
+            >
+              <span className="giorno-btn-dow">{g.dow}</span>
+              <span className="giorno-btn-num">{g.num}</span>
+            </button>
+          ))}
+        </div>
+        {haNav && (
+          <button
+            type="button"
+            className="giorni-freccia"
+            onClick={navDx}
+            disabled={!puoDx}
+            aria-label="Giorni successivi"
+          >
+            ›
+          </button>
+        )}
       </div>
 
       {prenQuery.error && (
@@ -193,6 +262,7 @@ export default function GrigliaPrenotazioni({ sport }: { sport: Sport }) {
             (p) => String(p.campo_id) === String(campo.id),
           )}
           isAdmin={!!profilo.is_admin}
+          isStaff={staff}
           mioId={profilo.id}
           onPrenota={(inizio, fine) => apriPrenota(campo, inizio, fine)}
           onAnnulla={chiediAnnulla}
@@ -219,7 +289,9 @@ export default function GrigliaPrenotazioni({ sport }: { sport: Sport }) {
               type="button"
               className="btn btn-block mb-2"
               onClick={() => {
-                prenota.mutate({ ...scelta, allenamento: false })
+                const amico = amicoIdRef.current
+                amicoIdRef.current = null
+                prenota.mutate({ ...scelta, allenamento: false, amicoId: amico })
                 setScelta(null)
               }}
             >
@@ -255,6 +327,7 @@ function CampoGriglia({
   adesso,
   prenotazioni,
   isAdmin,
+  isStaff,
   mioId,
   onPrenota,
   onAnnulla,
@@ -264,6 +337,7 @@ function CampoGriglia({
   adesso: Date
   prenotazioni: PrenotazioneGiorno[]
   isAdmin: boolean
+  isStaff: boolean
   mioId: string
   onPrenota: (inizio: Date, fine: Date) => void
   onAnnulla: (p: PrenotazioneGiorno, campo: Campo, inizio: Date, diChi?: string) => void
@@ -303,7 +377,7 @@ function CampoGriglia({
               // Slot occupato da una prenotazione.
               const eTorneo = !!(p.incontro_id || p.torneo_id)
               const tipo = eTorneo ? 'torneo' : p.allenamento ? 'allenamento' : 'partita'
-              const labelTorneo = eTorneo ? (p.torneo_nome ?? 'Torneo') : null
+              const labelTorneo = eTorneo ? ((isStaff || isAdmin) ? (p.torneo_nome ?? 'Torneo') : 'Torneo') : null
               const labelTipo = labelTorneo ?? (p.allenamento ? 'Allenamento' : null)
               if (passato) {
                 classe += ' occupato tipo-' + tipo
@@ -354,7 +428,7 @@ function CampoGriglia({
                   {oraLocale(s.inizio)}–{oraLocale(s.fine)}
                 </span>
                 <span className="chi">{chi}</span>
-                {p?.giocatori_torneo && (
+                {isAdmin && p?.giocatori_torneo && (
                   <span className="sub" style={{ fontSize: '0.72em', lineHeight: 1.3, whiteSpace: 'normal' }}>
                     {p.giocatori_torneo}
                   </span>

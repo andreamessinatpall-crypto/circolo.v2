@@ -7,7 +7,7 @@ import type { Socio } from './tipi'
 //  - anonimo:     nessuno ha effettuato l'accesso → mostra login/registrazione
 //  - bloccato:    loggato ma non può entrare (non associato o in attesa) → mostra messaggio
 //  - attivo:      socio approvato → mostra l'app
-export type StatoAuth = 'caricamento' | 'anonimo' | 'bloccato' | 'attivo'
+export type StatoAuth = 'caricamento' | 'anonimo' | 'bloccato' | 'attivo' | 'recupero'
 
 export interface MessaggioBlocco {
   titolo: string

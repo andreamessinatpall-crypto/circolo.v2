@@ -49,6 +49,49 @@ async function creaSchedaSocio(
   return { socio: data as Socio }
 }
 
+// Primo accesso tramite provider OAuth (Google / Apple): crea la scheda socio
+// con i dati forniti dal provider. Campi non disponibili restano null e potranno
+// essere compilati dal socio nella pagina profilo dopo l'approvazione.
+async function creaSchedaSocioOAuth(
+  user: User,
+): Promise<{ socio: Socio } | { errore: MessaggioBlocco }> {
+  const m = (user.user_metadata ?? {}) as Record<string, unknown>
+  const fullName = String(m.full_name ?? m.name ?? '').trim()
+  const spaceIdx = fullName.indexOf(' ')
+  const nome = spaceIdx > 0 ? fullName.slice(0, spaceIdx).trim() : fullName
+  const cognome = spaceIdx > 0 ? fullName.slice(spaceIdx + 1).trim() : ''
+
+  const { data, error } = await supabase
+    .from('soci')
+    .insert({
+      id: user.id,
+      nome,
+      cognome,
+      email: user.email,
+      telefono: null,
+      data_nascita: null,
+      genere: null,
+      sport_preferito: 'entrambi',
+      attivo: false,
+      is_admin: false,
+    })
+    .select()
+    .single()
+
+  if (error) {
+    return {
+      errore: {
+        titolo: 'Registrazione non completata',
+        testo:
+          'Non è stato possibile completare la registrazione: ' +
+          error.message +
+          '. Contatta la segreteria.',
+      },
+    }
+  }
+  return { socio: data as Socio }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [stato, setStato] = useState<StatoAuth>('caricamento')
   const [utente, setUtente] = useState<User | null>(null)
@@ -86,6 +129,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return
       }
       socio = esito.socio
+    }
+
+    // Primo accesso tramite Google o Apple: creiamo la scheda con i dati del provider
+    if (!socio) {
+      const provider = (user.app_metadata?.provider as string | undefined) ?? 'email'
+      if (provider === 'google' || provider === 'apple') {
+        const esito = await creaSchedaSocioOAuth(user)
+        if ('errore' in esito) {
+          setProfilo(null)
+          setBlocco(esito.errore)
+          setStato('bloccato')
+          return
+        }
+        socio = esito.socio
+      }
     }
 
     if (!socio) {
@@ -128,7 +186,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Il setTimeout evita un blocco noto chiamando Supabase dentro il callback.
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(() => {
+    } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setStato('recupero')
+        return
+      }
       setTimeout(() => {
         caricaProfilo()
       }, 0)

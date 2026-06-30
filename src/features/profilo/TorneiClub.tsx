@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useState, useMemo } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTornei } from '@/features/tornei/datiTornei'
 import type { DatiTornei } from '@/features/tornei/datiTornei'
 import ClassificaTorneo from '@/features/tornei/ClassificaTorneo'
@@ -136,6 +136,26 @@ function ModaleIscrizione({
   const sociQuery = useSociPubblici()
   const soci = sociQuery.data ?? []
 
+  const amicizieQuery = useQuery({
+    queryKey: ['amicizie'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('amicizie')
+        .select('richiedente, destinatario, stato')
+      return (data ?? []) as { richiedente: string; destinatario: string; stato: string }[]
+    },
+  })
+
+  const amiciIds = useMemo(() => {
+    const ids = new Set<string>()
+    for (const a of amicizieQuery.data ?? []) {
+      if (a.stato !== 'accettata') continue
+      if (a.richiedente === profilo?.id) ids.add(a.destinatario)
+      else if (a.destinatario === profilo?.id) ids.add(a.richiedente)
+    }
+    return ids
+  }, [amicizieQuery.data, profilo?.id])
+
   const [compagni, setCompagni] = useState<string[]>([])
   const [selezionato, setSelezionato] = useState('')
 
@@ -143,7 +163,7 @@ function ModaleIscrizione({
   const pieno = compagni.length >= maxCompagni
 
   const disponibili = soci.filter(
-    (s) => s.id !== profilo?.id && !compagni.includes(s.id),
+    (s) => s.id !== profilo?.id && !compagni.includes(s.id) && amiciIds.has(s.id),
   )
 
   const etichette = new Map(soci.map((s) => [s.id, s.etichetta]))
@@ -203,27 +223,35 @@ function ModaleIscrizione({
         </div>
 
         {!pieno && (
-          <div className="iscrizione-aggiungi-row">
-            <select
-              className="select-campo"
-              value={selezionato}
-              onChange={(e) => setSelezionato(e.target.value)}
-              disabled={sociQuery.isLoading}
-            >
-              <option value="">— Scegli un compagno —</option>
-              {disponibili.map((s) => (
-                <option key={s.id} value={s.id}>{s.etichetta}</option>
-              ))}
-            </select>
-            <button
-              type="button"
-              className="btn btn-secondario"
-              onClick={aggiungi}
-              disabled={!selezionato}
-            >
-              Aggiungi
-            </button>
-          </div>
+          amicizieQuery.isLoading ? (
+            <p className="sub text-sm">Caricamento amici…</p>
+          ) : disponibili.length === 0 && compagni.length === 0 ? (
+            <p className="sub text-sm">
+              Nessun amico disponibile. Aggiungi amici dal tuo profilo per poter iscrivere compagni di squadra.
+            </p>
+          ) : disponibili.length > 0 ? (
+            <div className="iscrizione-aggiungi-row">
+              <select
+                className="select-campo"
+                value={selezionato}
+                onChange={(e) => setSelezionato(e.target.value)}
+                disabled={sociQuery.isLoading}
+              >
+                <option value="">— Scegli un amico —</option>
+                {disponibili.map((s) => (
+                  <option key={s.id} value={s.id}>{s.etichetta}</option>
+                ))}
+              </select>
+              <button
+                type="button"
+                className="btn btn-secondario"
+                onClick={aggiungi}
+                disabled={!selezionato}
+              >
+                Aggiungi
+              </button>
+            </div>
+          ) : null
         )}
 
         <div className="modale-azioni">

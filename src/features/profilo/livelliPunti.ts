@@ -16,11 +16,12 @@ export interface LivelloPunti {
 }
 
 export const LIVELLI_PUNTI_DEFAULT: LivelloPunti[] = [
-  { nome: 'Esordiente', soglia: 0, colore: '#A8702F', img: null },
-  { nome: 'Promessa', soglia: 100, colore: '#9AA3A0', img: null },
-  { nome: 'Atleta', soglia: 300, colore: '#E0A83A', img: null },
-  { nome: 'Veterano', soglia: 700, colore: '#2E9E6B', img: null },
-  { nome: 'Leggenda', soglia: 1500, colore: '#7C4DFF', img: null },
+  { nome: 'Esordiente', soglia: 0,    colore: '#A8702F', img: null },
+  { nome: 'Promessa',   soglia: 100,  colore: '#9AA3A0', img: null },
+  { nome: 'Atleta',     soglia: 300,  colore: '#E0A83A', img: null },
+  { nome: 'Veterano',   soglia: 700,  colore: '#2E9E6B', img: null },
+  { nome: 'Leggenda',   soglia: 1500, colore: '#7C4DFF', img: null },
+  { nome: 'Campione',   soglia: 3000, colore: '#3A7BD5', img: null },
 ]
 
 export const PALETTE = ['#A8702F', '#9AA3A0', '#E0A83A', '#2E9E6B', '#7C4DFF', '#3A7BD5', '#C0392B', '#16A085']

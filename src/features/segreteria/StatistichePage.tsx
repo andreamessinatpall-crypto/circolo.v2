@@ -38,6 +38,47 @@ type PrenRow = {
   incontro_id: number | string | null
 }
 
+// ── Helpers analisi ───────────────────────────────────────────────────────────
+
+function fasciaRanking(items: PrenRow[]) {
+  const oraCount = new Map<number, number>()
+  for (const p of items) {
+    const h = new Date(p.inizio).getHours()
+    oraCount.set(h, (oraCount.get(h) ?? 0) + 1)
+  }
+  return [...oraCount.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .map(([h, n]) => ({
+      label: `${String(h).padStart(2, '0')}:00`,
+      val: n,
+    }))
+}
+
+function dowRanking(items: PrenRow[]) {
+  const perDow = new Array(7).fill(0)
+  for (const p of items) perDow[new Date(p.inizio).getDay()]++
+  return DOW_ORD.map(i => ({ label: DOW[i], val: perDow[i] }))
+}
+
+function oreOccupate(items: PrenRow[]) {
+  return Math.round(
+    items.reduce((acc, p) =>
+      acc + (new Date(p.fine).getTime() - new Date(p.inizio).getTime()) / 3600000, 0)
+  )
+}
+
+function tipoBreakdown(items: PrenRow[]) {
+  return {
+    partite:     items.filter(p => !p.allenamento && !p.incontro_id).length,
+    allenamenti: items.filter(p => !!p.allenamento).length,
+    torneo:      items.filter(p => !!p.incontro_id).length,
+  }
+}
+
+function topLabel<T extends { label: string; val: number }>(ranking: T[]): string {
+  return ranking.reduce((a, b) => b.val > a.val ? b : a, ranking[0])?.label ?? '—'
+}
+
 // ── Hooks dati ────────────────────────────────────────────────────────────────
 
 function useStatPren() {
@@ -53,27 +94,32 @@ function useStatPren() {
 
       const campoIds = [...new Set(lista.map(p => p.campo_id).filter(Boolean))]
       const campiById = new Map<string, string>()
+      const campiSport = new Map<string, string>()
       if (campoIds.length) {
-        const { data: campi } = await supabase.from('campi').select('id, nome').in('id', campoIds)
-        for (const c of campi ?? []) campiById.set(String(c.id), c.nome)
+        const { data: campi } = await supabase.from('campi').select('id, nome, sport').in('id', campoIds)
+        for (const c of (campi ?? []) as { id: unknown; nome: string; sport: string }[]) {
+          campiById.set(String(c.id), c.nome)
+          campiSport.set(String(c.id), c.sport)
+        }
       }
+
+      const bySport = (items: PrenRow[], sport: string) =>
+        items.filter(p => campiSport.get(String(p.campo_id)) === sport)
 
       const meseStr = inizioMese()
       const mesePrecStr = inizioMesePrecedente()
       const settimanaStr = inizioSettimana()
-      const mese = lista.filter(p => p.inizio >= meseStr)
+      const mese     = lista.filter(p => p.inizio >= meseStr)
       const mesePred = lista.filter(p => p.inizio >= mesePrecStr && p.inizio < meseStr)
       const settimana = lista.filter(p => p.inizio >= settimanaStr)
 
-      const meseIds = mese.map(p => p.id)
-      let confermati = 0, totaliPart = 0
-      if (meseIds.length) {
-        const { data: parts } = await supabase
-          .from('partecipanti_amichevole').select('confermato').in('prenotazione_id', meseIds)
-        totaliPart = (parts ?? []).length
-        confermati = (parts ?? []).filter(p => p.confermato).length
-      }
+      // Per-sport (anno e mese)
+      const padelAnno   = bySport(lista, 'padel')
+      const calcioAnno  = bySport(lista, 'calcio')
+      const mesePadel   = bySport(mese, 'padel')
+      const meseCalcio  = bySport(mese, 'calcio')
 
+      // Andamento mensile (per modale)
       const perMese = MESI.map((_, i) => ({ label: MESI[i], count: 0, ore: 0 }))
       for (const p of lista) {
         const m = new Date(p.inizio).getMonth()
@@ -81,10 +127,7 @@ function useStatPren() {
         perMese[m].ore += (new Date(p.fine).getTime() - new Date(p.inizio).getTime()) / 3600000
       }
 
-      const perDow = new Array(7).fill(0)
-      for (const p of mese) perDow[new Date(p.inizio).getDay()]++
-      const dowOrd = DOW_ORD.map(i => ({ label: DOW[i], count: perDow[i] }))
-
+      // Campi top (mese)
       const campoCount = new Map<string, number>()
       for (const p of mese) {
         const k = String(p.campo_id)
@@ -94,43 +137,49 @@ function useStatPren() {
         .sort((a, b) => b[1] - a[1])
         .map(([id, n]) => ({ nome: campiById.get(id) ?? 'Campo ' + id, count: n }))
 
-      const oraCount = new Map<number, number>()
-      for (const p of mese) {
-        const h = new Date(p.inizio).getHours()
-        oraCount.set(h, (oraCount.get(h) ?? 0) + 1)
-      }
-      const oraRanking = [...oraCount.entries()]
-        .sort((a, b) => b[1] - a[1])
-        .map(([h, n]) => ({
-          label: `${String(h).padStart(2, '0')}:00–${String(h + 1).padStart(2, '0')}:00`,
-          count: n,
-        }))
-      const fasciaTop = oraRanking[0]?.label ?? '—'
+      // Ranking fasce e giorni
+      const oraRanking        = fasciaRanking(mese)
+      const dowOrd            = dowRanking(mese)
+      const padelOraRanking   = fasciaRanking(mesePadel)
+      const calcioOraRanking  = fasciaRanking(meseCalcio)
+      const padelDowRanking   = dowRanking(mesePadel)
+      const calcioDowRanking  = dowRanking(meseCalcio)
 
-      const giornoTop = dowOrd.reduce((a, b) => b.count > a.count ? b : a, dowOrd[0])
-      const oreAnno = lista.reduce(
-        (acc, p) => acc + (new Date(p.fine).getTime() - new Date(p.inizio).getTime()) / 3600000, 0)
-      const allenamenti = mese.filter(p => p.allenamento).length
-      const torneoCount = mese.filter(p => p.incontro_id).length
+      // Tipo breakdown
+      const tipoTotale = tipoBreakdown(mese)
+      const tipoPadel  = tipoBreakdown(mesePadel)
+      const tipoCalcio = tipoBreakdown(meseCalcio)
 
       return {
+        // Riepilogo generale
         settimanaCount: settimana.length,
         meseCount: mese.length,
         mesePrecCount: mesePred.length,
-        oreAnno: Math.round(oreAnno),
-        allenamenti,
-        torneoCount,
-        partite: mese.length - allenamenti - torneoCount,
-        campoTop: campiRanking[0]?.nome ?? '—',
-        fasciaTop,
+        oreAnno: oreOccupate(lista),
+        tipoTotale,
+        fasciaTop: oraRanking[0]?.label ?? '—',
         oraRanking,
-        giornoTop: giornoTop?.label ?? '—',
-        percConferma: totaliPart > 0 ? Math.round(confermati / totaliPart * 100) : null,
-        confermati,
-        totaliPart,
-        perMese,
+        giornoTop: topLabel(dowOrd),
         dowOrd,
+        campoTop: campiRanking[0]?.nome ?? '—',
         campiRanking,
+        perMese,
+        // Padel
+        mesePadelCount:  mesePadel.length,
+        orePadel:        oreOccupate(padelAnno),
+        tipoPadel,
+        padelFasciaTop:  padelOraRanking[0]?.label ?? '—',
+        padelGiornoTop:  topLabel(padelDowRanking),
+        padelOraRanking,
+        padelDowRanking,
+        // Calcio
+        meseCalcioCount: meseCalcio.length,
+        oreCalcio:       oreOccupate(calcioAnno),
+        tipoCalcio,
+        calcioFasciaTop: calcioOraRanking[0]?.label ?? '—',
+        calcioGiornoTop: topLabel(calcioDowRanking),
+        calcioOraRanking,
+        calcioDowRanking,
       }
     },
   })
@@ -146,6 +195,7 @@ function useStatGioc() {
         totale: number
         nuoviMese: number
         attiviUltimi30: number
+        attiviUltimi7: number
         padel: number
         calcio: number
         entrambi: number
@@ -156,21 +206,86 @@ function useStatGioc() {
         giocatori: number
       }
       return {
-        totale:        Number(r.totale),
-        nuoviMese:     Number(r.nuoviMese),
-        attiviUltimi30:Number(r.attiviUltimi30),
-        padel:         Number(r.padel),
-        calcio:        Number(r.calcio),
-        entrambi:      Number(r.entrambi),
-        staff:         Number(r.staff),
-        adminCount:    Number(r.adminCount),
-        collaboratori: Number(r.collaboratori),
-        istruttori:    Number(r.istruttori),
-        giocatori:     Number(r.giocatori),
+        totale:         Number(r.totale),
+        nuoviMese:      Number(r.nuoviMese),
+        attiviUltimi30: Number(r.attiviUltimi30),
+        attiviUltimi7:  Number(r.attiviUltimi7),
+        padel:          Number(r.padel),
+        calcio:         Number(r.calcio),
+        entrambi:       Number(r.entrambi),
+        staff:          Number(r.staff),
+        adminCount:     Number(r.adminCount),
+        collaboratori:  Number(r.collaboratori),
+        istruttori:     Number(r.istruttori),
+        giocatori:      Number(r.giocatori),
       }
     },
   })
 }
+
+// ── Componenti UI ─────────────────────────────────────────────────────────────
+
+const COLORI: Record<string, string> = {
+  teal:   '#0d9488',
+  indigo: '#4f46e5',
+  amber:  '#d97706',
+  verde:  '#16a34a',
+  sky:    '#0284c7',
+  rose:   '#e11d48',
+}
+
+function KpiCard({ n, label, color, delta, onClick }: {
+  n: number | string; label: string; color: string; delta?: number | null; onClick?: () => void
+}) {
+  return (
+    <button type="button" className={'stat-kpi' + (onClick ? ' click' : '')} onClick={onClick}>
+      <div className="stat-kpi-bar" style={{ background: COLORI[color] ?? COLORI.indigo }} />
+      <div className="stat-kpi-n">{n}</div>
+      <div className="stat-kpi-lbl">{label}</div>
+      {delta != null && (
+        <div className={'stat-kpi-delta ' + (delta >= 0 ? 'up' : 'down')}>
+          {delta >= 0 ? '▲' : '▼'} {Math.abs(delta)}% vs mese scorso
+        </div>
+      )}
+      {onClick && <span className="stat-kpi-arr">›</span>}
+    </button>
+  )
+}
+
+function Combo({ label, items, color, onClick }: {
+  label: string; items: { n: number; label: string }[]; color: string; onClick?: () => void
+}) {
+  return (
+    <button type="button" className={'stat-combo' + (onClick ? ' click' : '')} onClick={onClick}>
+      <div className="stat-combo-bar" style={{ background: COLORI[color] ?? COLORI.teal }} />
+      <div className="stat-combo-top">
+        <span className="stat-combo-lbl">{label}</span>
+        {onClick && <span className="stat-combo-arr">›</span>}
+      </div>
+      <div className="stat-combo-items">
+        {items.map((it, i) => (
+          <div key={i} className="stat-combo-item">
+            <div className="stat-combo-n">{it.n}</div>
+            <div className="stat-combo-sublbl">{it.label}</div>
+          </div>
+        ))}
+      </div>
+    </button>
+  )
+}
+
+// ── Icone sezione ─────────────────────────────────────────────────────────────
+
+const SVG = ({ children }: { children: React.ReactNode }) => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    {children}
+  </svg>
+)
+const ICO_RIEPILOGO = <SVG><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></SVG>
+const ICO_PADEL     = <SVG><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></SVG>
+const ICO_CALCIO    = <SVG><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></SVG>
+const ICO_GIOCATORI = <SVG><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></SVG>
 
 // ── Componente principale ─────────────────────────────────────────────────────
 
@@ -202,79 +317,94 @@ export default function StatistichePage() {
 
   return (
     <div className="stat-page">
-      {/* ── Header ── */}
-      <div className="stat-header">
-        <div>
-          <div className="stat-header-titolo">Dashboard</div>
-          <div className="stat-header-sub">Aggiornato {ora}</div>
-        </div>
-      </div>
+      <p className="stat-ts">Aggiornato {ora}</p>
 
-      {/* ── Hero KPI ── */}
-      <div className="stat-hero">
-        <HeroCard valore={String(p.settimanaCount)} label="Prenotazioni questa settimana"
-          colore="teal" onClick={() => setModale('giorni')} />
-        <HeroCard valore={String(p.meseCount)} label="Prenotazioni questo mese"
-          colore="indigo" delta={delta} onClick={() => setModale('mese')} />
-        <HeroCard valore={p.oreAnno + 'h'} label={'Ore campo occupate ' + anno}
-          colore="amber" onClick={() => setModale('ore')} />
-      </div>
+      {/* ── Riepilogo ── */}
+      <section className="stat-sez">
+        <div className="club-sez-header">
+          <span className="club-sez-icona">{ICO_RIEPILOGO}</span>
+          <h2 className="club-sez-titolo">Riepilogo</h2>
+        </div>
 
-      {/* ── Prenotazioni ── */}
-      <div className="stat-sezione">
-        <div className="stat-sezione-header">
-          <span className="stat-dot teal" />
-          Prenotazioni — mese corrente
+        <div className="stat-row">
+          <KpiCard n={p.settimanaCount} label="Prenotazioni settimana" color="teal"
+            onClick={() => setModale('giorni')} />
+          <KpiCard n={p.meseCount} label="Questo mese" color="indigo" delta={delta}
+            onClick={() => setModale('mese')} />
+          <KpiCard n={p.oreAnno + 'h'} label={'Ore campo ' + anno} color="amber"
+            onClick={() => setModale('ore')} />
         </div>
-        <div className="stat-griglia">
-          {/* Card raggruppata: Tipo prenotazione */}
-          <ComboCard
-            accent="teal"
-            lbl="Tipo prenotazione"
-            items={[
-              { n: p.partite,     label: 'Partite' },
-              { n: p.allenamenti, label: 'Allenamenti' },
-              { n: p.torneoCount, label: 'Torneo' },
-            ]}
-            onClick={() => setModale('composizione')}
-          />
-          {p.percConferma !== null && (
-            <Card2 accent="rose" val={p.percConferma + '%'} lbl="Presenze confermate" onClick={() => setModale('presenze')} />
-          )}
-          <Card2 accent="amber" val={p.fasciaTop} lbl="Fascia più prenotata" piccolo onClick={() => setModale('fasce')} />
-          <Card2 accent="sky"   val={p.giornoTop} lbl="Giorno più affollato"     onClick={() => setModale('giorni')} />
+      </section>
+
+      {/* ── Padel ── */}
+      <section className="stat-sez">
+        <div className="club-sez-header">
+          <span className="club-sez-icona">{ICO_PADEL}</span>
+          <h2 className="club-sez-titolo">Padel</h2>
         </div>
-      </div>
+
+        <div className="stat-row">
+          <KpiCard n={p.mesePadelCount} label="Prenotazioni mese" color="teal"
+            onClick={() => setModale('padel-tipo')} />
+          <KpiCard n={p.orePadel + 'h'} label={'Ore campo ' + anno} color="teal" />
+          <KpiCard n={p.padelFasciaTop} label="Fascia più prenotata" color="amber"
+            onClick={() => setModale('padel-fasce')} />
+          <KpiCard n={p.padelGiornoTop} label="Giorno più affollato" color="sky"
+            onClick={() => setModale('padel-giorni')} />
+        </div>
+      </section>
+
+      {/* ── Calcio ── */}
+      <section className="stat-sez">
+        <div className="club-sez-header">
+          <span className="club-sez-icona">{ICO_CALCIO}</span>
+          <h2 className="club-sez-titolo">Calcio</h2>
+        </div>
+
+        <div className="stat-row">
+          <KpiCard n={p.meseCalcioCount} label="Prenotazioni mese" color="indigo"
+            onClick={() => setModale('calcio-tipo')} />
+          <KpiCard n={p.oreCalcio + 'h'} label={'Ore campo ' + anno} color="indigo" />
+          <KpiCard n={p.calcioFasciaTop} label="Fascia più prenotata" color="amber"
+            onClick={() => setModale('calcio-fasce')} />
+          <KpiCard n={p.calcioGiornoTop} label="Giorno più affollato" color="sky"
+            onClick={() => setModale('calcio-giorni')} />
+        </div>
+      </section>
 
       {/* ── Giocatori ── */}
-      <div className="stat-sezione">
-        <div className="stat-sezione-header">
-          <span className="stat-dot purple" />
-          Giocatori
+      <section className="stat-sez">
+        <div className="club-sez-header">
+          <span className="club-sez-icona">{ICO_GIOCATORI}</span>
+          <h2 className="club-sez-titolo">Giocatori</h2>
         </div>
-        <div className="stat-griglia">
-          {/* Totale iscritti → breakdown per ruolo */}
-          <Card2 accent="indigo" val={String(g.totale)} lbl="Totale iscritti" onClick={() => setModale('ruoli')} />
-          {g.nuoviMese > 0 && <Card2 accent="verde" val={String(g.nuoviMese)} lbl="Nuovi questo mese" />}
-          <Card2 accent="teal" val={String(g.attiviUltimi30)} lbl="Attivi ultimi 30 gg" onClick={() => setModale('attivi')} />
-          {/* Card raggruppata: Sport */}
-          <ComboCard
-            accent="sky"
-            lbl="Sport preferito"
+
+        <div className="stat-row">
+          <KpiCard n={g.totale} label="Iscritti" color="indigo" onClick={() => setModale('ruoli')} />
+          {g.nuoviMese > 0 && <KpiCard n={g.nuoviMese} label="Nuovi questo mese" color="verde" />}
+          <KpiCard n={g.attiviUltimi30} label="Attivi 30 gg" color="sky"
+            onClick={() => setModale('attivi')} />
+          <KpiCard n={g.attiviUltimi7} label="Attivi 7 gg" color="teal"
+            onClick={() => setModale('attivi7')} />
+        </div>
+
+        <div className="stat-2col">
+          <Combo color="sky" label="Sport preferito" onClick={() => setModale('sport')}
             items={[
               { n: g.padel,    label: 'Padel' },
               { n: g.calcio,   label: 'Calcio' },
               { n: g.entrambi, label: 'Entrambi' },
             ]}
-            onClick={() => setModale('sport')}
           />
-          <Card2 accent="rose" val={String(g.staff)} lbl="Admin e collaboratori" />
+          <KpiCard n={g.staff} label="Admin e collaboratori" color="rose" />
         </div>
-      </div>
+      </section>
 
       {/* ── Modali ── */}
       {modale && (
         <Modale onChiudi={() => setModale(null)}>
+
+          {/* Riepilogo */}
           {modale === 'mese' && (
             <>
               <ModaleTitolo titolo="Prenotazioni questo mese" kpi={String(p.meseCount)} />
@@ -283,7 +413,12 @@ export default function StatistichePage() {
                   {delta >= 0 ? '▲' : '▼'} {Math.abs(delta)}% rispetto al mese scorso ({p.mesePrecCount})
                 </p>
               )}
-              <BarChart titolo="Andamento annuale — prenotazioni per mese"
+              <BarChart titolo="Tipo — mese corrente" dati={[
+                { label: 'Partite',      val: p.tipoTotale.partite },
+                { label: 'Allenamenti', val: p.tipoTotale.allenamenti },
+                { label: 'Torneo',      val: p.tipoTotale.torneo },
+              ]} percentuale />
+              <BarChart titolo="Andamento annuale" className="mt-5"
                 dati={p.perMese.map(m => ({ label: m.label, val: m.count }))} />
             </>
           )}
@@ -301,48 +436,69 @@ export default function StatistichePage() {
             <>
               <ModaleTitolo titolo="Affollamento per giorno" kpi={p.giornoTop} kpiLabel="giorno di punta" />
               <p className="stat-modal-sub">Prenotazioni nel mese corrente per giorno della settimana</p>
-              <BarChart dati={p.dowOrd.map(d => ({ label: d.label, val: d.count }))} percentuale />
+              <BarChart dati={p.dowOrd} percentuale />
             </>
           )}
-          {modale === 'fasce' && (
+
+          {/* Padel */}
+          {modale === 'padel-fasce' && (
             <>
-              <ModaleTitolo titolo="Prenotazioni per fascia oraria" kpi={p.fasciaTop} kpiLabel="fascia più prenotata" />
+              <ModaleTitolo titolo="🎾 Padel — fasce orarie" kpi={p.padelFasciaTop} kpiLabel="fascia più prenotata" />
               <BarChart titolo="Distribuzione oraria — mese corrente"
-                dati={p.oraRanking.map(o => ({ label: o.label, val: o.count }))} percentuale />
+                dati={p.padelOraRanking} percentuale />
             </>
           )}
-          {modale === 'campi' && (
+          {modale === 'padel-giorni' && (
             <>
-              <ModaleTitolo titolo="Utilizzo per campo" kpi={p.campoTop} kpiLabel="campo più usato" />
-              <BarChart titolo="Prenotazioni per campo — mese corrente"
-                dati={p.campiRanking.map(c => ({ label: c.nome, val: c.count }))} percentuale />
+              <ModaleTitolo titolo="🎾 Padel — affollamento per giorno" kpi={p.padelGiornoTop} kpiLabel="giorno di punta" />
+              <BarChart dati={p.padelDowRanking} percentuale />
             </>
           )}
-          {modale === 'composizione' && (
+          {modale === 'padel-tipo' && (
             <>
-              <ModaleTitolo titolo="Composizione prenotazioni" kpi={String(p.meseCount)} kpiLabel="questo mese" />
+              <ModaleTitolo titolo="🎾 Padel — tipo prenotazione" kpi={String(p.mesePadelCount)} kpiLabel="questo mese" />
               <BarChart dati={[
-                { label: 'Partite',      val: p.partite },
-                { label: 'Allenamenti', val: p.allenamenti },
-                { label: 'Torneo',      val: p.torneoCount },
+                { label: 'Partite',      val: p.tipoPadel.partite },
+                { label: 'Allenamenti', val: p.tipoPadel.allenamenti },
+                { label: 'Torneo',      val: p.tipoPadel.torneo },
               ]} percentuale />
             </>
           )}
-          {modale === 'presenze' && (
+
+          {/* Calcio */}
+          {modale === 'calcio-fasce' && (
             <>
-              <ModaleTitolo titolo="Presenze confermate" kpi={(p.percConferma ?? 0) + '%'}
-                kpiLabel={p.confermati + ' su ' + p.totaliPart + ' questo mese'} />
-              <ProgressBar valore={p.confermati} massimo={p.totaliPart} />
+              <ModaleTitolo titolo="⚽ Calcio — fasce orarie" kpi={p.calcioFasciaTop} kpiLabel="fascia più prenotata" />
+              <BarChart titolo="Distribuzione oraria — mese corrente"
+                dati={p.calcioOraRanking} percentuale />
             </>
           )}
+          {modale === 'calcio-giorni' && (
+            <>
+              <ModaleTitolo titolo="⚽ Calcio — affollamento per giorno" kpi={p.calcioGiornoTop} kpiLabel="giorno di punta" />
+              <BarChart dati={p.calcioDowRanking} percentuale />
+            </>
+          )}
+          {modale === 'calcio-tipo' && (
+            <>
+              <ModaleTitolo titolo="⚽ Calcio — tipo prenotazione" kpi={String(p.meseCalcioCount)} kpiLabel="questo mese" />
+              <BarChart dati={[
+                { label: 'Partite',      val: p.tipoCalcio.partite },
+                { label: 'Allenamenti', val: p.tipoCalcio.allenamenti },
+                { label: 'Torneo',      val: p.tipoCalcio.torneo },
+              ]} percentuale />
+            </>
+          )}
+
+          {/* Giocatori */}
           {modale === 'ruoli' && (
             <>
               <ModaleTitolo titolo="Iscritti per ruolo" kpi={String(g.totale)} kpiLabel="totale iscritti" />
               <BarChart dati={[
-                { label: 'Giocatori',    val: g.giocatori },
+                { label: 'Giocatori',     val: g.giocatori },
                 { label: 'Collaboratori', val: g.collaboratori },
-                { label: 'Istruttori',   val: g.istruttori },
-                { label: 'Admin',        val: g.adminCount },
+                { label: 'Istruttori',    val: g.istruttori },
+                { label: 'Admin',         val: g.adminCount },
               ]} percentuale />
             </>
           )}
@@ -356,75 +512,32 @@ export default function StatistichePage() {
               ]} percentuale />
             </>
           )}
+          {modale === 'attivi7' && (
+            <>
+              <ModaleTitolo titolo="Giocatori attivi — 7 giorni"
+                kpi={String(g.attiviUltimi7)}
+                kpiLabel={'su ' + g.totale + ' iscritti (' + (g.totale > 0 ? Math.round(g.attiviUltimi7 / g.totale * 100) : 0) + '%)'} />
+              <p className="stat-modal-sub">Almeno una prenotazione negli ultimi 7 giorni</p>
+              <ProgressBar valore={g.attiviUltimi7} massimo={g.totale} />
+            </>
+          )}
           {modale === 'attivi' && (
             <>
-              <ModaleTitolo titolo="Giocatori attivi"
+              <ModaleTitolo titolo="Giocatori attivi — 30 giorni"
                 kpi={String(g.attiviUltimi30)}
                 kpiLabel={'su ' + g.totale + ' iscritti (' + (g.totale > 0 ? Math.round(g.attiviUltimi30 / g.totale * 100) : 0) + '%)'} />
               <p className="stat-modal-sub">Almeno una prenotazione negli ultimi 30 giorni</p>
               <ProgressBar valore={g.attiviUltimi30} massimo={g.totale} />
             </>
           )}
+
         </Modale>
       )}
     </div>
   )
 }
 
-// ── Componenti UI ─────────────────────────────────────────────────────────────
-
-function HeroCard({ valore, label, colore, delta, onClick }: {
-  valore: string; label: string; colore: string; delta?: number | null; onClick?: () => void
-}) {
-  return (
-    <button type="button" className={'stat-hero-card ' + colore} onClick={onClick}>
-      <div className="stat-hero-val">{valore}</div>
-      <div className="stat-hero-lbl">{label}</div>
-      {delta != null && (
-        <div className={'stat-hero-delta ' + (delta >= 0 ? 'up' : 'down')}>
-          {delta >= 0 ? '▲' : '▼'} {Math.abs(delta)}% vs mese scorso
-        </div>
-      )}
-      <div className="stat-hero-caret">›</div>
-    </button>
-  )
-}
-
-function Card2({ accent, val, lbl, piccolo, onClick }: {
-  accent: string; val: string; lbl: string; piccolo?: boolean; onClick?: () => void
-}) {
-  return (
-    <button type="button" className={'stat-card2 ' + accent + (onClick ? ' click' : '')} onClick={onClick}>
-      <div className={'stat-card2-val' + (piccolo ? ' s' : '')}>{val}</div>
-      <div className="stat-card2-lbl">{lbl}</div>
-      {onClick && <span className="stat-card2-arr">›</span>}
-    </button>
-  )
-}
-
-function ComboCard({ accent, lbl, items, onClick }: {
-  accent: string
-  lbl: string
-  items: { n: number; label: string }[]
-  onClick?: () => void
-}) {
-  return (
-    <button type="button" className={'stat-card2 stat-combo ' + accent + (onClick ? ' click' : '')} onClick={onClick}>
-      <div className="stat-combo-header">
-        <span className="stat-card2-lbl">{lbl}</span>
-        {onClick && <span className="stat-combo-arr">›</span>}
-      </div>
-      <div className="stat-combo-row">
-        {items.map((it, i) => (
-          <div key={i} className="stat-combo-slot">
-            <div className="stat-combo-slot-n">{it.n}</div>
-            <div className="stat-combo-slot-lbl">{it.label}</div>
-          </div>
-        ))}
-      </div>
-    </button>
-  )
-}
+// ── Sub-componenti ────────────────────────────────────────────────────────────
 
 function Modale({ children, onChiudi }: { children: React.ReactNode; onChiudi: () => void }) {
   return (
@@ -447,16 +560,17 @@ function ModaleTitolo({ titolo, kpi, kpiLabel }: { titolo: string; kpi: string; 
   )
 }
 
-function BarChart({ dati, titolo, suffisso = '', percentuale = false }: {
+function BarChart({ dati, titolo, suffisso = '', percentuale = false, className = '' }: {
   dati: { label: string; val: number }[]
   titolo?: string
   suffisso?: string
   percentuale?: boolean
+  className?: string
 }) {
   const massimo = Math.max(...dati.map(d => d.val), 1)
   const totale = dati.reduce((s, d) => s + d.val, 0)
   return (
-    <div className="stat-chart">
+    <div className={'stat-chart' + (className ? ' ' + className : '')}>
       {titolo && <div className="stat-chart-titolo">{titolo}</div>}
       {dati.map((d, i) => {
         const largh = Math.round(d.val / massimo * 100)

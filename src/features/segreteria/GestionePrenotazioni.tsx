@@ -602,19 +602,21 @@ export default function GestionePrenotazioni() {
               Torneo
             </span>
             <span className="text-ink-3">·</span>
-            <span className="flex items-center gap-1.5">
-              <i
-                className="inline-block h-3.5 w-3.5 rounded-full"
-                style={{ background: 'var(--ok, #2e9e5b)' }}
-              />
-              Confermato
-            </span>
-            <span className="flex items-center gap-1.5">
-              <i
-                className="inline-block h-3.5 w-3.5 rounded-full border-2"
-                style={{ borderColor: 'var(--g500)' }}
-              />
-              Da confermare
+            <span className="flex flex-nowrap items-center gap-x-4">
+              <span className="flex items-center gap-1.5">
+                <i
+                  className="inline-block h-3.5 w-3.5 rounded-full"
+                  style={{ background: 'var(--ok, #2e9e5b)' }}
+                />
+                Confermato
+              </span>
+              <span className="flex items-center gap-1.5">
+                <i
+                  className="inline-block h-3.5 w-3.5 rounded-full border-2"
+                  style={{ borderColor: 'var(--g500)' }}
+                />
+                Da confermare
+              </span>
             </span>
           </div>
           {campiSport.map((campo) => (

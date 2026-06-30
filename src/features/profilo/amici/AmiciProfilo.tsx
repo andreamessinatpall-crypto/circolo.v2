@@ -1,9 +1,235 @@
-import { useState, type ReactNode } from 'react'
+import { Link } from 'react-router-dom'
+import { useState, useRef, useEffect } from 'react'
 import { useAuth } from '@/auth/useAuth'
 import { mancaTabella, eDuplicato, messaggioErrore } from '@/lib/errori'
 import { titleCase } from '@/lib/formato'
 import { classiInput } from '@/components/stili'
-import { useAmici, type Amicizia, type VoceAmico } from './useAmici'
+import { RuoloAvatar, MedagliaRuolo } from '@/features/profilo/ruoloBadge'
+import { LIVELLI_PUNTI_DEFAULT, livelloDaPunti } from '@/features/profilo/livelliPunti'
+import { MedagliaLv } from '@/features/profilo/MedagliaLv'
+import { useAmici, type Amicizia, type VoceAmico, type VoceStaff } from './useAmici'
+
+function sportEmoji(sport: string | null): string | null {
+  if (sport === 'padel') return '🎾'
+  if (sport === 'calcio') return '⚽'
+  if (sport === 'entrambi') return '🎾⚽'
+  return null
+}
+
+
+function IcoCalendario() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="3" y="4" width="18" height="18" rx="2" />
+      <line x1="16" y1="2" x2="16" y2="6" />
+      <line x1="8" y1="2" x2="8" y2="6" />
+      <line x1="3" y1="10" x2="21" y2="10" />
+    </svg>
+  )
+}
+
+function IcoBidone() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <polyline points="3 6 5 6 21 6" />
+      <path d="M19 6l-1 14H6L5 6" />
+      <path d="M10 11v6M14 11v6" />
+      <path d="M9 6V4h6v2" />
+    </svg>
+  )
+}
+
+function CardStaff({ voce }: { voce: VoceStaff }) {
+  const sport = sportEmoji(voce.sport)
+  return (
+    <div className="amici-card">
+      <MedagliaRuolo ruolo={voce.ruolo} size={40} />
+      <div className="amici-card-info">
+        <div className="amici-card-nome">
+          {voce.etichetta}
+          {sport && <span className="amici-sport-ico">{sport}</span>}
+        </div>
+        <div className="amici-card-sub capitalize">{voce.ruolo}</div>
+      </div>
+    </div>
+  )
+}
+
+function CardAmico({ voce, onRimuovi }: { voce: VoceAmico; onRimuovi: () => void }) {
+  const sport = sportEmoji(voce.sport)
+  const lv = livelloDaPunti(voce.punti, LIVELLI_PUNTI_DEFAULT)
+  const lvNome = LIVELLI_PUNTI_DEFAULT[lv - 1]?.nome ?? ''
+  return (
+    <div className="amici-card">
+      <MedagliaLv punti={voce.punti} />
+      <div className="amici-card-info">
+        <div className="amici-card-nome">
+          {voce.etichetta}
+          {sport && <span className="amici-sport-ico">{sport}</span>}
+        </div>
+        <div className="amici-card-sub">
+          {lvNome}
+          {' · '}
+          {voce.punti} pt
+          {voce.nPartite > 0 && ` · ${voce.nPartite} ${voce.nPartite === 1 ? 'partita' : 'partite'}`}
+        </div>
+      </div>
+      <div className="amici-card-azioni">
+        <Link
+          to="/prenota"
+          state={{ amicoId: voce.id }}
+          className="btn btn-mini flex items-center justify-center"
+          title="Prenota con questo amico"
+        >
+          <IcoCalendario />
+        </Link>
+        <button
+          type="button"
+          title="Rimuovi amico"
+          className="btn btn-pericolo btn-mini px-2"
+          onClick={onRimuovi}
+        >
+          <IcoBidone />
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function CardRichiesta({
+  voce,
+  sotto,
+  children,
+}: {
+  voce: VoceAmico
+  sotto: string
+  children: React.ReactNode
+}) {
+  return (
+    <div className="amici-card">
+      <RuoloAvatar ruolo={voce.ruolo} size={36} />
+      <div className="amici-card-info">
+        <div className="amici-card-nome">{voce.etichetta}</div>
+        <div className="amici-card-sub">{sotto}</div>
+      </div>
+      <div className="amici-card-azioni">{children}</div>
+    </div>
+  )
+}
+
+function Ico({ children, d }: { children?: React.ReactNode; d?: string }) {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      {d ? <path d={d} /> : children}
+    </svg>
+  )
+}
+
+const IcoScudo = <Ico d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+const IcoMedagliaA = <Ico><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11" strokeLinecap="round"/></Ico>
+const IcoAmici = <Ico><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></Ico>
+const IcoInbox = <Ico><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></Ico>
+const IcoSend = <Ico><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></Ico>
+const IcoPiu = <Ico><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></Ico>
+
+function Eyebrow({ icona, children }: { icona?: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <div className="club-sez-header" style={{ marginTop: '0' }}>
+      {icona && <span className="club-sez-icona">{icona}</span>}
+      <h2 className="club-sez-titolo">{children}</h2>
+    </div>
+  )
+}
+
+function corrispondenze(query: string, etichetta: string): boolean {
+  const e = etichetta.toLowerCase()
+  return query
+    .toLowerCase()
+    .trim()
+    .split(/\s+/)
+    .every((t) => e.includes(t))
+}
+
+function CercaAmico({
+  selezionabili,
+  onInvia,
+  isPending,
+}: {
+  selezionabili: import('./useAmici').SocioPubblico[]
+  onInvia: (id: string) => void
+  isPending: boolean
+}) {
+  const [query, setQuery] = useState('')
+  const wrapRef = useRef<HTMLDivElement>(null)
+
+  // Chiude la lista cliccando fuori
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) {
+        setQuery('')
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
+
+  const q = query.trim()
+  const risultati =
+    q.length >= 3
+      ? selezionabili.filter((s) => corrispondenze(q, s.etichetta)).slice(0, 12)
+      : []
+
+  return (
+    <div ref={wrapRef} className="relative">
+      <input
+        type="text"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder="Digita almeno 3 lettere…"
+        className={`${classiInput} pr-9`}
+        disabled={isPending}
+        autoComplete="off"
+      />
+      {/* Icona lente */}
+      <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-ink-3">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8" />
+          <line x1="21" y1="21" x2="16.65" y2="16.65" />
+        </svg>
+      </span>
+
+      {/* Lista risultati */}
+      {risultati.length > 0 && (
+        <div className="cerca-lista">
+          {risultati.map((s) => (
+            <button
+              key={s.id}
+              type="button"
+              className="cerca-riga"
+              onMouseDown={(e) => e.preventDefault()} // evita blur prima del click
+              onClick={() => {
+                onInvia(s.id)
+                setQuery('')
+              }}
+            >
+              <span className="cerca-riga-nome">{titleCase(s.etichetta)}</span>
+              <span className="cerca-riga-ico" aria-hidden="true">+</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Nessun risultato */}
+      {q.length >= 3 && risultati.length === 0 && (
+        <p className="mt-2 text-xs text-ink-3">Nessun giocatore trovato per «{q}».</p>
+      )}
+    </div>
+  )
+}
+
+function rimuoviConConferma(v: VoceAmico, rimuovi: (rec: Amicizia) => void) {
+  if (window.confirm('Rimuovere ' + v.etichetta + ' dai tuoi amici?')) rimuovi(v.rec)
+}
 
 export default function AmiciProfilo() {
   const { profilo } = useAuth()
@@ -12,7 +238,6 @@ export default function AmiciProfilo() {
 
   if (!profilo) return null
 
-  // Database non ancora predisposto: messaggio guidato (come nella v1).
   if (amici.erroreAmicizie && mancaTabella(amici.erroreAmicizie, 'amicizie')) {
     return (
       <div className="card text-ink-2">
@@ -22,9 +247,9 @@ export default function AmiciProfilo() {
     )
   }
 
-  // Soci selezionabili: tutti tranne te e quelli già collegati/in richiesta.
   const collegati = new Set<string>([
     profilo.id,
+    ...amici.staffIds,
     ...amici.amici.map((v) => v.id),
     ...amici.ricevute.map((v) => v.id),
     ...amici.inviate.map((v) => v.id),
@@ -43,145 +268,169 @@ export default function AmiciProfilo() {
     })
   }
 
+  // Mini-classifica: amici + me ordinati per punti
+  const mioSocio = amici.sociPubblici.find((s) => s.id === profilo.id)
+  const classifica = [
+    ...(mioSocio
+      ? [{ id: 'me', etichetta: 'Tu', punti: mioSocio.punti, isMe: true }]
+      : []),
+    ...amici.amici.map((v) => ({ id: v.id, etichetta: v.etichetta, punti: v.punti, isMe: false })),
+  ].sort((a, b) => b.punti - a.punti)
+  const maxPunti = Math.max(1, ...classifica.map((t) => t.punti))
+
   const conta = amici.amici.length
+  const nRichieste = amici.ricevute.length
 
   return (
-    <div>
-      <div className="sez-hero">
-        <div className="sez-hero-top">
-          <div className="sez-hero-av">👥</div>
-          <div className="sez-hero-info">
-            <div className="sez-hero-eyebrow">I tuoi amici del club</div>
-            <h2>
-              {conta} {conta === 1 ? 'amico' : 'amici'}
-            </h2>
-          </div>
-        </div>
-      </div>
+    <div className="flex flex-col gap-6">
 
-      <div className="card">
-        {/* Aggiungi un amico */}
-        <label>Cerca un giocatore da aggiungere</label>
-      <select
-        className={classiInput}
-        value=""
-        onChange={(e) => {
-          if (e.target.value) invia(e.target.value)
-        }}
-        disabled={amici.invia.isPending}
-      >
-        <option value="">— Seleziona un giocatore —</option>
-        {selezionabili.map((s) => (
-          <option key={s.id} value={s.id}>
-            {titleCase(s.etichetta)}
-          </option>
-        ))}
-      </select>
-      {msg && <p className="mt-2 text-sm text-red-700">{msg}</p>}
-
-      {/* Richieste ricevute */}
-      {amici.ricevute.length > 0 && (
-        <Sezione titolo="Richieste ricevute">
-          {amici.ricevute.map((v) => (
-            <Riga key={v.rec.id} etichetta={v.etichetta} sotto="vuole essere tuo amico">
-              <Bottone onClick={() => amici.accetta.mutate(v.rec)}>Accetta</Bottone>
-              <Bottone variante="pericolo" onClick={() => amici.rimuovi.mutate(v.rec)}>
-                Rifiuta
-              </Bottone>
-            </Riga>
-          ))}
-        </Sezione>
-      )}
-
-      {/* I tuoi amici */}
-      <Sezione titolo="I tuoi amici">
-        {amici.amici.length === 0 ? (
-          <p className="text-sm text-ink-3">
-            Non hai ancora amici. Cerca un giocatore qui sopra e invia una richiesta.
-          </p>
-        ) : (
-          amici.amici.map((v) => (
-            <Riga key={v.rec.id} etichetta={v.etichetta}>
-              <Bottone
-                variante="pericolo"
-                onClick={() => rimuoviConConferma(v, amici.rimuovi.mutate)}
-              >
-                Rimuovi
-              </Bottone>
-            </Riga>
-          ))
+      {/* ── Hero strip ─────────────────────────────────────── */}
+      <div className="amici-hero-strip">
+        <svg width="22" height="20" viewBox="0 0 26 22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <circle cx="9" cy="6" r="4" />
+          <path d="M1 20c0-3.8 3.6-7 8-7" />
+          <circle cx="19" cy="7" r="3.5" />
+          <path d="M14.5 19.5c.5-3 3-5.5 4.5-5.5" />
+          <path d="M1 20h14" />
+          <path d="M14.5 19.5H25" />
+        </svg>
+        <span>
+          <strong>{conta}</strong> {conta === 1 ? 'amico' : 'amici'}
+        </span>
+        {nRichieste > 0 && (
+          <>
+            <span className="text-ink-3">·</span>
+            <span className="amici-n-badge">{nRichieste}</span>
+            <span className="text-sm text-ink-2">
+              {nRichieste === 1 ? 'nuova richiesta' : 'nuove richieste'}
+            </span>
+          </>
         )}
-      </Sezione>
+      </div>
 
-      {/* Richieste inviate */}
-      {amici.inviate.length > 0 && (
-        <Sezione titolo="Richieste inviate">
-          {amici.inviate.map((v) => (
-            <Riga key={v.rec.id} etichetta={v.etichetta} sotto="in attesa di conferma">
-              <Bottone variante="secondario" onClick={() => amici.rimuovi.mutate(v.rec)}>
-                Annulla
-              </Bottone>
-            </Riga>
-          ))}
-        </Sezione>
+      {/* ── Richieste ricevute ─────────────────────────────── */}
+      {amici.ricevute.length > 0 && (
+        <section>
+          <Eyebrow icona={IcoInbox}>
+            Richieste ricevute{' '}
+            <span className="amici-n-badge">{amici.ricevute.length}</span>
+          </Eyebrow>
+          <div className="flex flex-col gap-2">
+            {amici.ricevute.map((v) => (
+              <CardRichiesta key={v.rec.id} voce={v} sotto="vuole essere tuo amico">
+                <button
+                  type="button"
+                  className="btn btn-mini"
+                  onClick={() => amici.accetta.mutate(v.rec)}
+                >
+                  Accetta
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-pericolo btn-mini"
+                  onClick={() => amici.rimuovi.mutate(v.rec)}
+                >
+                  Rifiuta
+                </button>
+              </CardRichiesta>
+            ))}
+          </div>
+        </section>
       )}
-      </div>
+
+      {/* ── I tuoi amici ───────────────────────────────────── */}
+      <section>
+        <Eyebrow icona={IcoAmici}>I tuoi amici</Eyebrow>
+        {amici.amici.length === 0 ? (
+          <div className="card py-6 text-center text-sm text-ink-3">
+            Non hai ancora amici. Cerca un giocatore qui sotto.
+          </div>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {amici.amici.map((v) => (
+              <CardAmico
+                key={v.rec.id}
+                voce={v}
+                onRimuovi={() => rimuoviConConferma(v, amici.rimuovi.mutate)}
+              />
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* ── Classifica tra amici ───────────────────────────── */}
+      {classifica.length > 1 && (
+        <section>
+          <Eyebrow icona={IcoMedagliaA}>Classifica tra amici</Eyebrow>
+          <div className="card overflow-hidden !p-0">
+            {classifica.map((t, i) => (
+              <div
+                key={t.id}
+                className={'amici-rank-riga' + (t.isMe ? ' amici-rank-me' : '')}
+              >
+                <span className="amici-rank-pos">{i + 1}</span>
+                <span className={'amici-rank-nome' + (t.isMe ? ' font-bold text-verde-700' : '')}>
+                  {t.etichetta}
+                </span>
+                <div className="amici-rank-bar-wrap">
+                  <div className="amici-rank-bar-track">
+                    <div
+                      className="amici-rank-bar-fill"
+                      style={{ width: `${(t.punti / maxPunti) * 100}%` }}
+                    />
+                  </div>
+                  <span className="amici-rank-punti">{t.punti} pt</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* ── Aggiungi un amico ──────────────────────────────── */}
+      <section>
+        <Eyebrow icona={IcoPiu}>Aggiungi un amico</Eyebrow>
+        <div className="card">
+          <CercaAmico
+            selezionabili={selezionabili}
+            onInvia={invia}
+            isPending={amici.invia.isPending}
+          />
+          {msg && <p className="mt-2 text-sm text-red-700">{msg}</p>}
+        </div>
+      </section>
+
+      {/* ── Richieste inviate ──────────────────────────────── */}
+      {amici.inviate.length > 0 && (
+        <section>
+          <Eyebrow icona={IcoSend}>Richieste inviate</Eyebrow>
+          <div className="flex flex-col gap-2">
+            {amici.inviate.map((v) => (
+              <CardRichiesta key={v.rec.id} voce={v} sotto="in attesa di conferma">
+                <button
+                  type="button"
+                  className="btn btn-secondario btn-mini"
+                  onClick={() => amici.rimuovi.mutate(v.rec)}
+                >
+                  Annulla
+                </button>
+              </CardRichiesta>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* ── Staff del club ─────────────────────────────────── */}
+      {amici.staff.length > 0 && (
+        <section>
+          <Eyebrow icona={IcoScudo}>Staff del club</Eyebrow>
+          <div className="flex flex-col gap-2">
+            {amici.staff.map((s) => (
+              <CardStaff key={s.id} voce={s} />
+            ))}
+          </div>
+        </section>
+      )}
     </div>
-  )
-}
-
-function rimuoviConConferma(v: VoceAmico, rimuovi: (rec: Amicizia) => void) {
-  if (window.confirm('Rimuovere ' + v.etichetta + ' dai tuoi amici?')) rimuovi(v.rec)
-}
-
-function Sezione({ titolo, children }: { titolo: string; children: ReactNode }) {
-  return (
-    <div className="mt-6">
-      <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-3">
-        {titolo}
-      </div>
-      <div className="flex flex-col gap-2">{children}</div>
-    </div>
-  )
-}
-
-function Riga({
-  etichetta,
-  sotto,
-  children,
-}: {
-  etichetta: string
-  sotto?: string
-  children: ReactNode
-}) {
-  return (
-    <div className="flex items-center justify-between gap-3 rounded-lg border border-verde-700/10 px-3 py-2">
-      <div>
-        <div className="text-sm font-medium text-ink">{etichetta}</div>
-        {sotto && <div className="text-xs text-ink-3">{sotto}</div>}
-      </div>
-      <div className="flex gap-2">{children}</div>
-    </div>
-  )
-}
-
-function Bottone({
-  children,
-  onClick,
-  variante = 'principale',
-}: {
-  children: ReactNode
-  onClick: () => void
-  variante?: 'principale' | 'secondario' | 'pericolo'
-}) {
-  const classe = {
-    principale: 'btn btn-mini',
-    secondario: 'btn btn-secondario btn-mini',
-    pericolo: 'btn btn-pericolo btn-mini',
-  }
-  return (
-    <button type="button" onClick={onClick} className={classe[variante]}>
-      {children}
-    </button>
   )
 }

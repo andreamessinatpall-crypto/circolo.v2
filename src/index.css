@@ -69,7 +69,13 @@
 
 /* ─── BASE ─────────────────────────────────────────────────── */
 @layer base {
+  html {
+    overflow-x: clip;
+    overscroll-behavior-x: none; /* blocca il bounce elastico orizzontale su iOS/Android */
+  }
   body {
+    overflow-x: clip;
+    overscroll-behavior-x: none;
     margin: 0;
     background: var(--bg);
     color: var(--ink);
@@ -464,23 +470,12 @@
     gap: 12px;
     margin: 28px 0 14px;
   }
-  .eyebrow::before {
-    content: '';
-    width: 24px;
-    height: 3px;
-    background: linear-gradient(90deg, var(--g500), var(--g300));
-    border-radius: 2px;
-    flex: 0 0 auto;
-    box-shadow: 0 0 10px rgba(200, 151, 46, 0.4);
-  }
+  .eyebrow::before,
   .eyebrow::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: linear-gradient(to right, rgba(20, 83, 42, 0.18), transparent);
+    display: none;
   }
 
-  /* (Fase 7c) Interlinea comprimibile: l'eyebrow diventa un bottone cliccabile
+  /* Interlinea comprimibile: l'eyebrow diventa un bottone cliccabile
      che mostra/nasconde la sua sezione. Eredita l'aspetto da .eyebrow. */
   .eyebrow-toggle {
     width: 100%;
@@ -495,6 +490,24 @@
     flex: 0 0 auto;
     font-size: 0.7rem;
     color: var(--g500);
+  }
+  /* Per le sezioni collassabili (Sezione component): striscia dorata sotto,
+     non prima — allineata alle sezioni profilo (club-sez-header). */
+  .eyebrow.eyebrow-toggle {
+    position: relative;
+    padding-bottom: 10px;
+    margin-bottom: 14px;
+  }
+  .eyebrow.eyebrow-toggle::before {
+    display: none;
+  }
+  .eyebrow.eyebrow-toggle::after {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 1.5px;
+    background: linear-gradient(90deg, var(--g500) 0%, rgba(200,151,46,0.22) 35%, transparent 75%);
   }
 
   /* Pulsanti */
@@ -768,274 +781,142 @@
   }
 
   /* ════ Dashboard Statistiche ════ */
-  .stat-page {
-    padding-bottom: 48px;
+  .stat-page { padding-bottom: 48px; }
+  .stat-ts {
+    font-size: 0.73rem;
+    color: var(--ink3);
+    margin-bottom: 28px;
   }
   .stat-loading {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 14px;
-    padding: 80px 0;
-    color: var(--ink3);
-    font-family: var(--font-display);
-    font-size: 0.9rem;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 16px; padding: 80px 0;
+    color: var(--ink3); font-size: 0.9rem;
   }
   .stat-loading-spinner {
-    width: 32px;
-    height: 32px;
+    width: 32px; height: 32px;
     border: 3px solid var(--border2);
-    border-top-color: #0d9488;
+    border-top-color: var(--v600);
     border-radius: 50%;
-    animation: spin 0.7s linear infinite;
+    animation: spin 0.9s linear infinite;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  /* Header pagina */
-  .stat-header {
-    margin-bottom: 22px;
-    padding-bottom: 16px;
-    border-bottom: 1px solid var(--border2);
-  }
-  .stat-header-titolo {
-    font-family: var(--font-display);
-    font-size: 1.7rem;
-    font-weight: 900;
-    letter-spacing: -0.025em;
-    color: var(--v900);
-  }
-  .stat-header-sub {
-    font-size: 0.76rem;
-    color: var(--ink3);
-    margin-top: 2px;
-  }
+  /* Sezione */
+  .stat-sez { margin-bottom: 40px; }
 
-  /* ── Hero: 3 card grandi in cima ── */
-  .stat-hero {
+  /* Griglie */
+  .stat-row {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
-    margin-bottom: 28px;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 10px; margin-bottom: 10px;
   }
-  .stat-hero-card {
-    position: relative;
-    border: none;
-    border-radius: 20px;
-    padding: 22px 20px 18px;
-    text-align: left;
-    cursor: pointer;
-    overflow: hidden;
-    transition: transform 0.14s, box-shadow 0.14s;
-  }
-  .stat-hero-card::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(ellipse at 85% 15%, rgba(255,255,255,0.22) 0%, transparent 55%);
-    pointer-events: none;
-  }
-  .stat-hero-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 10px 30px rgba(0,0,0,0.22);
-  }
-  .stat-hero-card.teal   { background: linear-gradient(135deg, #0d9488 0%, #0891b2 100%); color: #fff; }
-  .stat-hero-card.indigo { background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); color: #fff; }
-  .stat-hero-card.amber  { background: linear-gradient(135deg, #d97706 0%, #b45309 100%); color: #fff; }
-  .stat-hero-val {
-    font-family: var(--font-display);
-    font-size: 3.2rem;
-    font-weight: 900;
-    line-height: 1;
-    letter-spacing: -0.03em;
-    margin-bottom: 6px;
-  }
-  .stat-hero-lbl {
-    font-size: 0.8rem;
-    font-weight: 600;
-    opacity: 0.85;
-    white-space: nowrap;
-  }
-  .stat-hero-delta {
-    margin-top: 10px;
-    font-size: 0.73rem;
-    font-weight: 700;
-    opacity: 0.92;
-  }
-  .stat-hero-delta.up   { color: #86efac; }
-  .stat-hero-delta.down { color: #fca5a5; }
-  .stat-hero-caret {
-    position: absolute;
-    right: 14px;
-    bottom: 14px;
-    font-size: 1.3rem;
-    opacity: 0.35;
-  }
-
-  /* ── Sezione sub-header ── */
-  .stat-sezione {
-    margin-bottom: 28px;
-  }
-  .stat-sezione-header {
-    display: flex;
-    align-items: center;
-    gap: 7px;
-    font-family: var(--font-display);
-    font-size: 0.72rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.09em;
-    color: var(--ink3);
-    margin-bottom: 10px;
-  }
-  .stat-dot {
-    display: inline-block;
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    flex-shrink: 0;
-  }
-  .stat-dot.teal   { background: #0d9488; }
-  .stat-dot.purple { background: #7c3aed; }
-
-  /* ── Card grid ── */
-  .stat-griglia {
+  .stat-2col {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-    gap: 10px;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px; margin-bottom: 10px;
   }
-  .stat-card2 {
-    position: relative;
-    background: #fff;
-    border: 1px solid var(--border2);
-    border-top-width: 3px;
-    border-radius: 14px;
-    padding: 20px 14px 32px;
-    text-align: center;
-    transition: transform 0.12s, box-shadow 0.12s;
-    cursor: default;
+
+  /* KPI card — numero grande con barra colorata in cima */
+  .stat-kpi {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 14px 14px;
+    position: relative; overflow: hidden;
+    text-align: left; cursor: default; width: 100%;
+    transition: box-shadow 0.14s, transform 0.14s;
   }
-  /* le combo card non hanno la freccia assoluta in basso: reset padding */
-  .stat-card2.stat-combo {
-    padding: 16px 14px 16px;
-    text-align: left;
-  }
-  .stat-card2.click {
-    cursor: pointer;
-  }
-  .stat-card2.click:hover {
+  .stat-kpi.click { cursor: pointer; }
+  .stat-kpi.click:hover {
     transform: translateY(-2px);
-    box-shadow: 0 5px 18px rgba(0,0,0,0.10);
+    box-shadow: 0 6px 24px rgba(0,0,0,0.09);
   }
-  .stat-card2.teal   { border-top-color: #0d9488; }
-  .stat-card2.indigo { border-top-color: #4f46e5; }
-  .stat-card2.purple { border-top-color: #7c3aed; }
-  .stat-card2.verde  { border-top-color: #16a34a; }
-  .stat-card2.amber  { border-top-color: #d97706; }
-  .stat-card2.sky    { border-top-color: #0284c7; }
-  .stat-card2.rose   { border-top-color: #e11d48; }
-  .stat-card2-val {
+  .stat-kpi-bar {
+    position: absolute; top: 0; left: 0; right: 0;
+    height: 3px;
+  }
+  .stat-kpi-n {
     font-family: var(--font-display);
-    font-size: 2rem;
-    font-weight: 800;
-    line-height: 1.1;
-    color: var(--v800);
-    white-space: nowrap;
+    font-size: 2rem; line-height: 1.15; font-weight: 700;
+    color: var(--ink);
+    margin-top: 6px; margin-bottom: 3px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
-  .stat-card2-val.s {
-    font-size: 1rem;
-    font-weight: 700;
-    line-height: 1.35;
-    white-space: normal;
+  .stat-kpi-lbl {
+    font-size: 0.67rem; font-weight: 600;
+    letter-spacing: 0.04em; text-transform: uppercase;
+    color: var(--ink3); line-height: 1.3;
   }
-  .stat-card2-lbl {
-    font-size: 0.67rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    color: var(--ink3);
-    margin-top: 3px;
-  }
-  .stat-card2-arr {
-    position: absolute;
-    bottom: 9px;
-    right: 11px;
-    font-size: 0.95rem;
-    color: var(--ink3);
-    opacity: 0.4;
+  .stat-kpi-delta { font-size: 0.7rem; font-weight: 700; margin-top: 8px; }
+  .stat-kpi-delta.up   { color: #16a34a; }
+  .stat-kpi-delta.down { color: #e11d48; }
+  .stat-kpi-arr {
+    position: absolute; right: 10px; bottom: 10px;
+    font-size: 0.85rem; color: var(--ink3); line-height: 1;
   }
 
-  /* ── Combo card (span 2 colonne, numeri prominenti) ── */
+  /* Combo card — due o tre valori affiancati */
   .stat-combo {
-    grid-column: span 2;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 14px 16px;
+    position: relative; overflow: hidden;
+    text-align: left; cursor: default; width: 100%;
+    transition: box-shadow 0.14s, transform 0.14s;
   }
-  .stat-combo-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+  .stat-combo.click { cursor: pointer; }
+  .stat-combo.click:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 24px rgba(0,0,0,0.09);
+  }
+  .stat-combo-bar {
+    position: absolute; top: 0; left: 0; right: 0;
+    height: 3px;
+  }
+  .stat-combo-top {
+    display: flex; justify-content: space-between; align-items: center;
     margin-bottom: 14px;
   }
-  .stat-combo-arr {
-    font-size: 1rem;
+  .stat-combo-lbl {
+    font-size: 0.67rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.05em;
     color: var(--ink3);
-    opacity: 0.4;
-    flex-shrink: 0;
   }
-  .stat-combo-row {
-    display: flex;
+  .stat-combo-arr { font-size: 0.85rem; color: var(--ink3); flex-shrink: 0; }
+  .stat-combo-items { display: flex; }
+  .stat-combo-item {
+    flex: 1; padding: 0 10px;
+    border-right: 1px solid var(--border);
   }
-  .stat-combo-slot {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 4px 8px 2px;
-    border-right: 1px solid var(--border2);
-  }
-  .stat-combo-slot:last-child {
-    border-right: none;
-  }
-  .stat-combo-slot-n {
+  .stat-combo-item:first-child { padding-left: 0; }
+  .stat-combo-item:last-child  { border-right: none; }
+  .stat-combo-n {
     font-family: var(--font-display);
-    font-size: 1.9rem;
-    font-weight: 900;
-    line-height: 1;
-    color: var(--v800);
+    font-size: 1.85rem; font-weight: 700;
+    color: var(--ink); line-height: 1.1;
   }
-  .stat-combo-slot-lbl {
-    font-size: 0.64rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--ink3);
-    margin-top: 5px;
-    white-space: nowrap;
+  .stat-combo-sublbl {
+    font-size: 0.64rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.04em;
+    color: var(--ink3); margin-top: 3px;
   }
 
-  /* ── Overlay / Modale ── */
+  /* Overlay / Modale */
   .stat-overlay {
-    position: fixed;
-    inset: 0;
-    z-index: 50;
-    background: rgba(0,0,0,0.48);
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    position: fixed; inset: 0; z-index: 50;
+    background: rgba(0,0,0,0.42);
+    display: flex; align-items: center; justify-content: center;
     padding: 24px;
     animation: stat-fade 0.15s ease;
   }
-  @keyframes stat-fade {
-    from { opacity: 0; }
-    to   { opacity: 1; }
-  }
+  @keyframes stat-fade { from { opacity: 0; } to { opacity: 1; } }
   .stat-modale {
-    position: relative;
-    background: #fff;
-    border-radius: 22px;
-    padding: 30px 28px 26px;
-    width: 100%;
-    max-width: 500px;
-    max-height: 88vh;
-    overflow-y: auto;
+    position: relative; background: #fff;
+    border-radius: 22px; padding: 30px 28px 26px;
+    width: 100%; max-width: 500px;
+    max-height: 88vh; overflow-y: auto;
     animation: stat-up 0.18s cubic-bezier(.22,.88,.26,1);
   }
   @keyframes stat-up {
@@ -1043,142 +924,79 @@
     to   { transform: translateY(0);    opacity: 1; }
   }
   .stat-modale-x {
-    position: absolute;
-    right: 14px;
-    top: 14px;
-    background: none;
-    border: none;
-    font-size: 1.5rem;
-    color: var(--ink3);
-    cursor: pointer;
-    line-height: 1;
-    padding: 2px 7px;
-    border-radius: 8px;
+    position: absolute; right: 14px; top: 14px;
+    background: none; border: none;
+    font-size: 1.5rem; color: var(--ink3);
+    cursor: pointer; line-height: 1;
+    padding: 2px 7px; border-radius: 8px;
     transition: background 0.1s, color 0.1s;
   }
   .stat-modale-x:hover { background: var(--surface); color: var(--ink); }
-  .stat-modal-head {
-    margin-bottom: 20px;
-  }
+  .stat-modal-head { margin-bottom: 20px; }
   .stat-modal-titolo {
     font-family: var(--font-display);
-    font-size: 1rem;
-    font-weight: 700;
-    color: var(--ink3);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    margin-bottom: 4px;
+    font-size: 1rem; font-weight: 700;
+    color: var(--ink3); text-transform: uppercase;
+    letter-spacing: 0.06em; margin-bottom: 4px;
   }
   .stat-modal-kpi {
     font-family: var(--font-display);
     font-size: clamp(1.8rem, 8vw, 3.4rem);
-    font-weight: 900;
-    color: var(--v800);
-    line-height: 1.1;
-    letter-spacing: -0.03em;
-    word-break: break-word;
+    font-weight: 900; color: var(--v800);
+    line-height: 1.1; letter-spacing: -0.03em; word-break: break-word;
   }
-  .stat-modal-sub {
-    font-size: 0.82rem;
-    color: var(--ink3);
-    margin-top: 4px;
-  }
-  .stat-modal-delta {
-    font-size: 0.88rem;
-    font-weight: 700;
-    margin: 0 0 16px;
-  }
+  .stat-modal-sub { font-size: 0.82rem; color: var(--ink3); margin-top: 4px; }
+  .stat-modal-delta { font-size: 0.88rem; font-weight: 700; margin: 0 0 16px; }
   .stat-modal-delta.up   { color: #16a34a; }
   .stat-modal-delta.down { color: #e11d48; }
 
-  /* ── Bar chart ── */
+  /* Bar chart */
   .stat-chart {
-    margin-top: 4px;
-    display: grid;
+    margin-top: 4px; display: grid;
     grid-template-columns: max-content 1fr auto;
-    align-items: center;
-    column-gap: 10px;
-    row-gap: 9px;
+    align-items: center; column-gap: 10px; row-gap: 9px;
   }
   .stat-chart-titolo {
     grid-column: 1 / -1;
     font-family: var(--font-display);
-    font-size: 0.7rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.07em;
-    color: var(--ink3);
-    margin-bottom: 3px;
+    font-size: 0.7rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--ink3); margin-bottom: 3px;
   }
-  .stat-chart-riga {
-    display: contents;
-  }
-  .stat-chart-lbl {
-    font-size: 0.78rem;
-    font-weight: 600;
-    color: var(--ink2);
-    white-space: nowrap;
-  }
+  .stat-chart-riga { display: contents; }
+  .stat-chart-lbl { font-size: 0.78rem; font-weight: 600; color: var(--ink2); white-space: nowrap; }
   .stat-chart-track {
-    height: 10px;
-    border-radius: 999px;
-    background: var(--border2);
-    overflow: hidden;
-    min-width: 50px;
+    height: 10px; border-radius: 999px;
+    background: var(--border2); overflow: hidden; min-width: 50px;
   }
   .stat-chart-fill {
-    height: 100%;
-    border-radius: 999px;
+    height: 100%; border-radius: 999px;
     background: linear-gradient(90deg, #0d9488, #0891b2);
-    min-width: 2px;
-    transition: width 0.6s cubic-bezier(.22,.88,.26,1);
+    min-width: 2px; transition: width 0.6s cubic-bezier(.22,.88,.26,1);
   }
   .stat-chart-val {
-    font-size: 0.76rem;
-    font-weight: 700;
-    color: var(--ink);
-    text-align: right;
-    white-space: nowrap;
+    font-size: 0.76rem; font-weight: 700;
+    color: var(--ink); text-align: right; white-space: nowrap;
   }
-  .stat-chart-perc {
-    font-weight: 500;
-    color: var(--ink3);
-  }
+  .stat-chart-perc { font-weight: 500; color: var(--ink3); }
 
-  /* ── Progress bar ── */
-  .stat-progress {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    margin-top: 16px;
-  }
-  .stat-progress-track {
-    flex: 1;
-    height: 16px;
-    border-radius: 999px;
-    background: var(--border2);
-    overflow: hidden;
-  }
+  /* Progress bar */
+  .stat-progress { display: flex; align-items: center; gap: 14px; margin-top: 16px; }
+  .stat-progress-track { flex: 1; height: 16px; border-radius: 999px; background: var(--border2); overflow: hidden; }
   .stat-progress-fill {
-    height: 100%;
-    border-radius: 999px;
+    height: 100%; border-radius: 999px;
     background: linear-gradient(90deg, #0d9488, #0891b2);
-    min-width: 4px;
-    transition: width 0.7s cubic-bezier(.22,.88,.26,1);
+    min-width: 4px; transition: width 0.7s cubic-bezier(.22,.88,.26,1);
   }
   .stat-progress-num {
     font-family: var(--font-display);
-    font-size: 1.4rem;
-    font-weight: 900;
-    color: var(--v800);
-    min-width: 52px;
-    text-align: right;
+    font-size: 1.4rem; font-weight: 900;
+    color: var(--v800); min-width: 52px; text-align: right;
   }
 
-  /* responsive: hero a colonna singola su mobile */
   @media (max-width: 600px) {
-    .stat-hero { grid-template-columns: 1fr; }
-    .stat-hero-val { font-size: 2.4rem; }
+    .stat-row  { grid-template-columns: repeat(2, 1fr); }
+    .stat-2col { grid-template-columns: 1fr; }
   }
 
   /* Avatar */
@@ -1194,7 +1012,25 @@
     flex: 0 0 auto;
   }
 
-  /* Header */
+  /* ── Header + Subnav: barra unica con trama ─────────────── */
+
+  /* Sfondo condiviso: gradiente scuro + trama a trattini diagonali
+     + alone ottone in alto a sinistra. Applicato a entrambi gli
+     elementi perché occupano lo stesso "strato visivo". */
+  .app-header,
+  .app-subnav {
+    background:
+      radial-gradient(ellipse 90% 260% at 0% 36%, rgba(200, 151, 46, 0.14) 0%, transparent 52%),
+      radial-gradient(ellipse 55% 180% at 100% 80%, rgba(46, 139, 80, 0.06) 0%, transparent 55%),
+      repeating-linear-gradient(
+        -52deg,
+        transparent 0px, transparent 11px,
+        rgba(255, 255, 255, 0.018) 11px, rgba(255, 255, 255, 0.018) 12px
+      ),
+      linear-gradient(172deg, #10441e 0%, #0b2f16 42%, #071b0d 100%);
+    color: #fff;
+  }
+
   .app-header {
     position: sticky;
     top: 0;
@@ -1202,37 +1038,112 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
-    height: 62px;
-    padding: 0 28px;
-    background: var(--v800);
-    color: #fff;
-    border-bottom: 2px solid var(--g500);
+    gap: 10px;
+    height: 56px;
+    padding: 0 16px;
   }
-  .app-header::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(80% 160% at 0% 50%, rgba(200, 151, 46, 0.12) 0%, transparent 60%);
-    pointer-events: none;
+
+  /* NOTA: niente overflow su questo elemento — position:sticky + overflow:auto
+     si annullano a vicenda nel browser. Lo scroll è gestito da .header-tabs. */
+  .app-subnav {
+    position: sticky;
+    top: 56px;
+    z-index: 19;
+    /* Separatore sottile interno tra header e tab (non percepito come bordo esterno) */
+    border-top: 1px solid rgba(255, 255, 255, 0.055);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.32);
+    display: flex;
+    justify-content: center;
   }
+  .app-subnav .header-tabs {
+    max-width: 900px;
+    width: 100%;
+    flex: 0 1 900px;
+  }
+
   .brand {
     font-family: var(--font-display);
     font-weight: 700;
-    font-size: 1.35rem;
+    font-size: 1.15rem;
     letter-spacing: 0.12em;
     text-transform: uppercase;
     line-height: 1;
     position: relative;
+    z-index: 1;
   }
   .brand small {
-    display: block;
-    font-weight: 500;
-    font-size: 0.58rem;
-    letter-spacing: 0.32em;
-    color: var(--g400);
-    margin-top: 4px;
+    display: none;
   }
+
+  /* ── Chip nome utente ─────────────────────────────────────
+     Pillola glassmorphism che raccoglie nome + badge livello/ruolo.
+     Dà il look "tessera club" all'area utente nell'header.      */
+  .header-chip {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    background: rgba(255, 255, 255, 0.09);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 24px;
+    padding: 4px 4px 4px 12px;
+    position: relative;
+    z-index: 1;
+    transition: background 0.15s;
+  }
+  .header-chip:hover {
+    background: rgba(255, 255, 255, 0.13);
+  }
+  .header-chip-nome {
+    font-family: var(--font-display);
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.9);
+    white-space: nowrap;
+  }
+
+  /* Badge livello nell'header: sempre gold per leggibilità sul verde scuro */
+  .header-lv {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: rgba(212, 165, 44, 0.22);
+    border: 1.5px solid rgba(212, 165, 44, 0.65);
+    color: var(--g300);
+    font-size: 0.62rem;
+    font-weight: 800;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+
+  @media (min-width: 480px) {
+    .brand small {
+      display: block;
+      font-weight: 500;
+      font-size: 0.54rem;
+      letter-spacing: 0.30em;
+      color: var(--g400);
+      margin-top: 3px;
+    }
+    .app-header {
+      height: 62px;
+      padding: 0 24px;
+    }
+    .app-subnav {
+      top: 62px;
+    }
+    .brand {
+      font-size: 1.35rem;
+    }
+    .header-chip-nome {
+      font-size: 0.88rem;
+    }
+  }
+
   .tag {
     font-family: var(--font-display);
     text-transform: uppercase;
@@ -1245,47 +1156,44 @@
     white-space: nowrap;
   }
 
-  /* Tab principali dentro l'header (fondo scuro) */
+  /* ── Tab di navigazione nel sotto-header ─────────────────── */
   .header-tabs {
     position: relative;
     z-index: 1;
-    flex: 1 1 auto;
     display: flex;
     flex-wrap: nowrap;
-    justify-content: center;
-    align-items: center;
-    gap: 4px;
     overflow-x: auto;
     scrollbar-width: none;
     -webkit-overflow-scrolling: touch;
-    /* padding laterale per non tagliare la prima/ultima tab su mobile */
-    padding: 0 8px;
   }
   .header-tabs::-webkit-scrollbar {
     display: none;
   }
+
   .header-tab {
-    flex-shrink: 0;
+    flex: 1 0 0;
+    min-width: 64px;
+    max-width: 160px;
+    text-align: center;
     white-space: nowrap;
     font-family: var(--font-display);
     text-transform: uppercase;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.07em;
     font-weight: 700;
-    font-size: 0.82rem;
-    white-space: nowrap;
-    padding: 8px 16px;
-    border-radius: 999px;
-    color: rgba(255, 255, 255, 0.7);
-    transition: background 0.14s, color 0.14s;
+    font-size: 0.7rem;
+    padding: 11px 10px 8px;
+    color: rgba(255, 255, 255, 0.48);
+    border-bottom: 3px solid transparent;
+    transition: color 0.15s, border-color 0.15s;
   }
   .header-tab:hover {
-    color: #fff;
-    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.82);
   }
   .header-tab.attivo {
-    color: var(--g300);
-    background: rgba(255, 255, 255, 0.12);
+    color: #fff;
+    border-bottom-color: var(--g300);
   }
+
   .header-utente {
     position: relative;
     z-index: 1;
@@ -1376,6 +1284,74 @@
     box-shadow: 0 24px 60px rgba(0, 0, 0, 0.12);
     border-top: 0;
     margin-bottom: 0;
+  }
+
+  /* ── Bottoni OAuth (Google / Apple) ──────────────────────────────────────── */
+  .oauth-area {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .oauth-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 11px 20px;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, box-shadow 0.15s, transform 0.1s;
+    letter-spacing: 0.01em;
+  }
+  .oauth-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.13);
+  }
+  .oauth-btn:active {
+    transform: translateY(0);
+  }
+  .oauth-btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    transform: none;
+  }
+  .oauth-btn-google {
+    background: #fff;
+    color: #3c4043;
+    border: 1.5px solid #dadce0;
+  }
+  .oauth-btn-google:hover:not(:disabled) {
+    background: #f8f9fa;
+    border-color: #bdc1c6;
+  }
+  .oauth-btn-apple {
+    background: #0d0d0d;
+    color: #fff;
+    border: 1.5px solid #0d0d0d;
+  }
+  .oauth-btn-apple:hover:not(:disabled) {
+    background: #1f1f1f;
+    border-color: #1f1f1f;
+  }
+  .oauth-divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 18px 0 4px;
+    color: var(--ink-2);
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .oauth-divider::before,
+  .oauth-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
   }
 
   /* ── Stile verde "modale" per i form principali ──────────────────────────
@@ -1565,40 +1541,90 @@
   }
 
   /* ── Prenotazioni: selettore giorni e griglia slot ── */
-  .giorni {
+  .giorni-nav {
     display: flex;
-    gap: 8px;
-    overflow-x: auto;
-    padding-bottom: 6px;
-    margin-bottom: 8px;
-    scrollbar-width: none;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 14px;
   }
-  .giorni::-webkit-scrollbar {
-    display: none;
+  .giorni-nav .giorni {
+    flex: 1;
+    margin-bottom: 0;
+  }
+  .giorni-freccia {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    border: 1.5px solid var(--border2);
+    background: var(--surface);
+    color: var(--v700);
+    font-size: 1.2rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .giorni-freccia:hover:not(:disabled) {
+    border-color: var(--g500);
+    background: var(--v050);
+  }
+  .giorni-freccia:disabled {
+    opacity: 0.25;
+    cursor: default;
+  }
+  .giorni {
+    display: grid;
+    gap: 6px;
+    margin-bottom: 14px;
   }
   .giorno-btn {
-    flex: 0 0 auto;
-    padding: 8px 16px;
-    font-size: 0.78rem;
-    font-family: var(--font-display);
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    background: transparent;
-    color: var(--v700);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 4px 10px;
+    border-radius: 14px;
     border: 1.5px solid var(--border2);
-    border-radius: 999px;
+    background: var(--surface);
     cursor: pointer;
-    transition: all 0.14s;
+    transition: border-color 0.15s, box-shadow 0.15s, transform 0.05s;
   }
   .giorno-btn:hover {
-    background: var(--v050);
-    border-color: var(--v600);
+    border-color: var(--g500);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+  }
+  .giorno-btn:active {
+    transform: translateY(1px);
+  }
+  .giorno-btn-dow {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: 700;
+    color: var(--ink3);
+  }
+  .giorno-btn-num {
+    font-size: 1.2rem;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--ink);
+  }
+  .giorno-btn.oggi {
+    border-color: var(--g500);
+  }
+  .giorno-btn.oggi .giorno-btn-num {
+    color: var(--v700);
   }
   .giorno-btn.attivo {
-    background: var(--v700);
-    color: #fff;
     border-color: var(--v700);
+    background: linear-gradient(160deg, var(--v600), var(--v800));
+  }
+  .giorno-btn.attivo .giorno-btn-dow,
+  .giorno-btn.attivo .giorno-btn-num {
+    color: #fff;
   }
 
   .campo-blocco {
@@ -1855,6 +1881,20 @@
     color: var(--g600);
     font-weight: 700;
     margin-top: 1px;
+    display: flex;
+    align-items: baseline;
+    gap: 0;
+    flex-wrap: wrap;
+  }
+  .amichevole-cap .orario-sep {
+    margin: 0 5px;
+    font-weight: 400;
+    color: var(--ink3);
+  }
+  .amichevole-cap .orario-campo {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--ink);
   }
   .amichevole-cap .dove {
     font-size: 0.8rem;
@@ -1875,9 +1915,8 @@
     line-height: 1;
   }
   .att-campo {
-    font-size: 0.82rem;
-    font-weight: 500;
-    color: var(--ink2);
+    font-weight: 700;
+    color: var(--ink);
   }
   .att-parti {
     display: flex;
@@ -1893,6 +1932,19 @@
     color: var(--ink3);
     font-weight: 400;
     margin-right: 2px;
+  }
+  .all-badge {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--v700);
+    background: var(--v100);
+    border: 1px solid var(--v200, rgba(90,150,100,0.3));
+    border-radius: 999px;
+    padding: 3px 10px;
+    white-space: nowrap;
+    flex-shrink: 0;
   }
   .part-conta {
     font-size: 0.7rem;
@@ -1931,31 +1983,44 @@
   /* Saldo crediti: banner sobrio in verde chiaro, numero (verde) sopra ed
      etichetta centrata sotto. */
   .saldo-crediti {
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
     text-align: center;
     gap: 2px;
-    padding: 20px;
-    border-radius: 18px;
-    background: var(--v050);
-    border: 1px solid var(--v100);
-    box-shadow: var(--ombra-card);
+    padding: 26px 20px;
+    border-radius: 22px;
+    background:
+      radial-gradient(ellipse 80% 60% at 85% -10%, rgba(200,151,46,0.22), transparent 55%),
+      repeating-linear-gradient(
+        135deg,
+        rgba(255,255,255,0.04) 0,
+        rgba(255,255,255,0.04) 1px,
+        transparent 1px,
+        transparent 28px
+      ),
+      linear-gradient(140deg, var(--v700) 0%, var(--v900, #0a3318) 100%);
+    border: 1px solid rgba(200,151,46,0.28);
+    box-shadow: 0 10px 30px rgba(12,51,25,0.18);
     margin-bottom: 16px;
+    overflow: hidden;
   }
   .saldo-crediti .num {
     font-family: var(--font-display);
     font-weight: 800;
-    font-size: 2.8rem;
+    font-size: 3rem;
     line-height: 1;
-    color: var(--v700);
+    color: #fff;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.25);
   }
   .saldo-crediti .et {
-    font-size: 0.74rem;
-    font-weight: 600;
+    font-size: 0.68rem;
+    font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.14em;
-    color: var(--ink2);
+    letter-spacing: 0.18em;
+    color: rgba(200,240,210,0.72);
+    margin-top: 4px;
   }
   .premio-card {
     position: relative;
@@ -2514,13 +2579,16 @@
 
   /* (Fase 6c) Intestazione "wow" del dettaglio torneo: nome in evidenza su
      fondo verde, con lo stato modificabile in alto a destra. */
+  /* Riga stato: sopra al blocco nome, separata nettamente */
+  .torneo-stato-row {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 8px;
+  }
+
   .torneo-hero {
     position: relative;
     overflow: hidden;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 14px;
     border-radius: 18px;
     margin-bottom: 10px;
     padding: 18px 22px 18px 26px;
@@ -2553,16 +2621,20 @@
     z-index: 1;
   }
   .torneo-hero-nome {
-    flex: 1 1 auto;
-    min-width: 0;
     font-family: var(--font-display);
     font-size: 1.5rem;
-    line-height: 1.1;
+    line-height: 1.15;
     letter-spacing: 0.02em;
     font-weight: 700;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    white-space: normal;
+    word-break: break-word;
+    position: relative;
+    z-index: 1;
+  }
+  /* Pill stato per i soci: nella riga sopra, su fondo bianco card */
+  .torneo-hero-pill:not(.off) {
+    background: var(--v100);
+    color: var(--v700);
   }
   /* (Fase 6c) Formato + periodo: ora fuori dal riquadro verde, sotto al titolo.
      Colore leggibile su fondo bianco della card. */
@@ -2574,16 +2646,16 @@
     font-size: 0.72rem;
     color: var(--ink2);
   }
+  /* Select stato: ora su fondo bianco, colori adattati */
   .torneo-hero-stato {
-    flex: 0 0 auto;
     width: auto;
     border-radius: 999px;
-    border: 1px solid rgba(200, 151, 46, 0.6);
-    background: rgba(255, 255, 255, 0.14);
-    color: #fff;
+    border: 1px solid var(--border2);
+    background: var(--v050);
+    color: var(--v700);
     font-weight: 700;
-    font-size: 0.8rem;
-    padding: 7px 12px;
+    font-size: 0.72rem;
+    padding: 4px 10px;
     cursor: pointer;
   }
   .torneo-hero-stato option {
@@ -2669,9 +2741,6 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(255, 255, 255, 0.1);
-    border: 2px solid var(--g500);
-    box-shadow: 0 0 0 7px rgba(200, 151, 46, 0.1), 0 4px 18px rgba(0, 0, 0, 0.22);
   }
   .riep-liv-medal svg {
     width: 100%;
@@ -2864,6 +2933,123 @@
     }
   }
 
+  /* Variante 2-colonne (per singola stat o coppie) */
+  .riep-griglia-2 {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  /* Sezioni interne al riep-wow per istruttori */
+  .riep-sez-istr {
+    position: relative;
+    z-index: 1;
+    margin-top: 16px;
+  }
+  .riep-sez-istr-sep {
+    margin-top: 0;
+    padding-top: 14px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  .riep-sez-istr-label {
+    font-size: 0.55rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    color: rgba(228, 240, 232, 0.45);
+    margin: 0 0 8px;
+  }
+  .riep-sez-istr .riep-griglia {
+    margin-top: 0;
+  }
+
+  /* Istruttore: barra allenamenti con separatori | */
+  .riep-istr-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 0 2px;
+  }
+  .riep-istr-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+    min-width: 0;
+  }
+  .riep-istr-item strong {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1.45rem;
+    line-height: 1;
+    color: #fff;
+  }
+  .riep-istr-item em {
+    font-style: normal;
+    font-size: 0.55rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: rgba(228, 240, 232, 0.55);
+    margin-top: 4px;
+    white-space: nowrap;
+  }
+  .riep-istr-pipe {
+    font-size: 1rem;
+    color: rgba(255, 255, 255, 0.18);
+    font-weight: 300;
+    flex-shrink: 0;
+    line-height: 1;
+  }
+
+  /* Collaboratore: blocco "Partite di oggi" */
+  .riep-oggi {
+    position: relative;
+    z-index: 1;
+    margin-top: 14px;
+    padding: 12px 14px;
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 10px;
+  }
+  .riep-oggi-label {
+    font-size: 0.55rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--g300, #a8d5b2);
+    margin: 0 0 10px;
+  }
+  .riep-oggi-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .riep-oggi-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+  }
+  .riep-oggi-val {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1.7rem;
+    line-height: 1;
+    color: #fff;
+  }
+  .riep-oggi-nome {
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: rgba(228, 240, 232, 0.6);
+    margin-top: 5px;
+  }
+  .riep-oggi-pipe {
+    font-size: 1.6rem;
+    color: rgba(255, 255, 255, 0.15);
+    font-weight: 200;
+    flex-shrink: 0;
+    line-height: 1;
+  }
+
   /* Bacheca scura (classifica del club) */
   .bacheca {
     position: relative;
@@ -2925,6 +3111,159 @@
   .cl-comprimi {
     margin-top: 6px;
     border-style: solid;
+  }
+
+  /* ── Pagina Club ─────────────────────────────────────── */
+  .club-page {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    background: radial-gradient(ellipse 110% 38% at 50% 0%, rgba(200,151,46,0.07), transparent 55%);
+    border-radius: 16px;
+    padding-top: 4px;
+  }
+
+  /* Hero banner: posizione + statistiche rapide */
+  .club-hero {
+    position: relative;
+    overflow: hidden;
+    border-radius: 22px;
+    padding: 20px 22px;
+    background: linear-gradient(135deg, var(--v600) 0%, var(--v800) 100%);
+    box-shadow: 0 10px 30px rgba(12, 51, 25, 0.18);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .club-hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(60% 120% at 90% 50%, rgba(200,151,46,0.16), transparent 60%);
+    pointer-events: none;
+  }
+  .club-hero > * { position: relative; z-index: 1; }
+  .club-hero-sx {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+  .club-hero-kicker {
+    font-family: var(--font-display);
+    font-size: 0.6rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: rgba(200,240,210,0.65);
+    margin-bottom: 4px;
+  }
+  .club-hero-pos {
+    font-size: 2.4rem;
+    font-weight: 800;
+    color: #fff;
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+  .club-hero-pos-sub {
+    font-size: 0.78rem;
+    color: rgba(200,240,210,0.75);
+    margin-top: 4px;
+  }
+  .club-hero-stats {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+  .club-hero-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 0 14px;
+  }
+  .club-hero-stat-num {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #fff;
+    line-height: 1;
+  }
+  .club-hero-stat-lbl {
+    font-size: 0.58rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: rgba(200,240,210,0.6);
+    white-space: nowrap;
+  }
+  .club-hero-div {
+    width: 1px;
+    height: 34px;
+    background: rgba(255,255,255,0.14);
+    flex-shrink: 0;
+  }
+
+  /* Intestazione sezione */
+  .club-sez-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .club-sez-icona {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+    background: var(--v050);
+    border: 1px solid var(--border2);
+    color: var(--v700);
+    flex-shrink: 0;
+  }
+  .club-sez-titolo {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--ink);
+    margin: 0;
+    flex: 1;
+    letter-spacing: -0.015em;
+  }
+  .club-sez-badge {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--v700);
+    background: var(--v050);
+    border: 1px solid var(--v200, rgba(90,150,100,0.3));
+    border-radius: 999px;
+    padding: 2px 10px;
+    white-space: nowrap;
+    letter-spacing: 0;
+    flex-shrink: 0;
+  }
+
+  /* Medaglie podio nella classifica */
+  .cl-podio {
+    flex: 0 0 38px;
+    font-size: 1rem;
+    line-height: 1;
+    text-align: left;
+  }
+
+  /* Chip livello nella classifica */
+  .cl-lv-chip {
+    font-size: 0.62rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 999px;
+    border: 1px solid;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+  .bacheca .classifica-riga .cl-lv-chip {
+    background: rgba(255,255,255,0.08);
+    border-color: rgba(255,255,255,0.16);
+    color: rgba(228,240,232,0.7);
   }
 
   /* Card torneo nella sezione Club */
@@ -3454,6 +3793,17 @@
     background: transparent;
     border-style: dashed;
   }
+  .match-meta .chip-data.sfida {
+    color: #fff;
+    background: var(--v600, #2b7a4b);
+    border-color: var(--v700, #1e5e38);
+    border-style: solid;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .match-meta .chip-data.sfida:hover {
+    background: var(--v700, #1e5e38);
+  }
   .match-admin {
     display: flex;
     align-items: center;
@@ -3772,19 +4122,28 @@
   }
 
   /* ── Bracket grafico ad eliminazione diretta ───────────────────── */
+  /* .bs-scroll annulla il padding del <main px-5> con margini negativi
+     così usa la larghezza piena del viewport come contenitore scroll.
+     .bs-grafico è width:max-content esplicito (non min-width) perché
+     solo così il wrapper calcola correttamente l'area scrollabile. */
+  .bs-scroll {
+    overflow-x: auto;
+    scrollbar-width: none;
+    margin-left: -20px;
+    margin-right: -20px;
+  }
+  .bs-scroll::-webkit-scrollbar {
+    display: none;
+  }
   .bs-grafico {
     display: flex;
     gap: 48px;
-    overflow-x: auto;
-    padding: 20px 10px 28px;
+    min-width: 100%;
+    padding: 20px 28px 28px;
     align-items: stretch;
     background: linear-gradient(180deg, var(--bg1) 0%, transparent 100%);
     border-radius: 16px;
     margin-bottom: 4px;
-    scrollbar-width: none;
-  }
-  .bs-grafico::-webkit-scrollbar {
-    display: none;
   }
   .bs-col {
     flex: 0 0 162px;
@@ -3805,8 +4164,10 @@
     align-items: center;
     justify-content: center;
     gap: 5px;
+    height: 34px;
+    flex-shrink: 0;
     margin-bottom: 12px;
-    padding: 7px 10px;
+    padding: 0 10px;
     border-radius: 9px;
     background: linear-gradient(135deg, var(--v800) 0%, var(--v600) 100%);
     color: rgba(255, 255, 255, 0.92);
@@ -4029,6 +4390,7 @@
   }
   /* ── Layout split: contenitori metà sinistra / destra ──────── */
   .bs-half {
+    flex-shrink: 0;
     display: flex;
     gap: 48px;
     align-items: stretch;
@@ -4087,6 +4449,437 @@
     white-space: nowrap;
     transition: background 0.12s, color 0.12s, border-color 0.12s;
   }
+  /* ── Pagina Amici ──────────────────────────────────────────── */
+
+  /* Strip hero con conteggio amici e badge richieste */
+  .amici-hero-strip {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 20px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, var(--v700) 0%, var(--v900) 100%);
+    color: #fff;
+    font-size: 0.95rem;
+    font-weight: 500;
+    box-shadow: 0 8px 24px rgba(12, 51, 25, 0.18);
+    border: 1px solid rgba(200, 151, 46, 0.25);
+  }
+  .amici-hero-strip strong {
+    font-weight: 800;
+    font-size: 1.15rem;
+  }
+
+  /* Badge contatore richieste/sezioni */
+  .amici-n-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 5px;
+    border-radius: 999px;
+    background: var(--g400);
+    color: var(--v900);
+    font-size: 0.65rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+  }
+
+  /* Card generica per amici / staff / richieste */
+  .amici-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  }
+  .amici-card-info {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+  .amici-card-nome {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--ink);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .amici-card-sub {
+    margin-top: 2px;
+    font-size: 0.72rem;
+    color: var(--ink3);
+  }
+  .amici-card-azioni {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+  .amici-sport-ico {
+    font-size: 1rem;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+
+  /* Medaglia livello metallica */
+  .amici-medaglia {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+  }
+  .amici-medaglia-num {
+    font-size: 1rem;
+    font-weight: 900;
+    line-height: 1;
+    color: rgba(255, 255, 255, 0.97);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    letter-spacing: -0.02em;
+  }
+
+  /* Mini-classifica tra amici */
+  .amici-rank-riga {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.1s;
+  }
+  .amici-rank-riga:last-child {
+    border-bottom: none;
+  }
+  .amici-rank-me {
+    background: color-mix(in srgb, var(--v100) 60%, transparent);
+  }
+  .amici-rank-pos {
+    flex-shrink: 0;
+    width: 18px;
+    text-align: center;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--ink3);
+  }
+  .amici-rank-nome {
+    flex: 1 1 0;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--ink);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .amici-rank-bar-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+  .amici-rank-bar-track {
+    width: 72px;
+    height: 5px;
+    border-radius: 999px;
+    background: var(--v100);
+    overflow: hidden;
+  }
+  .amici-rank-bar-fill {
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--v500), var(--v400));
+    transition: width 0.4s ease;
+  }
+  .amici-rank-punti {
+    width: 52px;
+    text-align: right;
+    font-size: 0.72rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink2);
+  }
+
+  /* ── Elenco giocatori (condiviso admin + istruttore) ─────── */
+
+  /* Strip statistiche in cima alla lista */
+  .gioc-stats-strip {
+    display: flex;
+    flex-wrap: wrap;
+    border-radius: 14px;
+    border: 1px solid var(--v100);
+    background: var(--v050);
+    overflow: hidden;
+    margin-bottom: 12px;
+  }
+  .gioc-stat-item {
+    flex: 1;
+    min-width: 72px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 11px 12px;
+    border-right: 1px solid var(--v100);
+    text-align: center;
+  }
+  .gioc-stat-item:last-child { border-right: none; }
+  .gioc-stat-num {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--ink);
+    line-height: 1;
+  }
+  .gioc-stat-lbl {
+    font-size: 0.6rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    color: var(--ink3);
+  }
+
+  /* Card giocatore (read-only istruttore) */
+  .gioc-riga {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 11px 14px;
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    transition: border-color 0.12s, box-shadow 0.12s;
+  }
+  .gioc-rank {
+    flex-shrink: 0;
+    width: 20px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: var(--ink3);
+    text-align: right;
+    line-height: 1;
+  }
+  .gioc-info {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+  .gioc-nome {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--ink);
+    margin-bottom: 4px;
+  }
+  .gioc-sub {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+  }
+  .gioc-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 7px;
+    border: 1px solid transparent;
+    background: rgba(0,0,0,0.05);
+    color: var(--ink2);
+    white-space: nowrap;
+  }
+  .gioc-chip-sport {
+    background: transparent;
+    border-color: var(--border);
+    color: var(--ink2);
+  }
+  .gioc-chip-muted {
+    background: transparent;
+    border-color: transparent;
+    color: var(--ink3);
+    font-size: 0.67rem;
+  }
+  .gioc-pt-col {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+    min-width: 48px;
+  }
+  .gioc-pt-num {
+    font-size: 0.9rem;
+    font-weight: 800;
+    color: var(--ink);
+    line-height: 1;
+  }
+  .gioc-pt-label {
+    font-size: 0.6rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--ink3);
+    line-height: 1;
+  }
+  .gioc-bar-track {
+    width: 48px;
+    height: 3px;
+    border-radius: 999px;
+    background: rgba(0,0,0,0.08);
+    overflow: hidden;
+    margin-top: 3px;
+  }
+  .gioc-bar-fill {
+    height: 100%;
+    border-radius: 999px;
+    transition: width 0.35s ease;
+  }
+
+  /* Card giocatore (admin — cliccabile) */
+  .gioc-adm-card {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    text-align: left;
+    width: 100%;
+    cursor: pointer;
+    transition: border-color 0.12s, box-shadow 0.12s;
+  }
+  .gioc-adm-card:hover {
+    border-color: var(--v300, #7aab85);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+  }
+  .gioc-adm-card.in-attesa {
+    background: #fffbeb;
+    border-color: rgba(245,158,11,0.35);
+  }
+  .gioc-adm-card.in-attesa:hover { border-color: #f59e0b; }
+  .gioc-adm-body {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+  .gioc-adm-nome {
+    font-size: 0.93rem;
+    font-weight: 700;
+    color: var(--ink);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 5px;
+    margin-bottom: 3px;
+  }
+  .gioc-adm-row2 {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.79rem;
+    color: var(--ink2);
+    margin-bottom: 2px;
+    font-weight: 600;
+  }
+  .gioc-adm-sep { color: var(--ink3); font-weight: 400; }
+  .gioc-adm-row3 {
+    font-size: 0.72rem;
+    color: var(--ink3);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .gioc-adm-chevron {
+    flex-shrink: 0;
+    font-size: 1.15rem;
+    color: var(--ink3);
+  }
+  .gioc-att-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 0.66rem;
+    font-weight: 700;
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid rgba(245,158,11,0.4);
+    border-radius: 999px;
+    padding: 2px 7px;
+    white-space: nowrap;
+  }
+  .gioc-bloccato-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 0.66rem;
+    font-weight: 700;
+    background: rgba(239,68,68,0.09);
+    color: rgb(185,28,28);
+    border: 1px solid rgba(239,68,68,0.28);
+    border-radius: 999px;
+    padding: 2px 7px;
+    white-space: nowrap;
+  }
+
+  /* Campo ricerca giocatori con risultati a tendina */
+  .cerca-lista {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    z-index: 60;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 12px;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.12);
+    overflow: hidden;
+    max-height: 224px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+  }
+  .cerca-riga {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 10px 14px;
+    text-align: left;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background 0.1s;
+    gap: 8px;
+  }
+  .cerca-riga:last-child {
+    border-bottom: none;
+  }
+  .cerca-riga:hover {
+    background: var(--v050);
+  }
+  .cerca-riga-nome {
+    font-size: 0.86rem;
+    font-weight: 500;
+    color: var(--ink);
+    flex: 1;
+  }
+  .cerca-riga:hover .cerca-riga-nome {
+    color: var(--v700);
+  }
+  .cerca-riga-ico {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--v500);
+    line-height: 1;
+  }
+
   .round-chip.attivo {
     background: var(--v700);
     border-color: var(--v700);
@@ -4096,5 +4889,343 @@
     background: color-mix(in srgb, var(--v700) 12%, transparent);
     border-color: var(--v700);
     color: var(--ink1);
+  }
+
+  /* ── Cookie banner ─────────────────────────────────────────── */
+  .cookie-banner {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    padding: 14px 20px;
+    background: var(--v800);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.22);
+  }
+  .cookie-testo {
+    flex: 1;
+    min-width: 200px;
+    font-size: 0.88rem;
+    color: rgba(255, 255, 255, 0.85);
+    margin: 0;
+    line-height: 1.5;
+  }
+  .cookie-link {
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: inherit;
+    font-family: inherit;
+    color: var(--g300);
+    text-decoration: underline;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  .cookie-link:hover {
+    color: var(--g300);
+    text-decoration: none;
+  }
+  .cookie-btn {
+    flex: 0 0 auto;
+    padding: 9px 22px;
+    font-size: 0.82rem;
+  }
+
+  /* ── Footer legale ─────────────────────────────────────────── */
+  .footer-legale {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 6px 10px;
+    padding: 18px 20px 14px;
+    margin-top: auto;
+  }
+  .footer-legale-link {
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: 0.78rem;
+    font-family: inherit;
+    color: var(--ink3);
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .footer-legale-link:hover {
+    color: var(--ink2);
+  }
+  .footer-legale-sep {
+    font-size: 0.78rem;
+    color: var(--ink3);
+    user-select: none;
+  }
+  .footer-legale-copyright {
+    font-size: 0.78rem;
+    color: var(--ink3);
+  }
+
+  /* ── Modale legale ─────────────────────────────────────────── */
+  .modale-legale-panel {
+    background: var(--surface);
+    border-radius: 18px 18px 0 0;
+    width: 100%;
+    max-height: 90dvh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.18);
+  }
+  @media (min-width: 640px) {
+    .modale-legale-panel {
+      border-radius: 18px;
+      width: min(680px, 92vw);
+      max-height: 80dvh;
+    }
+  }
+  .modale-legale-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px 14px;
+    border-bottom: 1px solid var(--border);
+    flex: 0 0 auto;
+  }
+  .modale-legale-titolo {
+    font-family: var(--font-display);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-size: 1.15rem;
+    color: var(--v800);
+    margin: 0;
+  }
+  .modale-legale-chiudi {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    background: none;
+    border: none;
+    color: var(--ink3);
+    cursor: pointer;
+    transition: background 0.12s, color 0.12s;
+    flex: 0 0 auto;
+  }
+  .modale-legale-chiudi:hover {
+    background: var(--bg);
+    color: var(--ink);
+  }
+  .modale-legale-corpo {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 24px;
+    overscroll-behavior: contain;
+  }
+  .modale-legale-footer {
+    padding: 14px 24px 18px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: flex-end;
+    flex: 0 0 auto;
+  }
+  .modale-legale-footer .btn {
+    padding: 10px 28px;
+    font-size: 0.82rem;
+  }
+
+  /* ── Contenuto documenti legali ────────────────────────────── */
+  .spazio-legale {
+    font-size: 0.9rem;
+    line-height: 1.65;
+    color: var(--ink);
+  }
+  .spazio-legale h3 {
+    font-family: var(--font-display);
+    font-size: 0.92rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--v700);
+    margin: 20px 0 6px;
+  }
+  .spazio-legale h3:first-of-type {
+    margin-top: 4px;
+  }
+  .spazio-legale p {
+    margin: 0 0 10px;
+  }
+  .spazio-legale ul {
+    margin: 0 0 10px;
+    padding-left: 18px;
+  }
+  .spazio-legale li {
+    margin-bottom: 6px;
+  }
+  .spazio-legale a {
+    color: var(--v600);
+    text-decoration: underline;
+  }
+  .spazio-legale a:hover {
+    color: var(--v800);
+  }
+  .spazio-legale code {
+    font-size: 0.82rem;
+    background: var(--bg);
+    padding: 2px 6px;
+    border-radius: 5px;
+    border: 1px solid var(--border2);
+  }
+  .avviso-legale {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #7a5010;
+    background: #fdf9ee;
+    border: 1px solid rgba(122, 80, 16, 0.2);
+    border-radius: 8px;
+    padding: 9px 12px;
+    margin-bottom: 16px !important;
+  }
+  .data-aggiornamento {
+    font-size: 0.78rem;
+    color: var(--ink3);
+    margin-top: 20px !important;
+    border-top: 1px solid var(--border);
+    padding-top: 10px;
+  }
+  .tabella-cookie {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    margin: 8px 0 14px;
+  }
+  .tabella-cookie th {
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--ink2);
+    padding: 6px 10px;
+    border-bottom: 2px solid var(--border2);
+  }
+  .tabella-cookie td {
+    padding: 7px 10px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+
+  /* ── Checkbox legale (consenso privacy / termini) ──────────── */
+  .checkbox-legale-riga {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 14px;
+  }
+  .checkbox-legale-riga input[type='checkbox'] {
+    width: 18px;
+    height: 18px;
+    flex: 0 0 18px;
+    margin: 0;
+    accent-color: var(--v700);
+    cursor: pointer;
+    border-radius: 4px;
+  }
+  .checkbox-legale-testo {
+    font-size: 0.87rem;
+    color: var(--ink);
+    line-height: 1.5;
+    cursor: pointer;
+    margin: 0;
+    font-weight: 400;
+  }
+  .checkbox-legale-testo button {
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: inherit;
+    font-family: inherit;
+    color: var(--v600);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  .checkbox-legale-testo button:hover {
+    color: var(--v800);
+  }
+  .checkbox-legale-errore {
+    font-size: 0.8rem;
+    color: var(--errore);
+    margin-top: 4px;
+    margin-left: 28px;
+  }
+
+  /* ── Zona pericolo (cancellazione account) ─────────────────── */
+  .zona-pericolo-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 2.5rem 0 1rem;
+  }
+  .zona-pericolo-linea {
+    flex: 1;
+    height: 1px;
+    background: rgba(190, 84, 54, 0.25);
+  }
+  .zona-pericolo-etichetta {
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--terra);
+    white-space: nowrap;
+  }
+  .zona-pericolo-card {
+    border-color: rgba(190, 84, 54, 0.2) !important;
+    background: rgba(190, 84, 54, 0.03) !important;
+  }
+  .zona-pericolo-titolo {
+    font-family: var(--font-display);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-size: 1rem;
+    color: var(--terra);
+    margin: 0 0 8px;
+  }
+  .zona-pericolo-testo {
+    font-size: 0.88rem;
+    color: var(--ink2);
+    line-height: 1.55;
+    margin: 0 0 16px;
+  }
+  .zona-pericolo-conferma {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px dashed rgba(190, 84, 54, 0.25);
+  }
+  .zona-pericolo-avviso {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #7a2010;
+    background: rgba(190, 84, 54, 0.07);
+    border: 1px solid rgba(190, 84, 54, 0.18);
+    border-radius: 8px;
+    padding: 10px 13px;
+    margin-bottom: 14px;
+  }
+
+  /* Riga giocatore con richiesta di cancellazione */
+  .gioc-adm-card.cancellazione-richiesta {
+    border-color: rgba(185, 28, 28, 0.3);
+    background: rgba(185, 28, 28, 0.04);
   }
 }

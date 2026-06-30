@@ -1,3 +1,4 @@
+import { type ReactNode } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/auth/useAuth'
@@ -29,10 +30,36 @@ function dataIt(iso: string): string {
   }
 }
 
-const ETICHETTE_STATO: Record<string, [classe: string, testo: string]> = {
-  in_attesa: ['attesa', 'In attesa'],
-  approvato: ['approvato', 'Approvato'],
-  consegnato: ['consegnato', 'Consegnato'],
+const ICO_ATTESA = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true" width="15" height="15">
+    <circle cx="12" cy="12" r="10" />
+    <polyline points="12 6 12 12 16 14" />
+  </svg>
+)
+const ICO_APPROVATO = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true" width="15" height="15">
+    <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z" />
+    <path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" />
+  </svg>
+)
+const ICO_CONSEGNATO = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true" width="15" height="15">
+    <polyline points="20 6 9 17 4 12" />
+  </svg>
+)
+const ICO_ELIMINA = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true" width="14" height="14">
+    <polyline points="3 6 5 6 21 6" />
+    <path d="M19 6l-1 14H6L5 6" />
+    <path d="M10 11v6M14 11v6" />
+    <path d="M9 6V4h6v2" />
+  </svg>
+)
+
+const ETICHETTE_STATO: Record<string, [classe: string, icona: ReactNode, titolo: string]> = {
+  in_attesa: ['attesa',     ICO_ATTESA,     'In attesa'],
+  approvato: ['approvato',  ICO_APPROVATO,  'Approvato'],
+  consegnato: ['consegnato', ICO_CONSEGNATO, 'Consegnato'],
 }
 
 export default function PremiPage() {
@@ -104,7 +131,12 @@ export default function PremiPage() {
       </div>
 
       {/* Catalogo */}
-      <div className="eyebrow">Catalogo premi</div>
+      <div className="club-sez-header" style={{ marginTop: '0.5rem' }}>
+        <span className="club-sez-icona">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 12v10H4V12M2 7h20v5H2zM12 22V7M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>
+        </span>
+        <h2 className="club-sez-titolo">Catalogo premi</h2>
+      </div>
       {catalogoQuery.isLoading ? (
         <p className="sub">Caricamento…</p>
       ) : premi.length === 0 ? (
@@ -126,7 +158,12 @@ export default function PremiPage() {
       )}
 
       {/* Le mie richieste */}
-      <div className="eyebrow">Le tue richieste</div>
+      <div className="club-sez-header" style={{ marginTop: '2rem' }}>
+        <span className="club-sez-icona">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2M12 12h4M12 16h4M8 12h.01M8 16h.01"/></svg>
+        </span>
+        <h2 className="club-sez-titolo">Le tue richieste</h2>
+      </div>
       <div className="card">
         {richiesteQuery.isLoading ? (
           <p className="sub">Caricamento…</p>
@@ -224,7 +261,7 @@ function RigaRichiesta({
   inCorso: boolean
   onAnnulla: () => void
 }) {
-  const [classe, testo] = ETICHETTE_STATO[richiesta.stato] ?? ['attesa', richiesta.stato || '—']
+  const [classe, icona, titolo] = ETICHETTE_STATO[richiesta.stato] ?? ['attesa', ICO_ATTESA, richiesta.stato || '—']
   return (
     <div className="flex flex-wrap items-center justify-between gap-2">
       <div>
@@ -233,16 +270,19 @@ function RigaRichiesta({
         </div>
         <div className="text-sm text-ink-2">{dataIt(richiesta.creato_il)}</div>
       </div>
-      <div className="flex flex-wrap items-center gap-2">
-        <span className={'stato-pill ' + classe}>{testo}</span>
+      <div className="flex items-center gap-2">
+        <span className={'stato-pill inline-flex items-center justify-center ' + classe} title={titolo}>
+          {icona}
+        </span>
         {richiesta.stato !== 'consegnato' && (
           <button
             type="button"
-            className="btn btn-mini btn-pericolo"
+            className="btn btn-mini btn-pericolo inline-flex items-center justify-center"
+            title="Elimina richiesta"
             disabled={inCorso}
             onClick={onAnnulla}
           >
-            Elimina
+            {ICO_ELIMINA}
           </button>
         )}
       </div>

@@ -3,10 +3,47 @@ import { useAuth } from '@/auth/useAuth'
 import { titleCase } from '@/lib/formato'
 import { classiInput } from '@/components/stili'
 import { useModalitaPremi } from '@/features/premi/datiPremi'
+import { LIVELLI_PUNTI_DEFAULT, livelloDaPunti } from '@/features/profilo/livelliPunti'
+import { MedagliaLv } from '@/features/profilo/MedagliaLv'
+import { MedagliaRuolo } from '@/features/profilo/ruoloBadge'
 import { useSoci, type SocioAdmin } from './datiSoci'
 import DettaglioGiocatore from './DettaglioGiocatore'
 
 type Ordine = 'punti' | 'cognome'
+
+function isCancellato(s: SocioAdmin): boolean {
+  return (s.email ?? '').endsWith('@cancellato.invalid')
+}
+
+function sportEmoji(sport: string | null): string {
+  if (sport === 'padel') return '🎾'
+  if (sport === 'calcio') return '⚽'
+  if (sport === 'entrambi') return '🎾⚽'
+  return ''
+}
+
+function StatItem({ num, label, colore }: { num: string | number; label: string; colore?: string }) {
+  return (
+    <div className="gioc-stat-item">
+      <span className="gioc-stat-num" style={colore ? { color: colore } : undefined}>{num}</span>
+      <span className="gioc-stat-lbl">{label}</span>
+    </div>
+  )
+}
+
+function SezHeader({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: '0.5rem',
+      padding: '0.5rem 0', marginBottom: '0.5rem',
+      borderBottom: '1px solid var(--border)',
+      fontSize: '0.8rem', fontWeight: 600, letterSpacing: '0.05em',
+      textTransform: 'uppercase', color: 'var(--ink-2)',
+    }}>
+      {children}
+    </div>
+  )
+}
 
 export default function GestioneGiocatori() {
   const { profilo } = useAuth()
@@ -15,21 +52,29 @@ export default function GestioneGiocatori() {
   const [cerca, setCerca] = useState('')
   const [ordine, setOrdine] = useState<Ordine>('punti')
   const [selezionatoId, setSelezionatoId] = useState<string | null>(null)
+  const [espandiCancellati, setEspandiCancellati] = useState(false)
 
   if (isLoading) return <p className="text-ink-2">Caricamento giocatori…</p>
   if (error) return <p className="msg-errore">Impossibile caricare i giocatori: {error.message}</p>
 
   const tutti = soci ?? []
-  const inAttesa = tutti.filter((s) => !s.attivo).length
 
+  // Stats (su tutti, non filtrati dalla ricerca)
+  const nAttivi      = tutti.filter((s) => s.attivo && !isCancellato(s)).length
+  const nInAttesa    = tutti.filter((s) => !s.attivo && !isCancellato(s)).length
+  const nBloccati    = tutti.filter((s) => !isCancellato(s) && (s.punti_bloccati || s.crediti_bloccati)).length
+  const nDaEliminare = tutti.filter((s) => !!s.richiesta_cancellazione).length
+  const nCancellati  = tutti.filter(isCancellato).length
+  const nPadel  = tutti.filter((s) => !isCancellato(s) && (s.sport_preferito === 'padel'  || s.sport_preferito === 'entrambi')).length
+  const nCalcio = tutti.filter((s) => !isCancellato(s) && (s.sport_preferito === 'calcio' || s.sport_preferito === 'entrambi')).length
+
+  // Ricerca
   const q = cerca.trim().toLowerCase()
-  const filtrati = q
-    ? tutti.filter(
-        (s) =>
-          (s.nome ?? '').toLowerCase().includes(q) ||
-          (s.cognome ?? '').toLowerCase().includes(q),
-      )
-    : tutti.slice()
+  const match = (s: SocioAdmin) =>
+    !q ||
+    (s.nome ?? '').toLowerCase().includes(q) ||
+    (s.cognome ?? '').toLowerCase().includes(q) ||
+    (s.email ?? '').toLowerCase().includes(q)
 
   const perCognome = (a: SocioAdmin, b: SocioAdmin) =>
     (a.cognome ?? '').localeCompare(b.cognome ?? '', 'it')
@@ -38,23 +83,37 @@ export default function GestioneGiocatori() {
       ? perCognome
       : (a: SocioAdmin, b: SocioAdmin) => (b.punti ?? 0) - (a.punti ?? 0) || perCognome(a, b)
 
-  // I non attivi (da approvare) restano sempre in cima.
-  filtrati.sort((a, b) => (a.attivo === b.attivo ? cmp(a, b) : a.attivo ? 1 : -1))
+  // Tre gruppi separati
+  const gruppoInAttesa   = tutti.filter((s) => !s.attivo && !isCancellato(s) && match(s)).sort(perCognome)
+  const gruppoAttivi     = tutti.filter((s) => s.attivo && !isCancellato(s) && match(s)).sort(cmp)
+  const gruppoCancellati = tutti.filter((s) => isCancellato(s) && match(s)).sort(perCognome)
 
-  // Il selezionato viene riletto dall'elenco aggiornato (così riflette le modifiche).
+  // Cancellati: auto-espandi se c'è una ricerca con risultati
+  const mostraCancellati = espandiCancellati || (!!q && gruppoCancellati.length > 0)
+
   const selezionato = tutti.find((s) => s.id === selezionatoId) ?? null
 
   return (
     <div>
       <div className="eyebrow">Giocatori e punti</div>
-      <div className="card">
-        <p className="sub m-0 mb-2.5">Seleziona un giocatore per aprirne la scheda.</p>
 
-        <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center">
+      <div className="gioc-stats-strip">
+        <StatItem num={nAttivi + nInAttesa} label="Iscritti" />
+        <StatItem num={nAttivi} label="Approvati" />
+        {nInAttesa > 0 && <StatItem num={nInAttesa} label="In attesa" colore="#92400e" />}
+        {nBloccati > 0 && <StatItem num={nBloccati} label="Bloccati" colore="var(--errore)" />}
+        {nDaEliminare > 0 && <StatItem num={nDaEliminare} label="Richieste" colore="#b91c1c" />}
+        <StatItem num={nPadel}  label="🎾 Padel" />
+        <StatItem num={nCalcio} label="⚽ Calcio" />
+      </div>
+
+      {/* ── Cerca + ordina ─────────────────────────────── */}
+      <div className="card" style={{ marginBottom: '0.75rem' }}>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <input
             type="text"
-            className={`${classiInput} w-full sm:flex-1`}
-            placeholder="Cerca giocatore"
+            className={`${classiInput} w-full sm:flex-1 !mt-0`}
+            placeholder="Cerca per nome, cognome o email…"
             value={cerca}
             onChange={(e) => setCerca(e.target.value)}
           />
@@ -63,23 +122,44 @@ export default function GestioneGiocatori() {
             value={ordine}
             onChange={(e) => setOrdine(e.target.value as Ordine)}
           >
-            <option value="punti">Ordina per: punti (alto → basso)</option>
-            <option value="cognome">Ordina per: cognome (A → Z)</option>
+            <option value="punti">Punti ↓</option>
+            <option value="cognome">A → Z</option>
           </select>
         </div>
+      </div>
 
-        {inAttesa > 0 && (
-          <p className="sub mb-3">
-            {inAttesa === 1 ? '1 giocatore in attesa' : `${inAttesa} giocatori in attesa`} di
-            approvazione (in cima). Apri la scheda e premi “Attiva” per abilitarlo.
-          </p>
-        )}
-
-        {filtrati.length === 0 ? (
-          <p className="text-ink-2">Nessun giocatore corrisponde alla ricerca.</p>
-        ) : (
-          <div className="flex flex-col gap-1.5">
-            {filtrati.map((s) => (
+      {/* ── Blocco: In attesa di approvazione ──────────── */}
+      {gruppoInAttesa.length > 0 && (
+        <div style={{ marginBottom: '0.75rem' }}>
+          <div style={{
+            background: '#fff7ed',
+            border: '1px solid #fed7aa',
+            borderRadius: '0.75rem 0.75rem 0 0',
+            padding: '0.6rem 1rem',
+            display: 'flex', alignItems: 'center', gap: '0.5rem',
+          }}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#c2410c" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="8" x2="12" y2="12"/>
+              <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#9a3412' }}>
+              {gruppoInAttesa.length === 1
+                ? '1 giocatore in attesa di approvazione'
+                : `${gruppoInAttesa.length} giocatori in attesa di approvazione`}
+            </span>
+            <span style={{ fontSize: '0.78rem', color: '#c2410c', marginLeft: 'auto' }}>
+              Apri la scheda → "Attiva"
+            </span>
+          </div>
+          <div style={{
+            border: '1px solid #fed7aa', borderTop: 'none',
+            borderRadius: '0 0 0.75rem 0.75rem',
+            overflow: 'hidden',
+            display: 'flex', flexDirection: 'column', gap: '1px',
+            background: '#fed7aa',
+          }}>
+            {gruppoInAttesa.map((s) => (
               <RigaSocio
                 key={s.id}
                 socio={s}
@@ -87,6 +167,96 @@ export default function GestioneGiocatori() {
                 onApri={() => setSelezionatoId(s.id)}
               />
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Banner richieste cancellazione pendenti ─────── */}
+      {nDaEliminare > 0 && !q && (
+        <div className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-800">
+          {nDaEliminare === 1 ? '1 richiesta' : `${nDaEliminare} richieste`} di cancellazione
+          account in attesa (GDPR Art. 17). Apri la scheda per completare.
+        </div>
+      )}
+
+      {/* ── Giocatori attivi ───────────────────────────── */}
+      <div className="card">
+        {!q && gruppoAttivi.length > 0 && (
+          <SezHeader>
+            Giocatori attivi
+            <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>
+              ({gruppoAttivi.length})
+            </span>
+          </SezHeader>
+        )}
+
+        {gruppoAttivi.length === 0 && gruppoInAttesa.length === 0 && !q && (
+          <p className="text-ink-2">Nessun giocatore.</p>
+        )}
+        {gruppoAttivi.length === 0 && q && gruppoInAttesa.length === 0 && gruppoCancellati.length === 0 && (
+          <p className="text-ink-2">Nessun giocatore corrisponde alla ricerca.</p>
+        )}
+
+        {gruppoAttivi.length > 0 && (
+          <div className="flex flex-col gap-1.5">
+            {gruppoAttivi.map((s) => (
+              <RigaSocio
+                key={s.id}
+                socio={s}
+                modalitaPremi={!!modalitaPremi}
+                onApri={() => setSelezionatoId(s.id)}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* ── Sezione account cancellati (collassabile) ── */}
+        {(nCancellati > 0) && (
+          <div style={{ marginTop: gruppoAttivi.length > 0 ? '1.25rem' : 0 }}>
+            <button
+              type="button"
+              onClick={() => setEspandiCancellati(!espandiCancellati)}
+              style={{
+                width: '100%', display: 'flex', alignItems: 'center', gap: '0.5rem',
+                padding: '0.5rem 0',
+                borderTop: gruppoAttivi.length > 0 ? '1px solid var(--border)' : 'none',
+                background: 'none', border: 'none',
+                borderTopColor: 'var(--border)',
+                borderTopWidth: gruppoAttivi.length > 0 ? 1 : 0,
+                borderTopStyle: 'solid',
+                cursor: 'pointer',
+                textAlign: 'left',
+                color: 'var(--ink-3)',
+                fontSize: '0.8rem', fontWeight: 600,
+                letterSpacing: '0.05em', textTransform: 'uppercase',
+              }}
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M20 5H9l-7 7 7 7h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2z"/>
+                <line x1="18" y1="9" x2="12" y2="15"/><line x1="12" y1="9" x2="18" y2="15"/>
+              </svg>
+              Account cancellati ({nCancellati})
+              <span style={{ marginLeft: 'auto', fontSize: '0.75rem' }}>
+                {mostraCancellati ? '▲ Nascondi' : '▼ Mostra'}
+              </span>
+            </button>
+
+            {mostraCancellati && (
+              <div className="flex flex-col gap-1.5 mt-2">
+                {gruppoCancellati.length === 0 ? (
+                  <p className="text-sm text-ink-3">Nessun risultato.</p>
+                ) : (
+                  gruppoCancellati.map((s) => (
+                    <RigaSocio
+                      key={s.id}
+                      socio={s}
+                      modalitaPremi={!!modalitaPremi}
+                      onApri={() => setSelezionatoId(s.id)}
+                    />
+                  ))
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -112,32 +282,95 @@ function RigaSocio({
   modalitaPremi: boolean
   onApri: () => void
 }) {
+  const cancellato = isCancellato(socio)
+  const lv = livelloDaPunti(socio.punti ?? 0, LIVELLI_PUNTI_DEFAULT)
+  const cfg = LIVELLI_PUNTI_DEFAULT[lv - 1]
+  const emoji = cancellato ? '' : sportEmoji(socio.sport_preferito)
+  const isBloccato = !!(socio.punti_bloccati || socio.crediti_bloccati)
+  const haCancellazione = !!socio.richiesta_cancellazione
+
+  const ruoloNome = socio.is_admin
+    ? 'Admin'
+    : socio.is_allenatore
+      ? 'Collaboratore'
+      : socio.e_allenatore
+        ? 'Istruttore'
+        : null
+  const ruoloColore = socio.is_admin
+    ? '#c8972e'
+    : socio.is_allenatore
+      ? '#c8a83a'
+      : socio.e_allenatore
+        ? '#be5436'
+        : null
+
   return (
     <button
       type="button"
       onClick={onApri}
-      className="flex items-center gap-3 rounded-xl border border-verde-100 bg-white px-3.5 py-2.5 text-left transition hover:border-ottone-300 hover:bg-verde-50"
+      className={
+        'gioc-adm-card' +
+        (!socio.attivo && !cancellato ? ' in-attesa' : '') +
+        (haCancellazione ? ' cancellazione-richiesta' : '') +
+        (cancellato ? ' opacity-50' : '')
+      }
     >
-      <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-1.5 font-semibold text-ink">
+      {cancellato
+        ? <MedagliaLv punti={0} size={40} />
+        : socio.is_admin
+          ? <MedagliaRuolo ruolo="admin" size={40} />
+          : socio.is_allenatore
+            ? <MedagliaRuolo ruolo="collaboratore" size={40} />
+            : socio.e_allenatore
+              ? <MedagliaRuolo ruolo="istruttore" size={40} />
+              : <MedagliaLv punti={socio.punti ?? 0} size={40} />}
+
+      <div className="gioc-adm-body">
+        <div className="gioc-adm-nome">
           {titleCase(socio.cognome)} {titleCase(socio.nome)}
-          {socio.is_admin && <span className="pill bg-ottone-100 text-ottone-700">A</span>}
-          {socio.is_allenatore && <span className="pill bg-verde-100 text-verde-700">C</span>}
-          {socio.e_allenatore && !socio.is_allenatore && (
-            <span className="pill bg-terra/10 text-terra">I</span>
+          {!cancellato && !socio.attivo && (
+            <span className="gioc-att-badge">In attesa</span>
           )}
-          {!socio.attivo && <span className="pill off">Non attivo</span>}
+          {!cancellato && isBloccato && (
+            <span className="gioc-bloccato-badge">Bloccato</span>
+          )}
+          {cancellato && (
+            <span className="pill bg-ink-1/10 text-ink-3">Cancellato</span>
+          )}
         </div>
-        <div className="text-sm text-ink-2">
-          {socio.punti ?? 0} punti
-          {modalitaPremi ? ` · ${socio.crediti ?? 0} crediti` : ''}
-        </div>
-        <div className="truncate text-xs text-ink-3">
-          {socio.email}
-          {socio.telefono ? ` · ${socio.telefono}` : ''}
-        </div>
+
+        {!cancellato && (
+          <div className="gioc-adm-row2">
+            <span style={{ color: ruoloColore ?? cfg.colore }}>{ruoloNome ?? cfg.nome}</span>
+            <span className="gioc-adm-sep">·</span>
+            <span>{socio.punti ?? 0} pt</span>
+            {modalitaPremi && (
+              <>
+                <span className="gioc-adm-sep">·</span>
+                <span>{socio.crediti ?? 0} cr</span>
+              </>
+            )}
+            {emoji && (
+              <>
+                <span className="gioc-adm-sep">·</span>
+                <span>{emoji}</span>
+              </>
+            )}
+          </div>
+        )}
+
+        {!cancellato && (socio.email || socio.telefono) && (
+          <div className="gioc-adm-row3">
+            {[socio.email, socio.telefono].filter(Boolean).join(' · ')}
+          </div>
+        )}
+
+        {cancellato && (
+          <div className="gioc-adm-row3">Account anonimizzato</div>
+        )}
       </div>
-      <span className="self-center text-xl text-ink-3">›</span>
+
+      <span className="gioc-adm-chevron">›</span>
     </button>
   )
 }
