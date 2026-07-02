@@ -6,18 +6,13 @@ import RigeneraPunti from './RigeneraPunti'
 import RigeneraCrediti from './RigeneraCrediti'
 import GestionePremi from './GestionePremi'
 import GestioneLivelli from './GestioneLivelli'
-import GestioneTraguardi from './GestioneTraguardi'
 
-// Tab "Impostazioni" dell'admin: raccoglie tutta la configurazione del circolo
-// che prima stava sparsa in segreteria (campi, valori punti/crediti, catalogo
-// premi, livelli e traguardi).
-type Scheda = 'campi' | 'punti' | 'premi' | 'livelli'
+type Scheda = 'campi' | 'punti' | 'premi'
 
 const SCHEDE: { id: Scheda; label: string }[] = [
   { id: 'campi', label: 'Campi e regole' },
   { id: 'punti', label: 'Punti e crediti' },
   { id: 'premi', label: 'Premi' },
-  { id: 'livelli', label: 'Livelli e traguardi' },
 ]
 
 export default function ImpostazioniPage() {
@@ -45,15 +40,10 @@ export default function ImpostazioniPage() {
           <RigeneraPunti />
           <IntervalliCrediti />
           <RigeneraCrediti />
+          <GestioneLivelli />
         </>
       )}
       {scheda === 'premi' && <GestionePremi />}
-      {scheda === 'livelli' && (
-        <>
-          <GestioneLivelli />
-          <GestioneTraguardi />
-        </>
-      )}
     </div>
   )
 }
