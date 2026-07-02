@@ -37,10 +37,10 @@ export default function ImpostazioniPage() {
       {scheda === 'punti' && (
         <>
           <ValoriPunti />
+          <GestioneLivelli />
           <RigeneraPunti />
           <IntervalliCrediti />
           <RigeneraCrediti />
-          <GestioneLivelli />
         </>
       )}
       {scheda === 'premi' && <GestionePremi />}

@@ -36,20 +36,28 @@ export default function ValoriPunti() {
 function BloccoSport({
   icona,
   nome,
-  accent,
+  accentColor,
   children,
 }: {
   icona: string
   nome: string
-  accent: string
+  accentColor: string
   children: ReactNode
 }) {
   return (
     <div className="overflow-hidden rounded-xl border border-black/10">
-      <div className="flex items-center gap-2 px-3 py-2 text-white" style={{ background: accent }}>
+      <div
+        className="flex items-center gap-2 border-b border-black/8 px-3 py-2"
+        style={{ background: 'var(--bg2)', borderLeft: `3px solid ${accentColor}` }}
+      >
         <span className="text-base leading-none">{icona}</span>
-        <span className="text-sm font-semibold">{nome}</span>
-        <span className="ml-auto flex items-center gap-2 text-[11px] font-medium text-white/85">
+        <span
+          className="text-[0.72rem] font-bold uppercase tracking-[0.1em]"
+          style={{ color: 'var(--ink2)' }}
+        >
+          {nome}
+        </span>
+        <span className="ml-auto flex items-center gap-2 text-[11px] font-medium" style={{ color: 'var(--ink3)' }}>
           <span className="w-14 text-center">Punti</span>
           <span className="w-14 text-center">Crediti</span>
         </span>
@@ -169,7 +177,7 @@ function FormValori({ valori }: { valori: Valori }) {
       }}
     >
       <div className="grid gap-3 md:grid-cols-2">
-        <BloccoSport icona="🎾" nome="Padel" accent="linear-gradient(135deg, #0d92ad, #0a4f63)">
+        <BloccoSport icona="🎾" nome="Padel" accentColor="#0b82a0">
           <RigaValore
             etichetta="Partita giocata"
             idBase="pc-partita-padel"
@@ -188,7 +196,7 @@ function FormValori({ valori }: { valori: Valori }) {
           />
         </BloccoSport>
 
-        <BloccoSport icona="⚽" nome="Calcio" accent="linear-gradient(135deg, var(--v600), var(--v800))">
+        <BloccoSport icona="⚽" nome="Calcio" accentColor="var(--color-verde-500)">
           <RigaValore
             etichetta="Partita giocata"
             idBase="pc-partita-calcio"

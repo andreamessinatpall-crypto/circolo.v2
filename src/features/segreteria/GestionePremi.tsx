@@ -345,26 +345,95 @@ function CardPremio({ premio }: { premio: Premio }) {
   )
 }
 
+const PAGE_SIZE = 10
+const PAGE_STEP = 5
+
 // ── Richieste ──
 function Richieste() {
   const { data, isLoading, error } = useTutteRichieste()
+  const [dal, setDal] = useState('')
+  const [al, setAl] = useState('')
+  const [visibili, setVisibili] = useState(PAGE_SIZE)
+
+  const tutte = (data ?? []).slice().sort(
+    (a, b) => new Date(b.creato_il).getTime() - new Date(a.creato_il).getTime(),
+  )
+
+  const filtrate = tutte.filter((r) => {
+    const ts = new Date(r.creato_il).getTime()
+    if (dal && ts < new Date(dal).getTime()) return false
+    if (al) {
+      const fine = new Date(al)
+      fine.setHours(23, 59, 59, 999)
+      if (ts > fine.getTime()) return false
+    }
+    return true
+  })
+
+  const mostra = filtrate.slice(0, visibili)
+  const ancora = filtrate.length - mostra.length
+
+  function resetFiltri() {
+    setDal('')
+    setAl('')
+    setVisibili(PAGE_SIZE)
+  }
 
   return (
     <div>
       <div className="eyebrow">Richieste di premio</div>
       <div className="card">
+        {/* Filtro date */}
+        <div className="mb-3 flex flex-wrap items-end gap-3">
+          <label className="block">
+            <span className="etichetta !mb-1">Dal</span>
+            <input
+              type="date"
+              className="!mt-0"
+              value={dal}
+              onChange={(e) => { setDal(e.target.value); setVisibili(PAGE_SIZE) }}
+            />
+          </label>
+          <label className="block">
+            <span className="etichetta !mb-1">Al</span>
+            <input
+              type="date"
+              className="!mt-0"
+              value={al}
+              onChange={(e) => { setAl(e.target.value); setVisibili(PAGE_SIZE) }}
+            />
+          </label>
+          {(dal || al) && (
+            <button type="button" className="btn btn-secondario btn-mini !mt-0" onClick={resetFiltri}>
+              Azzera filtro
+            </button>
+          )}
+        </div>
+
         {isLoading ? (
           <p className="text-ink-2">Caricamento…</p>
         ) : error ? (
           <p className={classiErrore}>{erroreTesto(error)}</p>
-        ) : (data ?? []).length === 0 ? (
-          <p className="text-ink-2">Nessuna richiesta.</p>
+        ) : filtrate.length === 0 ? (
+          <p className="text-ink-2">{tutte.length === 0 ? 'Nessuna richiesta.' : 'Nessuna richiesta nel periodo selezionato.'}</p>
         ) : (
-          <div className="flex flex-col gap-2">
-            {(data ?? []).map((r) => (
-              <RigaRichiesta key={r.id} richiesta={r} />
-            ))}
-          </div>
+          <>
+            <div className="flex flex-col gap-2">
+              {mostra.map((r) => (
+                <RigaRichiesta key={r.id} richiesta={r} />
+              ))}
+            </div>
+            {ancora > 0 && (
+              <button
+                type="button"
+                className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg border border-black/10 py-2 text-sm text-ink-2 hover:bg-black/5"
+                onClick={() => setVisibili((v) => v + PAGE_STEP)}
+              >
+                <span>▼</span>
+                <span>Mostra altri {Math.min(ancora, PAGE_STEP)} ({ancora} rimaste)</span>
+              </button>
+            )}
+          </>
         )}
       </div>
     </div>
