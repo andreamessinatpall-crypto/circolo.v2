@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { classiErrore, classiOk } from '@/components/stili'
+import { IconaCalcio, IconaPadel } from '@/components/IconeSport'
 import { etichettaSport } from '@/lib/formato'
 import { useCampi, useImpostazioni } from '@/features/prenotazioni/datiPrenotazioni'
 import { orariCampo, SLOT_MINUTI } from '@/features/prenotazioni/orari'
@@ -157,7 +158,9 @@ function RigaCampo({ campo }: { campo: Campo }) {
     <div className="campo-card">
       {/* Intestazione colorata: icona + sport + stato + interruttore */}
       <div className={`campo-head ${intestazione}`}>
-        <span className="campo-head-icona">{campo.sport === 'padel' ? '🎾' : '⚽'}</span>
+        <span className="campo-head-icona">
+          {campo.sport === 'padel' ? <IconaPadel /> : <IconaCalcio />}
+        </span>
         <span className="campo-head-sport">{etichettaSport(campo.sport)}</span>
         {!inServizio && <span className="campo-head-tag">Sospeso</span>}
         <button

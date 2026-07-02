@@ -403,23 +403,24 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 7px 13px 7px 11px;
-    background: var(--bg2);
-    border-bottom: 1px solid var(--border);
-    color: var(--ink);
+    padding: 8px 13px;
+    color: #fff;
   }
   .campo-head-calcio {
-    border-left: 3px solid var(--color-verde-500);
+    background: linear-gradient(135deg, var(--color-verde-600), var(--color-verde-800));
   }
   .campo-head-padel {
-    border-left: 3px solid #0b82a0;
+    background: linear-gradient(135deg, #0d92ad, #0a4f63);
   }
   .campo-head-off {
-    border-left: 3px solid var(--color-ink-3);
+    background: linear-gradient(135deg, #6b7689, #424c5e);
   }
   .campo-head-icona {
-    font-size: 1.1rem;
-    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
   }
   .campo-head-sport {
     font-family: var(--font-display);
@@ -427,7 +428,6 @@
     letter-spacing: 0.1em;
     font-weight: 700;
     font-size: 0.72rem;
-    color: var(--ink2);
   }
   .campo-head-tag {
     font-size: 0.65rem;
@@ -436,8 +436,8 @@
     letter-spacing: 0.07em;
     padding: 2px 8px;
     border-radius: 999px;
-    background: var(--border2);
-    color: var(--ink2);
+    background: rgba(255, 255, 255, 0.22);
+    color: #fff;
   }
   /* interruttore di stato (icona) sull'intestazione */
   .campo-toggle {
@@ -448,14 +448,14 @@
     align-items: center;
     justify-content: center;
     border-radius: 999px;
-    background: var(--border2);
-    border: 1px solid var(--border);
-    color: var(--ink2);
+    background: rgba(255, 255, 255, 0.18);
+    border: 1px solid rgba(255, 255, 255, 0.45);
+    color: #fff;
     font-size: 1.15rem;
     transition: background 0.15s;
   }
   .campo-toggle:hover {
-    background: var(--border);
+    background: rgba(255, 255, 255, 0.32);
   }
   .campo-body {
     padding: 12px 13px;

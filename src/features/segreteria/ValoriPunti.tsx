@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { classiErrore, classiOk } from '@/components/stili'
+import { IconaCalcio, IconaPadel } from '@/components/IconeSport'
 import { salvaValoriPunti, useValoriPunti, type ValoriPunti as Valori } from './datiPunti'
 
 type Esito = { tipo: 'ok' | 'errore'; testo: string } | null
@@ -29,35 +30,32 @@ export default function ValoriPunti() {
   )
 }
 
-// Un blocco per sport: tutto ciò che riguarda quello sport sta dentro un riquadro
-// con intestazione colorata (azzurra per Padel, verde per Calcio), così è chiaro
-// che quei valori sono collegati a quello sport. Le intestazioni Punti/Crediti
-// stanno nella barra colorata, allineate alle caselle sotto.
-function BloccoSport({
-  icona,
-  nome,
-  accentColor,
-  children,
-}: {
-  icona: string
-  nome: string
-  accentColor: string
-  children: ReactNode
-}) {
+const SPORT_CFG = {
+  padel: {
+    label: 'Padel',
+    gradient: 'linear-gradient(135deg, #0d92ad, #0a4f63)',
+    icona: <IconaPadel />,
+  },
+  calcio: {
+    label: 'Calcio',
+    gradient: 'linear-gradient(135deg, var(--color-verde-600), var(--color-verde-800))',
+    icona: <IconaCalcio />,
+  },
+} as const
+
+function BloccoSport({ tipo, children }: { tipo: 'padel' | 'calcio'; children: ReactNode }) {
+  const cfg = SPORT_CFG[tipo]
   return (
     <div className="overflow-hidden rounded-xl border border-black/10">
       <div
-        className="flex items-center gap-2 border-b border-black/8 px-3 py-2"
-        style={{ background: 'var(--bg2)', borderLeft: `3px solid ${accentColor}` }}
+        className="flex items-center gap-2 px-3 py-2"
+        style={{ background: cfg.gradient }}
       >
-        <span className="text-base leading-none">{icona}</span>
-        <span
-          className="text-[0.72rem] font-bold uppercase tracking-[0.1em]"
-          style={{ color: 'var(--ink2)' }}
-        >
-          {nome}
+        <span className="flex h-4 w-4 items-center justify-center text-white">{cfg.icona}</span>
+        <span className="text-[0.72rem] font-bold uppercase tracking-[0.1em] text-white">
+          {cfg.label}
         </span>
-        <span className="ml-auto flex items-center gap-2 text-[11px] font-medium" style={{ color: 'var(--ink3)' }}>
+        <span className="ml-auto flex items-center gap-2 text-[11px] font-medium text-white/70">
           <span className="w-14 text-center">Punti</span>
           <span className="w-14 text-center">Crediti</span>
         </span>
@@ -177,7 +175,7 @@ function FormValori({ valori }: { valori: Valori }) {
       }}
     >
       <div className="grid gap-3 md:grid-cols-2">
-        <BloccoSport icona="🎾" nome="Padel" accentColor="#0b82a0">
+        <BloccoSport tipo="padel">
           <RigaValore
             etichetta="Partita giocata"
             idBase="pc-partita-padel"
@@ -196,7 +194,7 @@ function FormValori({ valori }: { valori: Valori }) {
           />
         </BloccoSport>
 
-        <BloccoSport icona="⚽" nome="Calcio" accentColor="var(--color-verde-500)">
+        <BloccoSport tipo="calcio">
           <RigaValore
             etichetta="Partita giocata"
             idBase="pc-partita-calcio"
