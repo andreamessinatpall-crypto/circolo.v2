@@ -23,12 +23,8 @@ const schema = z.object({
   genere: z.enum(['M', 'F', 'altro']),
   sport_preferito: z.enum(['padel', 'calcio', 'entrambi']),
   password: z.string().min(8, 'La password deve avere almeno 8 caratteri'),
-  consenso_privacy: z.literal(true, {
-    errorMap: () => ({ message: "Devi accettare l'informativa privacy" }),
-  }),
-  consenso_termini: z.literal(true, {
-    errorMap: () => ({ message: "Devi accettare i termini d'uso" }),
-  }),
+  consenso_privacy: z.literal(true, { error: "Devi accettare l'informativa privacy" }),
+  consenso_termini: z.literal(true, { error: "Devi accettare i termini d'uso" }),
 })
 
 type DatiRegistrazione = z.infer<typeof schema>

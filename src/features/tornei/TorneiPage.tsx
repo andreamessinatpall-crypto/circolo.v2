@@ -48,15 +48,6 @@ function I({ d, children }: { d?: string; children?: import('react').ReactNode }
   )
 }
 
-// Sezione header (top-level, fuori dalla card)
-function SezH({ icona, children }: { icona: import('react').ReactNode; children: import('react').ReactNode }) {
-  return (
-    <div className="club-sez-header">
-      <span className="club-sez-icona">{icona}</span>
-      <h2 className="club-sez-titolo">{children}</h2>
-    </div>
-  )
-}
 
 const ICO_TROFEO = <I d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18M4 22h16M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22M18 2H6v7a6 6 0 0 0 12 0V2z" />
 const ICO_CAL = <I><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></I>
@@ -69,8 +60,6 @@ const ICO_GRIGLIA = <I><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3
 const ICO_GRAFICO = <I><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></I>
 const ICO_STAR = <I><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></I>
 const ICO_SETTINGS = <I d="M12 20h9M4.22 4.22l1.42 1.42M20.78 4.22l-1.42 1.42M1 12h3M20 12h3M4.22 19.78l1.42-1.42M20.78 19.78l-1.42-1.42M12 1v3M12 20v3" />
-const ICO_PLUS = <I><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></I>
-const ICO_PUNTI = <I><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></I>
 
 export default function TorneiPage() {
   const { profilo } = useAuth()
