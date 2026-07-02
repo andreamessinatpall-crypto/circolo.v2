@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { messaggioErrore } from '@/lib/errori'
@@ -261,6 +261,21 @@ export default function TabelloneEliminazione({
     }
   }, [bracketIncontri])
 
+  // Bug Safari mobile: align-items:stretch non propaga alle colonne fuori dal
+  // viewport iniziale (quelle a x > larghezza schermo). Le colonne esterne
+  // (Finale, Semi) rimangono alla loro altezza minima invece di estendersi come
+  // la colonna R16. useLayoutEffect è sincrono (prima del paint) → nessun flash.
+  useLayoutEffect(() => {
+    const finalEl = finalColRef.current
+    if (!finalEl) return
+    const grafEl = finalEl.parentElement
+    if (!grafEl) return
+    const cols = Array.from(grafEl.querySelectorAll<HTMLElement>('.bs-col'))
+    if (cols.length === 0) return
+    const maxH = Math.max(...cols.map(c => c.offsetHeight))
+    if (maxH > 0) cols.forEach(c => { c.style.height = maxH + 'px' })
+  }, [])
+
   // Centra il Finale nella finestra scorrevole all'apertura
   useEffect(() => {
     const finalEl = finalColRef.current
@@ -312,7 +327,6 @@ export default function TabelloneEliminazione({
       <div className="bs-scroll">
       <div className="bs-grafico" style={{ width: bracketW }}>
         {/* Metà sinistra: round 1 → round N-1 */}
-        <div className="bs-half">
         {Array.from({ length: Math.max(totRound - 1, 0) }, (_, i) => i + 1).map((round) => {
             const numSlotsTotal = bracketSize / Math.pow(2, round)
             const halfSlots = numSlotsTotal / 2
@@ -371,7 +385,6 @@ export default function TabelloneEliminazione({
               </div>
             )
           })}
-        </div>
 
         {/* Finale: colonna centrale */}
         {totRound > 0 && (() => {
@@ -421,7 +434,6 @@ export default function TabelloneEliminazione({
         })()}
 
         {/* Metà destra: round N-1 → round 1 (ordine DOM: interno → esterno) */}
-        <div className="bs-half">
         {Array.from({ length: Math.max(totRound - 1, 0) }, (_, i) => totRound - 1 - i).map((round) => {
             const numSlotsTotal = bracketSize / Math.pow(2, round)
             const halfSlots = numSlotsTotal / 2
@@ -481,7 +493,6 @@ export default function TabelloneEliminazione({
               </div>
             )
           })}
-        </div>
       </div>
       </div>{/* /bs-scroll */}
 
