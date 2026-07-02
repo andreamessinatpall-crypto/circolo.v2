@@ -139,12 +139,12 @@ export function calcolaClassificaAmericano(
 }
 
 // Formatta un nome per la visualizzazione nei turni: "Cognome I."
-// "Mario Rossi" → "Rossi M.", "Rossi" → "Rossi"
+// L'etichetta è "Cognome Nome" (es. "Rossi Mario") → "Rossi M."
 export function formatNomeAmericano(nomeCompleto: string): string {
   const parti = nomeCompleto.trim().split(/\s+/)
   if (parti.length <= 1) return nomeCompleto
-  const cognome = parti[parti.length - 1]
-  const iniziale = parti[0][0]?.toUpperCase() ?? ''
+  const cognome = parti.slice(0, -1).join(' ')
+  const iniziale = parti[parti.length - 1][0]?.toUpperCase() ?? ''
   return iniziale ? cognome + ' ' + iniziale + '.' : cognome
 }
 

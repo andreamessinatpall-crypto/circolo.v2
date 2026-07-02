@@ -8,11 +8,12 @@ import { nomeSquadraElegante } from './gironi'
 import { annullaPuntiIscrizione, assegnaPuntiIscrizione } from './punti'
 import type { Componente, RichiestaIscrizione, Squadra, Torneo } from './tipi'
 
-// Cognome del socio: in v2 non abbiamo un campo separato, quindi prendiamo
-// l'ultima parola dell'etichetta (Nome Cognome).
+// Cognome del socio: l'etichetta è "Cognome Nome" (es. "Rossi Mario"),
+// quindi prendiamo tutto tranne l'ultima parola (che è il nome).
 function cognomeDa(etichetta: string) {
   const parti = (etichetta || '').trim().split(/\s+/)
-  return parti.length ? parti[parti.length - 1] : ''
+  if (parti.length <= 1) return parti[0] ?? ''
+  return parti.slice(0, -1).join(' ')
 }
 
 // Nome da mostrare per un componente: il socio registrato, oppure il nome
