@@ -1056,26 +1056,18 @@
 
   /* ── Header + Subnav: barra unica con trama ─────────────── */
 
-  /* Sfondo condiviso: gradiente scuro + trama a maglie di carbonio
-     (rombi geometrici intrecciati) + alone ottone. */
+  /* Sfondo condiviso: gradiente scuro + trama a trattini diagonali
+     + alone ottone in alto a sinistra. Applicato a entrambi gli
+     elementi perché occupano lo stesso "strato visivo". */
   .app-header,
   .app-subnav {
     background:
       radial-gradient(ellipse 90% 260% at 0% 36%, rgba(200, 151, 46, 0.14) 0%, transparent 52%),
       radial-gradient(ellipse 55% 180% at 100% 80%, rgba(46, 139, 80, 0.06) 0%, transparent 55%),
       repeating-linear-gradient(
-        45deg,
-        rgba(255, 255, 255, 0.14) 0px,  rgba(255, 255, 255, 0.14) 0.75px,
-        transparent                      0.75px, transparent         3px,
-        rgba(255, 255, 255, 0.05) 3px,  rgba(255, 255, 255, 0.05) 3.75px,
-        transparent                      3.75px, transparent         6px
-      ),
-      repeating-linear-gradient(
-        -45deg,
-        rgba(255, 255, 255, 0.09) 0px,  rgba(255, 255, 255, 0.09) 0.75px,
-        transparent                      0.75px, transparent         3px,
-        rgba(255, 255, 255, 0.03) 3px,  rgba(255, 255, 255, 0.03) 3.75px,
-        transparent                      3.75px, transparent         6px
+        -52deg,
+        transparent 0px, transparent 11px,
+        rgba(255, 255, 255, 0.018) 11px, rgba(255, 255, 255, 0.018) 12px
       ),
       linear-gradient(172deg, #10441e 0%, #0b2f16 42%, #071b0d 100%);
     color: #fff;
@@ -1263,19 +1255,20 @@
     content: '';
     position: absolute;
     inset: 0;
-    background-image: repeating-linear-gradient(
-        0deg,
-        transparent,
-        transparent 38px,
-        rgba(255, 255, 255, 0.04) 38px,
-        rgba(255, 255, 255, 0.04) 39px
+    background-image:
+      repeating-linear-gradient(
+        45deg,
+        rgba(255, 255, 255, 0.14) 0px,  rgba(255, 255, 255, 0.14) 0.75px,
+        transparent                      0.75px, transparent         3px,
+        rgba(255, 255, 255, 0.05) 3px,  rgba(255, 255, 255, 0.05) 3.75px,
+        transparent                      3.75px, transparent         6px
       ),
       repeating-linear-gradient(
-        90deg,
-        transparent,
-        transparent 38px,
-        rgba(255, 255, 255, 0.04) 38px,
-        rgba(255, 255, 255, 0.04) 39px
+        -45deg,
+        rgba(255, 255, 255, 0.09) 0px,  rgba(255, 255, 255, 0.09) 0.75px,
+        transparent                      0.75px, transparent         3px,
+        rgba(255, 255, 255, 0.03) 3px,  rgba(255, 255, 255, 0.03) 3.75px,
+        transparent                      3.75px, transparent         6px
       );
     pointer-events: none;
   }
@@ -1344,7 +1337,7 @@
     inset: 0;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
     background-size: 200px 200px;
-    opacity: 0.2;
+    opacity: 0.06;
     pointer-events: none;
     z-index: 1;
     border-radius: 0 0 22px 22px;
