@@ -3,8 +3,9 @@ import { useAuth } from '@/auth/useAuth'
 import { sportConsentiti } from '@/auth/ruoli'
 import SportPage from './SportPage'
 import type { Sport } from './tipi'
+import { SportIcona } from '@/components/IconeSport'
 
-const ETICHETTA: Record<Sport, string> = { padel: '🎾 Padel', calcio: '⚽ Calcio' }
+const ETICHETTA: Record<Sport, string> = { padel: 'Padel', calcio: 'Calcio' }
 
 // Tab unica "Prenota" del giocatore: raccoglie padel e calcio. Lo switch in
 // alto appare solo a chi ha entrambi gli sport; chi ne ha uno solo vede
@@ -29,7 +30,7 @@ export default function PrenotaPage() {
               className={'subtab-btn' + (s === attivo ? ' attivo' : '')}
               onClick={() => setSel(s)}
             >
-              {ETICHETTA[s]}
+              <SportIcona sport={s} />{ETICHETTA[s]}
             </button>
           ))}
         </nav>

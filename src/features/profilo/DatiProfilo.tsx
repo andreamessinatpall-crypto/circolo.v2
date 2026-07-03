@@ -56,7 +56,17 @@ export default function DatiProfilo() {
     },
   })
 
+  const istruttore = !!profilo?.e_allenatore && !profilo?.is_allenatore && !profilo?.is_admin
+  const [mostraNome, setMostraNome] = useState(profilo?.mostra_in_classifica ?? false)
+
   if (!profilo) return null
+
+  async function handleToggleMostraNome() {
+    const nuovo = !mostraNome
+    setMostraNome(nuovo)
+    await supabase.from('soci').update({ mostra_in_classifica: nuovo }).eq('id', profilo!.id)
+    await ricaricaProfilo()
+  }
 
   function apriModale(data: DatiForm) {
     pendingData.current = data
@@ -237,6 +247,22 @@ export default function DatiProfilo() {
           Salva modifiche
         </button>
       </form>
+
+      {!istruttore && (
+        <div className="card" style={{ marginTop: '0.75rem' }}>
+          <label className="dati-check-row" style={{ margin: 0 }}>
+            <input
+              type="checkbox"
+              className="dati-check"
+              checked={mostraNome}
+              onChange={handleToggleMostraNome}
+            />
+            <span>
+              <span className="dati-check-titolo">Mostra il mio nome nella classifica del club agli altri giocatori</span>
+            </span>
+          </label>
+        </div>
+      )}
 
       <StoricoMovimenti />
 

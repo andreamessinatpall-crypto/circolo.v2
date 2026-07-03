@@ -1,4 +1,5 @@
 import { nomeSquadraElegante } from './gironi'
+import { IconaCalcio } from '@/components/IconeSport'
 
 // Nome di una squadra/coppia da mostrare nel calendario e in classifica.
 // Per il calcio mostra il logo (o un segnaposto ⚽) accanto al nome; per il
@@ -19,7 +20,7 @@ export function NomeSquadra({
         <img className="logo-squadra" src={logoUrl} alt="" />
       ) : (
         <span className="logo-segnaposto" aria-hidden>
-          ⚽
+          <IconaCalcio size={18} />
         </span>
       )}
       <span>{nome || '?'}</span>

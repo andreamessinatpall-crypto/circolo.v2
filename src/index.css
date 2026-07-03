@@ -220,6 +220,10 @@
     text-transform: uppercase;
     letter-spacing: 0.1em;
     font-size: 0.82rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
     font-weight: 700;
     background: transparent;
     border: none;
@@ -722,6 +726,9 @@
     border: 1.5px solid var(--border2);
     cursor: pointer;
     transition: all 0.14s;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
   }
   .subtab-btn:hover {
     color: var(--v700);
@@ -773,6 +780,9 @@
     font-weight: 700;
     font-size: 0.95rem;
     color: var(--ink);
+    display: flex;
+    align-items: center;
+    gap: 5px;
   }
   .torneo-concluso-periodo {
     font-size: 0.78rem;
@@ -1517,6 +1527,7 @@
     font-family: var(--font-display);
     font-weight: 700;
     color: var(--v600);
+    text-align: center;
   }
   .classifica-riga .cl-nick {
     flex: 1 1 auto;
@@ -1915,8 +1926,8 @@
     margin-top: 5px;
   }
   .att-sport-ic {
-    font-size: 1.05rem;
-    line-height: 1;
+    display: inline-flex;
+    align-items: center;
   }
   .att-campo {
     font-weight: 700;
@@ -4609,8 +4620,8 @@
     flex-shrink: 0;
   }
   .amici-sport-ico {
-    font-size: 1rem;
-    line-height: 1;
+    display: inline-flex;
+    align-items: center;
     flex-shrink: 0;
   }
 

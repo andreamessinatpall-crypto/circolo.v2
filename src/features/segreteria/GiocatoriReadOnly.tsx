@@ -6,13 +6,8 @@ import { classiInput } from '@/components/stili'
 import { LIVELLI_PUNTI_DEFAULT, livelloDaPunti } from '@/features/profilo/livelliPunti'
 import { MedagliaLv } from '@/features/profilo/MedagliaLv'
 import type { SocioPubblico } from '@/features/profilo/amici/useAmici'
-
-function sportLabel(sport: string | null): string {
-  if (sport === 'padel') return '🎾 Padel'
-  if (sport === 'calcio') return '⚽ Calcio'
-  if (sport === 'entrambi') return '🎾⚽ Entrambi'
-  return ''
-}
+import { SportIcona } from '@/components/IconeSport'
+import { etichettaSport } from '@/lib/formato'
 
 function annoIscrizione(data: string | null): string {
   if (!data) return ''
@@ -48,7 +43,7 @@ function RigaGiocatore({
   rank: number
   maxPunti: number
 }) {
-  const sport = sportLabel(socio.sport_preferito)
+  const sport = socio.sport_preferito
   const anno = annoIscrizione(socio.data_iscrizione)
   const lv = livelloDaPunti(socio.punti, LIVELLI_PUNTI_DEFAULT)
   const cfg = LIVELLI_PUNTI_DEFAULT[lv - 1]
@@ -67,7 +62,7 @@ function RigaGiocatore({
           >
             {cfg.nome}
           </span>
-          {sport && <span className="gioc-chip gioc-chip-sport">{sport}</span>}
+          {sport && <span className="gioc-chip gioc-chip-sport"><SportIcona sport={sport} size={12} />{' '}{etichettaSport(sport)}</span>}
           {anno && <span className="gioc-chip gioc-chip-muted">dal {anno}</span>}
         </div>
       </div>

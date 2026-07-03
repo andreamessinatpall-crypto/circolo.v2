@@ -5,9 +5,9 @@ import { useAuth } from '@/auth/useAuth'
 import { mancaRpc, messaggioErrore } from '@/lib/errori'
 import { useSociPubblici } from '@/features/prenotazioni/datiAmichevoli'
 import { oraLocale } from '@/features/prenotazioni/orari'
+import { SportIcona } from '@/components/IconeSport'
 
 const SPORT_LABEL: Record<string, string> = { padel: 'Padel', calcio: 'Calcio' }
-const SPORT_ICONA: Record<string, string> = { padel: '🎾', calcio: '⚽' }
 
 const ICONA_GIORNO = (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
@@ -207,7 +207,7 @@ export default function AttivitaInProgramma() {
                       {oraLocale(new Date(m.inizio))}–{oraLocale(new Date(m.fine))}
                     </div>
                     <div className="att-sport">
-                      <span className="att-sport-ic">{SPORT_ICONA[m.sport] ?? '🎾'}</span>
+                      <span className="att-sport-ic"><SportIcona sport={m.sport} /></span>
                       {SPORT_LABEL[m.sport] ?? m.sport}
                       <span className="att-parti-sep">·</span>
                       <span className="att-campo">{m.campo_nome ?? 'Campo'}</span>

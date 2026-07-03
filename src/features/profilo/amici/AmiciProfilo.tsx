@@ -8,13 +8,7 @@ import { RuoloAvatar } from '@/features/profilo/ruoloBadge'
 import { LIVELLI_PUNTI_DEFAULT, livelloDaPunti } from '@/features/profilo/livelliPunti'
 import { MedagliaLv } from '@/features/profilo/MedagliaLv'
 import { useAmici, type Amicizia, type VoceAmico } from './useAmici'
-
-function sportEmoji(sport: string | null): string | null {
-  if (sport === 'padel') return '🎾'
-  if (sport === 'calcio') return '⚽'
-  if (sport === 'entrambi') return '🎾⚽'
-  return null
-}
+import { SportIcona } from '@/components/IconeSport'
 
 
 function IcoCalendario() {
@@ -40,7 +34,6 @@ function IcoBidone() {
 }
 
 function CardAmico({ voce, onRimuovi }: { voce: VoceAmico; onRimuovi: () => void }) {
-  const sport = sportEmoji(voce.sport)
   const lv = livelloDaPunti(voce.punti, LIVELLI_PUNTI_DEFAULT)
   const lvNome = LIVELLI_PUNTI_DEFAULT[lv - 1]?.nome ?? ''
   return (
@@ -49,7 +42,7 @@ function CardAmico({ voce, onRimuovi }: { voce: VoceAmico; onRimuovi: () => void
       <div className="amici-card-info">
         <div className="amici-card-nome">
           {voce.etichetta}
-          {sport && <span className="amici-sport-ico">{sport}</span>}
+          {voce.sport && <span className="amici-sport-ico"><SportIcona sport={voce.sport} /></span>}
         </div>
         <div className="amici-card-sub">
           {lvNome}
@@ -168,7 +161,7 @@ function CercaAmico({
         type="text"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        placeholder="Digita almeno 3 lettere…"
+        placeholder="Chi vuoi aggiungere?"
         className={`${classiInput} pr-9`}
         disabled={isPending}
         autoComplete="off"

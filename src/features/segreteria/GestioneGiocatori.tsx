@@ -8,18 +8,12 @@ import { MedagliaLv } from '@/features/profilo/MedagliaLv'
 import { MedagliaRuolo } from '@/features/profilo/ruoloBadge'
 import { useSoci, type SocioAdmin } from './datiSoci'
 import DettaglioGiocatore from './DettaglioGiocatore'
+import { SportIcona } from '@/components/IconeSport'
 
 type Ordine = 'punti' | 'cognome'
 
 function isCancellato(s: SocioAdmin): boolean {
   return (s.email ?? '').endsWith('@cancellato.invalid')
-}
-
-function sportEmoji(sport: string | null): string {
-  if (sport === 'padel') return '🎾'
-  if (sport === 'calcio') return '⚽'
-  if (sport === 'entrambi') return '🎾⚽'
-  return ''
 }
 
 function StatItem({ num, label, colore }: { num: string | number; label: string; colore?: string }) {
@@ -285,7 +279,7 @@ function RigaSocio({
   const cancellato = isCancellato(socio)
   const lv = livelloDaPunti(socio.punti ?? 0, LIVELLI_PUNTI_DEFAULT)
   const cfg = LIVELLI_PUNTI_DEFAULT[lv - 1]
-  const emoji = cancellato ? '' : sportEmoji(socio.sport_preferito)
+  const hasSport = !cancellato && !!socio.sport_preferito
   const isBloccato = !!(socio.punti_bloccati || socio.crediti_bloccati)
   const haCancellazione = !!socio.richiesta_cancellazione
 
@@ -350,10 +344,10 @@ function RigaSocio({
                 <span>{socio.crediti ?? 0} cr</span>
               </>
             )}
-            {emoji && (
+            {hasSport && (
               <>
                 <span className="gioc-adm-sep">·</span>
-                <span>{emoji}</span>
+                <SportIcona sport={socio.sport_preferito} />
               </>
             )}
           </div>

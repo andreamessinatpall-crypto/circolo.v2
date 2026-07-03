@@ -14,8 +14,7 @@ import { mancaTabella, messaggioErrore } from '@/lib/errori'
 import { useAuth } from '@/auth/useAuth'
 import { useSociPubblici } from '@/features/prenotazioni/datiAmichevoli'
 import { supabase } from '@/lib/supabase'
-
-const SPORT_ICONA: Record<string, string> = { padel: '🎾', calcio: '⚽' }
+import { SportIcona } from '@/components/IconeSport'
 
 function fmtData(s: string): string {
   return new Date(s + 'T00:00:00').toLocaleDateString('it-IT', { day: 'numeric', month: 'short' })
@@ -51,7 +50,7 @@ function CardTorneo({ torneo, dati }: { torneo: Torneo; dati: DatiTornei }) {
       >
         <div className="tcl-top-row">
           <span className={`tcl-sport-badge tcl-sport-${torneo.sport}`}>
-            {SPORT_ICONA[torneo.sport]} {SPORT_LABEL[torneo.sport] ?? torneo.sport}
+            <SportIcona sport={torneo.sport} size={12} />{' '}{SPORT_LABEL[torneo.sport] ?? torneo.sport}
           </span>
           <span className="tcl-chevron" aria-hidden>{aperto ? '▾' : '▸'}</span>
         </div>
@@ -307,7 +306,7 @@ function CardTorneoInProgramma({
       <div className="torneo-club-card torneo-club-card-programma">
         <div className="tcl-top-row">
           <span className={`tcl-sport-badge tcl-sport-${torneo.sport}`}>
-            {SPORT_ICONA[torneo.sport]} {SPORT_LABEL[torneo.sport] ?? torneo.sport}
+            <SportIcona sport={torneo.sport} size={12} />{' '}{SPORT_LABEL[torneo.sport] ?? torneo.sport}
           </span>
           {isIscritto ? (
             <div className="tcl-iscritto-col">

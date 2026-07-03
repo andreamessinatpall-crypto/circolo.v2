@@ -9,6 +9,7 @@ import { LIVELLI_PUNTI_DEFAULT, livelloDaPunti } from './livelliPunti'
 import { TorneiInCorso, TorneiInProgramma } from './TorneiClub'
 import { useAmici, type VoceStaff } from './amici/useAmici'
 import { MedagliaRuolo } from './ruoloBadge'
+import { SportIcona } from '@/components/IconeSport'
 
 interface RigaClassifica {
   posizione: number
@@ -19,21 +20,44 @@ interface RigaClassifica {
 
 const TOP = 10
 
-function podioEmoji(pos: number): string | null {
-  if (pos === 1) return '🥇'
-  if (pos === 2) return '🥈'
-  if (pos === 3) return '🥉'
-  return null
+const PODIO_CFG = {
+  1: { hi: '#FFE566', mid: '#F5C518', lo: '#C49A08', text: '#6B4700' },
+  2: { hi: '#F4F4F4', mid: '#C8C8C8', lo: '#989898', text: '#444' },
+  3: { hi: '#ECA96E', mid: '#CD7F32', lo: '#9B5E1E', text: '#4A2800' },
+} as const
+
+function MedagliaPodio({ pos }: { pos: 1 | 2 | 3 }) {
+  const c = PODIO_CFG[pos]
+  return (
+    <div style={{ flexShrink: 0, width: 38, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{
+        width: 30, height: 30,
+        borderRadius: '50%',
+        background: `linear-gradient(145deg, ${c.hi} 0%, ${c.mid} 50%, ${c.lo} 100%)`,
+        boxShadow: `0 0 0 2px ${c.lo}, inset 0 1px 0 rgba(255,255,255,0.55), 0 3px 8px rgba(0,0,0,0.22)`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontFamily: 'var(--font-display)',
+        fontWeight: 900,
+        fontSize: '0.8rem',
+        color: c.text,
+        letterSpacing: '-0.01em',
+        userSelect: 'none' as const,
+        textShadow: '0 1px 0 rgba(255,255,255,0.5)',
+      }}>
+        {pos}
+      </div>
+    </div>
+  )
 }
 
 function RigaCl({ r }: { r: RigaClassifica }) {
-  const podio = podioEmoji(r.posizione)
+  const isPodio = r.posizione >= 1 && r.posizione <= 3
   const lv = livelloDaPunti(r.punti ?? 0, LIVELLI_PUNTI_DEFAULT)
   const cfg = LIVELLI_PUNTI_DEFAULT[lv - 1]
   return (
     <div className={'classifica-riga' + (r.is_me ? ' io' : '')}>
-      {podio
-        ? <span className="cl-podio">{podio}</span>
+      {isPodio
+        ? <MedagliaPodio pos={r.posizione as 1 | 2 | 3} />
         : <span className="cl-pos">{r.posizione}º</span>}
       <span className="cl-nick">
         {r.etichetta ? titleCase(String(r.etichetta)) : cfg.nome}
@@ -56,22 +80,14 @@ const IcoZap = <Ico><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></
 const IcoCal = <Ico><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></Ico>
 const IcoScudo = <Ico d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
 
-function sportEmoji(sport: string | null): string | null {
-  if (sport === 'padel') return '🎾'
-  if (sport === 'calcio') return '⚽'
-  if (sport === 'entrambi') return '🎾⚽'
-  return null
-}
-
 function CardStaff({ voce }: { voce: VoceStaff }) {
-  const sport = sportEmoji(voce.sport)
   return (
     <div className="amici-card">
       <MedagliaRuolo ruolo={voce.ruolo} size={40} />
       <div className="amici-card-info">
         <div className="amici-card-nome">
           {voce.etichetta}
-          {sport && <span className="amici-sport-ico">{sport}</span>}
+          {voce.sport && <span className="amici-sport-ico"><SportIcona sport={voce.sport} /></span>}
         </div>
         <div className="amici-card-sub capitalize">{voce.ruolo}</div>
       </div>
@@ -108,16 +124,6 @@ export default function ClubProfilo() {
   const { profilo, ricaricaProfilo } = useAuth()
   const istruttore = !!profilo?.e_allenatore && !profilo?.is_allenatore && !profilo?.is_admin
   const { staff } = useAmici(profilo?.id ?? '')
-  const [mostraNome, setMostraNome] = useState(profilo?.mostra_in_classifica ?? false)
-
-  async function handleToggleMostraNome() {
-    const nuovo = !mostraNome
-    setMostraNome(nuovo)
-    await supabase.from('soci').update({ mostra_in_classifica: nuovo }).eq('id', profilo!.id)
-    await ricaricaProfilo()
-    query.refetch()
-  }
-
   const query = useQuery({
     queryKey: ['classifica_visibile'],
     queryFn: async () => {
@@ -228,24 +234,6 @@ export default function ClubProfilo() {
           )}
         </div>
       </SezClub>
-
-      {/* ── Visibilità in classifica ─────────────────────────── */}
-      {!istruttore && profilo && (
-        <div className="card" style={{ marginTop: '-0.25rem' }}>
-          <label className="dati-check-row" style={{ margin: 0 }}>
-            <input
-              type="checkbox"
-              className="dati-check"
-              checked={mostraNome}
-              onChange={handleToggleMostraNome}
-            />
-            <span>
-              <span className="dati-check-titolo">Mostra il mio nome nella classifica</span>
-              <span className="dati-check-sub">Se disattivato, comparirà solo il livello.</span>
-            </span>
-          </label>
-        </div>
-      )}
 
       {/* ── Tornei in corso ──────────────────────────────────── */}
       <SezClub icona={IcoZap} titolo="Tornei in corso">

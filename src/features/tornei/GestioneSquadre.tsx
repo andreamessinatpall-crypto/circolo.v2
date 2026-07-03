@@ -6,6 +6,7 @@ import { logoDaFile } from '@/lib/immagini'
 import { useSociPubblici } from '@/features/prenotazioni/datiAmichevoli'
 import { nomeSquadraElegante } from './gironi'
 import { annullaPuntiIscrizione, assegnaPuntiIscrizione } from './punti'
+import { IconaCalcio } from '@/components/IconeSport'
 import type { Componente, RichiestaIscrizione, Squadra, Torneo } from './tipi'
 
 // Cognome del socio: l'etichetta è "Cognome Nome" (es. "Rossi Mario"),
@@ -463,7 +464,7 @@ function RigaSquadra({
             />
           ) : (
             <span className="logo-segnaposto grande" aria-hidden style={{ flexShrink: 0 }}>
-              ⚽
+              <IconaCalcio size={28} />
             </span>
           )}
           <input

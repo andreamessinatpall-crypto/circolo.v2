@@ -34,6 +34,7 @@ import { FORMATI_TORNEO, STATI_TORNEO } from './tipi'
 import type { PuntiSet, StatoTorneo, Torneo } from './tipi'
 import { azzeraChiave } from '@/lib/punti'
 import { assegnaPuntiAmericano } from './punti'
+import { SportIcona } from '@/components/IconeSport'
 
 // Terna di punti tutta a zero (default dei form).
 const puntiZero = (): PuntiSet => ({ iscrizione: 0, vittoria: 0, torneo: 0 })
@@ -169,7 +170,7 @@ export default function TorneiPage() {
                     onClick={() => setSelConcluso(String(t.id))}
                   >
                     <span className="torneo-concluso-nome">
-                      {iconaSport(t.sport)} {t.nome}
+                      <SportIcona sport={t.sport} size={13} /> {t.nome}
                     </span>
                     {periodo && <span className="torneo-concluso-periodo">{periodo}</span>}
                     <span className="torneo-concluso-arrow">›</span>
@@ -399,7 +400,7 @@ function NuovoTorneo({ onCreato }: { onCreato: (id: number | string) => void }) 
             className={`seg-btn${sportRaw === 'padel' ? ' attivo' : ''}`}
             onClick={() => setValue('sport', 'padel')}
           >
-            🎾 Padel
+            <SportIcona sport="padel" /> Padel
           </button>
           <button
             type="button"
@@ -409,7 +410,7 @@ function NuovoTorneo({ onCreato }: { onCreato: (id: number | string) => void }) 
               if (formattoRaw === 'americano') setValue('formato', 'girone')
             }}
           >
-            ⚽ Calcio
+            <SportIcona sport="calcio" /> Calcio
           </button>
         </div>
         {/* campi nascosti per react-hook-form */}

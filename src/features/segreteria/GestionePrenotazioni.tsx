@@ -10,6 +10,7 @@ import { SchedaPartita } from '@/features/prenotazioni/MieAmichevoli'
 import { assegnaPuntiPresenza, annullaPuntiPresenza } from '@/features/prenotazioni/puntiPresenze'
 import { oraLocale } from '@/features/prenotazioni/orari'
 import { useModalitaPremi } from '@/features/premi/datiPremi'
+import { SportIcona } from '@/components/IconeSport'
 import { useValoriPunti } from './datiPunti'
 import { useIntervalliCrediti } from './datiIntervalli'
 import { usePrenotazioniAdminIntervallo } from './datiPrenotazioniAdmin'
@@ -511,14 +512,14 @@ export default function GestionePrenotazioni() {
           className={'subtab-btn' + (sport === 'padel' ? ' attivo' : '')}
           onClick={() => setSport('padel')}
         >
-          🎾 Padel
+          <SportIcona sport="padel" /> Padel
         </button>
         <button
           type="button"
           className={'subtab-btn' + (sport === 'calcio' ? ' attivo' : '')}
           onClick={() => setSport('calcio')}
         >
-          ⚽ Calcio
+          <SportIcona sport="calcio" /> Calcio
         </button>
       </nav>
 
