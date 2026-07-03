@@ -31,7 +31,7 @@ const schema = z
 
 type DatiForm = z.infer<typeof schema>
 
-type Modale = 'salva' | 'scarica' | null
+type Modale = 'salva' | null
 
 export default function DatiProfilo() {
   const { profilo, ricaricaProfilo } = useAuth()
@@ -116,35 +116,9 @@ export default function DatiProfilo() {
     setMsg({
       tipo: 'ok',
       testo: emailCambiata
-        ? `Dati aggiornati. Abbiamo inviato un link di conferma a ${data.email.trim()}.`
+        ? `Dati aggiornati. Abbiamo inviato un link di conferma a ${data.email.trim()}. Il cambio diventerà effettivo solo dopo aver cliccato il link nella tua casella di posta.`
         : 'Dati aggiornati.',
     })
-  }
-
-  async function confermaScarica(password: string) {
-    const emailCorrente = profilo!.email ?? ''
-    const { error } = await supabase.auth.signInWithPassword({ email: emailCorrente, password })
-    if (error) throw new Error('Password non corretta.')
-    setModale(null)
-    const dati = {
-      esportato_il: new Date().toISOString(),
-      nome: profilo!.nome,
-      cognome: profilo!.cognome,
-      email: profilo!.email,
-      telefono: profilo!.telefono,
-      data_nascita: profilo!.data_nascita,
-      genere: profilo!.genere,
-      sport_preferito: profilo!.sport_preferito,
-      data_iscrizione: profilo!.data_iscrizione,
-      punti: profilo!.punti,
-    }
-    const blob = new Blob([JSON.stringify(dati, null, 2)], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `dati_personali_${profilo!.cognome}_${profilo!.nome}.json`
-    a.click()
-    URL.revokeObjectURL(url)
   }
 
   return (
@@ -165,98 +139,106 @@ export default function DatiProfilo() {
         </span>
         <h2 className="club-sez-titolo">I tuoi dati</h2>
       </div>
-      <form onSubmit={handleSubmit(apriModale)} className="card">
-        <p className="mb-3 text-sm text-ink-2">
-          Nome, cognome e genere non sono modificabili: contatta la segreteria per correggerli.
-          Le modifiche verranno confermate con la password.
-        </p>
+      <form onSubmit={handleSubmit(apriModale)} className="card form-verde form-campo">
 
-        <label>Nome</label>
-        <div className="ro">{profilo.nome}</div>
+        {/* Nome + Cognome separati con icona propria */}
+        <div className="dati-coppia" style={{ marginTop: 0 }}>
+          <div className="dati-riga">
+            <span className="dati-riga-ico" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+            </span>
+            <div className="ro flex-1 min-w-0">{profilo.nome}</div>
+          </div>
+          <div className="dati-riga">
+            <span className="dati-riga-ico" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+            </span>
+            <div className="ro flex-1 min-w-0">{profilo.cognome}</div>
+          </div>
+        </div>
 
-        <label>Cognome</label>
-        <div className="ro">{profilo.cognome}</div>
+        {/* Genere + Data nascita sulla stessa riga */}
+        <div className="dati-coppia">
+          <div className="dati-riga">
+            <span className="dati-riga-ico" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="9" cy="12" r="2"/><path d="M14 10h4M14 14h4"/></svg>
+            </span>
+            <div className="ro flex-1 min-w-0">{etichettaGenere(profilo.genere)}</div>
+          </div>
+          <div className="dati-riga">
+            <span className="dati-riga-ico" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            </span>
+            <input id="dati-data-nascita" type="date" max="9999-12-31" aria-label="Data di nascita" {...register('data_nascita')} />
+          </div>
+        </div>
 
-        <label>Genere</label>
-        <div className="ro">{etichettaGenere(profilo.genere)}</div>
+        {/* Email + Telefono sulla stessa riga */}
+        <div className="dati-coppia">
+          <div className="dati-riga">
+            <span className="dati-riga-ico" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 7 10-7"/></svg>
+            </span>
+            <div className="flex-1 min-w-0">
+              <input id="dati-email" type="email" autoComplete="email" aria-label="Email" {...register('email')} />
+              {errors.email && <p className={`mt-1 ${classiErrore}`}>{errors.email.message}</p>}
+            </div>
+          </div>
+          <div className="dati-riga">
+            <span className="dati-riga-ico" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13 19.79 19.79 0 0 1 1.61 4.4 2 2 0 0 1 3.6 2.22h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.18 6.18l.95-.95a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            </span>
+            <input id="dati-telefono" type="tel" aria-label="Telefono" {...register('telefono')} />
+          </div>
+        </div>
 
-        <label htmlFor="dati-email">Email</label>
-        <input id="dati-email" type="email" autoComplete="email" {...register('email')} />
-        {errors.email && <p className={`mt-1 ${classiErrore}`}>{errors.email.message}</p>}
+        {/* Sport preferito */}
+        <div className="dati-riga">
+          <span className="dati-riga-ico" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="15" cy="4" r="2"/><path d="M14.5 6L12 12"/><path d="M13 8.5L9.5 6"/><path d="M13 8.5L17 11"/><path d="M12 12L16 15L15 21"/><path d="M12 12L8 16"/></svg>
+          </span>
+          <select id="dati-sport" aria-label="Sport preferito" {...register('sport_preferito')}>
+            <option value="entrambi">Padel e Calcio</option>
+            <option value="padel">Padel</option>
+            <option value="calcio">Calcio</option>
+          </select>
+        </div>
 
-        <label htmlFor="dati-telefono">Telefono</label>
-        <input id="dati-telefono" type="tel" {...register('telefono')} />
+        {/* Password */}
+        <div style={{ marginTop: '1.25rem', borderTop: '1px solid rgba(255,255,255,0.15)', paddingTop: '1.25rem' }}>
+          <div className="dati-riga">
+            <span className="dati-riga-ico" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            </span>
+            <div className="flex-1 min-w-0">
+              <p className="mb-1 text-xs font-semibold opacity-70">Nuova password</p>
+              <input id="dati-pw-nuova" type="password" autoComplete="new-password" aria-label="Nuova password (min. 8 caratteri)" placeholder="Min. 8 caratteri" {...register('password_nuova')} />
+              {errors.password_nuova && <p className={`mt-1 ${classiErrore}`}>{errors.password_nuova.message}</p>}
+            </div>
+          </div>
 
-        <label htmlFor="dati-data-nascita">Data di nascita</label>
-        <input id="dati-data-nascita" type="date" max="9999-12-31" {...register('data_nascita')} />
-
-        <label htmlFor="dati-sport">Sport preferito</label>
-        <select id="dati-sport" {...register('sport_preferito')}>
-          <option value="entrambi">Padel e Calcio</option>
-          <option value="padel">Padel</option>
-          <option value="calcio">Calcio</option>
-        </select>
-
-        {/* ── Cambia password (opzionale) ── */}
-        <div style={{ marginTop: '1.5rem', borderTop: '1px solid var(--border)', paddingTop: '1.25rem' }}>
-          <p className="mb-2 text-sm font-semibold text-ink-2">
-            Nuova password{' '}
-            <span className="font-normal text-ink-3">(lascia vuoto per non cambiarla)</span>
-          </p>
-          <label htmlFor="dati-pw-nuova">Nuova password (min. 8 caratteri)</label>
-          <input
-            id="dati-pw-nuova"
-            type="password"
-            autoComplete="new-password"
-            {...register('password_nuova')}
-          />
-          {errors.password_nuova && (
-            <p className={`mt-1 ${classiErrore}`}>{errors.password_nuova.message}</p>
-          )}
-
-          <label htmlFor="dati-pw-conferma">Ripeti la nuova password</label>
-          <input
-            id="dati-pw-conferma"
-            type="password"
-            autoComplete="new-password"
-            {...register('password_conferma')}
-          />
-          {errors.password_conferma && (
-            <p className={`mt-1 ${classiErrore}`}>{errors.password_conferma.message}</p>
-          )}
+          <div className="dati-riga">
+            <span className="dati-riga-ico" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/><polyline points="9 16 11 18 15 14"/></svg>
+            </span>
+            <div className="flex-1 min-w-0">
+              <p className="mb-1 text-xs font-semibold opacity-70">Conferma password</p>
+              <input id="dati-pw-conferma" type="password" autoComplete="new-password" aria-label="Ripeti la nuova password" placeholder="Ripeti la password" {...register('password_conferma')} />
+              {errors.password_conferma && <p className={`mt-1 ${classiErrore}`}>{errors.password_conferma.message}</p>}
+            </div>
+          </div>
         </div>
 
         {msg && (
           <p className={`mt-4 ${msg.tipo === 'ok' ? classiOk : classiErrore}`}>{msg.testo}</p>
         )}
 
-        <button type="submit" className="btn mt-4">
+        <button type="submit" className="btn mt-4" style={{ border: '2px solid rgba(255,255,255,0.7)' }}>
           Salva modifiche
         </button>
       </form>
 
       <StoricoMovimenti />
-
-      {/* Scarica dati personali (GDPR Art. 20 - portabilità) */}
-      <div className="club-sez-header" style={{ marginTop: '2rem' }}>
-        <span className="club-sez-icona">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        </span>
-        <h2 className="club-sez-titolo">I tuoi dati personali</h2>
-      </div>
-      <div className="card">
-        <p className="mb-3 text-sm text-ink-2">
-          Scarica una copia dei tuoi dati personali in formato JSON (art. 20 GDPR —
-          diritto alla portabilità).
-        </p>
-        <button
-          type="button"
-          className="btn btn-secondario !mt-0"
-          onClick={() => setModale('scarica')}
-        >
-          Scarica dati personali (JSON)
-        </button>
-      </div>
 
       <CancellaAccount />
 
@@ -265,14 +247,6 @@ export default function DatiProfilo() {
           titolo="Conferma le modifiche"
           descrizione="Inserisci la password attuale per salvare i dati."
           onConferma={confermaSalva}
-          onAnnulla={() => setModale(null)}
-        />
-      )}
-      {modale === 'scarica' && (
-        <ModalConfermaPassword
-          titolo="Scarica i tuoi dati"
-          descrizione="Inserisci la password attuale per scaricare i dati personali."
-          onConferma={confermaScarica}
           onAnnulla={() => setModale(null)}
         />
       )}

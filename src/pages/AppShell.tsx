@@ -2,8 +2,6 @@ import { NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '@/auth/useAuth'
 import { puoGestirePrenotazioni } from '@/auth/ruoli'
 import type { Socio } from '@/auth/tipi'
-import { MedagliaRuolo } from '@/features/profilo/ruoloBadge'
-import { MedagliaLv } from '@/features/profilo/MedagliaLv'
 import { useRealtimeCircolo } from '@/hooks/useRealtimeCircolo'
 import { useModalitaPremi } from '@/features/premi/datiPremi'
 import FooterLegale from '@/components/legale/FooterLegale'
@@ -60,11 +58,7 @@ export default function AppShell() {
   const { data: modalitaPremi } = useModalitaPremi()
   if (!profilo) return null
 
-  const collaboratore = !!profilo.is_allenatore && !profilo.is_admin
-  // Collaboratore ha grado più alto: chi è entrambi mostra solo "Collaboratore".
-  const istruttore = !!profilo.e_allenatore && !profilo.is_admin && !profilo.is_allenatore
   const voci = vociMenu(profilo, !!modalitaPremi)
-  const isNormalUser = !profilo.is_admin && !collaboratore && !istruttore
 
   return (
     <div className="flex min-h-[100dvh] flex-col">
@@ -76,19 +70,21 @@ export default function AppShell() {
         </div>
 
         <div className="header-utente flex items-center gap-1.5 text-sm">
-          {/* Chip nome utente + badge livello/ruolo */}
-          <div className="header-chip">
-            <span className="header-chip-nome">
-              <span className="sm:hidden">{profilo.nome}</span>
-              <span className="hidden sm:inline">{profilo.nome} {profilo.cognome}</span>
-            </span>
-            {isNormalUser && (
-              <MedagliaLv punti={profilo.punti ?? 0} size={24} />
-            )}
-            {profilo.is_admin && <MedagliaRuolo ruolo="admin" size={24} />}
-            {collaboratore && <MedagliaRuolo ruolo="collaboratore" size={24} />}
-            {istruttore && <MedagliaRuolo ruolo="istruttore" size={24} />}
-          </div>
+          {/* Icona profilo */}
+          <NavLink
+            to="/profilo?sezione=dati"
+            title="Il mio profilo"
+            className={({ isActive }) =>
+              'flex items-center rounded-lg p-1.5 text-white/60 transition hover:bg-white/10 hover:text-white' +
+              (isActive ? ' bg-white/10 text-white' : '')
+            }
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="10"/>
+              <circle cx="12" cy="10" r="3"/>
+              <path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662"/>
+            </svg>
+          </NavLink>
           {puoGestirePrenotazioni(profilo) && !profilo.is_admin && (
             <NavLink
               to="/statistiche"

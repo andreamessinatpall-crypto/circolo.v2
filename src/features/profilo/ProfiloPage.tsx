@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useAuth } from '@/auth/useAuth'
 import RiepilogoProfilo from './RiepilogoProfilo'
 import ClubProfilo from './ClubProfilo'
@@ -10,7 +11,13 @@ type SottoScheda = 'riepilogo' | 'club' | 'dati' | 'amici' | 'giocatori'
 
 export default function ProfiloPage() {
   const { profilo } = useAuth()
+  const [searchParams] = useSearchParams()
   const [scheda, setScheda] = useState<SottoScheda>('riepilogo')
+
+  useEffect(() => {
+    const sezione = searchParams.get('sezione') as SottoScheda | null
+    if (sezione) setScheda(sezione)
+  }, [searchParams])
 
   const collaboratore = !!profilo?.is_allenatore && !profilo?.is_admin
   const istruttore    = !!profilo?.e_allenatore && !profilo?.is_allenatore && !profilo?.is_admin
@@ -20,13 +27,11 @@ export default function ProfiloPage() {
     schede = [
       { id: 'riepilogo', label: 'Riepilogo' },
       { id: 'giocatori', label: 'Giocatori' },
-      { id: 'dati',      label: 'I miei dati' },
       { id: 'club',      label: 'Club' },
     ]
   } else if (istruttore) {
     schede = [
       { id: 'riepilogo', label: 'Riepilogo' },
-      { id: 'dati',      label: 'I miei dati' },
       { id: 'club',      label: 'Club' },
     ]
   } else {
@@ -34,7 +39,6 @@ export default function ProfiloPage() {
       { id: 'riepilogo', label: 'Riepilogo' },
       { id: 'amici',     label: 'Amici' },
       { id: 'club',      label: 'Club' },
-      { id: 'dati',      label: 'I miei dati' },
     ]
   }
 

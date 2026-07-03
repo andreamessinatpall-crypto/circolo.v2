@@ -219,9 +219,12 @@ function FormNuovoPremio() {
             onChange={(e) => setStock(e.target.value)}
           />
         </label>
-        <button type="submit" className="btn !mt-0" disabled={crea.isPending}>
-          Aggiungi
-        </button>
+        <div className="block">
+          <span className="etichetta !mb-1 invisible select-none" aria-hidden="true">_</span>
+          <button type="submit" className="btn !mt-0" disabled={crea.isPending}>
+            Aggiungi
+          </button>
+        </div>
       </div>
       {msg && <p className={`mt-2 ${msg.tipo === 'ok' ? classiOk : classiErrore}`}>{msg.testo}</p>}
     </form>
@@ -303,41 +306,51 @@ function CardPremio({ premio }: { premio: Premio }) {
         </label>
         <button
           type="button"
-          className="btn btn-secondario btn-mini !mt-0"
+          title="Salva"
+          className="btn-icona-premio text-verde-700 hover:bg-verde-50 disabled:opacity-40 disabled:cursor-not-allowed"
           disabled={salva.isPending}
-          onClick={() => {
-            setMsg(null)
-            salva.mutate()
-          }}
+          onClick={() => { setMsg(null); salva.mutate() }}
         >
-          Salva
+          <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
+            <polyline points="17 21 17 13 7 13 7 21"/>
+            <polyline points="7 3 7 8 15 8"/>
+          </svg>
         </button>
         <button
           type="button"
-          className="btn btn-secondario btn-mini !mt-0"
+          title={premio.nascosto ? 'Mostra' : 'Nascondi'}
+          className="btn-icona-premio text-ink-2 hover:bg-black/5 disabled:opacity-40 disabled:cursor-not-allowed"
           disabled={nascondi.isPending}
-          onClick={() => {
-            setMsg(null)
-            nascondi.mutate()
-          }}
+          onClick={() => { setMsg(null); nascondi.mutate() }}
         >
-          {premio.nascosto ? 'Mostra' : 'Nascondi'}
+          {premio.nascosto ? (
+            <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+          ) : (
+            <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/>
+              <line x1="1" y1="1" x2="23" y2="23"/>
+            </svg>
+          )}
         </button>
         <button
           type="button"
-          className="btn btn-pericolo btn-mini !mt-0"
+          title="Elimina"
+          className="btn-icona-premio text-terra hover:bg-terra/10 disabled:opacity-40 disabled:cursor-not-allowed"
           disabled={elimina.isPending}
           onClick={() => {
             setMsg(null)
-            if (
-              window.confirm(
-                `Eliminare “${premio.nome}” dal catalogo? Le richieste già fatte restano nello storico.`,
-              )
-            )
+            if (window.confirm(`Eliminare "${premio.nome}" dal catalogo? Le richieste gia fatte restano nello storico.`))
               elimina.mutate()
           }}
         >
-          Elimina
+          <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="3 6 5 6 21 6"/>
+            <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/>
+          </svg>
         </button>
       </div>
       {msg && <p className={`m-0 ${msg.tipo === 'ok' ? classiOk : classiErrore}`}>{msg.testo}</p>}

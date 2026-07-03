@@ -7,6 +7,8 @@ import { titleCase } from '@/lib/formato'
 import { useAuth } from '@/auth/useAuth'
 import { LIVELLI_PUNTI_DEFAULT, livelloDaPunti } from './livelliPunti'
 import { TorneiInCorso, TorneiInProgramma } from './TorneiClub'
+import { useAmici, type VoceStaff } from './amici/useAmici'
+import { MedagliaRuolo } from './ruoloBadge'
 
 interface RigaClassifica {
   posizione: number
@@ -52,6 +54,30 @@ function Ico({ d, children }: { d?: string; children?: ReactNode }) {
 const IcoTrofeo = <Ico d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18M4 22h16M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22M18 2H6v7a6 6 0 0 0 12 0V2z" />
 const IcoZap = <Ico><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></Ico>
 const IcoCal = <Ico><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></Ico>
+const IcoScudo = <Ico d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+
+function sportEmoji(sport: string | null): string | null {
+  if (sport === 'padel') return '🎾'
+  if (sport === 'calcio') return '⚽'
+  if (sport === 'entrambi') return '🎾⚽'
+  return null
+}
+
+function CardStaff({ voce }: { voce: VoceStaff }) {
+  const sport = sportEmoji(voce.sport)
+  return (
+    <div className="amici-card">
+      <MedagliaRuolo ruolo={voce.ruolo} size={40} />
+      <div className="amici-card-info">
+        <div className="amici-card-nome">
+          {voce.etichetta}
+          {sport && <span className="amici-sport-ico">{sport}</span>}
+        </div>
+        <div className="amici-card-sub capitalize">{voce.ruolo}</div>
+      </div>
+    </div>
+  )
+}
 
 
 function SezClub({
@@ -81,6 +107,7 @@ export default function ClubProfilo() {
   const [espanso, setEspanso] = useState(false)
   const { profilo, ricaricaProfilo } = useAuth()
   const istruttore = !!profilo?.e_allenatore && !profilo?.is_allenatore && !profilo?.is_admin
+  const { staff } = useAmici(profilo?.id ?? '')
   const [mostraNome, setMostraNome] = useState(profilo?.mostra_in_classifica ?? false)
 
   async function handleToggleMostraNome() {
@@ -233,6 +260,17 @@ export default function ClubProfilo() {
           <TorneiInProgramma />
         </div>
       </SezClub>
+
+      {/* ── Staff del club ──────────────────────────────────── */}
+      {staff.length > 0 && (
+        <SezClub icona={IcoScudo} titolo="Staff del club">
+          <div className="flex flex-col gap-2">
+            {staff.map((s) => (
+              <CardStaff key={s.id} voce={s} />
+            ))}
+          </div>
+        </SezClub>
+      )}
 
     </div>
   )

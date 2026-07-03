@@ -2175,8 +2175,24 @@
     display: flex;
     gap: 8px;
     flex-wrap: wrap;
-    align-items: center;
+    align-items: stretch;
     margin-top: 6px;
+  }
+  .btn-icona-premio {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    padding: 0;
+    border-radius: 0.75rem;
+    border: 1px solid rgba(0,0,0,0.1);
+    background: transparent;
+    cursor: pointer;
+    transition: background-color 0.15s;
+  }
+  .btn-icona-premio:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
   }
   .stato-pill {
     font-size: 0.7rem;
@@ -2708,6 +2724,71 @@
     padding: 11px 14px;
     font-size: 0.95rem;
     color: var(--ink2);
+  }
+
+  /* ── Riga icona + campo (scheda dati profilo) ───────────── */
+  .dati-riga {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 8px;
+  }
+  .dati-riga:first-child { margin-top: 0; }
+  .dati-riga-ico {
+    flex-shrink: 0;
+    width: 38px;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.13);
+    color: rgba(255, 255, 255, 0.85);
+  }
+  .dati-riga > input,
+  .dati-riga > select {
+    flex: 1;
+    min-width: 0;
+    width: auto;
+    margin-top: 0 !important;
+  }
+  .dati-riga > .ro {
+    flex: 1;
+    min-width: 0;
+  }
+  .dati-riga > .flex-1 {
+    flex: 1;
+    min-width: 0;
+  }
+  .dati-riga > .flex-1 input,
+  .dati-riga > .flex-1 select {
+    width: 100%;
+    margin-top: 0 !important;
+  }
+
+  /* Coppia di dati-riga affiancate */
+  .dati-coppia {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+    align-items: flex-start;
+  }
+  .dati-coppia .dati-riga {
+    flex: 1;
+    min-width: 0;
+    margin-top: 0;
+  }
+
+  /* ── Scheda dati: colore pieno ──────────────────────────── */
+  .form-campo {
+    background: var(--v700);
+    border-color: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 28px rgba(0, 0, 0, 0.3);
+  }
+  .form-campo .ro {
+    background: rgba(0, 0, 0, 0.2);
+    border-color: rgba(255, 255, 255, 0.18);
+    color: rgba(255, 255, 255, 0.85);
   }
 
   /* Riepilogo: hero "wow" con livello a punti */

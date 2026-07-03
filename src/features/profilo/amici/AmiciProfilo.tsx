@@ -4,10 +4,10 @@ import { useAuth } from '@/auth/useAuth'
 import { mancaTabella, eDuplicato, messaggioErrore } from '@/lib/errori'
 import { titleCase } from '@/lib/formato'
 import { classiInput } from '@/components/stili'
-import { RuoloAvatar, MedagliaRuolo } from '@/features/profilo/ruoloBadge'
+import { RuoloAvatar } from '@/features/profilo/ruoloBadge'
 import { LIVELLI_PUNTI_DEFAULT, livelloDaPunti } from '@/features/profilo/livelliPunti'
 import { MedagliaLv } from '@/features/profilo/MedagliaLv'
-import { useAmici, type Amicizia, type VoceAmico, type VoceStaff } from './useAmici'
+import { useAmici, type Amicizia, type VoceAmico } from './useAmici'
 
 function sportEmoji(sport: string | null): string | null {
   if (sport === 'padel') return '🎾'
@@ -36,22 +36,6 @@ function IcoBidone() {
       <path d="M10 11v6M14 11v6" />
       <path d="M9 6V4h6v2" />
     </svg>
-  )
-}
-
-function CardStaff({ voce }: { voce: VoceStaff }) {
-  const sport = sportEmoji(voce.sport)
-  return (
-    <div className="amici-card">
-      <MedagliaRuolo ruolo={voce.ruolo} size={40} />
-      <div className="amici-card-info">
-        <div className="amici-card-nome">
-          {voce.etichetta}
-          {sport && <span className="amici-sport-ico">{sport}</span>}
-        </div>
-        <div className="amici-card-sub capitalize">{voce.ruolo}</div>
-      </div>
-    </div>
   )
 }
 
@@ -125,7 +109,6 @@ function Ico({ children, d }: { children?: React.ReactNode; d?: string }) {
   )
 }
 
-const IcoScudo = <Ico d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
 const IcoMedagliaA = <Ico><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11" strokeLinecap="round"/></Ico>
 const IcoAmici = <Ico><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></Ico>
 const IcoInbox = <Ico><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></Ico>
@@ -420,17 +403,6 @@ export default function AmiciProfilo() {
         </section>
       )}
 
-      {/* ── Staff del club ─────────────────────────────────── */}
-      {amici.staff.length > 0 && (
-        <section>
-          <Eyebrow icona={IcoScudo}>Staff del club</Eyebrow>
-          <div className="flex flex-col gap-2">
-            {amici.staff.map((s) => (
-              <CardStaff key={s.id} voce={s} />
-            ))}
-          </div>
-        </section>
-      )}
     </div>
   )
 }
