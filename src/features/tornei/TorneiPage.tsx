@@ -39,7 +39,6 @@ import { SportIcona } from '@/components/IconeSport'
 // Terna di punti tutta a zero (default dei form).
 const puntiZero = (): PuntiSet => ({ iscrizione: 0, vittoria: 0, torneo: 0 })
 
-const iconaSport = (s: string) => (s === 'calcio' ? '⚽' : '🎾')
 
 function I({ d, children }: { d?: string; children?: import('react').ReactNode }) {
   return (
@@ -91,8 +90,8 @@ export default function TorneiPage() {
   const conclusi = visibili.filter((t) => t.stato === 'concluso')
 
   // Voci nav: tornei attivi + tab fissa "Conclusi" + "Nuovo" per gestori.
-  const voci = attivi.map((t) => ({ id: String(t.id), label: iconaSport(t.sport) + ' ' + t.nome }))
-  if (gestore) voci.push({ id: 'nuovo', label: '＋ Nuovo torneo' })
+  const voci = attivi.map((t) => ({ id: String(t.id), nome: t.nome, sport: t.sport }))
+  if (gestore) voci.push({ id: 'nuovo', nome: '＋ Nuovo torneo', sport: '' })
 
   // selCorrente: id valido tra i navigabili, oppure fallback
   const selCorrente = sel && (sel === '__conclusi__' || sel === 'nuovo' || voci.some((v) => v.id === sel))
@@ -119,7 +118,7 @@ export default function TorneiPage() {
             className={'subtab-btn' + (v.id === selCorrente ? ' attivo' : '')}
             onClick={() => setSel(v.id)}
           >
-            {v.label}
+            {v.sport && <SportIcona sport={v.sport} />}{v.nome}
           </button>
         ))}
         {/* Tab fissa Conclusi — sempre visibile se ci sono conclusi o se è admin */}
