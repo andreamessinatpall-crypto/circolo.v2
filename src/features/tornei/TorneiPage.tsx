@@ -289,8 +289,21 @@ function NuovoTorneo({ onCreato }: { onCreato: (id: number | string) => void }) 
   const numeroGironiRaw = useWatch({ control, name: 'numero_gironi' })
   const numeroGironi = (isEliminazione || isAmericano) ? 1 : Math.min(12, Math.max(1, Number(numeroGironiRaw) || 1))
 
+  const orarioNonValido = isAmericano && !!amOraFine && !!amOraInizio && amOraFine <= amOraInizio
+  const slotOccupato    = isAmericano && !!(slotDisponibile.data && slotDisponibile.data.length > 0)
+
   async function onSubmit(v: FormTorneoOut) {
     setMsg(null)
+    if (v.formato === 'americano') {
+      if (orarioNonValido) {
+        setMsg({ tipo: 'errore', testo: "L'orario di fine non può essere uguale o precedente all'orario di inizio." })
+        return
+      }
+      if (slotOccupato) {
+        setMsg({ tipo: 'errore', testo: 'Uno o più campi selezionati non sono disponibili in questo orario. Scegli un orario libero.' })
+        return
+      }
+    }
     const puntiGironi = costruisciPuntiGironi(v.numero_gironi, gironi)
     const puntiBaseVal = v.numero_gironi > 1 ? (gironi[0] ?? puntiZero()) : base
 
@@ -674,6 +687,12 @@ function NuovoTorneo({ onCreato }: { onCreato: (id: number | string) => void }) 
               </div>
             </div>
 
+            {orarioNonValido && (
+              <p className="sub mt-2" style={{ color: 'var(--errore)', fontSize: '0.82rem' }}>
+                ⚠️ L'orario di fine non può essere uguale o precedente all'orario di inizio.
+              </p>
+            )}
+
             {amCampiIds.length > 0 && amData && amOraInizio && amOraFine && amOraFine > amOraInizio && (
               <div className="mt-2">
                 {slotDisponibile.isFetching ? (
@@ -756,10 +775,7 @@ function NuovoTorneo({ onCreato }: { onCreato: (id: number | string) => void }) 
           type="submit"
           className="btn btn-riflesso btn-block"
           style={{ marginTop: 24 }}
-          disabled={
-            isSubmitting ||
-            (isAmericano && !!(slotDisponibile.data && slotDisponibile.data.length > 0))
-          }
+          disabled={isSubmitting || orarioNonValido || slotOccupato}
         >
           {isSubmitting ? 'Creazione in corso…' : 'Crea torneo'}
         </button>
