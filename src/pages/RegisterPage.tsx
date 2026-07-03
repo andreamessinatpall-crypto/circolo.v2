@@ -179,7 +179,7 @@ export default function RegisterPage() {
           <Campo>
             <label>Sport preferito <Obbligatorio /></label>
             <select className={classiInput} {...register('sport_preferito')}>
-              <option value="entrambi">Entrambi</option>
+              <option value="entrambi">Tutti</option>
               <option value="padel">Padel</option>
               <option value="calcio">Calcio</option>
             </select>
