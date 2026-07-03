@@ -100,6 +100,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Legge la sessione corrente e decide in quale dei quattro stati siamo.
   const caricaProfilo = useCallback(async () => {
+    // Rimuove i parametri OAuth dall'URL dopo il redirect da Google/Apple (es. ?code=...)
+    if (window.location.search.includes('code=')) {
+      window.history.replaceState(null, '', window.location.pathname)
+    }
+
     const {
       data: { session },
     } = await supabase.auth.getSession()
