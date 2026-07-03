@@ -183,63 +183,61 @@ export default function GrigliaPrenotazioni({ sport }: { sport: Sport }) {
   })
 
   const WINDOW = 7
-  const haNav = giorni.length > WINDOW
   const visibili = giorni.slice(offset, offset + WINDOW)
   const puoSx = offset > 0
   const puoDx = offset + WINDOW < giorni.length
 
-  function navSx() {
-    setOffset((o) => Math.max(0, o - WINDOW))
-  }
-  function navDx() {
-    setOffset((o) => Math.min(giorni.length - WINDOW, o + WINDOW))
-  }
+  function navSx() { setOffset((o) => Math.max(0, o - WINDOW)) }
+  function navDx() { setOffset((o) => Math.min(giorni.length - WINDOW, o + WINDOW)) }
+  function tornaOggi() { setOffset(0); setGiorno(ymd(new Date())) }
+
+  const primoVis = new Date(visibili[0].chiave + 'T12:00:00')
+  const ultimoVis = new Date(visibili[visibili.length - 1].chiave + 'T12:00:00')
+  const meseLabel =
+    primoVis.getMonth() === ultimoVis.getMonth()
+      ? primoVis.toLocaleDateString('it-IT', { month: 'long', year: 'numeric' })
+      : `${primoVis.toLocaleDateString('it-IT', { month: 'short' })} – ${ultimoVis.toLocaleDateString('it-IT', { month: 'short', year: 'numeric' })}`
 
   return (
     <div>
-      <div className={haNav ? 'giorni-nav' : ''}>
-        {haNav && (
-          <button
-            type="button"
-            className="giorni-freccia"
-            onClick={navSx}
-            disabled={!puoSx}
-            aria-label="Giorni precedenti"
-          >
-            ‹
-          </button>
-        )}
-        <div
-          className="giorni"
-          style={{ gridTemplateColumns: `repeat(${haNav ? WINDOW : visibili.length}, 1fr)` }}
-        >
+      <div className="cal-sett">
+        <div className="cal-sett-head">
+          <div className="cal-sett-mese">{meseLabel}</div>
+          <div className="cal-sett-nav">
+            <button
+              type="button"
+              className="btn btn-secondario btn-mini !mt-0"
+              onClick={navSx}
+              disabled={!puoSx}
+              aria-label="Settimana precedente"
+            >‹</button>
+            <button
+              type="button"
+              className="btn btn-secondario btn-mini !mt-0"
+              onClick={tornaOggi}
+            >Oggi</button>
+            <button
+              type="button"
+              className="btn btn-secondario btn-mini !mt-0"
+              onClick={navDx}
+              disabled={!puoDx}
+              aria-label="Settimana successiva"
+            >›</button>
+          </div>
+        </div>
+        <div className="cal-sett-griglia">
           {visibili.map((g) => (
             <button
               key={g.chiave}
               type="button"
-              className={
-                'giorno-btn' +
-                (g.chiave === giorno ? ' attivo' : '') +
-                (g.isOggi ? ' oggi' : '')
-              }
+              className={'cal-giorno' + (g.isOggi ? ' oggi' : '') + (g.chiave === giorno ? ' sel' : '')}
               onClick={() => setGiorno(g.chiave)}
             >
-              <span className="giorno-btn-dow">{g.dow}</span>
-              <span className="giorno-btn-num">{g.num}</span>
+              <span className="cal-giorno-dow">{g.dow}</span>
+              <span className="cal-giorno-num">{g.num}</span>
             </button>
           ))}
         </div>
-        {haNav && (
-          <button
-            type="button"
-            className="giorni-freccia"
-            onClick={navDx}
-            disabled={!puoDx}
-            aria-label="Giorni successivi"
-          >
-            ›
-          </button>
-        )}
       </div>
 
       {prenQuery.error && (
