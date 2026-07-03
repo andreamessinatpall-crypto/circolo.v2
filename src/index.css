@@ -1258,17 +1258,17 @@
     background-image:
       repeating-linear-gradient(
         45deg,
-        rgba(255, 255, 255, 0.14) 0px,  rgba(255, 255, 255, 0.14) 0.75px,
-        transparent                      0.75px, transparent         3px,
-        rgba(255, 255, 255, 0.05) 3px,  rgba(255, 255, 255, 0.05) 3.75px,
-        transparent                      3.75px, transparent         6px
+        rgba(255, 255, 255, 0.07) 0px,  rgba(255, 255, 255, 0.07) 0.5px,
+        transparent                      0.5px,  transparent         3px,
+        rgba(255, 255, 255, 0.02) 3px,  rgba(255, 255, 255, 0.02) 3.5px,
+        transparent                      3.5px,  transparent         6px
       ),
       repeating-linear-gradient(
         -45deg,
-        rgba(255, 255, 255, 0.09) 0px,  rgba(255, 255, 255, 0.09) 0.75px,
-        transparent                      0.75px, transparent         3px,
-        rgba(255, 255, 255, 0.03) 3px,  rgba(255, 255, 255, 0.03) 3.75px,
-        transparent                      3.75px, transparent         6px
+        rgba(255, 255, 255, 0.045) 0px, rgba(255, 255, 255, 0.045) 0.5px,
+        transparent                      0.5px,  transparent         3px,
+        rgba(255, 255, 255, 0.012) 3px, rgba(255, 255, 255, 0.012) 3.5px,
+        transparent                      3.5px,  transparent         6px
       );
     pointer-events: none;
   }
