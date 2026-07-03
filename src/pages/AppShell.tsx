@@ -150,7 +150,7 @@ export default function AppShell() {
       </div>
 
       {/* Contenuto */}
-      <main className="mx-auto w-full max-w-[900px] px-5 pb-10 pt-4">
+      <main className="mx-auto w-full max-w-[900px] flex-1 px-5 pb-10 pt-4">
         <Outlet />
       </main>
 
