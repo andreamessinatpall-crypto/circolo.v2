@@ -164,7 +164,7 @@ export default function GestioneGiocatoriAmericano({
                   type="button"
                   className="border-0 bg-transparent px-1 text-xl font-bold leading-none text-red-700"
                   title="Rimuovi dal torneo"
-                  onClick={() => setDaRimuovere({ id: g.id, nome: g.nome })}
+                  onClick={() => setDaRimuovere({ id: String(g.id), nome: g.nome })}
                 >
                   ×
                 </button>

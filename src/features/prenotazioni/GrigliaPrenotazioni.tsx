@@ -146,7 +146,7 @@ export default function GrigliaPrenotazioni({ sport }: { sport: Sport }) {
     const domanda = diChi
       ? `Annullare la prenotazione di ${diChi} su ${campo.nome} (${quando})?`
       : `Annullare la tua prenotazione su ${campo.nome} (${quando})?`
-    setAnnullaPending({ id: p.id, domanda })
+    setAnnullaPending({ id: String(p.id), domanda })
   }
 
   // Chi sceglie tra prenotazione "partita" e "allenamento": admin, collaboratore
@@ -317,6 +317,17 @@ export default function GrigliaPrenotazioni({ sport }: { sport: Sport }) {
           </div>
         </div>
       )}
+
+      {annullaPending && (
+        <ModalConferma
+          titolo="Annullare la prenotazione?"
+          messaggio={annullaPending.domanda}
+          labelConferma="Annulla prenotazione"
+          pericolo
+          onConferma={() => { annulla.mutate(annullaPending.id); setAnnullaPending(null) }}
+          onAnnulla={() => setAnnullaPending(null)}
+        />
+      )}
     </div>
   )
 }
@@ -437,17 +448,6 @@ function CampoGriglia({
             )
           })}
         </div>
-      )}
-
-      {annullaPending && (
-        <ModalConferma
-          titolo="Annullare la prenotazione?"
-          messaggio={annullaPending.domanda}
-          labelConferma="Annulla prenotazione"
-          pericolo
-          onConferma={() => { annulla.mutate(annullaPending.id); setAnnullaPending(null) }}
-          onAnnulla={() => setAnnullaPending(null)}
-        />
       )}
     </div>
   )
