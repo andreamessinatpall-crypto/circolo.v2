@@ -131,9 +131,9 @@ export default function GestioneGiocatori() {
       <div className="eyebrow">Giocatori e punti</div>
 
       <div className="gioc-stats-strip">
-        <StatItem num={nAttivi + nInAttesa} label="Iscritti" />
-        <StatItem num={nAttivi} label="Attivi" />
-        {nInCampo !== null && <StatItem num={nInCampo} label="In campo" />}
+        <StatItem num={tutti.length} label="Iscritti" />
+        <StatItem num={nAttivi + nInAttesa} label="Attivi" />
+        {nInCampo !== null && <StatItem num={nInCampo} label="Ultimi 30gg" />}
         {nInAttesa > 0 && <StatItem num={nInAttesa} label="In attesa" colore="#92400e" />}
         {(nSospesi + nCancellati) > 0 && <StatItem num={nSospesi + nCancellati} label="Inattivi" colore="var(--ink3)" />}
         {nDaEliminare > 0 && <StatItem num={nDaEliminare} label="Richieste" colore="#b91c1c" />}
