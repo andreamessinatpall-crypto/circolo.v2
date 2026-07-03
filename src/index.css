@@ -1056,18 +1056,26 @@
 
   /* ── Header + Subnav: barra unica con trama ─────────────── */
 
-  /* Sfondo condiviso: gradiente scuro + trama a trattini diagonali
-     + alone ottone in alto a sinistra. Applicato a entrambi gli
-     elementi perché occupano lo stesso "strato visivo". */
+  /* Sfondo condiviso: gradiente scuro + trama a maglie di carbonio
+     (rombi geometrici intrecciati) + alone ottone. */
   .app-header,
   .app-subnav {
     background:
       radial-gradient(ellipse 90% 260% at 0% 36%, rgba(200, 151, 46, 0.14) 0%, transparent 52%),
       radial-gradient(ellipse 55% 180% at 100% 80%, rgba(46, 139, 80, 0.06) 0%, transparent 55%),
       repeating-linear-gradient(
-        -52deg,
-        transparent 0px, transparent 11px,
-        rgba(255, 255, 255, 0.018) 11px, rgba(255, 255, 255, 0.018) 12px
+        45deg,
+        rgba(255, 255, 255, 0.14) 0px,  rgba(255, 255, 255, 0.14) 0.75px,
+        transparent                      0.75px, transparent         3px,
+        rgba(255, 255, 255, 0.05) 3px,  rgba(255, 255, 255, 0.05) 3.75px,
+        transparent                      3.75px, transparent         6px
+      ),
+      repeating-linear-gradient(
+        -45deg,
+        rgba(255, 255, 255, 0.09) 0px,  rgba(255, 255, 255, 0.09) 0.75px,
+        transparent                      0.75px, transparent         3px,
+        rgba(255, 255, 255, 0.03) 3px,  rgba(255, 255, 255, 0.03) 3.75px,
+        transparent                      3.75px, transparent         6px
       ),
       linear-gradient(172deg, #10441e 0%, #0b2f16 42%, #071b0d 100%);
     color: #fff;
