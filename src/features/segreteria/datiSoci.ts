@@ -87,6 +87,46 @@ export async function fetchStoricoSocio(socioId: string): Promise<EsitoStorico> 
   return { ok: true, righe: (data ?? []) as Record<string, unknown>[] }
 }
 
+export interface AttivitaSocio {
+  ultima: string | null
+  prossima: string | null
+}
+
+export function useAttivitaSoci() {
+  return useQuery({
+    queryKey: ['attivita_soci'],
+    queryFn: async (): Promise<Map<string, AttivitaSocio>> => {
+      const ora = new Date()
+      const unAnnoFa = new Date(ora)
+      unAnnoFa.setFullYear(unAnnoFa.getFullYear() - 1)
+      const treSettimane = new Date(ora)
+      treSettimane.setDate(treSettimane.getDate() + 21)
+
+      const { data, error } = await supabase
+        .from('prenotazioni')
+        .select('socio_id, inizio, fine')
+        .gte('inizio', unAnnoFa.toISOString())
+        .lte('inizio', treSettimane.toISOString())
+        .not('socio_id', 'is', null)
+      if (error) throw error
+
+      const oraStr = ora.toISOString()
+      const map = new Map<string, AttivitaSocio>()
+      for (const p of (data ?? []) as { socio_id: string; inizio: string; fine: string }[]) {
+        if (!p.socio_id) continue
+        const e = map.get(p.socio_id) ?? { ultima: null, prossima: null }
+        if (p.fine < oraStr) {
+          if (!e.ultima || p.fine > e.ultima) e.ultima = p.fine
+        } else if (p.inizio > oraStr) {
+          if (!e.prossima || p.inizio < e.prossima) e.prossima = p.inizio
+        }
+        map.set(p.socio_id, e)
+      }
+      return map
+    },
+  })
+}
+
 // Anonimizza i dati personali di un socio che ha richiesto la cancellazione
 // (GDPR Art. 17). Dopo questa operazione l'admin deve eliminare l'utente
 // da Supabase Dashboard → Authentication → Users.

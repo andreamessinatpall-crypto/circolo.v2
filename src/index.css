@@ -4901,11 +4901,18 @@
   }
   .gioc-adm-sep { color: var(--ink3); font-weight: 400; }
   .gioc-adm-row3 {
+    display: flex;
+    align-items: center;
+    gap: 5px;
     font-size: 0.72rem;
     color: var(--ink3);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+  }
+  .gioc-att-dot {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
   }
   .gioc-adm-chevron {
     flex-shrink: 0;

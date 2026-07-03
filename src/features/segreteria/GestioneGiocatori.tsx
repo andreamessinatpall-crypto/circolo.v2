@@ -6,7 +6,7 @@ import { useModalitaPremi } from '@/features/premi/datiPremi'
 import { LIVELLI_PUNTI_DEFAULT, livelloDaPunti } from '@/features/profilo/livelliPunti'
 import { MedagliaLv } from '@/features/profilo/MedagliaLv'
 import { MedagliaRuolo } from '@/features/profilo/ruoloBadge'
-import { useSoci, type SocioAdmin } from './datiSoci'
+import { useSoci, useAttivitaSoci, type SocioAdmin, type AttivitaSocio } from './datiSoci'
 import DettaglioGiocatore from './DettaglioGiocatore'
 import { SportIcona } from '@/components/IconeSport'
 
@@ -39,9 +39,33 @@ function SezHeader({ children }: { children: React.ReactNode }) {
   )
 }
 
+function coloreAttivita(ultima: string | null): string {
+  if (!ultima) return '#94a3b8'
+  const giorni = Math.floor((Date.now() - new Date(ultima).getTime()) / 86_400_000)
+  if (giorni <= 7)  return '#16a34a'
+  if (giorni <= 14) return '#d97706'
+  if (giorni <= 30) return '#ea580c'
+  return '#94a3b8'
+}
+
+function tooltipAttivita(ultima: string | null): string {
+  if (!ultima) return 'Mai attivo'
+  const giorni = Math.floor((Date.now() - new Date(ultima).getTime()) / 86_400_000)
+  if (giorni <= 7)  return 'Attivo negli ultimi 7 giorni'
+  if (giorni <= 14) return 'Attivo negli ultimi 14 giorni'
+  if (giorni <= 30) return 'Attivo nell\'ultimo mese'
+  return 'Inattivo da più di un mese'
+}
+
+function fmtData(iso: string | null): string {
+  if (!iso) return '—'
+  return new Intl.DateTimeFormat('it-IT', { day: 'numeric', month: 'short' }).format(new Date(iso))
+}
+
 export default function GestioneGiocatori() {
   const { profilo } = useAuth()
   const { data: soci, isLoading, error } = useSoci()
+  const { data: attivita } = useAttivitaSoci()
   const { data: modalitaPremi } = useModalitaPremi()
   const [cerca, setCerca] = useState('')
   const [ordine, setOrdine] = useState<Ordine>('punti')
@@ -158,6 +182,7 @@ export default function GestioneGiocatori() {
                 key={s.id}
                 socio={s}
                 modalitaPremi={!!modalitaPremi}
+                attivita={attivita?.get(s.id) ?? null}
                 onApri={() => setSelezionatoId(s.id)}
               />
             ))}
@@ -198,6 +223,7 @@ export default function GestioneGiocatori() {
                 key={s.id}
                 socio={s}
                 modalitaPremi={!!modalitaPremi}
+                attivita={attivita?.get(s.id) ?? null}
                 onApri={() => setSelezionatoId(s.id)}
               />
             ))}
@@ -270,17 +296,18 @@ export default function GestioneGiocatori() {
 function RigaSocio({
   socio,
   modalitaPremi,
+  attivita,
   onApri,
 }: {
   socio: SocioAdmin
   modalitaPremi: boolean
+  attivita: AttivitaSocio | null
   onApri: () => void
 }) {
   const cancellato = isCancellato(socio)
   const lv = livelloDaPunti(socio.punti ?? 0, LIVELLI_PUNTI_DEFAULT)
   const cfg = LIVELLI_PUNTI_DEFAULT[lv - 1]
   const hasSport = !cancellato && !!socio.sport_preferito
-  const isBloccato = !!(socio.punti_bloccati || socio.crediti_bloccati)
   const haCancellazione = !!socio.richiesta_cancellazione
 
   const ruoloNome = socio.is_admin
@@ -325,9 +352,6 @@ function RigaSocio({
           {!cancellato && !socio.attivo && (
             <span className="gioc-att-badge">In attesa</span>
           )}
-          {!cancellato && isBloccato && (
-            <span className="gioc-bloccato-badge">Bloccato</span>
-          )}
           {cancellato && (
             <span className="pill bg-ink-1/10 text-ink-3">Cancellato</span>
           )}
@@ -336,9 +360,13 @@ function RigaSocio({
         {!cancellato && (
           <div className="gioc-adm-row2">
             <span style={{ color: ruoloColore ?? cfg.colore }}>{ruoloNome ?? cfg.nome}</span>
-            <span className="gioc-adm-sep">·</span>
-            <span>{socio.punti ?? 0} pt</span>
-            {modalitaPremi && (
+            {!socio.punti_bloccati && (
+              <>
+                <span className="gioc-adm-sep">·</span>
+                <span>{socio.punti ?? 0} pt</span>
+              </>
+            )}
+            {modalitaPremi && !socio.crediti_bloccati && (
               <>
                 <span className="gioc-adm-sep">·</span>
                 <span>{socio.crediti ?? 0} cr</span>
@@ -353,9 +381,20 @@ function RigaSocio({
           </div>
         )}
 
-        {!cancellato && (socio.email || socio.telefono) && (
+        {!cancellato && (
           <div className="gioc-adm-row3">
-            {[socio.email, socio.telefono].filter(Boolean).join(' · ')}
+            <span
+              className="gioc-att-dot"
+              style={{ background: coloreAttivita(attivita?.ultima ?? null) }}
+              title={tooltipAttivita(attivita?.ultima ?? null)}
+            />
+            <span>Ultima: {fmtData(attivita?.ultima ?? null)}</span>
+            {attivita?.prossima && (
+              <>
+                <span className="gioc-adm-sep">·</span>
+                <span>Prossima: {fmtData(attivita.prossima)}</span>
+              </>
+            )}
           </div>
         )}
 
