@@ -135,8 +135,7 @@ export default function GestioneGiocatori() {
         <StatItem num={nAttivi + nInAttesa} label="Attivi" />
         {nInCampo !== null && <StatItem num={nInCampo} label="Ultimi 30gg" />}
         {nInAttesa > 0 && <StatItem num={nInAttesa} label="In attesa" colore="#92400e" />}
-        {(nSospesi + nCancellati) > 0 && <StatItem num={nSospesi + nCancellati} label="Inattivi" colore="var(--ink3)" />}
-        {nDaEliminare > 0 && <StatItem num={nDaEliminare} label="Richieste" colore="#b91c1c" />}
+{nDaEliminare > 0 && <StatItem num={nDaEliminare} label="Richieste" colore="#b91c1c" />}
         <StatItem num={nPadel}  label={<><IconaPadel size={12} /> Padel</>} />
         <StatItem num={nCalcio} label={<><IconaCalcio size={12} /> Calcio</>} />
       </div>
