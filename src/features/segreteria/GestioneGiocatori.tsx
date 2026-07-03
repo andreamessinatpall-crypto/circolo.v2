@@ -75,6 +75,7 @@ export default function GestioneGiocatori() {
   const [ordine, setOrdine] = useState<Ordine>('punti')
   const [selezionatoId, setSelezionatoId] = useState<string | null>(null)
   const [espandiCancellati, setEspandiCancellati] = useState(false)
+  const [espandiSospesi, setEspandiSospesi] = useState(false)
 
   if (isLoading) return <p className="text-ink-2">Caricamento giocatori…</p>
   if (error) return <p className="msg-errore">Impossibile caricare i giocatori: {error.message}</p>
@@ -204,32 +205,6 @@ export default function GestioneGiocatori() {
         </div>
       )}
 
-      {/* ── Giocatori sospesi ──────────────────────────── */}
-      {gruppoSospesi.length > 0 && (
-        <div className="card" style={{ marginBottom: '0.75rem', borderColor: 'rgba(234,88,12,0.3)', background: 'rgba(234,88,12,0.03)' }}>
-          <SezHeader>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#c2410c" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
-            </svg>
-            <span style={{ color: '#c2410c' }}>Giocatori sospesi</span>
-            <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0, color: '#c2410c' }}>
-              ({gruppoSospesi.length})
-            </span>
-          </SezHeader>
-          <div className="flex flex-col gap-1.5">
-            {gruppoSospesi.map((s) => (
-              <RigaSocio
-                key={s.id}
-                socio={s}
-                modalitaPremi={!!modalitaPremi}
-                attivita={attivita?.get(s.id) ?? null}
-                onApri={() => setSelezionatoId(s.id)}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* ── Giocatori attivi ───────────────────────────── */}
       <div className="card">
         {!q && gruppoAttivi.length > 0 && (
@@ -241,10 +216,10 @@ export default function GestioneGiocatori() {
           </SezHeader>
         )}
 
-        {gruppoAttivi.length === 0 && gruppoInAttesa.length === 0 && gruppoSospesi.length === 0 && !q && (
+        {gruppoAttivi.length === 0 && gruppoInAttesa.length === 0 && !q && (
           <p className="text-ink-2">Nessun giocatore.</p>
         )}
-        {gruppoAttivi.length === 0 && q && gruppoInAttesa.length === 0 && gruppoSospesi.length === 0 && gruppoCancellati.length === 0 && (
+        {gruppoAttivi.length === 0 && q && gruppoInAttesa.length === 0 && gruppoCancellati.length === 0 && gruppoSospesi.length === 0 && (
           <p className="text-ink-2">Nessun giocatore corrisponde alla ricerca.</p>
         )}
 
@@ -307,6 +282,52 @@ export default function GestioneGiocatori() {
                     />
                   ))
                 )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── Sezione giocatori sospesi (collassabile) ── */}
+        {gruppoSospesi.length > 0 && (
+          <div style={{ marginTop: (gruppoAttivi.length > 0 || nCancellati > 0) ? '1.25rem' : 0 }}>
+            <button
+              type="button"
+              onClick={() => setEspandiSospesi(!espandiSospesi)}
+              style={{
+                width: '100%', display: 'flex', alignItems: 'center', gap: '0.5rem',
+                padding: '0.5rem 0',
+                borderTop: '1px solid var(--border)',
+                background: 'none', border: 'none',
+                borderTopColor: 'var(--border)',
+                borderTopWidth: 1,
+                borderTopStyle: 'solid',
+                cursor: 'pointer',
+                textAlign: 'left',
+                color: 'var(--ink-3)',
+                fontSize: '0.8rem', fontWeight: 600,
+                letterSpacing: '0.05em', textTransform: 'uppercase',
+              }}
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
+              </svg>
+              Giocatori sospesi ({gruppoSospesi.length})
+              <span style={{ marginLeft: 'auto', fontSize: '0.75rem' }}>
+                {espandiSospesi ? '▲ Nascondi' : '▼ Mostra'}
+              </span>
+            </button>
+
+            {espandiSospesi && (
+              <div className="flex flex-col gap-1.5 mt-2">
+                {gruppoSospesi.map((s) => (
+                  <RigaSocio
+                    key={s.id}
+                    socio={s}
+                    modalitaPremi={!!modalitaPremi}
+                    attivita={attivita?.get(s.id) ?? null}
+                    onApri={() => setSelezionatoId(s.id)}
+                  />
+                ))}
               </div>
             )}
           </div>
