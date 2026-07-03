@@ -157,6 +157,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return
     }
 
+    if (socio.sospeso) {
+      setProfilo(null)
+      setBlocco({
+        titolo: 'Account sospeso',
+        testo:
+          'Il tuo account è stato temporaneamente sospeso. Contatta la segreteria del circolo per maggiori informazioni.',
+      })
+      setStato('bloccato')
+      return
+    }
+
     if (!socio.attivo) {
       setProfilo(null)
       setBlocco({

@@ -82,8 +82,9 @@ export default function GestioneGiocatori() {
   const tutti = soci ?? []
 
   // Stats (su tutti, non filtrati dalla ricerca)
-  const nAttivi      = tutti.filter((s) => s.attivo && !isCancellato(s)).length
+  const nAttivi      = tutti.filter((s) => s.attivo && !s.sospeso && !isCancellato(s)).length
   const nInAttesa    = tutti.filter((s) => !s.attivo && !isCancellato(s)).length
+  const nSospesi     = tutti.filter((s) => !!s.sospeso && !isCancellato(s)).length
   const nBloccati    = tutti.filter((s) => !isCancellato(s) && (s.punti_bloccati || s.crediti_bloccati)).length
   const nDaEliminare = tutti.filter((s) => !!s.richiesta_cancellazione).length
   const nCancellati  = tutti.filter(isCancellato).length
@@ -105,10 +106,11 @@ export default function GestioneGiocatori() {
       ? perCognome
       : (a: SocioAdmin, b: SocioAdmin) => (b.punti ?? 0) - (a.punti ?? 0) || perCognome(a, b)
 
-  // Quattro gruppi separati
+  // Cinque gruppi separati
   const gruppoInAttesa   = tutti.filter((s) => !s.attivo && !isCancellato(s) && match(s)).sort(perCognome)
-  const gruppoStaff      = tutti.filter((s) => s.attivo && !isCancellato(s) && isStaff(s) && match(s)).sort(perCognome)
-  const gruppoAttivi     = tutti.filter((s) => s.attivo && !isCancellato(s) && !isStaff(s) && match(s)).sort(cmp)
+  const gruppoSospesi    = tutti.filter((s) => !!s.sospeso && !isCancellato(s) && match(s)).sort(perCognome)
+  const gruppoStaff      = tutti.filter((s) => s.attivo && !s.sospeso && !isCancellato(s) && isStaff(s) && match(s)).sort(perCognome)
+  const gruppoAttivi     = tutti.filter((s) => s.attivo && !s.sospeso && !isCancellato(s) && !isStaff(s) && match(s)).sort(cmp)
   const gruppoCancellati = tutti.filter((s) => isCancellato(s) && match(s)).sort(perCognome)
 
   // Cancellati: auto-espandi se c'è una ricerca con risultati
@@ -124,6 +126,7 @@ export default function GestioneGiocatori() {
         <StatItem num={nAttivi + nInAttesa} label="Iscritti" />
         <StatItem num={nAttivi} label="Approvati" />
         {nInAttesa > 0 && <StatItem num={nInAttesa} label="In attesa" colore="#92400e" />}
+        {nSospesi > 0 && <StatItem num={nSospesi} label="Sospesi" colore="#c2410c" />}
         {nBloccati > 0 && <StatItem num={nBloccati} label="Bloccati" colore="var(--errore)" />}
         {nDaEliminare > 0 && <StatItem num={nDaEliminare} label="Richieste" colore="#b91c1c" />}
         <StatItem num={nPadel}  label="🎾 Padel" />
@@ -203,20 +206,20 @@ export default function GestioneGiocatori() {
         </div>
       )}
 
-      {/* ── Staff e collaboratori ──────────────────────── */}
-      {gruppoStaff.length > 0 && (
-        <div className="card" style={{ marginBottom: '0.75rem' }}>
+      {/* ── Giocatori sospesi ──────────────────────────── */}
+      {gruppoSospesi.length > 0 && (
+        <div className="card" style={{ marginBottom: '0.75rem', borderColor: 'rgba(234,88,12,0.3)', background: 'rgba(234,88,12,0.03)' }}>
           <SezHeader>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#c2410c" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
             </svg>
-            Staff e collaboratori
-            <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>
-              ({gruppoStaff.length})
+            <span style={{ color: '#c2410c' }}>Giocatori sospesi</span>
+            <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0, color: '#c2410c' }}>
+              ({gruppoSospesi.length})
             </span>
           </SezHeader>
           <div className="flex flex-col gap-1.5">
-            {gruppoStaff.map((s) => (
+            {gruppoSospesi.map((s) => (
               <RigaSocio
                 key={s.id}
                 socio={s}
@@ -240,10 +243,10 @@ export default function GestioneGiocatori() {
           </SezHeader>
         )}
 
-        {gruppoAttivi.length === 0 && gruppoInAttesa.length === 0 && gruppoStaff.length === 0 && !q && (
+        {gruppoAttivi.length === 0 && gruppoInAttesa.length === 0 && gruppoSospesi.length === 0 && !q && (
           <p className="text-ink-2">Nessun giocatore.</p>
         )}
-        {gruppoAttivi.length === 0 && q && gruppoInAttesa.length === 0 && gruppoStaff.length === 0 && gruppoCancellati.length === 0 && (
+        {gruppoAttivi.length === 0 && q && gruppoInAttesa.length === 0 && gruppoSospesi.length === 0 && gruppoCancellati.length === 0 && (
           <p className="text-ink-2">Nessun giocatore corrisponde alla ricerca.</p>
         )}
 
@@ -311,6 +314,32 @@ export default function GestioneGiocatori() {
           </div>
         )}
       </div>
+
+      {/* ── Staff e collaboratori (in fondo) ──────────── */}
+      {gruppoStaff.length > 0 && (
+        <div className="card" style={{ marginTop: '0.75rem' }}>
+          <SezHeader>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+            Staff e collaboratori
+            <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>
+              ({gruppoStaff.length})
+            </span>
+          </SezHeader>
+          <div className="flex flex-col gap-1.5">
+            {gruppoStaff.map((s) => (
+              <RigaSocio
+                key={s.id}
+                socio={s}
+                modalitaPremi={!!modalitaPremi}
+                attivita={attivita?.get(s.id) ?? null}
+                onApri={() => setSelezionatoId(s.id)}
+              />
+            ))}
+          </div>
+        </div>
+      )}
 
       {selezionato && (
         <DettaglioGiocatore
@@ -380,8 +409,11 @@ function RigaSocio({
       <div className="gioc-adm-body">
         <div className="gioc-adm-nome">
           {titleCase(socio.cognome)} {titleCase(socio.nome)}
-          {!cancellato && !socio.attivo && (
+          {!cancellato && !socio.attivo && !socio.sospeso && (
             <span className="gioc-att-badge">In attesa</span>
+          )}
+          {!cancellato && socio.sospeso && (
+            <span className="gioc-att-badge" style={{ background: 'rgba(234,88,12,0.1)', color: '#c2410c', borderColor: 'rgba(234,88,12,0.3)' }}>Sospeso</span>
           )}
           {cancellato && (
             <span className="pill bg-ink-1/10 text-ink-3">Cancellato</span>

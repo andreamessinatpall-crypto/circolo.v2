@@ -15,6 +15,7 @@ export interface SocioAdmin {
   genere: string | null
   sport_preferito: string
   attivo: boolean
+  sospeso: boolean | null
   is_admin: boolean
   is_allenatore: boolean | null
   e_allenatore: boolean | null
@@ -57,6 +58,15 @@ export async function aggiustaSaldo(
     p_tipo: 'aggiustamento',
   })
   if (error) return { ok: false, mancaScript: mancaRpc(error), messaggio: error.message }
+  return { ok: true }
+}
+
+export async function impostaSospensione(
+  socioId: string,
+  valore: boolean,
+): Promise<{ ok: boolean; messaggio?: string }> {
+  const { error } = await supabase.from('soci').update({ sospeso: valore }).eq('id', socioId)
+  if (error) return { ok: false, messaggio: error.message }
   return { ok: true }
 }
 

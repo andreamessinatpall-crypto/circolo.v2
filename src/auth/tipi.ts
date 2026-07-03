@@ -15,6 +15,7 @@ export interface Socio {
   genere: string | null
   sport_preferito: SportPreferito
   attivo: boolean
+  sospeso: boolean | null
   is_admin: boolean
   is_allenatore: boolean | null
   e_allenatore: boolean | null

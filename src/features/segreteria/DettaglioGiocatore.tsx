@@ -5,7 +5,7 @@ import { titleCase, dataEstesa } from '@/lib/formato'
 import { classiErrore, classiOk } from '@/components/stili'
 import { costruisciCsv, scaricaCsv } from '@/lib/csv'
 import ModificaGiocatore from './ModificaGiocatore'
-import { aggiustaSaldo, completaCancellazione, fetchStoricoSocio, impostaBlocco, type SocioAdmin } from './datiSoci'
+import { aggiustaSaldo, completaCancellazione, fetchStoricoSocio, impostaBlocco, impostaSospensione, type SocioAdmin } from './datiSoci'
 
 const COLONNE_NASCOSTE = ['socio_id', 'chiave', 'quando']
 
@@ -40,6 +40,15 @@ export default function DettaglioGiocatore({
     },
     onSuccess: () => { invalida(); onChiudi() },
     onError: (e: Error) => setMsg({ tipo: 'errore', testo: 'Operazione non riuscita: ' + e.message }),
+  })
+
+  const sospendi = useMutation({
+    mutationFn: async (valore: boolean) => {
+      const esito = await impostaSospensione(socio.id, valore)
+      if (!esito.ok) throw new Error(esito.messaggio ?? 'Operazione non riuscita.')
+    },
+    onSuccess: () => { invalida(); onChiudi() },
+    onError: (e: Error) => setMsg({ tipo: 'errore', testo: e.message }),
   })
 
   const blocca = useMutation({
@@ -146,7 +155,12 @@ export default function DettaglioGiocatore({
           {socio.e_allenatore && !socio.is_allenatore && (
             <span className="pill bg-terra/10 text-terra">Istruttore</span>
           )}
-          {!socio.attivo && <span className="pill off">Non attivo</span>}
+          {!socio.attivo && !socio.sospeso && <span className="pill off">In attesa</span>}
+          {socio.sospeso && (
+            <span className="pill" style={{ background: 'rgba(234,88,12,0.1)', color: '#c2410c', border: '1px solid rgba(234,88,12,0.25)' }}>
+              Sospeso
+            </span>
+          )}
           {haCancellazione && (
             <span className="pill bg-red-100 text-red-700 font-semibold">
               Richiesta cancellazione
@@ -212,14 +226,34 @@ export default function DettaglioGiocatore({
           <button type="button" className="btn btn-secondario" onClick={() => setModifica(true)}>
             Modifica dati
           </button>
-          {socio.id !== meId && (
+          {socio.id !== meId && !socio.attivo && !socio.sospeso && (
             <button
               type="button"
-              className={'btn ' + (socio.attivo ? 'btn-pericolo' : '')}
+              className="btn"
               disabled={cambiaStato.isPending}
               onClick={() => cambiaStato.mutate()}
             >
-              {socio.attivo ? 'Disattiva' : 'Attiva'}
+              Attiva
+            </button>
+          )}
+          {socio.id !== meId && socio.attivo && !socio.sospeso && (
+            <button
+              type="button"
+              className="btn btn-pericolo"
+              disabled={sospendi.isPending}
+              onClick={() => sospendi.mutate(true)}
+            >
+              Sospendi
+            </button>
+          )}
+          {socio.id !== meId && socio.sospeso && (
+            <button
+              type="button"
+              className="btn"
+              disabled={sospendi.isPending}
+              onClick={() => sospendi.mutate(false)}
+            >
+              Riattiva
             </button>
           )}
         </div>
