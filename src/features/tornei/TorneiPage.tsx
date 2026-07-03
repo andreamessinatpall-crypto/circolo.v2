@@ -237,8 +237,8 @@ function NuovoTorneo({ onCreato }: { onCreato: (id: number | string) => void }) 
   const [durataMin, setDurataMin] = useState(30)
   const [puntiIscrizioneAm, setPuntiIscrizioneAm] = useState(0)
   const [puntiPosizioniAm, setPuntiPosizioniAm] = useState<Record<string, number>>({})
-  // Slot americano: campo + data + orario inizio/fine.
-  const [amCampoId, setAmCampoId] = useState('')
+  // Slot americano: campi (più di uno) + data + orario inizio/fine.
+  const [amCampiIds, setAmCampiIds] = useState<string[]>([])
   const [amData, setAmData] = useState('')
   const [amOraInizio, setAmOraInizio] = useState('')
   const [amOraFine, setAmOraFine] = useState('')
@@ -249,18 +249,18 @@ function NuovoTorneo({ onCreato }: { onCreato: (id: number | string) => void }) 
   const [terzoPosto, setTerzoPosto] = useState(false)
 
   const slotDisponibile = useQuery({
-    queryKey: ['am-disponibilita', amCampoId, amData, amOraInizio, amOraFine],
-    enabled: !!(amCampoId && amData && amOraInizio && amOraFine && amOraFine > amOraInizio),
+    queryKey: ['am-disponibilita', amCampiIds, amData, amOraInizio, amOraFine],
+    enabled: !!(amCampiIds.length > 0 && amData && amOraInizio && amOraFine && amOraFine > amOraInizio),
     queryFn: async () => {
       const inizio = new Date(`${amData}T${amOraInizio}`).toISOString()
       const fine   = new Date(`${amData}T${amOraFine}`).toISOString()
       const { data } = await supabase
         .from('prenotazioni')
-        .select('id, inizio, fine')
-        .eq('campo_id', Number(amCampoId))
+        .select('id, inizio, fine, campo_id')
+        .in('campo_id', amCampiIds.map(Number))
         .lt('inizio', fine)
         .gt('fine', inizio)
-      return (data ?? []) as Array<{ id: unknown; inizio: string; fine: string }>
+      return (data ?? []) as Array<{ id: unknown; inizio: string; fine: string; campo_id: number }>
     },
   })
 
@@ -322,7 +322,8 @@ function NuovoTorneo({ onCreato }: { onCreato: (id: number | string) => void }) 
     }
     if (puntiGironi) payload.punti_gironi = puntiGironi
     if (v.formato === 'americano') {
-      payload.americano_campo_id = amCampoId ? Number(amCampoId) : null
+      payload.americano_campo_id  = amCampiIds.length ? Number(amCampiIds[0]) : null
+      payload.americano_campi_ids = amCampiIds.length ? amCampiIds.map(Number) : null
       payload.americano_inizio = amData && amOraInizio ? new Date(`${amData}T${amOraInizio}`).toISOString() : null
       payload.americano_fine   = amData && amOraFine   ? new Date(`${amData}T${amOraFine}`).toISOString()   : null
       payload.punti_iscrizione = puntiIscrizioneAm
@@ -349,21 +350,23 @@ function NuovoTorneo({ onCreato }: { onCreato: (id: number | string) => void }) 
       return
     }
 
-    // Crea la prenotazione che blocca lo slot nel calendario.
-    if (v.formato === 'americano' && amCampoId && amData && amOraInizio && amOraFine && data?.id) {
-      await supabase.from('prenotazioni').insert({
-        campo_id: Number(amCampoId),
-        socio_id: profilo!.id,
-        inizio: new Date(`${amData}T${amOraInizio}`).toISOString(),
-        fine:   new Date(`${amData}T${amOraFine}`).toISOString(),
-        torneo_id: data.id,
-      })
+    // Crea una prenotazione per ogni campo che blocca lo slot nel calendario.
+    if (v.formato === 'americano' && amCampiIds.length > 0 && amData && amOraInizio && amOraFine && data?.id) {
+      for (const campoId of amCampiIds) {
+        await supabase.from('prenotazioni').insert({
+          campo_id: Number(campoId),
+          socio_id: profilo!.id,
+          inizio: new Date(`${amData}T${amOraInizio}`).toISOString(),
+          fine:   new Date(`${amData}T${amOraFine}`).toISOString(),
+          torneo_id: data.id,
+        })
+      }
     }
 
     reset()
     setBase(puntiZero())
     setGironi(Array.from({ length: 12 }, puntiZero))
-    setAmCampoId(''); setAmData(''); setAmOraInizio(''); setAmOraFine('')
+    setAmCampiIds([]); setAmData(''); setAmOraInizio(''); setAmOraFine('')
     setPuntiIscrizioneAm(0); setPuntiPosizioniAm({})
     setAndataRitorno(false); setFinaleSecca(false); setTerzoPosto(false)
     // Aspetta che il refetch completi: così il nuovo torneo è già in cache
@@ -586,20 +589,31 @@ function NuovoTorneo({ onCreato }: { onCreato: (id: number | string) => void }) 
         {/* ── Data e orario ─────────────────────────────────────── */}
         {isAmericano ? (
           <>
-            <div className="eyebrow">{ICO_CAL}Campo e orario</div>
-            <span className="param-label" style={{ marginBottom: 4 }}>Campo</span>
-            <select
-              className={classiInput}
-              value={amCampoId}
-              onChange={(e) => setAmCampoId(e.target.value)}
-            >
-              <option value="">— Seleziona campo —</option>
+            <div className="eyebrow">{ICO_CAL}Campi e orario</div>
+            <span className="param-label" style={{ marginBottom: 6 }}>Campi utilizzati</span>
+            <div className="flex flex-col gap-1.5 mt-1">
               {(campiQuery.data ?? [])
                 .filter((c) => c.sport === 'padel' && c.in_servizio !== false)
                 .map((c) => (
-                  <option key={c.id} value={String(c.id)}>{c.nome}</option>
+                  <label key={c.id} className="flex items-center gap-2 cursor-pointer" style={{ fontSize: '0.9rem' }}>
+                    <input
+                      type="checkbox"
+                      checked={amCampiIds.includes(String(c.id))}
+                      onChange={(e) =>
+                        setAmCampiIds((prev) =>
+                          e.target.checked
+                            ? [...prev, String(c.id)]
+                            : prev.filter((id) => id !== String(c.id))
+                        )
+                      }
+                    />
+                    {c.nome}
+                  </label>
                 ))}
-            </select>
+              {(campiQuery.data ?? []).filter((c) => c.sport === 'padel' && c.in_servizio !== false).length === 0 && (
+                <p className="sub" style={{ fontSize: '0.82rem' }}>Nessun campo padel disponibile.</p>
+              )}
+            </div>
 
             <div className="grid grid-cols-3 gap-3 mt-3">
               <div>
@@ -652,17 +666,17 @@ function NuovoTorneo({ onCreato }: { onCreato: (id: number | string) => void }) 
               </div>
             </div>
 
-            {amCampoId && amData && amOraInizio && amOraFine && amOraFine > amOraInizio && (
+            {amCampiIds.length > 0 && amData && amOraInizio && amOraFine && amOraFine > amOraInizio && (
               <div className="mt-2">
                 {slotDisponibile.isFetching ? (
                   <p className="sub" style={{ fontSize: '0.8rem' }}>Verifica disponibilità…</p>
                 ) : slotDisponibile.data && slotDisponibile.data.length > 0 ? (
                   <p className="sub" style={{ color: 'var(--errore)', fontSize: '0.82rem' }}>
-                    ⚠️ Campo già occupato in questo orario ({slotDisponibile.data.length} conflitto/i).
+                    ⚠️ {amCampiIds.length > 1 ? 'Uno o più campi già occupati' : 'Campo già occupato'} in questo orario ({slotDisponibile.data.length} conflitto/i).
                   </p>
                 ) : slotDisponibile.data ? (
                   <p className="sub" style={{ color: '#86efac', fontSize: '0.82rem' }}>
-                    ✓ Slot disponibile
+                    ✓ {amCampiIds.length > 1 ? 'Tutti i campi disponibili' : 'Slot disponibile'}
                   </p>
                 ) : null}
               </div>

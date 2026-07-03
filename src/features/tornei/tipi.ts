@@ -32,6 +32,8 @@ export interface Torneo {
   max_squadre: number | null
   // (Tappa 27) Slot unico per tornei Americano: campo + inizio + fine.
   americano_campo_id: number | string | null
+  // (Tappa 42) Array di campi usati contemporaneamente nell'americano.
+  americano_campi_ids: number[] | null
   americano_inizio: string | null
   americano_fine: string | null
   // (Tappa 28) Punti per posizione in classifica (solo americano).
