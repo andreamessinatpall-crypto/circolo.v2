@@ -273,25 +273,33 @@ export default function ImpostazioniTorneo({
                     Data e orario
                   </div>
                   <label>Campi utilizzati</label>
-                  <div className="flex flex-col gap-1.5 mt-1">
+                  <div className="flex flex-wrap gap-2 mt-1">
                     {(campiQuery.data ?? [])
                       .filter((c) => c.sport === 'padel' && c.in_servizio !== false)
-                      .map((c) => (
-                        <label key={c.id} className="flex items-center gap-2 cursor-pointer" style={{ fontSize: '0.9rem' }}>
-                          <input
-                            type="checkbox"
-                            checked={amCampiIds.includes(String(c.id))}
-                            onChange={(e) =>
-                              setAmCampiIds((prev) =>
-                                e.target.checked
-                                  ? [...prev, String(c.id)]
-                                  : prev.filter((id) => id !== String(c.id))
-                              )
-                            }
-                          />
-                          {c.nome}
-                        </label>
-                      ))}
+                      .map((c) => {
+                        const sel = amCampiIds.includes(String(c.id))
+                        return (
+                          <label
+                            key={c.id}
+                            className={`opzione-btn${sel ? ' attivo' : ''}`}
+                            style={{ minHeight: 0, minWidth: 0, flexDirection: 'row', padding: '6px 14px', fontSize: '0.85rem', cursor: 'pointer' }}
+                          >
+                            <input
+                              type="checkbox"
+                              className="sr-only"
+                              checked={sel}
+                              onChange={(e) =>
+                                setAmCampiIds((prev) =>
+                                  e.target.checked
+                                    ? [...prev, String(c.id)]
+                                    : prev.filter((id) => id !== String(c.id))
+                                )
+                              }
+                            />
+                            {c.nome}
+                          </label>
+                        )
+                      })}
                     {(campiQuery.data ?? []).filter((c) => c.sport === 'padel' && c.in_servizio !== false).length === 0 && (
                       <p className="sub" style={{ fontSize: '0.82rem' }}>Nessun campo padel disponibile.</p>
                     )}
