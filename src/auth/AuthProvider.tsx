@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import type { User } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 import { titleCase } from '@/lib/formato'
@@ -97,6 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [utente, setUtente] = useState<User | null>(null)
   const [profilo, setProfilo] = useState<Socio | null>(null)
   const [blocco, setBlocco] = useState<MessaggioBlocco | null>(null)
+  const recuperoAttivo = useRef(false)
 
   // Legge la sessione corrente e decide in quale dei quattro stati siamo.
   const caricaProfilo = useCallback(async () => {
@@ -204,9 +205,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'PASSWORD_RECOVERY') {
+        recuperoAttivo.current = true
         setStato('recupero')
         return
       }
+      // SIGNED_IN e USER_UPDATED sparano subito dopo PASSWORD_RECOVERY:
+      // li ignoriamo per non sovrascrivere lo stato di recupero password.
+      if (recuperoAttivo.current && (event === 'SIGNED_IN' || event === 'USER_UPDATED')) return
+      recuperoAttivo.current = false
       setTimeout(() => {
         caricaProfilo()
       }, 0)
