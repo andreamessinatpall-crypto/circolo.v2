@@ -90,6 +90,14 @@ export default function GestioneGiocatori() {
   const nCancellati  = tutti.filter(isCancellato).length
   const nPadel  = tutti.filter((s) => !isCancellato(s) && (s.sport_preferito === 'padel'  || s.sport_preferito === 'entrambi')).length
   const nCalcio = tutti.filter((s) => !isCancellato(s) && (s.sport_preferito === 'calcio' || s.sport_preferito === 'entrambi')).length
+  const trentaGiorniFa = Date.now() - 30 * 86_400_000
+  const nInCampo = attivita
+    ? tutti.filter((s) => {
+        if (isCancellato(s) || s.sospeso || !s.attivo) return false
+        const a = attivita.get(s.id)
+        return !!a?.ultima && new Date(a.ultima).getTime() >= trentaGiorniFa
+      }).length
+    : null
 
   // Ricerca
   const q = cerca.trim().toLowerCase()
@@ -124,7 +132,8 @@ export default function GestioneGiocatori() {
 
       <div className="gioc-stats-strip">
         <StatItem num={nAttivi + nInAttesa} label="Iscritti" />
-        <StatItem num={nAttivi} label="Approvati" />
+        <StatItem num={nAttivi} label="Attivi" />
+        {nInCampo !== null && <StatItem num={nInCampo} label="In campo" />}
         {nInAttesa > 0 && <StatItem num={nInAttesa} label="In attesa" colore="#92400e" />}
         {(nSospesi + nCancellati) > 0 && <StatItem num={nSospesi + nCancellati} label="Inattivi" colore="var(--ink3)" />}
         {nDaEliminare > 0 && <StatItem num={nDaEliminare} label="Richieste" colore="#b91c1c" />}
