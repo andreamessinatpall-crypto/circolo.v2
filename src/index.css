@@ -4750,6 +4750,9 @@
     line-height: 1;
   }
   .gioc-stat-lbl {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
     font-size: 0.6rem;
     font-weight: 700;
     text-transform: uppercase;
