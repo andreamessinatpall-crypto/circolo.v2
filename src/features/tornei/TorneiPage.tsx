@@ -688,7 +688,7 @@ function NuovoTorneo({ onCreato }: { onCreato: (id: number | string) => void }) 
             </div>
 
             {orarioNonValido && (
-              <p className="sub mt-2" style={{ color: 'var(--errore)', fontSize: '0.82rem' }}>
+              <p className="sub mt-2" style={{ color: '#fb923c', fontSize: '0.82rem' }}>
                 ⚠️ L'orario di fine non può essere uguale o precedente all'orario di inizio.
               </p>
             )}
@@ -698,7 +698,7 @@ function NuovoTorneo({ onCreato }: { onCreato: (id: number | string) => void }) 
                 {slotDisponibile.isFetching ? (
                   <p className="sub" style={{ fontSize: '0.8rem' }}>Verifica disponibilità…</p>
                 ) : slotDisponibile.data && slotDisponibile.data.length > 0 ? (
-                  <p className="sub" style={{ color: 'var(--errore)', fontSize: '0.82rem' }}>
+                  <p className="sub" style={{ color: '#fb923c', fontSize: '0.82rem' }}>
                     ⚠️ {amCampiIds.length > 1 ? 'Uno o più campi già occupati' : 'Campo già occupato'} in questo orario ({slotDisponibile.data.length} conflitto/i).
                   </p>
                 ) : slotDisponibile.data ? (

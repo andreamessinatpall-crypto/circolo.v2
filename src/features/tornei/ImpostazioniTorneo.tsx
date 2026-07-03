@@ -353,7 +353,7 @@ export default function ImpostazioniTorneo({
                       {slotDisponibile.isFetching ? (
                         <p className="sub" style={{ fontSize: '0.8rem' }}>Verifica disponibilità…</p>
                       ) : slotDisponibile.data && slotDisponibile.data.length > 0 ? (
-                        <p className="sub" style={{ color: 'var(--errore)', fontSize: '0.82rem' }}>
+                        <p className="sub" style={{ color: '#fb923c', fontSize: '0.82rem' }}>
                           ⚠️ {amCampiIds.length > 1 ? 'Uno o più campi già occupati' : 'Il campo è già occupato'} in questo orario ({slotDisponibile.data.length} prenotazione/i in conflitto).
                         </p>
                       ) : slotDisponibile.data ? (
