@@ -1328,6 +1328,7 @@
     box-shadow: 0 24px 60px rgba(0, 0, 0, 0.12);
     border-top: 0;
     margin-bottom: 0;
+    padding-top: 16px;
     position: relative;
     overflow: hidden;
     isolation: isolate;

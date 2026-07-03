@@ -135,24 +135,7 @@ export default function LoginPage() {
             </>
           ) : (
             <>
-              {/* 1. CTA registrazione in cima */}
-              <Link
-                to="/registrati"
-                className="mb-5 flex items-center gap-4 rounded-2xl border bg-gradient-to-br from-verde-50 to-white px-4 py-4 shadow-sm transition hover:shadow-md hover:from-verde-100"
-                style={{ borderColor: 'rgba(12, 51, 25, 0.18)' }}
-                onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'rgba(12, 51, 25, 0.32)')}
-                onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'rgba(12, 51, 25, 0.18)')}
-              >
-                <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-verde-700 text-white shadow-sm">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="16" y1="11" x2="22" y2="11"/></svg>
-                </span>
-                <span className="flex-1">
-                  <span className="block text-sm font-bold text-verde-900">Non fai parte ancora del club?</span>
-                  <span className="block text-sm text-verde-700">Registrati qui →</span>
-                </span>
-              </Link>
-
-              {/* 2. Form email + password */}
+              {/* Form email + password */}
               <form onSubmit={onSubmit}>
                 <label htmlFor="login-email">Email</label>
                 <div className="auth-field">
@@ -180,7 +163,7 @@ export default function LoginPage() {
                   />
                 </div>
 
-                <div className="mt-1 text-right">
+                <div className="mt-4 text-right">
                   <button
                     type="button"
                     className="text-xs text-ink-2 underline underline-offset-2 hover:text-verde-700"
@@ -197,7 +180,7 @@ export default function LoginPage() {
                 </button>
               </form>
 
-              {/* 3. OAuth con soli simboli */}
+              {/* OAuth con soli simboli */}
               <div className="oauth-divider mt-5">oppure accedi con</div>
               <div className="mt-3 flex justify-center gap-3">
                 <button
@@ -229,6 +212,28 @@ export default function LoginPage() {
                 </button>
               </div>
               {oauthErrore && <p className={`mt-3 ${classiErrore}`}>{oauthErrore}</p>}
+
+              {/* CTA registrazione in fondo */}
+              <div className="mt-7 border-t" style={{ borderColor: 'rgba(12, 51, 25, 0.10)' }} />
+              <Link
+                to="/registrati"
+                className="mt-4 flex items-center gap-4 rounded-2xl border bg-gradient-to-br from-verde-50 to-white px-4 py-4 shadow-sm transition hover:shadow-md hover:from-verde-100"
+                style={{ borderColor: 'rgba(12, 51, 25, 0.18)' }}
+                onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'rgba(12, 51, 25, 0.32)')}
+                onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'rgba(12, 51, 25, 0.18)')}
+              >
+                <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-verde-700 text-white shadow-sm">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <rect x="2" y="5" width="20" height="14" rx="2"/>
+                    <circle cx="8" cy="11" r="2"/>
+                    <path d="M13 9h4M13 13h4"/>
+                  </svg>
+                </span>
+                <span className="flex-1">
+                  <span className="block text-sm font-bold text-verde-900">Non fai ancora parte del Club?</span>
+                  <span className="block text-sm text-verde-700">Registrati qui →</span>
+                </span>
+              </Link>
             </>
           )}
         </div>
