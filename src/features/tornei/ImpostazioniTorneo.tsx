@@ -366,12 +366,12 @@ export default function ImpostazioniTorneo({
                 </div>
               ) : (
                 <>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="min-w-0">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="min-w-0 overflow-hidden">
                       <label>Data inizio (facoltativa)</label>
                       <input type="date" max="9999-12-31" className={classiInput} {...register('data_inizio')} />
                     </div>
-                    <div className="min-w-0">
+                    <div className="min-w-0 overflow-hidden">
                       <label>Data fine (facoltativa)</label>
                       <input type="date" max="9999-12-31" className={classiInput} {...register('data_fine')} />
                       {errors.data_fine && (

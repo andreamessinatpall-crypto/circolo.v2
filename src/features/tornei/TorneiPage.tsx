@@ -711,12 +711,12 @@ function NuovoTorneo({ onCreato }: { onCreato: (id: number | string) => void }) 
         ) : (
           <>
             <div className="eyebrow">{ICO_CAL}Date</div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="min-w-0">
+            <div className="grid grid-cols-2 gap-2">
+              <div className="min-w-0 overflow-hidden">
                 <span className="param-label">Data inizio (facoltativa)</span>
                 <input type="date" max="9999-12-31" className={classiInput} {...register('data_inizio')} />
               </div>
-              <div className="min-w-0">
+              <div className="min-w-0 overflow-hidden">
                 <span className="param-label">Data fine (facoltativa)</span>
                 <input type="date" max="9999-12-31" className={classiInput} {...register('data_fine')} />
                 {errors.data_fine && (

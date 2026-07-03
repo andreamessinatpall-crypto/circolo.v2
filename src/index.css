@@ -1486,12 +1486,19 @@
   }
 
   /* Date/time picker: color-scheme dark rende bianche le icone calendario e orologio.
-     min-width: 0 impedisce all'input di espandere la cella grid oltre il contenitore. */
-  .form-verde input[type='date'],
-  .form-verde input[type='time'] {
+     Font e padding ridotti perché su iOS il controllo nativo ha larghezza minima
+     intrinseca che non rispetta width:100% — valori più piccoli lo tengono
+     dentro il contenitore. min-width:0 + overflow:hidden completano il fix. */
+  .form-verde input[type='date'] {
     color-scheme: dark;
+    font-size: 0.8rem;
+    padding: 9px 6px;
     min-width: 0;
     max-width: 100%;
+    overflow: hidden;
+  }
+  .form-verde input[type='time'] {
+    color-scheme: dark;
   }
 
   .form-verde select option {
