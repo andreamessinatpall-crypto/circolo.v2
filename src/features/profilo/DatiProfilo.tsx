@@ -34,7 +34,7 @@ type DatiForm = z.infer<typeof schema>
 type Modale = 'salva' | null
 
 export default function DatiProfilo() {
-  const { profilo, ricaricaProfilo } = useAuth()
+  const { profilo, utente, ricaricaProfilo } = useAuth()
   const [msg, setMsg] = useState<{ tipo: 'ok' | 'errore'; testo: string } | null>(null)
   const [modale, setModale] = useState<Modale>(null)
   const pendingData = useRef<DatiForm | null>(null)
@@ -76,7 +76,7 @@ export default function DatiProfilo() {
   async function confermaSalva(password: string) {
     const data = pendingData.current
     if (!data) return
-    const emailCorrente = profilo!.email ?? ''
+    const emailCorrente = utente?.email ?? profilo!.email ?? ''
 
     // 1. Verifica password
     const { error: errPw } = await supabase.auth.signInWithPassword({
