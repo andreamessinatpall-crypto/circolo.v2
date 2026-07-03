@@ -508,16 +508,10 @@ function NuovoTorneo({ onCreato }: { onCreato: (id: number | string) => void }) 
 
         <div
           className="param-grid"
-          style={{
-            gridTemplateColumns: isAmericano
-              ? '1fr'
-              : isEliminazione
-              ? '1fr 1fr'
-              : '1fr 1fr 1fr',
-          }}
+          style={{ gridTemplateColumns: isAmericano ? '1fr' : '1fr 1fr' }}
         >
-          {/* Num. squadre / giocatori */}
-          <div>
+          {/* Num. squadre / giocatori — nel girone occupa tutta la riga */}
+          <div style={(!isEliminazione && !isAmericano) ? { gridColumn: 'span 2' } : undefined}>
             <span className="param-label">{isAmericano ? 'Num. giocatori' : 'Num. squadre'}</span>
             <NumeroInput
               min={isAmericano ? 4 : 2}
@@ -546,31 +540,35 @@ function NuovoTorneo({ onCreato }: { onCreato: (id: number | string) => void }) 
             <div>
               <span className="param-label">Durata partita</span>
               <div className="durata-wrap">
-                <NumeroInput
-                  min={0}
-                  max={23}
-                  inputMode="numeric"
-                  style={{ textAlign: 'center' }}
+                <select
+                  className={classiInput}
+                  style={{ textAlign: 'center', width: '3.5rem', padding: '0 4px' }}
                   value={durataOre}
                   onChange={(e) => {
-                    const ore = Math.max(0, parseInt(e.target.value) || 0)
+                    const ore = Number(e.target.value)
                     setDurataOre(ore)
                     setValue('durata_minuti', ore * 60 + durataMin)
                   }}
-                />
+                >
+                  <option value={0}>0</option>
+                  <option value={1}>1</option>
+                </select>
                 <span className="durata-sep">h</span>
-                <NumeroInput
-                  min={0}
-                  max={59}
-                  inputMode="numeric"
-                  style={{ textAlign: 'center' }}
+                <select
+                  className={classiInput}
+                  style={{ textAlign: 'center', width: '4rem', padding: '0 4px' }}
                   value={durataMin}
                   onChange={(e) => {
-                    const min = Math.min(59, Math.max(0, parseInt(e.target.value) || 0))
+                    const min = Number(e.target.value)
                     setDurataMin(min)
                     setValue('durata_minuti', durataOre * 60 + min)
                   }}
-                />
+                >
+                  <option value={0}>00</option>
+                  <option value={15}>15</option>
+                  <option value={30}>30</option>
+                  <option value={45}>45</option>
+                </select>
                 <span className="durata-sep">min</span>
               </div>
             </div>
@@ -712,7 +710,7 @@ function NuovoTorneo({ onCreato }: { onCreato: (id: number | string) => void }) 
         ) : (
           <>
             <div className="eyebrow">{ICO_CAL}Date</div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <span className="param-label">Data inizio (facoltativa)</span>
                 <input type="date" max="9999-12-31" className={classiInput} {...register('data_inizio')} />
