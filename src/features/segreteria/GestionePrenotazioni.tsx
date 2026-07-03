@@ -14,6 +14,7 @@ import { SportIcona } from '@/components/IconeSport'
 import { useValoriPunti } from './datiPunti'
 import { useIntervalliCrediti } from './datiIntervalli'
 import { usePrenotazioniAdminIntervallo } from './datiPrenotazioniAdmin'
+import type { DatiPrenAdmin } from './datiPrenotazioniAdmin'
 import { SLOT_DEF, costruisciSlots } from '@/features/prenotazioni/slotGiornata'
 import { costruisciCsv, scaricaCsv } from '@/lib/csv'
 import type { MiaPrenotazione, Partecipante } from '@/features/prenotazioni/datiAmichevoli'
@@ -206,6 +207,21 @@ export default function GestionePrenotazioni() {
 
   // Conferma/annulla presenza + punti/crediti.
   const conferma = useMutation({
+    // Optimistic update: aggiorna la cache subito, prima della risposta server.
+    onMutate: async ({ part, valore }) => {
+      await qc.cancelQueries({ queryKey: ['pren-admin'] })
+      const snapshot = qc.getQueriesData<DatiPrenAdmin>({ queryKey: ['pren-admin'] })
+      qc.setQueriesData<DatiPrenAdmin>({ queryKey: ['pren-admin'] }, (old) => {
+        if (!old) return old
+        return {
+          ...old,
+          parts: old.parts.map((pr) =>
+            pr.id === part.id ? { ...pr, confermato: valore } : pr,
+          ),
+        }
+      })
+      return { snapshot }
+    },
     mutationFn: async ({
       part,
       pren: p,
@@ -233,11 +249,19 @@ export default function GestionePrenotazioni() {
         else await annullaPuntiPresenza(p.id, part.socio_id)
       }
     },
+    onError: (e: unknown, _vars, ctx) => {
+      // Rollback in caso di errore
+      if (ctx?.snapshot) {
+        for (const [key, data] of ctx.snapshot) qc.setQueryData(key, data)
+      }
+      window.alert('Operazione non riuscita: ' + messaggioErrore(e))
+    },
     onSuccess: () => {
-      aggiorna()
       aggiornaSaldi()
     },
-    onError: (e: unknown) => window.alert('Operazione non riuscita: ' + messaggioErrore(e)),
+    onSettled: () => {
+      aggiorna()
+    },
   })
 
   // Crea una prenotazione su uno slot libero (organizzatore = admin). La durata
