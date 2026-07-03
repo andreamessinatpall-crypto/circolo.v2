@@ -75,8 +75,8 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-[100dvh] flex-col items-center px-4 py-8">
-      <div className="w-full max-w-[420px]">
+    <div className="flex h-[100dvh] flex-col items-center overflow-y-auto px-4 py-8">
+      <div className="flex w-full max-w-[420px] flex-1 flex-col justify-center">
         <AuthHero />
 
         <div className="card auth-card">
