@@ -304,7 +304,7 @@ export default function ImpostazioniTorneo({
                       <p className="sub" style={{ fontSize: '0.82rem' }}>Nessun campo padel disponibile.</p>
                     )}
                   </div>
-                  <div className="mt-1">
+                  <div className="mt-1 min-w-0">
                     <label>Data</label>
                     <input
                       type="date"
@@ -367,11 +367,11 @@ export default function ImpostazioniTorneo({
               ) : (
                 <>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
+                    <div className="min-w-0">
                       <label>Data inizio (facoltativa)</label>
                       <input type="date" max="9999-12-31" className={classiInput} {...register('data_inizio')} />
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <label>Data fine (facoltativa)</label>
                       <input type="date" max="9999-12-31" className={classiInput} {...register('data_fine')} />
                       {errors.data_fine && (

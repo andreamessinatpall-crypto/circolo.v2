@@ -376,6 +376,7 @@
   .durata-wrap {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 6px;
   }
   .durata-sep {
@@ -1484,10 +1485,13 @@
     color: rgba(255, 255, 255, 0.5);
   }
 
-  /* Date/time picker: color-scheme dark rende bianche le icone calendario e orologio */
+  /* Date/time picker: color-scheme dark rende bianche le icone calendario e orologio.
+     min-width: 0 impedisce all'input di espandere la cella grid oltre il contenitore. */
   .form-verde input[type='date'],
   .form-verde input[type='time'] {
     color-scheme: dark;
+    min-width: 0;
+    max-width: 100%;
   }
 
   .form-verde select option {
