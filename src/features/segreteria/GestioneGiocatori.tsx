@@ -8,7 +8,7 @@ import { MedagliaLv } from '@/features/profilo/MedagliaLv'
 import { MedagliaRuolo } from '@/features/profilo/ruoloBadge'
 import { useSoci, useAttivitaSoci, type SocioAdmin, type AttivitaSocio } from './datiSoci'
 import DettaglioGiocatore from './DettaglioGiocatore'
-import { SportIcona } from '@/components/IconeSport'
+import { SportIcona, IconaPadel, IconaCalcio } from '@/components/IconeSport'
 
 type Ordine = 'punti' | 'cognome'
 
@@ -20,7 +20,7 @@ function isStaff(s: SocioAdmin): boolean {
   return !!(s.is_admin || s.is_allenatore || s.e_allenatore)
 }
 
-function StatItem({ num, label, colore }: { num: string | number; label: string; colore?: string }) {
+function StatItem({ num, label, colore }: { num: string | number; label: React.ReactNode; colore?: string }) {
   return (
     <div className="gioc-stat-item">
       <span className="gioc-stat-num" style={colore ? { color: colore } : undefined}>{num}</span>
@@ -85,7 +85,6 @@ export default function GestioneGiocatori() {
   const nAttivi      = tutti.filter((s) => s.attivo && !s.sospeso && !isCancellato(s)).length
   const nInAttesa    = tutti.filter((s) => !s.attivo && !isCancellato(s)).length
   const nSospesi     = tutti.filter((s) => !!s.sospeso && !isCancellato(s)).length
-  const nBloccati    = tutti.filter((s) => !isCancellato(s) && (s.punti_bloccati || s.crediti_bloccati)).length
   const nDaEliminare = tutti.filter((s) => !!s.richiesta_cancellazione).length
   const nCancellati  = tutti.filter(isCancellato).length
   const nPadel  = tutti.filter((s) => !isCancellato(s) && (s.sport_preferito === 'padel'  || s.sport_preferito === 'entrambi')).length
@@ -127,10 +126,9 @@ export default function GestioneGiocatori() {
         <StatItem num={nAttivi} label="Approvati" />
         {nInAttesa > 0 && <StatItem num={nInAttesa} label="In attesa" colore="#92400e" />}
         {nSospesi > 0 && <StatItem num={nSospesi} label="Sospesi" colore="#c2410c" />}
-        {nBloccati > 0 && <StatItem num={nBloccati} label="Bloccati" colore="var(--errore)" />}
         {nDaEliminare > 0 && <StatItem num={nDaEliminare} label="Richieste" colore="#b91c1c" />}
-        <StatItem num={nPadel}  label="🎾 Padel" />
-        <StatItem num={nCalcio} label="⚽ Calcio" />
+        <StatItem num={nPadel}  label={<><IconaPadel size={12} /> Padel</>} />
+        <StatItem num={nCalcio} label={<><IconaCalcio size={12} /> Calcio</>} />
       </div>
 
       {/* ── Cerca + ordina ─────────────────────────────── */}
