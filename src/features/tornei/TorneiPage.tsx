@@ -90,7 +90,7 @@ export default function TorneiPage() {
   const conclusi = visibili.filter((t) => t.stato === 'concluso')
 
   // Voci nav: tornei attivi + tab fissa "Conclusi" + "Nuovo" per gestori.
-  const voci = attivi.map((t) => ({ id: String(t.id), nome: t.nome, sport: t.sport }))
+  const voci: Array<{ id: string; nome: string; sport: string }> = attivi.map((t) => ({ id: String(t.id), nome: t.nome, sport: t.sport }))
   if (gestore) voci.push({ id: 'nuovo', nome: '＋ Nuovo torneo', sport: '' })
 
   // selCorrente: id valido tra i navigabili, oppure fallback

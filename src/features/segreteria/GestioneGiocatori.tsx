@@ -85,7 +85,7 @@ export default function GestioneGiocatori() {
   // Stats (su tutti, non filtrati dalla ricerca)
   const nAttivi      = tutti.filter((s) => s.attivo && !s.sospeso && !isCancellato(s)).length
   const nInAttesa    = tutti.filter((s) => !s.attivo && !isCancellato(s)).length
-  const nSospesi     = tutti.filter((s) => !!s.sospeso && !isCancellato(s)).length
+
   const nDaEliminare = tutti.filter((s) => !!s.richiesta_cancellazione).length
   const nCancellati  = tutti.filter(isCancellato).length
   const nPadel  = tutti.filter((s) => !isCancellato(s) && (s.sport_preferito === 'padel'  || s.sport_preferito === 'entrambi')).length
@@ -286,6 +286,7 @@ export default function GestioneGiocatori() {
                       key={s.id}
                       socio={s}
                       modalitaPremi={!!modalitaPremi}
+                      attivita={attivita?.get(s.id) ?? null}
                       onApri={() => setSelezionatoId(s.id)}
                     />
                   ))

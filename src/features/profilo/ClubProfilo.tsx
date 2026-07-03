@@ -121,7 +121,7 @@ function SezClub({
 
 export default function ClubProfilo() {
   const [espanso, setEspanso] = useState(false)
-  const { profilo, ricaricaProfilo } = useAuth()
+  const { profilo } = useAuth()
   const istruttore = !!profilo?.e_allenatore && !profilo?.is_allenatore && !profilo?.is_admin
   const { staff } = useAmici(profilo?.id ?? '')
   const query = useQuery({
