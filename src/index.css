@@ -97,6 +97,13 @@
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
+    cursor: default;
+    user-select: none;
+  }
+
+  input, textarea, select, [contenteditable] {
+    cursor: text;
+    user-select: text;
   }
 
   h1,
