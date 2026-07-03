@@ -502,20 +502,19 @@
   /* Per le sezioni collassabili (Sezione component): striscia dorata sotto,
      non prima — allineata alle sezioni profilo (club-sez-header). */
   .eyebrow.eyebrow-toggle {
-    position: relative;
-    padding-bottom: 10px;
-    margin-bottom: 14px;
+    background: var(--v700);
+    border-left: 3px solid var(--g500);
+    border-radius: 0 8px 8px 0;
+    padding: 9px 12px;
+    margin-bottom: 16px;
+    color: #fff;
   }
-  .eyebrow.eyebrow-toggle::before {
-    display: none;
+  .eyebrow.eyebrow-toggle .eyebrow-chevron {
+    color: rgba(255, 255, 255, 0.6);
   }
+  .eyebrow.eyebrow-toggle::before,
   .eyebrow.eyebrow-toggle::after {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 1.5px;
-    background: linear-gradient(90deg, var(--g500) 0%, rgba(200,151,46,0.22) 35%, transparent 75%);
+    display: none;
   }
 
   /* Pulsanti */
@@ -529,14 +528,14 @@
     border: none;
     border-radius: 10px;
     padding: 12px 24px;
-    background: var(--v700);
+    background: var(--v500);
     color: #fff;
     transition: background 0.15s, transform 0.1s, box-shadow 0.15s;
   }
   .btn:hover:not(:disabled) {
-    background: var(--v800);
+    background: var(--v600);
     transform: translateY(-1px);
-    box-shadow: 0 4px 14px rgba(20, 83, 42, 0.22);
+    box-shadow: 0 4px 14px rgba(20, 83, 42, 0.15);
   }
   .btn:active {
     transform: translateY(0);
@@ -557,6 +556,22 @@
   .btn-secondario:hover:not(:disabled) {
     background: var(--v050);
     border-color: var(--v700);
+    transform: none;
+    box-shadow: none;
+  }
+
+  .btn-sm {
+    padding: 8px 16px;
+    font-size: 0.82rem;
+  }
+  .btn-bianco {
+    background: #fff;
+    color: var(--v700);
+    border: 1.5px solid rgba(20, 83, 42, 0.22);
+  }
+  .btn-bianco:hover:not(:disabled) {
+    background: var(--v050);
+    border-color: var(--v500);
     transform: none;
     box-shadow: none;
   }

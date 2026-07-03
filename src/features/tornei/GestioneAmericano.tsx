@@ -111,7 +111,7 @@ export default function GestioneAmericano({
         <div className="aggiungi-part mb-4" style={{ marginBottom: 16 }}>
           <button
             type="button"
-            className="btn"
+            className="btn btn-bianco btn-sm"
             onClick={avviaGenerazione}
             disabled={genera.isPending}
           >
