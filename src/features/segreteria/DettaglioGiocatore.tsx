@@ -5,7 +5,7 @@ import { titleCase, dataEstesa } from '@/lib/formato'
 import { classiErrore, classiOk } from '@/components/stili'
 import { costruisciCsv, scaricaCsv } from '@/lib/csv'
 import ModificaGiocatore from './ModificaGiocatore'
-import { aggiustaSaldo, completaCancellazione, fetchStoricoSocio, impostaBlocco, impostaSospensione, type SocioAdmin } from './datiSoci'
+import { aggiustaSaldo, completaCancellazione, fetchStoricoSocio, impostaBlocco, impostaSospensione, riattivaSocio, type SocioAdmin } from './datiSoci'
 
 const COLONNE_NASCOSTE = ['socio_id', 'chiave', 'quando']
 
@@ -115,8 +115,21 @@ export default function DettaglioGiocatore({
     onError: (e: Error) => setMsg({ tipo: 'errore', testo: e.message }),
   })
 
+  const riattiva = useMutation({
+    mutationFn: () => riattivaSocio(socio.id),
+    onSuccess: (r) => {
+      if (!r.ok) { setMsg({ tipo: 'errore', testo: r.messaggio ?? 'Operazione non riuscita.' }); return }
+      invalida()
+      onChiudi()
+    },
+    onError: (e: Error) => setMsg({ tipo: 'errore', testo: e.message }),
+  })
+
   const nomeCompleto = `${titleCase(socio.cognome)} ${titleCase(socio.nome)}`
   const haCancellazione = !!socio.richiesta_cancellazione
+  const giorniRimasti = haCancellazione
+    ? Math.max(0, 30 - Math.floor((Date.now() - new Date(socio.richiesta_cancellazione!).getTime()) / 86_400_000))
+    : 0
 
   return (
     <div
@@ -171,24 +184,35 @@ export default function DettaglioGiocatore({
         {/* Sezione richiesta cancellazione (GDPR Art. 17) */}
         {haCancellazione && (
           <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4">
-            <p className="mb-1 text-sm font-semibold text-red-800">
-              Richiesta di cancellazione account
-            </p>
+            <div className="mb-1 flex items-center justify-between">
+              <p className="text-sm font-semibold text-red-800">Richiesta cancellazione account</p>
+              <span className={`text-xs font-bold ${giorniRimasti <= 5 ? 'text-red-700' : 'text-red-500'}`}>
+                {giorniRimasti > 0 ? `${giorniRimasti} giorni rimasti` : 'Scaduto'}
+              </span>
+            </div>
             <p className="mb-3 text-xs text-red-700">
-              Richiesta inviata il{' '}
-              {new Date(socio.richiesta_cancellazione!).toLocaleDateString('it-IT')}.
-              Completare entro 30 giorni (art. 17 GDPR): clicca "Completa cancellazione"
-              per anonimizzare i dati, poi elimina l'utente da{' '}
-              <strong>Supabase Dashboard → Authentication → Users</strong>.
+              Richiesta il {new Date(socio.richiesta_cancellazione!).toLocaleDateString('it-IT')}.
+              Puoi riattivare l'account entro 30 giorni, oppure completare la cancellazione
+              (anonimizza i dati — irreversibile).
             </p>
-            <button
-              type="button"
-              className="btn btn-pericolo btn-mini"
-              disabled={cancella.isPending}
-              onClick={() => cancella.mutate()}
-            >
-              {cancella.isPending ? 'Elaborazione…' : 'Completa cancellazione'}
-            </button>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                className="btn btn-mini"
+                disabled={riattiva.isPending || cancella.isPending}
+                onClick={() => riattiva.mutate()}
+              >
+                {riattiva.isPending ? 'Elaborazione…' : 'Riattiva account'}
+              </button>
+              <button
+                type="button"
+                className="btn btn-pericolo btn-mini"
+                disabled={cancella.isPending || riattiva.isPending}
+                onClick={() => cancella.mutate()}
+              >
+                {cancella.isPending ? 'Elaborazione…' : 'Completa cancellazione'}
+              </button>
+            </div>
           </div>
         )}
 

@@ -137,6 +137,17 @@ export function useAttivitaSoci() {
   })
 }
 
+export async function riattivaSocio(
+  socioId: string,
+): Promise<{ ok: boolean; messaggio?: string }> {
+  const { error } = await supabase
+    .from('soci')
+    .update({ richiesta_cancellazione: null, mostra_in_classifica: true })
+    .eq('id', socioId)
+  if (error) return { ok: false, messaggio: error.message }
+  return { ok: true }
+}
+
 // Anonimizza i dati personali di un socio che ha richiesto la cancellazione
 // (GDPR Art. 17). Dopo questa operazione l'admin deve eliminare l'utente
 // da Supabase Dashboard → Authentication → Users.

@@ -74,7 +74,6 @@ export default function GestioneGiocatori() {
   const [cerca, setCerca] = useState('')
   const [ordine, setOrdine] = useState<Ordine>('punti')
   const [selezionatoId, setSelezionatoId] = useState<string | null>(null)
-  const [espandiCancellati, setEspandiCancellati] = useState(false)
   const [espandiSospesi, setEspandiSospesi] = useState(false)
 
   if (isLoading) return <p className="text-ink-2">Caricamento giocatori…</p>
@@ -87,7 +86,6 @@ export default function GestioneGiocatori() {
   const nInAttesa    = tutti.filter((s) => !s.attivo && !isCancellato(s)).length
 
   const nDaEliminare = tutti.filter((s) => !!s.richiesta_cancellazione).length
-  const nCancellati  = tutti.filter(isCancellato).length
   const nPadel  = tutti.filter((s) => !isCancellato(s) && (s.sport_preferito === 'padel'  || s.sport_preferito === 'entrambi')).length
   const nCalcio = tutti.filter((s) => !isCancellato(s) && (s.sport_preferito === 'calcio' || s.sport_preferito === 'entrambi')).length
   const trentaGiorniFa = Date.now() - 30 * 86_400_000
@@ -119,10 +117,6 @@ export default function GestioneGiocatori() {
   const gruppoSospesi    = tutti.filter((s) => !!s.sospeso && !isCancellato(s) && match(s)).sort(perCognome)
   const gruppoStaff      = tutti.filter((s) => s.attivo && !s.sospeso && !isCancellato(s) && isStaff(s) && match(s)).sort(perCognome)
   const gruppoAttivi     = tutti.filter((s) => s.attivo && !s.sospeso && !isCancellato(s) && !isStaff(s) && match(s)).sort(cmp)
-  const gruppoCancellati = tutti.filter((s) => isCancellato(s) && match(s)).sort(perCognome)
-
-  // Cancellati: auto-espandi se c'è una ricerca con risultati
-  const mostraCancellati = espandiCancellati || (!!q && gruppoCancellati.length > 0)
 
   const selezionato = tutti.find((s) => s.id === selezionatoId) ?? null
 
@@ -227,7 +221,7 @@ export default function GestioneGiocatori() {
         {gruppoAttivi.length === 0 && gruppoInAttesa.length === 0 && !q && (
           <p className="text-ink-2">Nessun giocatore.</p>
         )}
-        {gruppoAttivi.length === 0 && q && gruppoInAttesa.length === 0 && gruppoCancellati.length === 0 && gruppoSospesi.length === 0 && (
+        {gruppoAttivi.length === 0 && q && gruppoInAttesa.length === 0 && gruppoSospesi.length === 0 && (
           <p className="text-ink-2">Nessun giocatore corrisponde alla ricerca.</p>
         )}
 
@@ -245,60 +239,9 @@ export default function GestioneGiocatori() {
           </div>
         )}
 
-        {/* ── Sezione account cancellati (collassabile) ── */}
-        {(nCancellati > 0) && (
-          <div style={{ marginTop: gruppoAttivi.length > 0 ? '1.25rem' : 0 }}>
-            <button
-              type="button"
-              onClick={() => setEspandiCancellati(!espandiCancellati)}
-              style={{
-                width: '100%', display: 'flex', alignItems: 'center', gap: '0.5rem',
-                padding: '0.5rem 0',
-                borderTop: gruppoAttivi.length > 0 ? '1px solid var(--border)' : 'none',
-                background: 'none', border: 'none',
-                borderTopColor: 'var(--border)',
-                borderTopWidth: gruppoAttivi.length > 0 ? 1 : 0,
-                borderTopStyle: 'solid',
-                cursor: 'pointer',
-                textAlign: 'left',
-                color: 'var(--ink-3)',
-                fontSize: '0.8rem', fontWeight: 600,
-                letterSpacing: '0.05em', textTransform: 'uppercase',
-              }}
-            >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M20 5H9l-7 7 7 7h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2z"/>
-                <line x1="18" y1="9" x2="12" y2="15"/><line x1="12" y1="9" x2="18" y2="15"/>
-              </svg>
-              Account cancellati ({nCancellati})
-              <span style={{ marginLeft: 'auto', fontSize: '0.75rem' }}>
-                {mostraCancellati ? '▲ Nascondi' : '▼ Mostra'}
-              </span>
-            </button>
-
-            {mostraCancellati && (
-              <div className="flex flex-col gap-1.5 mt-2">
-                {gruppoCancellati.length === 0 ? (
-                  <p className="text-sm text-ink-3">Nessun risultato.</p>
-                ) : (
-                  gruppoCancellati.map((s) => (
-                    <RigaSocio
-                      key={s.id}
-                      socio={s}
-                      modalitaPremi={!!modalitaPremi}
-                      attivita={attivita?.get(s.id) ?? null}
-                      onApri={() => setSelezionatoId(s.id)}
-                    />
-                  ))
-                )}
-              </div>
-            )}
-          </div>
-        )}
-
         {/* ── Sezione giocatori sospesi (collassabile) ── */}
         {gruppoSospesi.length > 0 && (
-          <div style={{ marginTop: (gruppoAttivi.length > 0 || nCancellati > 0) ? '1.25rem' : 0 }}>
+          <div style={{ marginTop: gruppoAttivi.length > 0 ? '1.25rem' : 0 }}>
             <button
               type="button"
               onClick={() => setEspandiSospesi(!espandiSospesi)}
