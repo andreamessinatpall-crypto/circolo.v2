@@ -138,40 +138,47 @@ export default function LoginPage() {
               {/* 1. CTA registrazione in cima */}
               <Link
                 to="/registrati"
-                className="mb-5 flex items-center gap-4 rounded-2xl border border-verde-200 bg-gradient-to-br from-verde-50 to-white px-4 py-4 shadow-sm transition hover:shadow-md hover:border-verde-300 hover:from-verde-100"
+                className="mb-5 flex items-center gap-4 rounded-2xl border bg-gradient-to-br from-verde-50 to-white px-4 py-4 shadow-sm transition hover:shadow-md hover:from-verde-100"
+                style={{ borderColor: 'rgba(12, 51, 25, 0.18)' }}
+                onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'rgba(12, 51, 25, 0.32)')}
+                onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'rgba(12, 51, 25, 0.18)')}
               >
                 <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-verde-700 text-white shadow-sm">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="16" y1="11" x2="22" y2="11"/></svg>
                 </span>
                 <span className="flex-1">
-                  <span className="block text-sm font-bold text-verde-900">Non hai ancora un account?</span>
-                  <span className="block text-sm text-verde-700">Unisciti a noi →</span>
+                  <span className="block text-sm font-bold text-verde-900">Non fai parte ancora del club?</span>
+                  <span className="block text-sm text-verde-700">Registrati qui →</span>
                 </span>
               </Link>
 
               {/* 2. Form email + password */}
               <form onSubmit={onSubmit}>
                 <label htmlFor="login-email">Email</label>
-                <input
-                  id="login-email"
-                  type="email"
-                  autoComplete="username"
-                  className={classiInput}
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
+                <div className="auth-field">
+                  <input
+                    id="login-email"
+                    type="email"
+                    autoComplete="username"
+                    className={classiInput}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                </div>
 
                 <label htmlFor="login-password">Password</label>
-                <input
-                  id="login-password"
-                  type="password"
-                  autoComplete="current-password"
-                  className={classiInput}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
+                <div className="auth-field">
+                  <input
+                    id="login-password"
+                    type="password"
+                    autoComplete="current-password"
+                    className={classiInput}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                </div>
 
                 <div className="mt-1 text-right">
                   <button
