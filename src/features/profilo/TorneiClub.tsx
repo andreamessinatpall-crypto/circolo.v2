@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import ModalConferma from '@/components/ModalConferma'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTornei } from '@/features/tornei/datiTornei'
 import type { DatiTornei } from '@/features/tornei/datiTornei'
@@ -283,6 +284,7 @@ function CardTorneoInProgramma({
   const { profilo } = useAuth()
   const qc = useQueryClient()
   const [apriModale, setApriModale] = useState(false)
+  const [confermaDisdici, setConfermaDisdici] = useState(false)
 
   const squadre = dati.perTorneoSquadre[String(torneo.id)] ?? []
   const nSquadre = squadre.length
@@ -316,9 +318,7 @@ function CardTorneoInProgramma({
                 className="tcl-disdici-btn"
                 title="Annulla iscrizione"
                 disabled={disdici.isPending}
-                onClick={() => {
-                  if (window.confirm('Vuoi annullare l\'iscrizione a questo torneo?')) disdici.mutate()
-                }}
+                onClick={() => setConfermaDisdici(true)}
               >
                 {disdici.isPending ? '…' : (
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgb(239,68,68)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -365,6 +365,17 @@ function CardTorneoInProgramma({
 
       {apriModale && (
         <ModaleIscrizione torneo={torneo} onClose={() => setApriModale(false)} />
+      )}
+
+      {confermaDisdici && (
+        <ModalConferma
+          titolo="Annullare l'iscrizione?"
+          messaggio="Verrai rimosso dal torneo e dovrai iscriverti di nuovo se vuoi partecipare."
+          labelConferma="Sì, annulla iscrizione"
+          pericolo
+          onConferma={() => { setConfermaDisdici(false); disdici.mutate() }}
+          onAnnulla={() => setConfermaDisdici(false)}
+        />
       )}
     </>
   )

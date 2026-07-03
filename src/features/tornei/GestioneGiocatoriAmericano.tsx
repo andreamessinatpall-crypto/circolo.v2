@@ -2,7 +2,8 @@
 // A differenza del girone/eliminazione, ogni "squadra" è un singolo giocatore;
 // il componente crea la squadra e aggiunge il giocatore in un solo gesto.
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
+import ModalConferma from '@/components/ModalConferma'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { messaggioErrore } from '@/lib/errori'
@@ -23,6 +24,7 @@ export default function GestioneGiocatoriAmericano({
 }) {
   const qc = useQueryClient()
   const sociQuery = useSociPubblici()
+  const [daRimuovere, setDaRimuovere] = useState<{ id: string; nome: string } | null>(null)
 
   const etichette = useMemo(() => {
     const m = new Map<string, string>()
@@ -162,9 +164,7 @@ export default function GestioneGiocatoriAmericano({
                   type="button"
                   className="border-0 bg-transparent px-1 text-xl font-bold leading-none text-red-700"
                   title="Rimuovi dal torneo"
-                  onClick={() => {
-                    if (window.confirm(`Rimuovere ${g.nome} dal torneo?`)) rimuovi.mutate(g.id)
-                  }}
+                  onClick={() => setDaRimuovere({ id: g.id, nome: g.nome })}
                 >
                   ×
                 </button>
@@ -172,6 +172,17 @@ export default function GestioneGiocatoriAmericano({
             )
           })}
         </div>
+      )}
+
+      {daRimuovere && (
+        <ModalConferma
+          titolo="Rimuovere dal torneo?"
+          messaggio={`${daRimuovere.nome} verrà rimosso dal torneo.`}
+          labelConferma="Rimuovi"
+          pericolo
+          onConferma={() => { rimuovi.mutate(daRimuovere.id); setDaRimuovere(null) }}
+          onAnnulla={() => setDaRimuovere(null)}
+        />
       )}
     </div>
   )

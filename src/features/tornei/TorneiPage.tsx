@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import ModalConferma from '@/components/ModalConferma'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -542,7 +543,7 @@ function NuovoTorneo({ onCreato }: { onCreato: (id: number | string) => void }) 
               <div className="durata-wrap">
                 <select
                   className={classiInput}
-                  style={{ textAlign: 'center', width: '3.5rem', padding: '0 4px' }}
+                  style={{ textAlign: 'center', width: '3.5rem', paddingInline: '4px' }}
                   value={durataOre}
                   onChange={(e) => {
                     const ore = Number(e.target.value)
@@ -556,7 +557,7 @@ function NuovoTorneo({ onCreato }: { onCreato: (id: number | string) => void }) 
                 <span className="durata-sep">h</span>
                 <select
                   className={classiInput}
-                  style={{ textAlign: 'center', width: '4rem', padding: '0 4px' }}
+                  style={{ textAlign: 'center', width: '4rem', paddingInline: '4px' }}
                   value={durataMin}
                   onChange={(e) => {
                     const min = Number(e.target.value)
@@ -831,6 +832,8 @@ function DettaglioTorneo({
   const isEliminazione = torneo.formato === 'eliminazione'
   const isAmericano = torneo.formato === 'americano'
 
+  const [confermaCancellazione, setConfermaCancellazione] = useState(false)
+
   // Stato locale per i punti del torneo americano (gestione inline nella schedaGestione).
   const [amPtIscr, setAmPtIscr] = useState(torneo.punti_iscrizione ?? 0)
   const [amPtPos, setAmPtPos] = useState<Record<string, number>>(torneo.punti_posizioni ?? {})
@@ -901,9 +904,7 @@ function DettaglioTorneo({
   })
 
   function avviaCancellazione() {
-    if (!window.confirm(`Cancellare il torneo "${torneo.nome}"?\n\nVerranno eliminati definitivamente squadre, incontri e risultati. Questa azione non è reversibile.`)) return
-    if (!window.confirm('Conferma definitiva: cancellare tutto?')) return
-    cancella.mutate()
+    setConfermaCancellazione(true)
   }
 
   const fmt = (s: string) =>
@@ -1196,6 +1197,17 @@ function DettaglioTorneo({
         </>
       ) : (
         <div className="mt-4">{schedaRisultati}</div>
+      )}
+
+      {confermaCancellazione && (
+        <ModalConferma
+          titolo="Cancellare il torneo?"
+          messaggio={<>Verranno eliminati definitivamente squadre, incontri e risultati di <strong>{torneo.nome}</strong>. Questa azione non è reversibile.</>}
+          labelConferma="Sì, cancella"
+          pericolo
+          onConferma={() => { setConfermaCancellazione(false); cancella.mutate() }}
+          onAnnulla={() => setConfermaCancellazione(false)}
+        />
       )}
     </div>
   )

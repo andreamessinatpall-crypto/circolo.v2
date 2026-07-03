@@ -366,7 +366,7 @@ export default function ImpostazioniTorneo({
                 </div>
               ) : (
                 <>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label>Data inizio (facoltativa)</label>
                       <input type="date" max="9999-12-31" className={classiInput} {...register('data_inizio')} />

@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from 'react'
+import ModalConferma from '@/components/ModalConferma'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
@@ -20,6 +21,7 @@ export default function GrigliaPrenotazioni({ sport }: { sport: Sport }) {
   const [giorno, setGiorno] = useState(() => ymd(new Date()))
   const [scelta, setScelta] = useState<{ campo: Campo; inizio: Date; fine: Date } | null>(null)
   const [offset, setOffset] = useState(0)
+  const [annullaPending, setAnnullaPending] = useState<{ id: string; domanda: string } | null>(null)
   const prenQuery = usePrenotazioniGiorno(giorno)
   // ID amico da pre-aggiungere alla prenotazione (passato da AmiciProfilo via state).
   // Usato una volta sola: dopo la prima prenotazione lo azzerizziamo.
@@ -144,7 +146,7 @@ export default function GrigliaPrenotazioni({ sport }: { sport: Sport }) {
     const domanda = diChi
       ? `Annullare la prenotazione di ${diChi} su ${campo.nome} (${quando})?`
       : `Annullare la tua prenotazione su ${campo.nome} (${quando})?`
-    if (window.confirm(domanda)) annulla.mutate(p.id)
+    setAnnullaPending({ id: p.id, domanda })
   }
 
   // Chi sceglie tra prenotazione "partita" e "allenamento": admin, collaboratore
@@ -435,6 +437,17 @@ function CampoGriglia({
             )
           })}
         </div>
+      )}
+
+      {annullaPending && (
+        <ModalConferma
+          titolo="Annullare la prenotazione?"
+          messaggio={annullaPending.domanda}
+          labelConferma="Annulla prenotazione"
+          pericolo
+          onConferma={() => { annulla.mutate(annullaPending.id); setAnnullaPending(null) }}
+          onAnnulla={() => setAnnullaPending(null)}
+        />
       )}
     </div>
   )

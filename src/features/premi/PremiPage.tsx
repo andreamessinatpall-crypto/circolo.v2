@@ -1,4 +1,5 @@
-import { type ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
+import ModalConferma from '@/components/ModalConferma'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/auth/useAuth'
@@ -72,6 +73,8 @@ export default function PremiPage() {
   const popolaritaQuery = usePopolaritaPremi()
 
   const crediti = saldoQuery.data ?? 0
+  const [riscattaPending, setRiscattaPending] = useState<Premio | null>(null)
+  const [annullaPending, setAnnullaPending] = useState<Richiesta | null>(null)
 
   const aggiorna = () => {
     qc.invalidateQueries({ queryKey: ['premi-catalogo'] })
@@ -149,10 +152,7 @@ export default function PremiPage() {
             crediti={crediti}
             popolare={(popolaritaQuery.data?.get(p.nome.toLowerCase()) ?? 0) >= SOGLIA_POPOLARE}
             inCorso={riscatta.isPending}
-            onRiscatta={() => {
-              if (window.confirm(`Riscattare "${p.nome}" per ${p.costo ?? 0} crediti?`))
-                riscatta.mutate(p)
-            }}
+            onRiscatta={() => setRiscattaPending(p)}
           />
         ))
       )}
@@ -178,15 +178,33 @@ export default function PremiPage() {
                 key={r.id}
                 richiesta={r}
                 inCorso={annulla.isPending}
-                onAnnulla={() => {
-                  if (window.confirm('Eliminare questa richiesta? I crediti ti verranno restituiti.'))
-                    annulla.mutate(r)
-                }}
+                onAnnulla={() => setAnnullaPending(r)}
               />
             ))}
           </div>
         )}
       </div>
+
+      {riscattaPending && (
+        <ModalConferma
+          titolo="Riscattare il premio?"
+          messaggio={`"${riscattaPending.nome}" costerà ${riscattaPending.costo ?? 0} crediti.`}
+          labelConferma="Riscatta"
+          onConferma={() => { riscatta.mutate(riscattaPending); setRiscattaPending(null) }}
+          onAnnulla={() => setRiscattaPending(null)}
+        />
+      )}
+
+      {annullaPending && (
+        <ModalConferma
+          titolo="Eliminare la richiesta?"
+          messaggio="I crediti ti verranno restituiti."
+          labelConferma="Sì, elimina"
+          pericolo
+          onConferma={() => { annulla.mutate(annullaPending); setAnnullaPending(null) }}
+          onAnnulla={() => setAnnullaPending(null)}
+        />
+      )}
     </div>
   )
 }
