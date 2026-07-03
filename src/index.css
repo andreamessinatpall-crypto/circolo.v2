@@ -262,6 +262,7 @@
     display: flex;
     gap: 8px;
     margin-top: 4px;
+    flex-wrap: wrap;
   }
   .formato-btn {
     flex: 1;
