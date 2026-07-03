@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from 'react-router-dom'
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { useAuth } from '@/auth/useAuth'
 import SchermataCaricamento from '@/components/SchermataCaricamento'
 import LoginPage from '@/pages/LoginPage'
@@ -29,9 +29,13 @@ function RedirezioneIniziale() {
 // Mostra la schermata giusta in base allo stato di autenticazione.
 function App() {
   const { stato, profilo } = useAuth()
+  const { pathname } = useLocation()
 
   if (stato === 'caricamento') return <SchermataCaricamento />
   if (stato === 'recupero') return <><ResetPasswordPage /><CookieBanner /></>
+  // Con flusso PKCE Supabase può sparare SIGNED_IN invece di PASSWORD_RECOVERY:
+  // controlliamo il path come fallback.
+  if (stato === 'attivo' && pathname === '/reset-password') return <><ResetPasswordPage /><CookieBanner /></>
   if (stato === 'bloccato') return <><BloccoPage /><CookieBanner /></>
 
   if (stato === 'anonimo') {
