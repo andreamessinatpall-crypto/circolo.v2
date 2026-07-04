@@ -495,11 +495,55 @@ export default function GestionePrenotazioni() {
     queryFn: async () => {
       const { data: sqs } = await supabase
         .from('squadre')
-        .select('nome')
+        .select('id, nome')
         .eq('torneo_id', torneoSlotId!)
-        .order('id')
-      return (sqs ?? []).map((s: { nome: string }) => s.nome).sort()
+        .order('nome')
+      if (!sqs?.length) return []
+      const sqIds = (sqs as Array<{ id: string; nome: string }>).map((s) => s.id)
+      const { data: comps } = await supabase
+        .from('squadra_componenti')
+        .select('squadra_id, socio_id')
+        .in('squadra_id', sqIds)
+      const socioPerSquadra = new Map<string, string>()
+      for (const c of (comps ?? []) as Array<{ squadra_id: string; socio_id: string | null }>) {
+        if (c.socio_id) socioPerSquadra.set(String(c.squadra_id), c.socio_id)
+      }
+      return (sqs as Array<{ id: string; nome: string }>).map((s) => ({
+        nome: s.nome,
+        socio_id: socioPerSquadra.get(String(s.id)) ?? null,
+      }))
     },
+  })
+
+  // Conferma presenza per i giocatori del torneo americano (slot con torneo_id).
+  // Usa upsert perché partecipanti_amichevole potrebbe non avere ancora la riga.
+  const confermaAmericano = useMutation({
+    mutationFn: async ({
+      prenId,
+      pren,
+      socioId,
+      valore,
+    }: {
+      prenId: number | string
+      pren: MiaPrenotazione
+      socioId: string
+      valore: boolean
+    }) => {
+      const { error } = await supabase
+        .from('partecipanti_amichevole')
+        .upsert(
+          { prenotazione_id: prenId, socio_id: socioId, confermato: valore },
+          { onConflict: 'prenotazione_id,socio_id' },
+        )
+      if (error) throw error
+      if (valoriQuery.data) {
+        if (valore)
+          await assegnaPuntiPresenza(pren, socioId, sport, valoriQuery.data, !!modalitaPremiQuery.data, intervalliQuery.data ?? [])
+        else await annullaPuntiPresenza(pren.id, socioId)
+      }
+    },
+    onSuccess: () => { aggiorna(); aggiornaSaldi() },
+    onError: (e: unknown) => window.alert('Operazione non riuscita: ' + messaggioErrore(e)),
   })
 
   if (!profilo) return null
@@ -778,7 +822,7 @@ export default function GestionePrenotazioni() {
                 }
               />
               {bookingSlot.torneo_id ? (
-                /* Slot torneo americano: mostra la lista giocatori iscritti */
+                /* Slot torneo americano: giocatori iscritti con conferma presenza */
                 <div className="mt-2">
                   <div className="eyebrow mb-2">Giocatori iscritti al torneo</div>
                   {giocatoriTorneoQuery.isLoading ? (
@@ -787,9 +831,51 @@ export default function GestionePrenotazioni() {
                     <p className="sub">Nessun giocatore iscritto.</p>
                   ) : (
                     <div className="chips">
-                      {giocatoriTorneoQuery.data.map((nome) => (
-                        <span key={nome} className="chip">{nome}</span>
-                      ))}
+                      {(() => {
+                        const partsSlot = partsByPren.get(String(bookingSlot.id)) ?? []
+                        return giocatoriTorneoQuery.data.map((g) => {
+                          const partRow = g.socio_id
+                            ? partsSlot.find((p) => p.socio_id === g.socio_id)
+                            : null
+                          const confermato = partRow?.confermato ?? false
+                          return (
+                            <span key={g.nome} className={'chip' + (confermato ? ' conf' : '')}>
+                              {g.nome}
+                              {confermato ? (
+                                <button
+                                  type="button"
+                                  className="x"
+                                  title="Annulla conferma"
+                                  onClick={() => g.socio_id && confermaAmericano.mutate({
+                                    prenId: bookingSlot.id,
+                                    pren: bookingSlot,
+                                    socioId: g.socio_id,
+                                    valore: false,
+                                  })}
+                                >
+                                  ✓
+                                </button>
+                              ) : g.socio_id ? (
+                                <button
+                                  type="button"
+                                  className="x"
+                                  title="Conferma presenza"
+                                  onClick={() => confermaAmericano.mutate({
+                                    prenId: bookingSlot.id,
+                                    pren: bookingSlot,
+                                    socioId: g.socio_id!,
+                                    valore: true,
+                                  })}
+                                >
+                                  ✓
+                                </button>
+                              ) : (
+                                <span className="stato" title="Ospite non registrato">ospite</span>
+                              )}
+                            </span>
+                          )
+                        })
+                      })()}
                     </div>
                   )}
                 </div>

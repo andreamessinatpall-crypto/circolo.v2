@@ -425,7 +425,7 @@ export function SchedaPartita({
                       {nome}
                       {ospite}
                       {!r.confermato && (
-                        <button type="button" className="x" title="Togli" onClick={() => onRimuovi(r)}>
+                        <button type="button" className="x" title="Togli" onClick={() => { if (window.confirm(`Rimuovere ${nome} da questa partita?`)) onRimuovi(r) }}>
                           ×
                         </button>
                       )}
@@ -461,7 +461,7 @@ export function SchedaPartita({
                         type="button"
                         className="x"
                         title="Togli"
-                        onClick={(e) => { e.stopPropagation(); onRimuovi(r) }}
+                        onClick={(e) => { e.stopPropagation(); if (window.confirm(`Rimuovere ${nome} da questa partita?`)) onRimuovi(r) }}
                       >
                         ×
                       </button>
@@ -505,7 +505,7 @@ export function SchedaPartita({
                         type="button"
                         className="x"
                         title="Togli"
-                        onClick={() => onRimuovi(r)}
+                        onClick={() => { if (window.confirm(`Rimuovere ${nome} da questa partita?`)) onRimuovi(r) }}
                       >
                         ×
                       </button>
