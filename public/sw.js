@@ -26,8 +26,17 @@ self.addEventListener('activate', (event) => {
   self.clients.claim()
 })
 
+// Tabelle "vive" (chat, notifiche): aggiornate via realtime/polling e lette
+// di continuo dall'app. Se le mettessimo in cache, lo stale-while-revalidate
+// restituirebbe sempre la versione vecchia PRIMA di quella fresca, facendo
+// sparire messaggi/notifiche appena arrivati finché non si riapre la pagina.
+const TABELLE_SENZA_CACHE = ['messaggi_chat', 'notifiche']
+
 function eLetturaSupabase(url, metodo) {
-  return metodo === 'GET' && url.hostname.endsWith('.supabase.co') && url.pathname.startsWith('/rest/v1/')
+  if (metodo !== 'GET') return false
+  if (!url.hostname.endsWith('.supabase.co') || !url.pathname.startsWith('/rest/v1/')) return false
+  const tabella = url.pathname.slice('/rest/v1/'.length).split('?')[0]
+  return !TABELLE_SENZA_CACHE.includes(tabella)
 }
 
 // Risponde subito con la cache se c'è, aggiorna in background per la prossima volta.
@@ -65,7 +74,9 @@ self.addEventListener('fetch', (event) => {
 
 // (Fase 1) Notifiche push: la Edge Function "invia-push" manda un payload
 // { title, body, url }. Mostriamo la notifica di sistema e, al click, apriamo
-// (o portiamo in primo piano) la relativa pagina dell'app.
+// (o portiamo in primo piano) la relativa pagina dell'app. Se l'utente ha già
+// aperta e visibile proprio quella pagina (es. la chat con lo stesso amico),
+// saltiamo la notifica di sistema: la vede già aggiornarsi in tempo reale.
 self.addEventListener('push', (event) => {
   if (!event.data) return
 
@@ -75,13 +86,19 @@ self.addEventListener('push', (event) => {
   } catch {
     dati = { title: 'Circolo Sportivo', body: event.data.text() }
   }
+  const url = dati.url || '/'
 
   event.waitUntil(
-    self.registration.showNotification(dati.title || 'Circolo Sportivo', {
-      body: dati.body || '',
-      icon: '/icon-192.png',
-      badge: '/icon-192.png',
-      data: { url: dati.url || '/' },
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((elenco) => {
+      const giaVisibile = elenco.some((c) => c.visibilityState === 'visible' && c.url.includes(url))
+      if (giaVisibile) return
+
+      return self.registration.showNotification(dati.title || 'Circolo Sportivo', {
+        body: dati.body || '',
+        icon: '/icon-192.png',
+        badge: '/icon-192.png',
+        data: { url },
+      })
     }),
   )
 })

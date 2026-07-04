@@ -9,6 +9,8 @@ import { LIVELLI_PUNTI_DEFAULT, livelloDaPunti } from '@/features/profilo/livell
 import { MedagliaLv } from '@/features/profilo/MedagliaLv'
 import { useAmici, type Amicizia, type VoceAmico } from './useAmici'
 import { SportIcona } from '@/components/IconeSport'
+import { useConversazioni } from '@/features/chat/useChat'
+import ChatModal from '@/features/chat/ChatModal'
 
 
 function IcoCalendario() {
@@ -18,6 +20,14 @@ function IcoCalendario() {
       <line x1="16" y1="2" x2="16" y2="6" />
       <line x1="8" y1="2" x2="8" y2="6" />
       <line x1="3" y1="10" x2="21" y2="10" />
+    </svg>
+  )
+}
+
+function IcoChat() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
     </svg>
   )
 }
@@ -33,7 +43,17 @@ function IcoBidone() {
   )
 }
 
-function CardAmico({ voce, onRimuovi }: { voce: VoceAmico; onRimuovi: () => void }) {
+function CardAmico({
+  voce,
+  nonLetti,
+  onChat,
+  onRimuovi,
+}: {
+  voce: VoceAmico
+  nonLetti: number
+  onChat: () => void
+  onRimuovi: () => void
+}) {
   const lv = livelloDaPunti(voce.punti, LIVELLI_PUNTI_DEFAULT)
   const lvNome = LIVELLI_PUNTI_DEFAULT[lv - 1]?.nome ?? ''
   return (
@@ -52,6 +72,15 @@ function CardAmico({ voce, onRimuovi }: { voce: VoceAmico; onRimuovi: () => void
         </div>
       </div>
       <div className="amici-card-azioni">
+        <button
+          type="button"
+          onClick={onChat}
+          className="btn btn-secondario btn-mini relative flex items-center justify-center"
+          title="Chat con questo amico"
+        >
+          <IcoChat />
+          {nonLetti > 0 && <span className="chat-puntino" aria-label={`${nonLetti} messaggi non letti`} />}
+        </button>
         <Link
           to="/prenota"
           state={{ amicoId: voce.id }}
@@ -210,9 +239,13 @@ function rimuoviConConferma(v: VoceAmico, rimuovi: (rec: Amicizia) => void) {
 export default function AmiciProfilo() {
   const { profilo } = useAuth()
   const [msg, setMsg] = useState('')
+  const [chatAmico, setChatAmico] = useState<VoceAmico | null>(null)
   const amici = useAmici(profilo!.id)
+  const { conversazioni } = useConversazioni(profilo?.id)
 
   if (!profilo) return null
+
+  const nonLettiPerAmico = new Map(conversazioni.map((c) => [c.altroId, c.nonLetti]))
 
   if (amici.erroreAmicizie && mancaTabella(amici.erroreAmicizie, 'amicizie')) {
     return (
@@ -327,6 +360,8 @@ export default function AmiciProfilo() {
               <CardAmico
                 key={v.rec.id}
                 voce={v}
+                nonLetti={nonLettiPerAmico.get(v.id) ?? 0}
+                onChat={() => setChatAmico(v)}
                 onRimuovi={() => rimuoviConConferma(v, amici.rimuovi.mutate)}
               />
             ))}
@@ -394,6 +429,15 @@ export default function AmiciProfilo() {
             ))}
           </div>
         </section>
+      )}
+
+      {chatAmico && (
+        <ChatModal
+          key={chatAmico.id}
+          profiloId={profilo.id}
+          amico={chatAmico}
+          onChiudi={() => setChatAmico(null)}
+        />
       )}
 
     </div>

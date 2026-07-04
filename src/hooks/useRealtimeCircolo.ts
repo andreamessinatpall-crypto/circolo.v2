@@ -30,6 +30,9 @@ export function useRealtimeCircolo() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'amicizie' }, () =>
         inval(['amicizie']),
       )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'messaggi_chat' }, () =>
+        inval(['messaggi_chat']),
+      )
       .subscribe()
 
     return () => {

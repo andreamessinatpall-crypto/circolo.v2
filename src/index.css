@@ -5593,4 +5593,115 @@
   .campanella-item-x:hover {
     color: var(--terra);
   }
+
+  /* ── Chat (Fase 2) ────────────────────────────────────────────────
+     Raggiungibile solo dall'icona chat sulla card amico: si apre come
+     overlay (ChatModal), niente pagina/route dedicata. */
+
+  /* Pallino rosso "non letto" sull'icona chat della card amico */
+  .chat-puntino {
+    position: absolute;
+    top: -3px;
+    right: -3px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--terra);
+    border: 1.5px solid var(--surface);
+  }
+
+  /* Overlay conversazione */
+  .chat-modal {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 480px;
+    height: min(600px, 86dvh);
+    background: var(--surface);
+    border-radius: 18px 18px 0 0;
+    padding: 16px 16px 14px;
+    box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.25);
+  }
+  @media (min-width: 640px) {
+    .chat-modal {
+      border-radius: 18px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+  }
+  .chat-conv-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-bottom: 12px;
+    margin-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .chat-conv-back {
+    flex: 0 0 auto;
+    width: 30px;
+    height: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    border: 1.5px solid var(--border2);
+    background: var(--surface);
+    color: var(--v700);
+    font-size: 1.3rem;
+    line-height: 1;
+    cursor: pointer;
+  }
+  .chat-conv-back:hover {
+    background: var(--v050);
+    border-color: var(--g500);
+  }
+  .chat-conv-nome {
+    font-family: var(--font-display);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-size: 0.95rem;
+    color: var(--v800);
+  }
+  .chat-conv-messaggi {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 4px 2px 12px;
+  }
+  .chat-bolla {
+    align-self: flex-start;
+    max-width: 78%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px 14px 14px 4px;
+    padding: 9px 13px;
+  }
+  .chat-bolla p {
+    margin: 0;
+    font-size: 0.88rem;
+    line-height: 1.45;
+    color: var(--ink);
+    overflow-wrap: break-word;
+  }
+  .chat-bolla.mia {
+    align-self: flex-end;
+    background: var(--v700);
+    border-color: var(--v700);
+    border-radius: 14px 14px 4px 14px;
+  }
+  .chat-bolla.mia p {
+    color: #fff;
+  }
+  .chat-conv-form {
+    display: flex;
+    gap: 8px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+  }
+  .chat-conv-form input {
+    flex: 1;
+  }
 }

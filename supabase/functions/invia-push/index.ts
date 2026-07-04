@@ -1,7 +1,8 @@
 // Edge Function "invia-push": manda una notifica Web Push a un socio dato il
-// suo socio_id. Richiamabile da RPC/trigger lato database (es. via pg_net) o
-// da altre Edge Function, mai direttamente dal frontend con la chiave anon:
-// legge tutte le subscription del socio con la service role key.
+// suo socio_id. Chiamata direttamente dal frontend (supabase.functions.invoke,
+// vedi useChat.ts/usePushNotifiche.ts) oppure da RPC/trigger lato database —
+// legge tutte le subscription del socio con la service role key, quindi non
+// serve che il chiamante abbia accesso diretto a push_subscriptions.
 //
 // Body atteso: { socio_id: string, titolo: string, corpo?: string, url?: string }
 //
@@ -27,34 +28,78 @@ interface RichiestaPush {
   titolo: string
   corpo?: string
   url?: string
+  // Se true, non aggiunge una nuova riga in "notifiche" quando esiste già
+  // una notifica con la stessa url per lo stesso socio creata oggi (usato
+  // dalla chat: tante notifiche push quanti messaggi, ma un solo promemoria
+  // in campanella al giorno per amico).
+  unaVoltaAlGiorno?: boolean
+}
+
+// Chiamata dal browser via supabase.functions.invoke: senza questi header
+// il preflight OPTIONS fallisce e il browser blocca la richiesta per CORS.
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
 Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders })
+  }
+
   if (req.method !== 'POST') {
-    return new Response(JSON.stringify({ errore: 'Metodo non consentito' }), { status: 405 })
+    return new Response(JSON.stringify({ errore: 'Metodo non consentito' }), {
+      status: 405,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
   }
 
   if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
-    return new Response(JSON.stringify({ errore: 'VAPID non configurato lato server' }), { status: 500 })
+    return new Response(JSON.stringify({ errore: 'VAPID non configurato lato server' }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
   }
 
   let corpoRichiesta: RichiestaPush
   try {
     corpoRichiesta = await req.json()
   } catch {
-    return new Response(JSON.stringify({ errore: 'JSON non valido' }), { status: 400 })
+    return new Response(JSON.stringify({ errore: 'JSON non valido' }), {
+      status: 400,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
   }
 
-  const { socio_id, titolo, corpo, url } = corpoRichiesta
+  const { socio_id, titolo, corpo, url, unaVoltaAlGiorno } = corpoRichiesta
   if (!socio_id || !titolo) {
-    return new Response(JSON.stringify({ errore: 'socio_id e titolo sono obbligatori' }), { status: 400 })
+    return new Response(JSON.stringify({ errore: 'socio_id e titolo sono obbligatori' }), {
+      status: 400,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
   }
 
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
   // Log in-app: il socio la ritrova qui anche se il dispositivo era offline,
   // il permesso non era ancora stato dato o ha ignorato la notifica di sistema.
-  await supabase.from('notifiche').insert({ socio_id, titolo, corpo: corpo ?? null, url: url ?? null })
+  let giaOggi = false
+  if (unaVoltaAlGiorno) {
+    const inizioGiorno = new Date()
+    inizioGiorno.setUTCHours(0, 0, 0, 0)
+    const { data: esistente } = await supabase
+      .from('notifiche')
+      .select('id')
+      .eq('socio_id', socio_id)
+      .eq('url', url ?? '')
+      .gte('creato_il', inizioGiorno.toISOString())
+      .limit(1)
+    giaOggi = !!esistente && esistente.length > 0
+  }
+  if (!giaOggi) {
+    await supabase.from('notifiche').insert({ socio_id, titolo, corpo: corpo ?? null, url: url ?? null })
+  }
 
   const { data: subscription, error } = await supabase
     .from('push_subscriptions')
@@ -62,7 +107,10 @@ Deno.serve(async (req) => {
     .eq('socio_id', socio_id)
 
   if (error) {
-    return new Response(JSON.stringify({ errore: error.message }), { status: 500 })
+    return new Response(JSON.stringify({ errore: error.message }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
   }
 
   const payload = JSON.stringify({ title: titolo, body: corpo ?? '', url: url ?? '/' })
@@ -87,6 +135,6 @@ Deno.serve(async (req) => {
 
   const inviate = risultati.filter((r) => r.status === 'fulfilled').length
   return new Response(JSON.stringify({ inviate, totali: risultati.length }), {
-    headers: { 'Content-Type': 'application/json' },
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
   })
 })
