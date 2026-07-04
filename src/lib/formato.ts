@@ -41,3 +41,15 @@ export function dataEstesa(iso: string | null): string {
     year: 'numeric',
   })
 }
+
+// Da timestamp ISO a "adesso" / "5 min fa" / "3 ore fa" / "2 giorni fa".
+export function tempoRelativo(iso: string): string {
+  const minuti = Math.floor((Date.now() - new Date(iso).getTime()) / 60000)
+  if (minuti < 1) return 'adesso'
+  if (minuti < 60) return `${minuti} min fa`
+  const ore = Math.floor(minuti / 60)
+  if (ore < 24) return `${ore} ${ore === 1 ? 'ora' : 'ore'} fa`
+  const giorni = Math.floor(ore / 24)
+  if (giorni < 7) return `${giorni} ${giorni === 1 ? 'giorno' : 'giorni'} fa`
+  return dataEstesa(iso.slice(0, 10))
+}

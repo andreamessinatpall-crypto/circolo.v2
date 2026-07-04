@@ -62,3 +62,39 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(staleWhileRevalidate(request, CACHE_STATICA))
   }
 })
+
+// (Fase 1) Notifiche push: la Edge Function "invia-push" manda un payload
+// { title, body, url }. Mostriamo la notifica di sistema e, al click, apriamo
+// (o portiamo in primo piano) la relativa pagina dell'app.
+self.addEventListener('push', (event) => {
+  if (!event.data) return
+
+  let dati = {}
+  try {
+    dati = event.data.json()
+  } catch {
+    dati = { title: 'Circolo Sportivo', body: event.data.text() }
+  }
+
+  event.waitUntil(
+    self.registration.showNotification(dati.title || 'Circolo Sportivo', {
+      body: dati.body || '',
+      icon: '/icon-192.png',
+      badge: '/icon-192.png',
+      data: { url: dati.url || '/' },
+    }),
+  )
+})
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close()
+  const url = event.notification.data?.url || '/'
+
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((elenco) => {
+      const aperta = elenco.find((c) => c.url.includes(url))
+      if (aperta) return aperta.focus()
+      return self.clients.openWindow(url)
+    }),
+  )
+})

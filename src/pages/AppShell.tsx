@@ -6,6 +6,7 @@ import { useRealtimeCircolo } from '@/hooks/useRealtimeCircolo'
 import { useModalitaPremi } from '@/features/premi/datiPremi'
 import FooterLegale from '@/components/legale/FooterLegale'
 import InstallaAppBanner from '@/components/InstallaAppBanner'
+import CampanellaNotifiche from '@/features/notifiche/CampanellaNotifiche'
 
 interface Voce {
   path: string
@@ -71,6 +72,7 @@ export default function AppShell() {
         </div>
 
         <div className="header-utente flex items-center gap-1.5 text-sm">
+          <CampanellaNotifiche />
           {/* Icona profilo */}
           <NavLink
             to="/profilo?sezione=dati"

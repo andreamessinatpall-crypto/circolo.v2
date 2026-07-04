@@ -5,6 +5,8 @@ import { z } from 'zod'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/auth/useAuth'
 import { etichettaGenere } from '@/lib/formato'
+import { mancaTabella, messaggioErrore } from '@/lib/errori'
+import { usePushNotifiche } from '@/hooks/usePushNotifiche'
 import { classiErrore, classiOk } from '@/components/stili'
 import { MedagliaLv } from './MedagliaLv'
 import StoricoMovimenti from './StoricoMovimenti'
@@ -32,6 +34,66 @@ const schema = z
 type DatiForm = z.infer<typeof schema>
 
 type Modale = 'salva' | null
+
+// Sezione "Notifiche push": permesso richiesto a mano dal socio (mai forzato
+// all'avvio), riusata come base da chat/lista d'attesa nelle fasi successive.
+function SezioneNotifiche({ socioId }: { socioId: string }) {
+  const { stato, caricamento, attiva, disattiva } = usePushNotifiche(socioId)
+
+  if (caricamento || stato === 'non-supportato') return null
+
+  const erroreTabella =
+    (attiva.error && mancaTabella(attiva.error, 'push_subscriptions')) ||
+    (disattiva.error && mancaTabella(disattiva.error, 'push_subscriptions'))
+
+  return (
+    <div className="card" style={{ marginTop: '0.75rem' }}>
+      <p className="dati-check-titolo" style={{ marginBottom: '0.5rem' }}>Notifiche push</p>
+
+      {erroreTabella && (
+        <p className={classiErrore}>
+          Esegui lo script tappa43-push-subscriptions.sql su Supabase per attivare le notifiche.
+        </p>
+      )}
+
+      {stato === 'negato' && (
+        <p className="sub">Le notifiche sono bloccate nelle impostazioni del browser per questo sito.</p>
+      )}
+
+      {stato === 'attivo' && (
+        <>
+          <p className={classiOk}>Notifiche attive su questo dispositivo.</p>
+          <button
+            type="button"
+            className="btn btn-secondario btn-sm mt-2"
+            onClick={() => disattiva.mutate()}
+            disabled={disattiva.isPending}
+          >
+            {disattiva.isPending ? 'Disattivo…' : 'Disattiva'}
+          </button>
+        </>
+      )}
+
+      {stato === 'non-attivo' && (
+        <>
+          <p className="sub">Ricevi un avviso su questo dispositivo per messaggi, prenotazioni e tornei.</p>
+          <button
+            type="button"
+            className="btn btn-sm mt-2"
+            onClick={() => attiva.mutate()}
+            disabled={attiva.isPending}
+          >
+            {attiva.isPending ? 'Attivo…' : 'Attiva notifiche'}
+          </button>
+        </>
+      )}
+
+      {attiva.error && !erroreTabella && (
+        <p className={`mt-2 ${classiErrore}`}>{messaggioErrore(attiva.error)}</p>
+      )}
+    </div>
+  )
+}
 
 export default function DatiProfilo() {
   const { profilo, utente, ricaricaProfilo } = useAuth()
@@ -263,6 +325,8 @@ export default function DatiProfilo() {
           </label>
         </div>
       )}
+
+      <SezioneNotifiche socioId={profilo.id} />
 
       <StoricoMovimenti />
 

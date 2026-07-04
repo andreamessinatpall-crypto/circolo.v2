@@ -8,11 +8,16 @@ function eStandalone() {
   return window.matchMedia('(display-mode: standalone)').matches || standaloneIos === true
 }
 
-function eIosSafari() {
+function eIos() {
+  return /iphone|ipad|ipod/i.test(window.navigator.userAgent)
+}
+
+// Su iOS solo Safari crea una vera PWA standalone da "Aggiungi a Home": gli
+// altri browser (Chrome/Firefox/Edge iOS) sono wrapper di Safari e il loro
+// "aggiungi a home" produce solo un segnalibro, non un'app installata.
+function eSafari() {
   const ua = window.navigator.userAgent
-  const ios = /iphone|ipad|ipod/i.test(ua)
-  const safari = /safari/i.test(ua) && !/crios|fxios|edgios|opios/i.test(ua)
-  return ios && safari
+  return /safari/i.test(ua) && !/crios|fxios|edgios|opios/i.test(ua)
 }
 
 export default function InstallaAppBanner() {
@@ -21,8 +26,11 @@ export default function InstallaAppBanner() {
 
   useEffect(() => sottoscriviInstallazione(() => setPronto(!!getEventoInstallazione())), [])
 
+  const ios = eIos()
+  const iosNonSafari = ios && !eSafari()
+
   if (dismesso || eStandalone()) return null
-  if (!pronto && !eIosSafari()) return null
+  if (!pronto && !ios) return null
 
   function chiudi() {
     localStorage.setItem(CHIAVE, '1')
@@ -48,9 +56,15 @@ export default function InstallaAppBanner() {
             Installa
           </button>
         </>
+      ) : iosNonSafari ? (
+        <p className="installa-testo">
+          Per installare l'app apri questo indirizzo in <strong>Safari</strong>, poi tocca{' '}
+          <strong>Condividi</strong> e infine <strong>Aggiungi alla schermata Home</strong>.
+        </p>
       ) : (
         <p className="installa-testo">
-          Installa questa app: tocca <strong>Condividi</strong> e poi <strong>Aggiungi a Home</strong>.
+          Installa questa app: tocca <strong>Condividi</strong> e poi{' '}
+          <strong>Aggiungi alla schermata Home</strong>.
         </p>
       )}
       <button type="button" className="installa-chiudi" onClick={chiudi} aria-label="Chiudi">
