@@ -3,11 +3,14 @@ import { createRoot } from 'react-dom/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { BrowserRouter } from 'react-router-dom'
 import { AuthProvider } from '@/auth/AuthProvider'
+import { registraServiceWorker } from '@/lib/registraServiceWorker'
 import './index.css'
 import App from './App.tsx'
 
 // TanStack Query gestisce caricamento, cache ed errori delle chiamate a Supabase.
 const queryClient = new QueryClient()
+
+registraServiceWorker()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

@@ -5,6 +5,7 @@ import type { Socio } from '@/auth/tipi'
 import { useRealtimeCircolo } from '@/hooks/useRealtimeCircolo'
 import { useModalitaPremi } from '@/features/premi/datiPremi'
 import FooterLegale from '@/components/legale/FooterLegale'
+import InstallaAppBanner from '@/components/InstallaAppBanner'
 
 interface Voce {
   path: string
@@ -148,6 +149,8 @@ export default function AppShell() {
           ))}
         </nav>
       </div>
+
+      <InstallaAppBanner />
 
       {/* Contenuto */}
       <main className="mx-auto w-full max-w-[900px] flex-1 px-5 pb-10 pt-4">

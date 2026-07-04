@@ -5425,4 +5425,41 @@
     border-color: rgba(185, 28, 28, 0.3);
     background: rgba(185, 28, 28, 0.04);
   }
+
+  /* ── Banner "Installa app" (PWA) ─────────────────────────────
+     A differenza del cookie-banner non è fixed: sta nel flusso,
+     subito sotto l'header/subnav, così non si sovrappone ad altri
+     elementi sticky. */
+  .installa-banner {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 10px 16px;
+    background: var(--v800);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  .installa-testo {
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+    font-size: 0.82rem;
+    line-height: 1.5;
+    color: rgba(255, 255, 255, 0.85);
+  }
+  .installa-testo strong {
+    color: #fff;
+  }
+  .installa-chiudi {
+    flex: 0 0 auto;
+    background: none;
+    border: none;
+    padding: 4px 6px;
+    font-size: 0.95rem;
+    color: rgba(255, 255, 255, 0.55);
+    cursor: pointer;
+    line-height: 1;
+  }
+  .installa-chiudi:hover {
+    color: #fff;
+  }
 }
