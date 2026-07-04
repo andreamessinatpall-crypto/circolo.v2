@@ -112,12 +112,15 @@ export function useAmici(profiloId: string) {
       const altro = a.richiedente === profiloId ? a.destinatario : a.richiedente
       if (staffIds.has(altro)) continue
       const s = sociById[altro]
+      // Account cancellato/anonimizzato (o comunque non più in soci_pubblici):
+      // l'amicizia resta a livello di dati per storico/FK, ma non va mostrata.
+      if (!s) continue
       const voce: VoceAmico = {
         id: altro,
-        etichetta: s ? titleCase(s.etichetta) : 'Giocatore',
-        ruolo: s ? ruoloDa(s) : null,
-        punti: s?.punti ?? 0,
-        sport: s?.sport_preferito ?? null,
+        etichetta: titleCase(s.etichetta),
+        ruolo: ruoloDa(s),
+        punti: s.punti,
+        sport: s.sport_preferito,
         rec: a,
         nPartite: partiteByAmico[altro] ?? 0,
       }

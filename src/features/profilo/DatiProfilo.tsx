@@ -35,12 +35,16 @@ type DatiForm = z.infer<typeof schema>
 
 type Modale = 'salva' | null
 
+function eIos() {
+  return /iphone|ipad|ipod/i.test(window.navigator.userAgent)
+}
+
 // Sezione "Notifiche push": permesso richiesto a mano dal socio (mai forzato
 // all'avvio), riusata come base da chat/lista d'attesa nelle fasi successive.
 function SezioneNotifiche({ socioId }: { socioId: string }) {
   const { stato, caricamento, attiva, disattiva } = usePushNotifiche(socioId)
 
-  if (caricamento || stato === 'non-supportato') return null
+  if (caricamento) return null
 
   const erroreTabella =
     (attiva.error && mancaTabella(attiva.error, 'push_subscriptions')) ||
@@ -53,6 +57,14 @@ function SezioneNotifiche({ socioId }: { socioId: string }) {
       {erroreTabella && (
         <p className={classiErrore}>
           Esegui lo script tappa43-push-subscriptions.sql su Supabase per attivare le notifiche.
+        </p>
+      )}
+
+      {stato === 'non-supportato' && (
+        <p className="sub">
+          {eIos()
+            ? "Su iPhone/iPad le notifiche funzionano solo se l'app è installata sulla schermata Home (tocca Condividi → Aggiungi alla schermata Home nel browser Safari) e la apri da lì, con iOS 16.4 o successivo."
+            : 'Le notifiche push non sono supportate su questo browser.'}
         </p>
       )}
 

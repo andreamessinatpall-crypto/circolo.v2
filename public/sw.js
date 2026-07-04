@@ -1,9 +1,17 @@
 // Service worker del Circolo Sportivo.
-// Strategia: stale-while-revalidate su risorse statiche e sulle letture Supabase
-// (GET a /rest/v1/...), così l'app riapre mostrando gli ultimi dati anche
-// offline o con rete instabile. Le scritture (POST/PATCH/DELETE) non passano
-// mai dalla cache: falliscono normalmente offline, gestite dagli errori già
-// presenti nell'app.
+// Due strategie diverse a seconda del tipo di risorsa:
+// - risorse statiche same-origin (JS/CSS/HTML/icone): stale-while-revalidate,
+//   risposta istantanea dalla cache + aggiornamento in background. Vanno bene
+//   perché cambiano raramente e la velocità percepita conta più della freschezza.
+// - letture Supabase (GET /rest/v1/...): network-first con la cache SOLO come
+//   ripiego se la rete non risponde (offline/rete instabile). Questi dati sono
+//   già gestiti da TanStack Query con invalidation/realtime propri: se li
+//   mettessimo anche in stale-while-revalidate, il SW servirebbe sempre la
+//   versione precedente prima di quella fresca dopo ogni scrittura (messaggio
+//   inviato, presenza confermata, ecc.), facendo sembrare l'azione "sparita"
+//   o lenta finché non si riapre la pagina.
+// Le scritture (POST/PATCH/DELETE) non passano mai dalla cache: falliscono
+// normalmente offline, gestite dagli errori già presenti nell'app.
 
 const CACHE_STATICA = 'circolo-statica-v1'
 const CACHE_DATI = 'circolo-dati-v1'
@@ -26,17 +34,8 @@ self.addEventListener('activate', (event) => {
   self.clients.claim()
 })
 
-// Tabelle "vive" (chat, notifiche): aggiornate via realtime/polling e lette
-// di continuo dall'app. Se le mettessimo in cache, lo stale-while-revalidate
-// restituirebbe sempre la versione vecchia PRIMA di quella fresca, facendo
-// sparire messaggi/notifiche appena arrivati finché non si riapre la pagina.
-const TABELLE_SENZA_CACHE = ['messaggi_chat', 'notifiche']
-
 function eLetturaSupabase(url, metodo) {
-  if (metodo !== 'GET') return false
-  if (!url.hostname.endsWith('.supabase.co') || !url.pathname.startsWith('/rest/v1/')) return false
-  const tabella = url.pathname.slice('/rest/v1/'.length).split('?')[0]
-  return !TABELLE_SENZA_CACHE.includes(tabella)
+  return metodo === 'GET' && url.hostname.endsWith('.supabase.co') && url.pathname.startsWith('/rest/v1/')
 }
 
 // Risponde subito con la cache se c'è, aggiorna in background per la prossima volta.
@@ -56,6 +55,21 @@ function staleWhileRevalidate(request, nomeCache) {
   )
 }
 
+// Prova sempre la rete per prima: solo se fallisce (offline) ripiega sulla
+// cache. Così i dati letti/aggiornati mentre si è online sono sempre freschi.
+function networkFirst(request, nomeCache) {
+  return fetch(request)
+    .then((rispostaRete) => {
+      if (rispostaRete && rispostaRete.ok) {
+        caches.open(nomeCache).then((cache) => cache.put(request, rispostaRete.clone()))
+      }
+      return rispostaRete
+    })
+    .catch(() =>
+      caches.open(nomeCache).then((cache) => cache.match(request)).then((risposta) => risposta || Response.error()),
+    )
+}
+
 self.addEventListener('fetch', (event) => {
   const { request } = event
   if (request.method !== 'GET') return
@@ -63,7 +77,7 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url)
 
   if (eLetturaSupabase(url, request.method)) {
-    event.respondWith(staleWhileRevalidate(request, CACHE_DATI))
+    event.respondWith(networkFirst(request, CACHE_DATI))
     return
   }
 
