@@ -12,6 +12,7 @@ import { MedagliaLv } from './MedagliaLv'
 import StoricoMovimenti from './StoricoMovimenti'
 import CancellaAccount from './CancellaAccount'
 import ModalConfermaPassword from './ModalConfermaPassword'
+import SezioneLivelloGioco from './livelloGioco/SezioneLivelloGioco'
 
 const schema = z
   .object({
@@ -39,6 +40,22 @@ function eIos() {
   return /iphone|ipad|ipod/i.test(window.navigator.userAgent)
 }
 
+function IcoCampanella() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+      <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+    </svg>
+  )
+}
+
+const PILL_STATO: Record<string, { testo: string; classe: string }> = {
+  attivo: { testo: 'Attive', classe: 'ok' },
+  'non-attivo': { testo: 'Non attive', classe: 'off' },
+  negato: { testo: 'Bloccate', classe: 'bloccato' },
+  'non-supportato': { testo: 'Non disponibili', classe: 'off' },
+}
+
 // Sezione "Notifiche push": permesso richiesto a mano dal socio (mai forzato
 // all'avvio), riusata come base da chat/lista d'attesa nelle fasi successive.
 function SezioneNotifiche({ socioId }: { socioId: string }) {
@@ -49,10 +66,18 @@ function SezioneNotifiche({ socioId }: { socioId: string }) {
   const erroreTabella =
     (attiva.error && mancaTabella(attiva.error, 'push_subscriptions')) ||
     (disattiva.error && mancaTabella(disattiva.error, 'push_subscriptions'))
+  const pill = PILL_STATO[stato]
 
   return (
-    <div className="card" style={{ marginTop: '0.75rem' }}>
-      <p className="dati-check-titolo" style={{ marginBottom: '0.5rem' }}>Notifiche push</p>
+    <div className="card sezione-moderna" style={{ marginTop: '0.75rem' }}>
+      <div className="sezione-moderna-head">
+        <span className="sezione-moderna-icona"><IcoCampanella /></span>
+        <div className="sezione-moderna-testi">
+          <h3 className="sezione-moderna-titolo">Notifiche push</h3>
+          <p className="sezione-moderna-sub">Avvisi in tempo reale su questo dispositivo</p>
+        </div>
+        <span className={`sezione-moderna-pill ${pill.classe}`}>{pill.testo}</span>
+      </div>
 
       {erroreTabella && (
         <p className={classiErrore}>
@@ -73,31 +98,25 @@ function SezioneNotifiche({ socioId }: { socioId: string }) {
       )}
 
       {stato === 'attivo' && (
-        <>
-          <p className={classiOk}>Notifiche attive su questo dispositivo.</p>
-          <button
-            type="button"
-            className="btn btn-secondario btn-sm mt-2"
-            onClick={() => disattiva.mutate()}
-            disabled={disattiva.isPending}
-          >
-            {disattiva.isPending ? 'Disattivo…' : 'Disattiva'}
-          </button>
-        </>
+        <button
+          type="button"
+          className="btn btn-secondario btn-sm"
+          onClick={() => disattiva.mutate()}
+          disabled={disattiva.isPending}
+        >
+          {disattiva.isPending ? 'Disattivo…' : 'Disattiva'}
+        </button>
       )}
 
       {stato === 'non-attivo' && (
-        <>
-          <p className="sub">Ricevi un avviso su questo dispositivo per messaggi, prenotazioni e tornei.</p>
-          <button
-            type="button"
-            className="btn btn-sm mt-2"
-            onClick={() => attiva.mutate()}
-            disabled={attiva.isPending}
-          >
-            {attiva.isPending ? 'Attivo…' : 'Attiva notifiche'}
-          </button>
-        </>
+        <button
+          type="button"
+          className="btn btn-sm"
+          onClick={() => attiva.mutate()}
+          disabled={attiva.isPending}
+        >
+          {attiva.isPending ? 'Attivo…' : 'Attiva notifiche'}
+        </button>
       )}
 
       {attiva.error && !erroreTabella && (
@@ -279,7 +298,13 @@ export default function DatiProfilo() {
         {/* Sport preferito */}
         <div className="dati-riga">
           <span className="dati-riga-ico" aria-hidden="true">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="15" cy="4" r="2"/><path d="M14.5 6L12 12"/><path d="M13 8.5L9.5 6"/><path d="M13 8.5L17 11"/><path d="M12 12L16 15L15 21"/><path d="M12 12L8 16"/></svg>
+            <svg width="20" height="14" viewBox="0 0 60 40" fill="none" stroke="currentColor" aria-hidden="true">
+              <circle cx="12" cy="13" r="9" strokeWidth="3.4" />
+              <circle cx="30" cy="13" r="9" strokeWidth="3.4" />
+              <circle cx="48" cy="13" r="9" strokeWidth="3.4" />
+              <circle cx="21" cy="24" r="9" strokeWidth="3.4" />
+              <circle cx="39" cy="24" r="9" strokeWidth="3.4" />
+            </svg>
           </span>
           <select id="dati-sport" aria-label="Sport preferito" {...register('sport_preferito')}>
             <option value="entrambi">Padel e Calcio</option>
@@ -337,6 +362,8 @@ export default function DatiProfilo() {
           </label>
         </div>
       )}
+
+      <SezioneLivelloGioco socioId={profilo.id} sportPreferito={profilo.sport_preferito} />
 
       <SezioneNotifiche socioId={profilo.id} />
 
