@@ -11,6 +11,7 @@ import { useAmici, type Amicizia, type VoceAmico } from './useAmici'
 import { SportIcona } from '@/components/IconeSport'
 import { useConversazioni } from '@/features/chat/useChat'
 import ChatModal from '@/features/chat/ChatModal'
+import SezioneCompagni from '@/features/compagni/SezioneCompagni'
 
 
 function IcoCalendario() {
@@ -136,6 +137,7 @@ const IcoAmici = <Ico><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circ
 const IcoInbox = <Ico><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></Ico>
 const IcoSend = <Ico><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></Ico>
 const IcoPiu = <Ico><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></Ico>
+const IcoCompagni = <Ico><circle cx="9" cy="7" r="4"/><path d="M1 20c0-3.8 3.6-7 8-7s8 3.2 8 7"/><path d="M17 8a3 3 0 1 1 0 6"/><path d="M22 20c0-2.6-1.7-4.8-4-5.6"/></Ico>
 
 function Eyebrow({ icona, children }: { icona?: React.ReactNode; children: React.ReactNode }) {
   return (
@@ -367,6 +369,12 @@ export default function AmiciProfilo() {
             ))}
           </div>
         )}
+      </section>
+
+      {/* ── Cerco compagno ─────────────────────────────────── */}
+      <section>
+        <Eyebrow icona={IcoCompagni}>Cerco compagno</Eyebrow>
+        <SezioneCompagni />
       </section>
 
       {/* ── Classifica tra amici ───────────────────────────── */}

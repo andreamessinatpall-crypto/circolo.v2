@@ -6028,4 +6028,42 @@
     border-color: #fff;
     color: var(--v900);
   }
+
+  /* ── Cerco compagno (Fase 3) ──────────────────────────────────── */
+  .compagni-card {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .compagni-card-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .compagni-card-nome {
+    font-weight: 700;
+    color: var(--ink);
+    font-size: 0.92rem;
+  }
+  .compagni-card-quando {
+    font-size: 0.76rem;
+    color: var(--ink3);
+    white-space: nowrap;
+  }
+  .compagni-candidature {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px dashed var(--border2);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .compagni-candidatura-riga {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 0.84rem;
+  }
 }
