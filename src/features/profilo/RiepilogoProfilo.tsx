@@ -7,110 +7,6 @@ import { svgMedagliaColore } from './badge/medaglieSvg'
 import { MedagliaRuolo } from './ruoloBadge'
 import AttivitaInProgramma from './AttivitaInProgramma'
 
-function AllenamentiInProgramma() {
-  const { profilo } = useAuth()
-
-  const query = useQuery({
-    queryKey: ['allenamenti-programma-istr', profilo?.id],
-    enabled: !!profilo,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('prenotazioni')
-        .select('id, inizio, fine, campo_id')
-        .eq('allenamento', true)
-        .eq('allenatore_id', profilo!.id)
-        .gte('inizio', new Date().toISOString())
-        .order('inizio')
-        .limit(30)
-      if (error) throw error
-      const pren = (data ?? []) as Array<{ id: string | number; inizio: string; fine: string; campo_id: number | null }>
-
-      const campoIds = [...new Set(pren.map((p) => p.campo_id).filter(Boolean))] as number[]
-      const nomeCampo: Record<number, string> = {}
-      if (campoIds.length) {
-        const { data: campi } = await supabase.from('campi').select('id, nome').in('id', campoIds)
-        for (const c of (campi ?? []) as Array<{ id: number; nome: string }>) nomeCampo[c.id] = c.nome
-      }
-
-      const ids = pren.map((p) => p.id)
-      const contiMap: Record<string, number> = {}
-      if (ids.length) {
-        const { data: parti } = await supabase
-          .from('partecipanti_amichevole')
-          .select('prenotazione_id')
-          .in('prenotazione_id', ids)
-        for (const p of (parti ?? []) as Array<{ prenotazione_id: string | number }>) {
-          const k = String(p.prenotazione_id)
-          contiMap[k] = (contiMap[k] ?? 0) + 1
-        }
-      }
-
-      return pren.map((p) => ({
-        id: p.id,
-        inizio: p.inizio,
-        fine: p.fine,
-        campoNome: p.campo_id ? (nomeCampo[p.campo_id] ?? null) : null,
-        nPartecipanti: contiMap[String(p.id)] ?? 0,
-      }))
-    },
-  })
-
-  if (query.isLoading) return <p className="sub">Caricamento…</p>
-  const lista = query.data ?? []
-  if (lista.length === 0) return <p className="sub">Nessun allenamento in programma.</p>
-
-  function fmt(iso: string) {
-    return new Date(iso).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })
-  }
-
-  const gruppi: { chiave: string; label: string; items: typeof lista }[] = []
-  for (const s of lista) {
-    const d = new Date(s.inizio)
-    const chiave = d.toDateString()
-    let g = gruppi.find((x) => x.chiave === chiave)
-    if (!g) {
-      g = { chiave, label: d.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' }), items: [] }
-      gruppi.push(g)
-    }
-    g.items.push(s)
-  }
-
-  return (
-    <div>
-      {gruppi.map((g) => (
-        <div key={g.chiave} className="gruppo-giorno">
-          <div className="giorno-partite">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <rect x="3" y="4" width="18" height="18" rx="2" />
-              <line x1="16" y1="2" x2="16" y2="6" />
-              <line x1="8" y1="2" x2="8" y2="6" />
-              <line x1="3" y1="10" x2="21" y2="10" />
-            </svg>
-            <span>{g.label}</span>
-          </div>
-          <div className="flex flex-col gap-3">
-            {g.items.map((s) => (
-              <div key={String(s.id)} className="amichevole-riga">
-                <div className="amichevole-cap">
-                  <div>
-                    <div className="orario">{fmt(s.inizio)}–{fmt(s.fine)}</div>
-                    {s.campoNome && <div className="att-sport">{s.campoNome}</div>}
-                  </div>
-                  <span className="all-badge">
-                    {s.nPartecipanti > 0
-                      ? `${s.nPartecipanti} ${s.nPartecipanti === 1 ? 'allievo' : 'allievi'}`
-                      : 'Allenamento'}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      ))}
-    </div>
-  )
-}
-
 export default function RiepilogoProfilo() {
   const { profilo } = useAuth()
   const livelliQuery = useLivelliPunti()
@@ -316,16 +212,6 @@ export default function RiepilogoProfilo() {
               </span>
             </div>
           </div>
-        </div>
-
-        <div className="club-sez-header" style={{ marginTop: '2rem' }}>
-          <span className="club-sez-icona">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2M12 12h4M12 16h4M8 12h.01M8 16h.01"/></svg>
-          </span>
-          <h2 className="club-sez-titolo">Allenamenti in programma</h2>
-        </div>
-        <div className="card">
-          <AllenamentiInProgramma />
         </div>
 
         <div className="club-sez-header" style={{ marginTop: '2rem' }}>

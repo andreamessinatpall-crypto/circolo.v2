@@ -4,8 +4,9 @@ import { mancaTabella, messaggioErrore } from '@/lib/errori'
 import { useCampi } from './datiPrenotazioni'
 import { useMieLezioni, useSociPubblici } from './datiAmichevoli'
 import { oraLocale } from './orari'
+import GestioneDisponibilita from '@/features/lezioni/GestioneDisponibilita'
 import type { MiaPrenotazione, Partecipante } from './datiAmichevoli'
-import type { Campo, Sport } from './tipi'
+import type { Campo } from './tipi'
 
 const ICONA_CAL = (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
@@ -14,17 +15,19 @@ const ICONA_CAL = (
   </svg>
 )
 
-// Vista in sola lettura degli allenamenti di cui il socio è istruttore.
+// Tab "Lezioni" del profilo istruttore: le sue disponibilità (Fase 4) e
+// l'elenco degli allenamenti di cui è istruttore, per tutti gli sport (non
+// filtrato, a differenza di prima quando viveva dentro la pagina per-sport).
 // L'istruttore NON gestisce le presenze (lo fanno admin/collaboratore): qui
 // può solo consultare data, campo e l'elenco dei partecipanti.
-export default function VistaLezioni({ sport }: { sport: Sport }) {
+export default function VistaLezioni() {
   const { profilo } = useAuth()
   const campiQuery = useCampi()
   const sociQuery = useSociPubblici()
 
   const idCampi = useMemo(
-    () => (campiQuery.data ?? []).filter((c) => c.sport === sport).map((c) => c.id),
-    [campiQuery.data, sport],
+    () => (campiQuery.data ?? []).map((c) => c.id),
+    [campiQuery.data],
   )
   const campiById = useMemo(() => {
     const m = new Map<string, Campo>()
@@ -32,7 +35,7 @@ export default function VistaLezioni({ sport }: { sport: Sport }) {
     return m
   }, [campiQuery.data])
 
-  const lezioni = useMieLezioni(sport, idCampi, profilo?.id ?? '')
+  const lezioni = useMieLezioni(idCampi, profilo?.id ?? '')
 
   const etichette = useMemo(() => {
     const m = new Map<string, string>()
@@ -56,13 +59,6 @@ export default function VistaLezioni({ sport }: { sport: Sport }) {
   }
 
   const lista = lezioni.data?.lista ?? []
-  if (lista.length === 0) {
-    return (
-      <p className="sub">
-        Non hai lezioni in programma. Gli allenamenti di cui sei istruttore compariranno qui.
-      </p>
-    )
-  }
 
   const partsByPren = new Map<string, Partecipante[]>()
   for (const r of lezioni.data?.parts ?? []) {
@@ -90,25 +86,33 @@ export default function VistaLezioni({ sport }: { sport: Sport }) {
 
   return (
     <div>
-      {gruppi.map((g) => (
-        <div key={g.giorno} className="gruppo-giorno">
-          <div className="giorno-partite">
-            {ICONA_CAL}
-            <span>{g.etichetta}</span>
+      <GestioneDisponibilita istruttoreId={profilo.id} />
+
+      {lista.length === 0 ? (
+        <p className="sub mt-3">
+          Non hai lezioni in programma. Gli allenamenti di cui sei istruttore compariranno qui.
+        </p>
+      ) : (
+        gruppi.map((g) => (
+          <div key={g.giorno} className="gruppo-giorno">
+            <div className="giorno-partite">
+              {ICONA_CAL}
+              <span>{g.etichetta}</span>
+            </div>
+            <div className="schede-griglia">
+              {g.pren.map((p) => (
+                <SchedaLezioneVista
+                  key={p.id}
+                  pren={p}
+                  campo={campiById.get(String(p.campo_id))}
+                  partecipanti={partsByPren.get(String(p.id)) ?? []}
+                  etichette={etichette}
+                />
+              ))}
+            </div>
           </div>
-          <div className="schede-griglia">
-            {g.pren.map((p) => (
-              <SchedaLezioneVista
-                key={p.id}
-                pren={p}
-                campo={campiById.get(String(p.campo_id))}
-                partecipanti={partsByPren.get(String(p.id)) ?? []}
-                etichette={etichette}
-              />
-            ))}
-          </div>
-        </div>
-      ))}
+        ))
+      )}
     </div>
   )
 }

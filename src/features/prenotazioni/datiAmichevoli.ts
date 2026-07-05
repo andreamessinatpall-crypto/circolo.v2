@@ -128,13 +128,14 @@ export function useMieAmichevoli(
 }
 
 // Le lezioni (allenamenti) di cui sono istruttore, con i partecipanti.
+// Non filtrate per sport: un istruttore vede tutte le proprie lezioni
+// (padel e calcio) in un unico posto (tab "Lezioni" del profilo).
 export function useMieLezioni(
-  sport: Sport,
   idCampi: Array<number | string>,
   allenatoreId: string,
 ) {
   return useQuery({
-    queryKey: ['lezioni', sport, allenatoreId],
+    queryKey: ['lezioni', allenatoreId],
     enabled: idCampi.length > 0,
     queryFn: async () => {
       const adesso = new Date().toISOString()

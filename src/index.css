@@ -6066,4 +6066,17 @@
     gap: 8px;
     font-size: 0.84rem;
   }
+
+  /* ── Disponibilità maestri (Fase 4) ──────────────────────────── */
+  .disponibilita-riga {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 8px 12px;
+    border-radius: 10px;
+    background: var(--fondo);
+    font-size: 0.84rem;
+    color: var(--ink);
+  }
 }

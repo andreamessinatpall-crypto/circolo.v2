@@ -6,8 +6,9 @@ import ClubProfilo from './ClubProfilo'
 import DatiProfilo from './DatiProfilo'
 import AmiciProfilo from './amici/AmiciProfilo'
 import SociPage from '@/features/segreteria/SociPage'
+import VistaLezioni from '@/features/prenotazioni/VistaLezioni'
 
-type SottoScheda = 'riepilogo' | 'club' | 'dati' | 'amici' | 'giocatori'
+type SottoScheda = 'riepilogo' | 'club' | 'dati' | 'amici' | 'giocatori' | 'lezioni'
 
 export default function ProfiloPage() {
   const { profilo } = useAuth()
@@ -32,6 +33,7 @@ export default function ProfiloPage() {
   } else if (istruttore) {
     schede = [
       { id: 'riepilogo', label: 'Riepilogo' },
+      { id: 'lezioni',   label: 'Lezioni' },
       { id: 'club',      label: 'Club' },
     ]
   } else {
@@ -62,6 +64,7 @@ export default function ProfiloPage() {
       {scheda === 'dati'       && <DatiProfilo />}
       {scheda === 'amici'      && <AmiciProfilo />}
       {scheda === 'giocatori'  && <SociPage />}
+      {scheda === 'lezioni'    && <VistaLezioni />}
     </div>
   )
 }

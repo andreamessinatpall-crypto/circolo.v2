@@ -10,6 +10,7 @@ import { TorneiInCorso, TorneiInProgramma } from './TorneiClub'
 import { useAmici, type VoceStaff } from './amici/useAmici'
 import { MedagliaRuolo } from './ruoloBadge'
 import { SportIcona } from '@/components/IconeSport'
+import DisponibilitaIstruttoreModal from '@/features/lezioni/DisponibilitaIstruttoreModal'
 
 interface RigaClassifica {
   posizione: number
@@ -80,9 +81,26 @@ const IcoZap = <Ico><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></
 const IcoCal = <Ico><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></Ico>
 const IcoScudo = <Ico d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
 
-function CardStaff({ voce }: { voce: VoceStaff }) {
+function CardStaff({ voce, onClick }: { voce: VoceStaff; onClick?: () => void }) {
+  const cliccabile = voce.ruolo === 'istruttore' && !!onClick
   return (
-    <div className="amici-card">
+    <div
+      className={'amici-card' + (cliccabile ? ' cursor-pointer' : '')}
+      onClick={onClick}
+      role={cliccabile ? 'button' : undefined}
+      tabIndex={cliccabile ? 0 : undefined}
+      onKeyDown={
+        cliccabile
+          ? (e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                onClick!()
+              }
+            }
+          : undefined
+      }
+      title={cliccabile ? 'Vedi le sue disponibilità per lezioni' : undefined}
+    >
       <MedagliaRuolo ruolo={voce.ruolo} size={40} />
       <div className="amici-card-info">
         <div className="amici-card-nome">
@@ -121,6 +139,7 @@ function SezClub({
 
 export default function ClubProfilo() {
   const [espanso, setEspanso] = useState(false)
+  const [istruttoreAperto, setIstruttoreAperto] = useState<VoceStaff | null>(null)
   const { profilo } = useAuth()
   const istruttore = !!profilo?.e_allenatore && !profilo?.is_allenatore && !profilo?.is_admin
   const { staff } = useAmici(profilo?.id ?? '')
@@ -254,10 +273,22 @@ export default function ClubProfilo() {
         <SezClub icona={IcoScudo} titolo="Staff del club">
           <div className="flex flex-col gap-2">
             {staff.map((s) => (
-              <CardStaff key={s.id} voce={s} />
+              <CardStaff
+                key={s.id}
+                voce={s}
+                onClick={s.ruolo === 'istruttore' ? () => setIstruttoreAperto(s) : undefined}
+              />
             ))}
           </div>
         </SezClub>
+      )}
+
+      {istruttoreAperto && (
+        <DisponibilitaIstruttoreModal
+          istruttoreId={istruttoreAperto.id}
+          nome={istruttoreAperto.etichetta}
+          onChiudi={() => setIstruttoreAperto(null)}
+        />
       )}
 
     </div>

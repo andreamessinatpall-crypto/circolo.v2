@@ -23,8 +23,10 @@ interface RigaAttivita {
   campo_nome: string | null
   sport: string
   prenotante_id: string | null
-  socio_id: string
-  confermato: boolean
+  // Nullo per una lezione dell'istruttore senza ancora nessun partecipante
+  // iscritto (LEFT JOIN lato RPC, vedi tappa52).
+  socio_id: string | null
+  confermato: boolean | null
 }
 
 interface Attivita {
@@ -69,7 +71,8 @@ export default function AttivitaInProgramma() {
             torneo_nome: null,
           })
         }
-        map.get(k)!.parti.push({ socio_id: r.socio_id, confermato: r.confermato })
+        // r.socio_id è nullo per una lezione senza ancora partecipanti (LEFT JOIN): niente da aggiungere.
+        if (r.socio_id) map.get(k)!.parti.push({ socio_id: r.socio_id, confermato: !!r.confermato })
       }
       const lista = [...map.values()].sort(
         (a, b) => new Date(a.inizio).getTime() - new Date(b.inizio).getTime(),
@@ -227,14 +230,16 @@ export default function AttivitaInProgramma() {
                     <div className="partita-badge" style={{ marginTop: 0 }}>Partita</div>
                   )}
                 </div>
-                <div className="att-parti">
-                  {m.parti.map((r, i) => (
-                    <span key={r.socio_id}>
-                      {i > 0 && <span className="att-parti-sep">·</span>}
-                      {fmtP(r.socio_id)}
-                    </span>
-                  ))}
-                </div>
+                {m.parti.length > 0 && (
+                  <div className="att-parti">
+                    {m.parti.map((r, i) => (
+                      <span key={r.socio_id}>
+                        {i > 0 && <span className="att-parti-sep">·</span>}
+                        {fmtP(r.socio_id)}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
             ))}
           </div>
