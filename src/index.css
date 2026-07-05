@@ -2880,6 +2880,18 @@
     min-width: 0;
     margin-top: 0;
   }
+  /* Su mobile le due colonne affiancate diventano troppo strette (icona +
+     campo schiacciati): sotto i 600px le due dati-riga vanno a capo, una
+     sotto l'altra, a piena larghezza. */
+  @media (max-width: 600px) {
+    .dati-coppia {
+      flex-direction: column;
+      gap: 8px;
+    }
+    .dati-coppia .dati-riga {
+      width: 100%;
+    }
+  }
 
   /* ── Scheda dati: colore pieno ──────────────────────────── */
   .form-campo {
