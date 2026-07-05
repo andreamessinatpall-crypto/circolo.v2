@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/auth/useAuth'
 import { puoGestireTornei } from '@/auth/ruoli'
 import { mancaTabella, messaggioErrore } from '@/lib/errori'
+import { dataEstesa } from '@/lib/formato'
 import { classiErrore, classiInput, classiOk } from '@/components/stili'
 import NumeroInput from '@/components/NumeroInput'
 import { useTornei } from './datiTornei'
@@ -30,7 +31,9 @@ import GestioneAmericano from './GestioneAmericano'
 import ClassificaAmericano from './ClassificaAmericano'
 import PodioAmericano from './PodioAmericano'
 import Sezione from '@/components/Sezione'
-import { costruisciPuntiGironi, nomeGirone, numGironi } from './gironi'
+import SezioneTorneiAmici from '@/features/torneiAmici/SezioneTorneiAmici'
+import { costruisciPuntiGironi, nomeGirone, numGironi, unitaTorneo } from './gironi'
+import { incontroDisputato } from './calendario'
 import { FORMATI_TORNEO, STATI_TORNEO } from './tipi'
 import type { PuntiSet, StatoTorneo, Torneo } from './tipi'
 import { azzeraChiave } from '@/lib/punti'
@@ -62,21 +65,115 @@ const ICO_GRAFICO = <I><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="
 const ICO_STAR = <I><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></I>
 const ICO_SETTINGS = <I d="M12 20h9M4.22 4.22l1.42 1.42M20.78 4.22l-1.42 1.42M1 12h3M20 12h3M4.22 19.78l1.42-1.42M20.78 19.78l-1.42-1.42M12 1v3M12 20v3" />
 
+// Card di un torneo ufficiale nell'elenco — stesso linguaggio grafico sobrio
+// dei tornei tra amici: nome, poi una riga informativa in testo piano
+// (niente capsule né emoji), poi la barra in fondo (avanzamento partite o,
+// se il torneo non è ancora iniziato, una barra vuota con lo stato).
+function CardTorneoClub({
+  torneo,
+  dati,
+  onApri,
+}: {
+  torneo: Torneo
+  dati: DatiTornei
+  onApri: () => void
+}) {
+  const squadre = dati.perTorneoSquadre[String(torneo.id)] ?? []
+  const incontri = dati.perTorneoIncontri[String(torneo.id)] ?? []
+  const nGironi = numGironi(torneo)
+  const nSquadre = squadre.length
+  const nIncontri = incontri.length
+  const disputate = incontri.filter(incontroDisputato).length
+  const pct = nIncontri > 0 ? Math.round((disputate / nIncontri) * 100) : 0
+  let periodo = ''
+  if (torneo.data_inizio && torneo.data_fine) periodo = 'dal ' + dataEstesa(torneo.data_inizio) + ' al ' + dataEstesa(torneo.data_fine)
+  else if (torneo.data_inizio) periodo = 'dal ' + dataEstesa(torneo.data_inizio)
+  else if (torneo.data_fine) periodo = 'fino al ' + dataEstesa(torneo.data_fine)
+  const formato = FORMATI_TORNEO[torneo.formato] ?? torneo.formato
+  const sportLabel = torneo.sport === 'padel' ? 'Padel' : 'Calcio'
+  const unita = unitaTorneo(torneo.sport, nSquadre !== 1)
+
+  return (
+    <div className="torneo-club-card verde">
+      <button type="button" className="torneo-club-header" onClick={onApri}>
+        <div className="tcl-top-row">
+          <div className="tcl-nome">{torneo.nome}</div>
+          <span className="tcl-chevron" aria-hidden>▸</span>
+        </div>
+
+        <div className="tcl-info-riga">
+          <div className="tcl-info-sport">
+            <SportIcona sport={torneo.sport} size={14} /> {sportLabel} · {formato}
+            {nGironi > 1 && ` · ${nGironi} gironi`}
+          </div>
+          <div className="tcl-info-dettagli">
+            {periodo && <>{periodo}<br /></>}
+            {nSquadre} {unita} iscritte
+          </div>
+        </div>
+
+        <div className="tcl-progress">
+          <div className="tcl-progress-track">
+            {nIncontri > 0 && <div className="tcl-progress-fill" style={{ width: pct + '%' }} />}
+          </div>
+          <span className="tcl-progress-label">
+            {nIncontri > 0 ? `${disputate}/${nIncontri} partite giocate` : (STATI_TORNEO[torneo.stato] ?? torneo.stato)}
+          </span>
+        </div>
+      </button>
+    </div>
+  )
+}
+
 export default function TorneiPage() {
   const { profilo } = useAuth()
+  const [vista, setVista] = useState<'club' | 'amici'>('club')
   const torneiQuery = useTornei()
-  const [sel, setSel] = useState<string | null>(null)
-  // null = lista conclusi, stringa = id del concluso aperto
-  const [selConcluso, setSelConcluso] = useState<string | null>(null)
+  const [apertoId, setApertoId] = useState<string | null>(null)
+  const [creando, setCreando] = useState(false)
 
   if (!profilo) return null
-  if (torneiQuery.isLoading) return <p className="sub">Caricamento…</p>
+
+  // Scelta tra tornei ufficiali del club e tornei privati tra amici: due
+  // funzioni indipendenti, quindi il toggle resta accessibile anche se
+  // una delle due ha ancora dati da caricare o in errore.
+  const toggleVista = (
+    <div className="seg-group mb-4">
+      <button type="button" className={'seg-btn' + (vista === 'club' ? ' attivo' : '')} onClick={() => setVista('club')}>
+        Tornei del club
+      </button>
+      <button type="button" className={'seg-btn' + (vista === 'amici' ? ' attivo' : '')} onClick={() => setVista('amici')}>
+        Tra amici
+      </button>
+    </div>
+  )
+
+  if (vista === 'amici') {
+    return (
+      <div>
+        {toggleVista}
+        <SezioneTorneiAmici />
+      </div>
+    )
+  }
+
+  if (torneiQuery.isLoading) {
+    return (
+      <div>
+        {toggleVista}
+        <p className="sub">Caricamento…</p>
+      </div>
+    )
+  }
   if (torneiQuery.error) {
     return (
-      <div className="card text-ink-2">
-        {mancaTabella(torneiQuery.error, 'tornei')
-          ? 'Esegui lo script tappa3b1-tornei.sql su Supabase per attivare i tornei.'
-          : 'Impossibile caricare: ' + messaggioErrore(torneiQuery.error)}
+      <div>
+        {toggleVista}
+        <div className="card text-ink-2">
+          {mancaTabella(torneiQuery.error, 'tornei')
+            ? 'Esegui lo script tappa3b1-tornei.sql su Supabase per attivare i tornei.'
+            : 'Impossibile caricare: ' + messaggioErrore(torneiQuery.error)}
+        </div>
       </div>
     )
   }
@@ -89,113 +186,61 @@ export default function TorneiPage() {
 
   const attivi   = visibili.filter((t) => t.stato !== 'concluso')
   const conclusi = visibili.filter((t) => t.stato === 'concluso')
+  const torneoAperto = visibili.find((t) => String(t.id) === apertoId)
 
-  // Voci nav: tornei attivi + tab fissa "Conclusi" + "Nuovo" per gestori.
-  const voci: Array<{ id: string; nome: string; sport: string }> = attivi.map((t) => ({ id: String(t.id), nome: t.nome, sport: t.sport }))
-  if (gestore) voci.push({ id: 'nuovo', nome: '＋ Nuovo torneo', sport: '' })
+  if (creando) {
+    return (
+      <div>
+        {toggleVista}
+        <button type="button" className="btn btn-secondario btn-mini mb-3" onClick={() => setCreando(false)}>← Tornei</button>
+        <NuovoTorneo onCreato={(id) => { setCreando(false); setApertoId(String(id)) }} />
+      </div>
+    )
+  }
 
-  // selCorrente: id valido tra i navigabili, oppure fallback
-  const selCorrente = sel && (sel === '__conclusi__' || sel === 'nuovo' || voci.some((v) => v.id === sel))
-    ? sel
-    : voci[0]?.id ?? '__conclusi__'
-  // mostraConclusi derivato da selCorrente (non da sel) per evitare pagine bianche
-  // quando selCorrente cade su '__conclusi__' per fallback ma sel punta a un id nuovo
-  const mostraConclusi = selCorrente === '__conclusi__'
-  const torneoSel = attivi.find((t) => String(t.id) === selCorrente)
-
-  // Torneo concluso aperto nel dettaglio.
-  const torneoConcluso = conclusi.find((t) => String(t.id) === selConcluso)
-
-  const fmt = (s: string) =>
-    new Date(s + 'T00:00:00').toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' })
+  if (torneoAperto) {
+    return (
+      <div>
+        {toggleVista}
+        <button type="button" className="btn btn-secondario btn-mini mb-3" onClick={() => setApertoId(null)}>← Tornei</button>
+        <DettaglioTorneo
+          key={String(torneoAperto.id)}
+          torneo={torneoAperto}
+          gestore={gestore}
+          dati={d}
+          onCancellato={() => setApertoId(null)}
+        />
+      </div>
+    )
+  }
 
   return (
     <div>
-      <nav className="mb-4 flex flex-wrap gap-1.5" aria-label="Tornei">
-        {voci.map((v) => (
-          <button
-            key={v.id}
-            type="button"
-            className={'subtab-btn' + (v.id === selCorrente ? ' attivo' : '')}
-            onClick={() => setSel(v.id)}
-          >
-            {v.sport && <SportIcona sport={v.sport} />}{v.nome}
-          </button>
-        ))}
-        {/* Tab fissa Conclusi — sempre visibile se ci sono conclusi o se è admin */}
-        {(conclusi.length > 0 || gestore) && (
-          <button
-            type="button"
-            className={'subtab-btn concluso' + (mostraConclusi ? ' attivo' : '')}
-            onClick={() => { setSel('__conclusi__'); setSelConcluso(null) }}
-          >
-            Conclusi
-          </button>
-        )}
-      </nav>
+      {toggleVista}
+      {gestore && (
+        <button type="button" className="btn btn-oro btn-riflesso btn-block mb-3" onClick={() => setCreando(true)}>
+          + Nuovo torneo del club
+        </button>
+      )}
 
-      {mostraConclusi ? (
-        torneoConcluso ? (
-          /* Dettaglio torneo concluso */
-          <div>
-            <button
-              type="button"
-              className="btn btn-secondario btn-mini !mt-0 mb-4"
-              onClick={() => setSelConcluso(null)}
-            >
-              ← Tutti i conclusi
-            </button>
-            <DettaglioTorneo key={String(torneoConcluso.id)} torneo={torneoConcluso} gestore={gestore} dati={d} onCancellato={() => setSelConcluso(null)} />
-          </div>
-        ) : (
-          /* Lista tornei conclusi */
-          conclusi.length === 0 ? (
-            <p className="sub">
-              {gestore
-                ? 'Nessun torneo concluso. Quando un torneo viene marcato "Concluso" apparirà qui.'
-                : 'Non hai partecipato a nessun torneo concluso.'}
-            </p>
-          ) : (
-            <div className="flex flex-col gap-2">
-              {conclusi.map((t) => {
-                let periodo = ''
-                if (t.data_inizio && t.data_fine) periodo = fmt(t.data_inizio) + ' – ' + fmt(t.data_fine)
-                else if (t.data_inizio) periodo = 'dal ' + fmt(t.data_inizio)
-                else if (t.data_fine) periodo = 'fino al ' + fmt(t.data_fine)
-                return (
-                  <button
-                    key={t.id}
-                    type="button"
-                    className="torneo-concluso-riga"
-                    onClick={() => setSelConcluso(String(t.id))}
-                  >
-                    <span className="torneo-concluso-nome">
-                      <SportIcona sport={t.sport} size={13} /> {t.nome}
-                    </span>
-                    {periodo && <span className="torneo-concluso-periodo">{periodo}</span>}
-                    <span className="torneo-concluso-arrow">›</span>
-                  </button>
-                )
-              })}
-            </div>
-          )
-        )
-      ) : selCorrente === 'nuovo' ? (
-        <NuovoTorneo onCreato={(id) => setSel(String(id))} />
-      ) : torneoSel ? (
-        <DettaglioTorneo
-          key={String(torneoSel.id)}
-          torneo={torneoSel}
-          gestore={gestore}
-          dati={d}
-          onCancellato={() => {
-            // Naviga subito alla prossima destinazione valida senza passare per null
-            const next = attivi.find((t) => String(t.id) !== String(torneoSel.id))
-            setSel(next ? String(next.id) : gestore ? 'nuovo' : '__conclusi__')
-          }}
-        />
+      {attivi.length > 0 ? (
+        <div className="flex flex-col gap-3 mb-3">
+          {attivi.map((t) => (
+            <CardTorneoClub key={t.id} torneo={t} dati={d} onApri={() => setApertoId(String(t.id))} />
+          ))}
+        </div>
       ) : (
-        <p className="sub">Caricamento…</p>
+        <p className="sub mb-3">Nessun torneo attivo al momento.</p>
+      )}
+
+      {conclusi.length > 0 && (
+        <Sezione titolo={`Conclusi (${conclusi.length})`} apertaIniziale={false}>
+          <div className="flex flex-col gap-3 mb-3">
+            {conclusi.map((t) => (
+              <CardTorneoClub key={t.id} torneo={t} dati={d} onApri={() => setApertoId(String(t.id))} />
+            ))}
+          </div>
+        </Sezione>
       )}
     </div>
   )
@@ -1167,8 +1212,12 @@ function DettaglioTorneo({
       </div>
 
       {/* Blocco nome: solo il nome, senza interferenze */}
-      <div className="torneo-hero">
-        <div className="torneo-hero-nome">{torneo.nome}</div>
+      <div className={'torneo-hero torneo-hero-' + torneo.sport}>
+        <div className="torneo-hero-nome">
+          <span className="torneo-hero-puntino" aria-hidden>•</span>
+          {torneo.nome}
+          <span className="torneo-hero-puntino" aria-hidden>•</span>
+        </div>
       </div>
       {/* Formato + periodo: fuori dal riquadro verde, sotto al titolo. */}
       <div className="torneo-hero-sub">

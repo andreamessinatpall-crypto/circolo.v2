@@ -776,59 +776,6 @@
     color: #fff;
     border-color: var(--v700);
   }
-  .subtab-btn.concluso {
-    color: var(--ink3);
-    border-color: var(--border);
-    border-style: dashed;
-  }
-  .subtab-btn.concluso:hover {
-    color: var(--ink2);
-    border-color: var(--ink3);
-    background: transparent;
-  }
-  .subtab-btn.concluso.attivo {
-    background: var(--ink3);
-    border-color: var(--ink3);
-    border-style: solid;
-    color: #fff;
-  }
-
-  /* Lista righe tornei conclusi */
-  .torneo-concluso-riga {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    width: 100%;
-    background: var(--surface);
-    border: 1px solid var(--border2);
-    border-radius: 14px;
-    padding: 14px 18px;
-    text-align: left;
-    cursor: pointer;
-    transition: border-color 0.14s, background 0.14s;
-  }
-  .torneo-concluso-riga:hover {
-    border-color: var(--v300);
-    background: var(--v050);
-  }
-  .torneo-concluso-nome {
-    flex: 1;
-    font-weight: 700;
-    font-size: 0.95rem;
-    color: var(--ink);
-    display: flex;
-    align-items: center;
-    gap: 5px;
-  }
-  .torneo-concluso-periodo {
-    font-size: 0.78rem;
-    color: var(--ink3);
-  }
-  .torneo-concluso-arrow {
-    font-size: 1.1rem;
-    color: var(--ink3);
-    line-height: 1;
-  }
 
   /* ════ Dashboard Statistiche ════ */
   .stat-page { padding-bottom: 48px; }
@@ -2716,32 +2663,57 @@
   .torneo-hero {
     position: relative;
     overflow: hidden;
-    border-radius: 18px;
+    border-radius: 6px;
     margin-bottom: 10px;
-    padding: 18px 22px 18px 26px;
-    color: #fff;
-    background: linear-gradient(140deg, var(--v600) 0%, var(--v800) 55%, var(--v900) 100%);
-    box-shadow: 0 12px 34px rgba(12, 51, 25, 0.22);
-    border: 1px solid rgba(200, 151, 46, 0.35);
+    padding: 18px 22px;
+    background: linear-gradient(150deg, var(--v600) 0%, var(--v800) 55%, var(--v900) 100%);
+    box-shadow: 0 12px 30px rgba(8, 36, 20, 0.3);
+    border: 1px solid rgba(232, 200, 120, 0.3);
   }
-  /* Dettagli dorati: barra verticale a sinistra + bagliore in alto a destra. */
-  .torneo-hero::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 5px;
-    background: linear-gradient(180deg, var(--g300), var(--g500));
-  }
+  /* Trama moderna e discreta: una sola luce soffusa in alto a sinistra (per
+     dare profondità al verde, non per "brillare") e un filo di righe
+     diagonali oro a bassissima opacità — una texture tono-su-tono, non
+     un effetto vistoso. */
   .torneo-hero::after {
     content: '';
     position: absolute;
     inset: 0;
     pointer-events: none;
     background:
-      radial-gradient(55% 70% at 100% 0%, rgba(200, 151, 46, 0.28), transparent 55%),
-      radial-gradient(40% 60% at 0% 100%, rgba(200, 151, 46, 0.12), transparent 60%);
+      radial-gradient(55% 90% at 10% -15%, rgba(255, 255, 255, 0.14), transparent 62%),
+      repeating-linear-gradient(
+        135deg,
+        rgba(232, 200, 120, 0.05) 0px,
+        rgba(232, 200, 120, 0.05) 1px,
+        transparent 1px,
+        transparent 15px
+      );
+  }
+  /* Trama celebrativa: più palline sportive per riquadro (padel/calcio), di
+     dimensioni e rotazioni diverse, sparpagliate — non un'unica fila
+     orizzontale — sfocate e sfumate da sinistra (quasi impercettibili) a
+     destra (ben visibili). Tinta oro tenue, come un rilievo/filigrana sul
+     verde, non palline bianche piatte. */
+  .torneo-hero-padel::before,
+  .torneo-hero-calcio::before {
+    content: '';
+    position: absolute;
+    inset: -20px;
+    pointer-events: none;
+    opacity: 0.3;
+    filter: blur(1.5px);
+    background-repeat: repeat;
+    background-position: left center;
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, rgba(0, 0, 0, 0.12) 30%, black 100%);
+    mask-image: linear-gradient(to right, transparent 0%, rgba(0, 0, 0, 0.12) 30%, black 100%);
+  }
+  .torneo-hero-padel::before {
+    background-size: 240px 240px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'%3E%3Cg transform='translate(38,52) rotate(18) scale(1.3)'%3E%3Ccircle r='14' fill='none' stroke='%23e8c878' stroke-width='2'/%3E%3Cpath d='M-11,-11 C-4,-11 -4,11 -11,11' fill='none' stroke='%23e8c878' stroke-width='1.6'/%3E%3Cpath d='M11,-11 C4,-11 4,11 11,11' fill='none' stroke='%23e8c878' stroke-width='1.6'/%3E%3C/g%3E%3Cg transform='translate(152,34) rotate(-32) scale(0.8)'%3E%3Ccircle r='14' fill='none' stroke='%23e8c878' stroke-width='2'/%3E%3Cpath d='M-11,-11 C-4,-11 -4,11 -11,11' fill='none' stroke='%23e8c878' stroke-width='1.6'/%3E%3Cpath d='M11,-11 C4,-11 4,11 11,11' fill='none' stroke='%23e8c878' stroke-width='1.6'/%3E%3C/g%3E%3Cg transform='translate(168,152) rotate(55) scale(1.1)'%3E%3Ccircle r='14' fill='none' stroke='%23e8c878' stroke-width='2'/%3E%3Cpath d='M-11,-11 C-4,-11 -4,11 -11,11' fill='none' stroke='%23e8c878' stroke-width='1.6'/%3E%3Cpath d='M11,-11 C4,-11 4,11 11,11' fill='none' stroke='%23e8c878' stroke-width='1.6'/%3E%3C/g%3E%3Cg transform='translate(52,165) rotate(-12) scale(0.65)'%3E%3Ccircle r='14' fill='none' stroke='%23e8c878' stroke-width='2'/%3E%3Cpath d='M-11,-11 C-4,-11 -4,11 -11,11' fill='none' stroke='%23e8c878' stroke-width='1.6'/%3E%3Cpath d='M11,-11 C4,-11 4,11 11,11' fill='none' stroke='%23e8c878' stroke-width='1.6'/%3E%3C/g%3E%3C/svg%3E");
+  }
+  .torneo-hero-calcio::before {
+    background-size: 250px 250px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'%3E%3Cg transform='translate(42,48) rotate(20) scale(1.3)'%3E%3Ccircle r='14' fill='none' stroke='%23e8c878' stroke-width='2'/%3E%3Cpolygon points='0,-8 7,-3 4,6 -4,6 -7,-3' fill='none' stroke='%23e8c878' stroke-width='1.4'/%3E%3C/g%3E%3Cg transform='translate(156,32) rotate(-40) scale(0.8)'%3E%3Ccircle r='14' fill='none' stroke='%23e8c878' stroke-width='2'/%3E%3Cpolygon points='0,-8 7,-3 4,6 -4,6 -7,-3' fill='none' stroke='%23e8c878' stroke-width='1.4'/%3E%3C/g%3E%3Cg transform='translate(165,158) rotate(50) scale(1.15)'%3E%3Ccircle r='14' fill='none' stroke='%23e8c878' stroke-width='2'/%3E%3Cpolygon points='0,-8 7,-3 4,6 -4,6 -7,-3' fill='none' stroke='%23e8c878' stroke-width='1.4'/%3E%3C/g%3E%3Cg transform='translate(48,162) rotate(-18) scale(0.65)'%3E%3Ccircle r='14' fill='none' stroke='%23e8c878' stroke-width='2'/%3E%3Cpolygon points='0,-8 7,-3 4,6 -4,6 -7,-3' fill='none' stroke='%23e8c878' stroke-width='1.4'/%3E%3C/g%3E%3C/svg%3E");
   }
   .torneo-hero > * {
     position: relative;
@@ -2753,10 +2725,22 @@
     line-height: 1.15;
     letter-spacing: 0.02em;
     font-weight: 700;
+    color: #f3dfa8;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
     white-space: normal;
     word-break: break-word;
+    text-align: center;
     position: relative;
     z-index: 1;
+  }
+  /* Puntini decorativi ai lati del nome: stretti al testo (non ai bordi
+     del riquadro), come una targa celebrativa. */
+  .torneo-hero-puntino {
+    color: #e8c878;
+    font-size: 0.9rem;
+    padding: 0 10px;
+    opacity: 0.85;
+    vertical-align: middle;
   }
   /* Pill stato per i soci: nella riga sopra, su fondo bianco card */
   .torneo-hero-pill:not(.off) {
@@ -3548,6 +3532,26 @@
     color: var(--ink3);
     margin-bottom: 10px;
   }
+  /* Riga informativa "professionale": sport + tipologia su una riga, data e
+     numero coppie per esteso a capo sotto — testo piano, senza capsule né
+     emoji. Sostituisce tcl-meta-row/tcl-chip nelle card dei tornei (club e
+     amici). */
+  .tcl-info-riga {
+    margin-bottom: 10px;
+  }
+  .tcl-info-sport {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.78rem;
+    color: var(--ink3);
+    margin-bottom: 3px;
+  }
+  .tcl-info-dettagli {
+    font-size: 0.78rem;
+    color: var(--ink3);
+    line-height: 1.5;
+  }
   .tcl-meta-row {
     display: flex;
     flex-wrap: wrap;
@@ -3597,6 +3601,32 @@
   .torneo-club-body {
     padding: 4px 16px 14px;
     border-top: 1px solid var(--border);
+  }
+
+  /* Variante verde delle card (elenco tornei in TorneiPage/SezioneTorneiAmici):
+     stesso sfondo del titolo del torneo, testo bianco e dorato. Non tocca
+     .torneo-club-card di base, usata anche nella scheda Club read-only. */
+  .torneo-club-card.verde {
+    background: linear-gradient(140deg, var(--v600) 0%, var(--v800) 55%, var(--v900) 100%);
+    border-color: rgba(200, 151, 46, 0.35);
+  }
+  .torneo-club-card.verde .torneo-club-header:hover {
+    background: rgba(255, 255, 255, 0.07);
+  }
+  .torneo-club-card.verde .tcl-nome {
+    color: #fff;
+  }
+  .torneo-club-card.verde .tcl-info-sport,
+  .torneo-club-card.verde .tcl-chevron,
+  .torneo-club-card.verde .tcl-progress-label {
+    color: rgba(232, 200, 120, 0.85);
+  }
+  /* Data e coppie iscritte: sempre in bianco, ben leggibili accanto al nome. */
+  .torneo-club-card.verde .tcl-info-dettagli {
+    color: rgba(255, 255, 255, 0.92);
+  }
+  .torneo-club-card.verde .tcl-progress-track {
+    background: rgba(255, 255, 255, 0.18);
   }
 
   /* Card torneo in programma: niente expand, solo info + CTA */
@@ -6146,5 +6176,39 @@
     flex-basis: 100%;
     font-size: 0.76rem;
     color: var(--ink3);
+  }
+
+  /* ── Torneo tra amici (Fase 6) ──────────────────────────────────── */
+  .torneo-amici-squadra-riga {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    background: var(--fondo);
+    font-size: 0.82rem;
+    color: var(--ink);
+  }
+  .torneo-amici-check-riga {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 6px;
+    font-size: 0.85rem;
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .torneo-amici-persona {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .torneo-amici-punteggio-input {
+    width: 52px;
+    flex-shrink: 0;
+    text-align: center;
+    margin-top: 0;
+    padding: 6px 4px;
   }
 }

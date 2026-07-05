@@ -14,7 +14,7 @@ export function useRealtimeCircolo() {
     const canale = supabase
       .channel('aggiornamenti-circolo')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'prenotazioni' }, () =>
-        inval(['prenotazioni', 'amichevoli', 'lezioni', 'attivita-programma', 'impegni_istruttore', 'riepilogo-stat']),
+        inval(['prenotazioni', 'amichevoli', 'lezioni', 'attivita-programma', 'impegni_istruttore', 'riepilogo-stat', 'tornei_amici_dettaglio']),
       )
       .on('postgres_changes', { event: '*', schema: 'public', table: 'campi' }, () =>
         inval(['campi']),
@@ -44,6 +44,18 @@ export function useRealtimeCircolo() {
       )
       .on('postgres_changes', { event: '*', schema: 'public', table: 'disponibilita_maestri' }, () =>
         inval(['disponibilita_maestri']),
+      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tornei_amici' }, () =>
+        inval(['tornei_amici', 'tornei_amici_dettaglio']),
+      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tornei_amici_partecipanti' }, () =>
+        inval(['tornei_amici', 'tornei_amici_dettaglio']),
+      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tornei_amici_squadre' }, () =>
+        inval(['tornei_amici_dettaglio']),
+      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tornei_amici_incontri' }, () =>
+        inval(['tornei_amici_dettaglio']),
       )
       .subscribe()
 

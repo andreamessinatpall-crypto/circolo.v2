@@ -63,6 +63,7 @@ export default function GrigliaPrenotazioni({ sport }: { sport: Sport }) {
           .from('prenotazioni')
           .select('id', { count: 'exact', head: true })
           .eq('socio_id', profilo.id)
+          .eq('allenamento', false)
           .in('campo_id', idCampiSport)
           .gte('fine', new Date().toISOString())
         if (count != null && count >= limite) throw new Error(`LIMITE:${count}:${limite}`)
