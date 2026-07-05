@@ -5463,8 +5463,9 @@
     color: #fff;
   }
 
-  /* ── Campanella notifiche (header) ───────────────────────────── */
-  .campanella {
+  /* ── Menu utente / campanella notifiche (header) ─────────────── */
+  .campanella,
+  .menu-utente {
     position: relative;
   }
   .campanella-badge {
@@ -5487,6 +5488,7 @@
     inset: 0;
     z-index: 30;
   }
+  /* Pannello traslucido verde, coerente con l'header scuro da cui si apre. */
   .campanella-panel {
     position: absolute;
     top: calc(100% + 8px);
@@ -5495,10 +5497,16 @@
     width: min(340px, 88vw);
     max-height: 420px;
     overflow-y: auto;
-    background: var(--surface);
-    border: 1px solid var(--border);
+    background: rgba(11, 41, 22, 0.92);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255, 255, 255, 0.14);
     border-radius: 14px;
-    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.22);
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.35);
+  }
+  /* Vista menu (Notifiche / I miei dati / Esci): più stretta della lista notifiche. */
+  .campanella-panel-stretta {
+    width: min(215px, 80vw);
   }
   .campanella-head {
     display: flex;
@@ -5506,13 +5514,13 @@
     justify-content: space-between;
     gap: 10px;
     padding: 12px 14px;
-    border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.14);
     font-family: var(--font-display);
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.06em;
     font-size: 0.78rem;
-    color: var(--v800);
+    color: #fff;
   }
   .campanella-segna-tutte {
     background: none;
@@ -5523,17 +5531,17 @@
     letter-spacing: normal;
     font-weight: 600;
     font-size: 0.72rem;
-    color: var(--g600);
+    color: var(--g300);
     cursor: pointer;
   }
   .campanella-segna-tutte:hover {
-    color: var(--g500);
+    color: var(--g300);
     text-decoration: underline;
   }
   .campanella-vuoto {
     padding: 20px 14px;
     font-size: 0.85rem;
-    color: var(--ink3);
+    color: rgba(255, 255, 255, 0.6);
     text-align: center;
   }
   .campanella-lista {
@@ -5545,13 +5553,13 @@
     display: flex;
     align-items: flex-start;
     gap: 4px;
-    border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   }
   .campanella-item:last-child {
     border-bottom: none;
   }
   .campanella-item.non-letta {
-    background: rgba(200, 151, 46, 0.08);
+    background: rgba(212, 165, 44, 0.14);
   }
   .campanella-item-btn {
     flex: 1;
@@ -5568,16 +5576,16 @@
   .campanella-item-titolo {
     font-size: 0.85rem;
     font-weight: 700;
-    color: var(--ink);
+    color: #fff;
   }
   .campanella-item-corpo {
     font-size: 0.8rem;
-    color: var(--ink2);
+    color: rgba(255, 255, 255, 0.75);
     line-height: 1.4;
   }
   .campanella-item-tempo {
     font-size: 0.68rem;
-    color: var(--ink3);
+    color: rgba(255, 255, 255, 0.5);
     margin-top: 2px;
   }
   .campanella-item-x {
@@ -5585,13 +5593,66 @@
     background: none;
     border: none;
     padding: 8px 10px;
-    color: var(--ink3);
+    color: rgba(255, 255, 255, 0.5);
     cursor: pointer;
     font-size: 0.8rem;
     align-self: center;
   }
   .campanella-item-x:hover {
-    color: var(--terra);
+    color: #fff;
+  }
+
+  /* Menu principale (vista "menu" di MenuUtente): Notifiche / I miei dati / Esci */
+  .menu-utente-lista {
+    display: flex;
+    flex-direction: column;
+    padding: 6px;
+  }
+  .menu-utente-voce {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 9px 10px;
+    background: none;
+    border: none;
+    border-radius: 9px;
+    font-size: 0.84rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.88);
+    text-decoration: none;
+    cursor: pointer;
+    text-align: left;
+  }
+  .menu-utente-voce:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+  .menu-utente-voce.pericolo {
+    color: #ffb4a3;
+  }
+  .menu-utente-voce-ico {
+    flex: 0 0 auto;
+    display: inline-flex;
+    color: var(--g300);
+  }
+  .menu-utente-voce.pericolo .menu-utente-voce-ico {
+    color: #ffb4a3;
+  }
+  .menu-utente-voce-testo {
+    flex: 1;
+    min-width: 0;
+  }
+  .menu-utente-indietro {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    font-family: var(--font-display);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-size: 0.78rem;
+    color: #fff;
   }
 
   /* ── Chat (Fase 2) ────────────────────────────────────────────────

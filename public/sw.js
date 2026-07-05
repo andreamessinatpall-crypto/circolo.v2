@@ -61,7 +61,12 @@ function networkFirst(request, nomeCache) {
   return fetch(request)
     .then((rispostaRete) => {
       if (rispostaRete && rispostaRete.ok) {
-        caches.open(nomeCache).then((cache) => cache.put(request, rispostaRete.clone()))
+        // Clonare SUBITO, in modo sincrono: se lo facessimo dentro il .then()
+        // di caches.open() (asincrono), la pagina potrebbe aver già iniziato a
+        // leggere il corpo della risposta originale nel frattempo, e clone()
+        // fallirebbe con "Response body is already used".
+        const daSalvare = rispostaRete.clone()
+        caches.open(nomeCache).then((cache) => cache.put(request, daSalvare))
       }
       return rispostaRete
     })

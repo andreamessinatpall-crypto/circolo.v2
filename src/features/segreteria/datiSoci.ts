@@ -149,16 +149,17 @@ export async function riattivaSocio(
 }
 
 // Anonimizza i dati personali di un socio che ha richiesto la cancellazione
-// (GDPR Art. 17). Dopo questa operazione l'admin deve eliminare l'utente
-// da Supabase Dashboard → Authentication → Users.
+// (GDPR Art. 17) e cancella le sue prenotazioni future. Nome e cognome
+// restano quelli originali apposta: le prenotazioni passate (storico) devono
+// restare leggibili con il vero nome del giocatore, non un placeholder.
+// Dopo questa operazione l'admin deve eliminare l'utente da Supabase
+// Dashboard → Authentication → Users.
 export async function completaCancellazione(
   socioId: string,
 ): Promise<{ ok: boolean; messaggio?: string }> {
   const { error } = await supabase
     .from('soci')
     .update({
-      nome: 'Utente',
-      cognome: 'Cancellato',
       email: `cancellato-${socioId}@cancellato.invalid`,
       telefono: null,
       data_nascita: null,
@@ -169,5 +170,18 @@ export async function completaCancellazione(
     })
     .eq('id', socioId)
   if (error) return { ok: false, messaggio: error.message }
+
+  const { error: errorePrenotazioni } = await supabase.rpc('cancella_prenotazioni_future', {
+    p_socio_id: socioId,
+  })
+  if (errorePrenotazioni) {
+    return {
+      ok: false,
+      messaggio:
+        'Account anonimizzato, ma la cancellazione delle prenotazioni future non è riuscita: ' +
+        errorePrenotazioni.message,
+    }
+  }
+
   return { ok: true }
 }

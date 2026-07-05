@@ -126,6 +126,7 @@ export default function DettaglioGiocatore({
   })
 
   const nomeCompleto = `${titleCase(socio.cognome)} ${titleCase(socio.nome)}`
+  const cancellato = (socio.email ?? '').endsWith('@cancellato.invalid')
   const haCancellazione = !!socio.richiesta_cancellazione
   const giorniRimasti = haCancellazione
     ? Math.max(0, 30 - Math.floor((Date.now() - new Date(socio.richiesta_cancellazione!).getTime()) / 86_400_000))
@@ -168,7 +169,7 @@ export default function DettaglioGiocatore({
           {socio.e_allenatore && !socio.is_allenatore && (
             <span className="pill bg-terra/10 text-terra">Istruttore</span>
           )}
-          {!socio.attivo && !socio.sospeso && <span className="pill off">In attesa</span>}
+          {!socio.attivo && !socio.sospeso && !cancellato && <span className="pill off">In attesa</span>}
           {socio.sospeso && (
             <span className="pill" style={{ background: 'rgba(234,88,12,0.1)', color: '#c2410c', border: '1px solid rgba(234,88,12,0.25)' }}>
               Sospeso
@@ -250,7 +251,9 @@ export default function DettaglioGiocatore({
           <button type="button" className="btn btn-secondario" onClick={() => setModifica(true)}>
             Modifica dati
           </button>
-          {socio.id !== meId && !socio.attivo && !socio.sospeso && (
+          {/* Un account cancellato/anonimizzato non va mai riattivato: è un'operazione
+              irreversibile (GDPR Art. 17), niente bottone "Attiva" per lui. */}
+          {socio.id !== meId && !socio.attivo && !socio.sospeso && !cancellato && (
             <button
               type="button"
               className="btn"

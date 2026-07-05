@@ -6,7 +6,7 @@ import { useRealtimeCircolo } from '@/hooks/useRealtimeCircolo'
 import { useModalitaPremi } from '@/features/premi/datiPremi'
 import FooterLegale from '@/components/legale/FooterLegale'
 import InstallaAppBanner from '@/components/InstallaAppBanner'
-import CampanellaNotifiche from '@/features/notifiche/CampanellaNotifiche'
+import MenuUtente from '@/components/MenuUtente'
 
 interface Voce {
   path: string
@@ -55,7 +55,7 @@ function vociMenu(p: Socio, premiVisibile: boolean): Voce[] {
 }
 
 export default function AppShell() {
-  const { profilo, esci } = useAuth()
+  const { profilo } = useAuth()
   useRealtimeCircolo()
   const { data: modalitaPremi } = useModalitaPremi()
   if (!profilo) return null
@@ -72,22 +72,6 @@ export default function AppShell() {
         </div>
 
         <div className="header-utente flex items-center gap-1.5 text-sm">
-          <CampanellaNotifiche />
-          {/* Icona profilo */}
-          <NavLink
-            to="/profilo?sezione=dati"
-            title="Il mio profilo"
-            className={({ isActive }) =>
-              'flex items-center rounded-lg p-1.5 text-white/60 transition hover:bg-white/10 hover:text-white' +
-              (isActive ? ' bg-white/10 text-white' : '')
-            }
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <circle cx="12" cy="12" r="10"/>
-              <circle cx="12" cy="10" r="3"/>
-              <path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662"/>
-            </svg>
-          </NavLink>
           {puoGestirePrenotazioni(profilo) && !profilo.is_admin && (
             <NavLink
               to="/statistiche"
@@ -120,20 +104,7 @@ export default function AppShell() {
               </svg>
             </NavLink>
           )}
-          {/* Esci: icona su mobile, testo da sm in su */}
-          <button
-            type="button"
-            onClick={() => esci()}
-            title="Esci"
-            className="ml-0.5 flex items-center gap-1.5 rounded-lg p-1.5 text-white/60 transition hover:bg-white/10 hover:text-white sm:px-3 sm:py-1.5"
-          >
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-              <polyline points="16 17 21 12 16 7" />
-              <line x1="21" y1="12" x2="9" y2="12" />
-            </svg>
-            <span className="hidden font-display text-xs font-semibold uppercase tracking-[0.08em] sm:inline">Esci</span>
-          </button>
+          <MenuUtente />
         </div>
       </header>
 

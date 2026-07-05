@@ -12,17 +12,23 @@ export interface Notifica {
 }
 
 // Cronologia in-app delle notifiche push (tabella "notifiche", scritta dalla
-// Edge Function invia-push). Riusabile da qualunque schermata mostri la
-// campanella.
+// Edge Function invia-push). Restano visibili al massimo 24 ore. Riusabile da
+// qualunque schermata mostri la campanella.
 export function useNotifiche(socioId: string | undefined) {
   const qc = useQueryClient()
 
   const query = useQuery({
     queryKey: ['notifiche'],
     queryFn: async () => {
+      const limite = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+
+      // Pulizia delle notifiche scadute: solo le proprie (RLS), non blocca la lettura.
+      supabase.from('notifiche').delete().lt('creato_il', limite).then(() => {})
+
       const { data, error } = await supabase
         .from('notifiche')
         .select('*')
+        .gte('creato_il', limite)
         .order('creato_il', { ascending: false })
         .limit(30)
       if (error) throw error
