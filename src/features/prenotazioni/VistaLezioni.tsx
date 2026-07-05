@@ -5,6 +5,7 @@ import { useCampi } from './datiPrenotazioni'
 import { useMieLezioni, useSociPubblici } from './datiAmichevoli'
 import { oraLocale } from './orari'
 import GestioneDisponibilita from '@/features/lezioni/GestioneDisponibilita'
+import RichiesteLezioneSezione from '@/features/lezioni/RichiesteLezioneSezione'
 import type { MiaPrenotazione, Partecipante } from './datiAmichevoli'
 import type { Campo } from './tipi'
 
@@ -86,6 +87,8 @@ export default function VistaLezioni() {
 
   return (
     <div>
+      <RichiesteLezioneSezione istruttoreId={profilo.id} etichette={etichette} />
+
       <GestioneDisponibilita istruttoreId={profilo.id} />
 
       {lista.length === 0 ? (

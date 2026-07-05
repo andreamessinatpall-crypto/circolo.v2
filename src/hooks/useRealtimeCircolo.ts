@@ -14,7 +14,7 @@ export function useRealtimeCircolo() {
     const canale = supabase
       .channel('aggiornamenti-circolo')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'prenotazioni' }, () =>
-        inval(['prenotazioni', 'amichevoli', 'lezioni', 'attivita-programma']),
+        inval(['prenotazioni', 'amichevoli', 'lezioni', 'attivita-programma', 'impegni_istruttore', 'riepilogo-stat']),
       )
       .on('postgres_changes', { event: '*', schema: 'public', table: 'campi' }, () =>
         inval(['campi']),
@@ -25,7 +25,7 @@ export function useRealtimeCircolo() {
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'partecipanti_amichevole' },
-        () => inval(['amichevoli', 'lezioni', 'attivita-programma']),
+        () => inval(['amichevoli', 'lezioni', 'attivita-programma', 'riepilogo-stat']),
       )
       .on('postgres_changes', { event: '*', schema: 'public', table: 'amicizie' }, () =>
         inval(['amicizie']),
@@ -38,6 +38,12 @@ export function useRealtimeCircolo() {
       )
       .on('postgres_changes', { event: '*', schema: 'public', table: 'candidature_partner' }, () =>
         inval(['candidature_partner']),
+      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'richieste_lezione' }, () =>
+        inval(['richieste_lezione_ricevute', 'richieste_lezione_inviate', 'impegni_istruttore', 'riepilogo-stat']),
+      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'disponibilita_maestri' }, () =>
+        inval(['disponibilita_maestri']),
       )
       .subscribe()
 

@@ -6,6 +6,40 @@ import { LIVELLI_PUNTI_DEFAULT, livelloDaPunti, useLivelliPunti } from './livell
 import { svgMedagliaColore } from './badge/medaglieSvg'
 import { MedagliaRuolo } from './ruoloBadge'
 import AttivitaInProgramma from './AttivitaInProgramma'
+import { oraLocale } from '@/features/prenotazioni/orari'
+import { useRichiesteInviate } from '@/features/lezioni/useRichiesteLezione'
+
+const ETICHETTE_SPORT_RICHIESTA: Record<string, string> = { padel: 'Padel', calcio: 'Calcio' }
+
+// Le richieste di lezione inviate a un istruttore (Fase 5): in attesa di
+// risposta, o appena rifiutate. Una volta accettate diventano una vera
+// prenotazione, già visibile in "Attività in programma".
+function RichiesteLezioneInviate() {
+  const { profilo } = useAuth()
+  const { data: richieste = [] } = useRichiesteInviate(profilo?.id)
+  const daMostrare = richieste.filter((r) => r.stato === 'in_attesa' || r.stato === 'rifiutata')
+
+  if (daMostrare.length === 0) return null
+
+  return (
+    <div className="card" style={{ marginBottom: '1rem' }}>
+      <p className="dati-check-titolo" style={{ marginBottom: '0.5rem' }}>Le tue richieste di lezione</p>
+      <div className="flex flex-col gap-1.5">
+        {daMostrare.map((r) => (
+          <div key={r.id} className="disponibilita-riga">
+            <span>
+              {ETICHETTE_SPORT_RICHIESTA[r.sport]} · {dataEstesa(r.inizio.slice(0, 10))} ·{' '}
+              {oraLocale(new Date(r.inizio))}–{oraLocale(new Date(r.fine))}
+            </span>
+            <span className={'pill' + (r.stato === 'in_attesa' ? ' off' : '')}>
+              {r.stato === 'in_attesa' ? 'In attesa' : 'Rifiutata'}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
 
 export default function RiepilogoProfilo() {
   const { profilo } = useAuth()
@@ -23,38 +57,28 @@ export default function RiepilogoProfilo() {
         const ora = new Date()
         const isoOra = ora.toISOString()
 
-        // Sessioni svolte (passate)
+        // Sessioni erogate (davvero concluse: fine già passata)
         const { count: cSvolti } = await supabase
           .from('prenotazioni')
           .select('*', { count: 'exact', head: true })
           .eq('allenamento', true)
           .eq('allenatore_id', profilo!.id)
-          .lt('inizio', isoOra)
+          .lte('fine', isoOra)
 
-        // Tutta la settimana corrente (lun–dom), fatte + in programma
-        const lunedi = new Date(ora)
-        lunedi.setDate(ora.getDate() - (ora.getDay() === 0 ? 6 : ora.getDay() - 1))
-        lunedi.setHours(0, 0, 0, 0)
-        const lunediPross = new Date(lunedi)
-        lunediPross.setDate(lunedi.getDate() + 7)
-        const { count: cSett } = await supabase
+        // Sessioni in programma (future o in corso, non ancora concluse)
+        const { count: cProgramma } = await supabase
           .from('prenotazioni')
           .select('*', { count: 'exact', head: true })
           .eq('allenamento', true)
           .eq('allenatore_id', profilo!.id)
-          .gte('inizio', lunedi.toISOString())
-          .lt('inizio', lunediPross.toISOString())
+          .gt('fine', isoOra)
 
-        // Tutto il mese corrente (fatte + in programma)
-        const inizioMese = new Date(ora.getFullYear(), ora.getMonth(), 1).toISOString()
-        const inizioMesePross = new Date(ora.getFullYear(), ora.getMonth() + 1, 1).toISOString()
-        const { count: cMese } = await supabase
-          .from('prenotazioni')
+        // Richieste di lezione in attesa di risposta
+        const { count: cRichieste } = await supabase
+          .from('richieste_lezione')
           .select('*', { count: 'exact', head: true })
-          .eq('allenamento', true)
-          .eq('allenatore_id', profilo!.id)
-          .gte('inizio', inizioMese)
-          .lt('inizio', inizioMesePross)
+          .eq('istruttore_id', profilo!.id)
+          .eq('stato', 'in_attesa')
 
         // Attività a cui l'istruttore ha partecipato come giocatore
         const { data: att } = await supabase
@@ -63,22 +87,22 @@ export default function RiepilogoProfilo() {
           .eq('socio_id', profilo!.id)
           .eq('confermato', true)
 
-        // Giocatori distinti allenati (solo sessioni passate)
+        // Allievi distinti allenati (solo sessioni davvero concluse)
         const { data: sessioni } = await supabase
           .from('prenotazioni')
           .select('id')
           .eq('allenamento', true)
           .eq('allenatore_id', profilo!.id)
-          .lt('inizio', isoOra)
+          .lte('fine', isoOra)
         const sessionIds = (sessioni ?? []).map((s: { id: string | number }) => s.id)
-        let allenati = 0
+        let allievi = 0
         if (sessionIds.length > 0) {
           const { data: partecipanti } = await supabase
             .from('partecipanti_amichevole')
             .select('socio_id')
             .in('prenotazione_id', sessionIds)
             .neq('socio_id', profilo!.id)
-          allenati = new Set((partecipanti ?? []).map((r: { socio_id: string }) => r.socio_id)).size
+          allievi = new Set((partecipanti ?? []).map((r: { socio_id: string }) => r.socio_id)).size
         }
 
         return {
@@ -87,9 +111,9 @@ export default function RiepilogoProfilo() {
           prenotazioniOggi: null, daConfermare: null,
           allenamenti: null,
           svolti: cSvolti ?? 0,
-          settimana: cSett ?? 0,
-          mese: cMese ?? 0,
-          allenati,
+          programma: cProgramma ?? 0,
+          richieste: cRichieste ?? 0,
+          allievi,
         }
       }
 
@@ -193,26 +217,31 @@ export default function RiepilogoProfilo() {
             <div className="riep-istr-bar">
               <span className="riep-istr-item">
                 <strong>{d?.svolti != null ? d.svolti : '—'}</strong>
-                <em>Svolti</em>
+                <em>Erogate</em>
               </span>
               <span className="riep-istr-pipe">|</span>
               <span className="riep-istr-item">
-                <strong>{d?.settimana != null ? d.settimana : '—'}</strong>
-                <em>Settimana</em>
+                <strong>{d?.allievi != null ? d.allievi : '—'}</strong>
+                <em>Allievi</em>
               </span>
               <span className="riep-istr-pipe">|</span>
               <span className="riep-istr-item">
-                <strong>{d?.mese != null ? d.mese : '—'}</strong>
-                <em>Mese</em>
+                <strong>{d?.programma != null ? d.programma : '—'}</strong>
+                <em>In programma</em>
               </span>
               <span className="riep-istr-pipe">|</span>
               <span className="riep-istr-item">
-                <strong>{d?.allenati != null ? d.allenati : '—'}</strong>
-                <em>Allenati</em>
+                <span className="riep-istr-num-wrap">
+                  <strong>{d?.richieste != null ? d.richieste : '—'}</strong>
+                  {(d?.richieste ?? 0) > 0 && <span className="riep-istr-pallino" />}
+                </span>
+                <em>Richieste</em>
               </span>
             </div>
           </div>
         </div>
+
+        <RichiesteLezioneInviate />
 
         <div className="club-sez-header" style={{ marginTop: '2rem' }}>
           <span className="club-sez-icona">
@@ -307,6 +336,8 @@ export default function RiepilogoProfilo() {
           </div>
         )}
       </div>
+
+      <RichiesteLezioneInviate />
 
       <div className="club-sez-header" style={{ marginTop: '2rem' }}>
         <span className="club-sez-icona">

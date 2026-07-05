@@ -3186,6 +3186,18 @@
     line-height: 1;
     color: #fff;
   }
+  .riep-istr-num-wrap {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .riep-istr-pallino {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--terra);
+    flex-shrink: 0;
+  }
   .riep-istr-item em {
     font-style: normal;
     font-size: 0.55rem;
@@ -6068,15 +6080,71 @@
   }
 
   /* ── Disponibilità maestri (Fase 4) ──────────────────────────── */
-  .disponibilita-riga {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    padding: 8px 12px;
-    border-radius: 10px;
-    background: var(--fondo);
-    font-size: 0.84rem;
+  .tabella-disponibilita {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8rem;
     color: var(--ink);
+  }
+  .tabella-disponibilita tr {
+    border-bottom: 1px solid var(--border2);
+  }
+  .tabella-disponibilita tr:last-child {
+    border-bottom: none;
+  }
+  .tabella-disponibilita td {
+    padding: 6px 4px;
+    line-height: 1.2;
+  }
+  .tabella-disponibilita-quando {
+    width: 100%;
+  }
+  .tabella-disponibilita-orario {
+    flex-shrink: 0;
+    white-space: nowrap;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink2);
+    padding-left: 10px;
+  }
+  .tabella-disponibilita-azione {
+    width: 1%;
+    white-space: nowrap;
+    text-align: right;
+    padding-left: 6px;
+  }
+
+  /* ── Richieste di lezione (Fase 5) ────────────────────────────── */
+  .richiesta-lezione-riga {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    background: var(--fondo);
+    font-size: 0.8rem;
+    color: var(--ink);
+    line-height: 1.4;
+  }
+  .richiesta-lezione-info {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .richiesta-lezione-sport {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--v700, var(--ok));
+    padding: 1px 7px;
+    border-radius: 999px;
+    background: rgba(26, 122, 60, 0.1);
+  }
+  .richiesta-lezione-quando {
+    flex-basis: 100%;
+    font-size: 0.76rem;
+    color: var(--ink3);
   }
 }

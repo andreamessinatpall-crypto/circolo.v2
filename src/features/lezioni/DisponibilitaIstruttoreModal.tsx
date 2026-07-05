@@ -1,7 +1,11 @@
-import { useEffect } from 'react'
+import { useMemo, useState, useEffect } from 'react'
+import { useAuth } from '@/auth/useAuth'
 import { dataEstesa } from '@/lib/formato'
 import { mancaTabella, messaggioErrore } from '@/lib/errori'
+import type { Sport } from '@/features/prenotazioni/tipi'
 import { useDisponibilita } from './useDisponibilita'
+import { useImpegniIstruttore, useInviaRichiestaLezione } from './useRichiesteLezione'
+import { generaSlotProposti, escludiSlotOccupati, type SlotProposto } from './slotLezione'
 
 const GIORNI = ['Domenica', 'Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato']
 
@@ -11,11 +15,27 @@ interface Props {
   onChiudi: () => void
 }
 
-// Consultazione (sola lettura) delle disponibilità di un istruttore: un
-// giocatore ci arriva cliccando il suo nome nella sezione Staff del club.
-// Usata anche dalla prenotazione lezioni (Fase 5) per scegliere uno slot.
+function chiaveSlot(s: SlotProposto) {
+  return `${s.data}_${s.oraInizio}`
+}
+
+// Consultazione delle disponibilità di un istruttore e richiesta di una
+// lezione privata (Fase 5): un giocatore ci arriva cliccando il suo nome
+// nella sezione Staff del club.
 export default function DisponibilitaIstruttoreModal({ istruttoreId, nome, onChiudi }: Props) {
+  const { profilo } = useAuth()
   const { fasce, caricamento, errore } = useDisponibilita(istruttoreId)
+  const { data: impegni = [] } = useImpegniIstruttore(istruttoreId)
+  const richiedi = useInviaRichiestaLezione(profilo?.id)
+
+  const [sport, setSport] = useState<Sport>('padel')
+  const [sceltaSlot, setSceltaSlot] = useState('')
+  const [inviata, setInviata] = useState(false)
+
+  const slotProposti = useMemo(() => {
+    const generati = generaSlotProposti(fasce)
+    return escludiSlotOccupati(generati, impegni)
+  }, [fasce, impegni])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -28,6 +48,20 @@ export default function DisponibilitaIstruttoreModal({ istruttoreId, nome, onChi
       document.body.style.overflow = ''
     }
   }, [onChiudi])
+
+  function handleInvia() {
+    const slot = slotProposti.find((s) => chiaveSlot(s) === sceltaSlot)
+    if (!slot) return
+    richiedi.mutate(
+      {
+        istruttoreId,
+        sport,
+        inizio: `${slot.data}T${slot.oraInizio}:00`,
+        fine: `${slot.data}T${slot.oraFine}:00`,
+      },
+      { onSuccess: () => setInviata(true) },
+    )
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onChiudi}>
@@ -55,6 +89,51 @@ export default function DisponibilitaIstruttoreModal({ istruttoreId, nome, onChi
                 </span>
               </div>
             ))}
+          </div>
+        )}
+
+        {fasce.length > 0 && (
+          <div className="mt-4 pt-4" style={{ borderTop: '1px solid var(--border)' }}>
+            {inviata ? (
+              <p className="msg-ok">Richiesta inviata! Ti avviseremo quando {nome} risponde.</p>
+            ) : (
+              <>
+                <span className="etichetta">Richiedi una lezione</span>
+
+                <div className="seg-group mb-2">
+                  <button type="button" className={'seg-btn' + (sport === 'padel' ? ' attivo' : '')} onClick={() => { setSport('padel'); setSceltaSlot('') }}>
+                    Padel
+                  </button>
+                  <button type="button" className={'seg-btn' + (sport === 'calcio' ? ' attivo' : '')} onClick={() => { setSport('calcio'); setSceltaSlot('') }}>
+                    Calcio
+                  </button>
+                </div>
+
+                {slotProposti.length === 0 ? (
+                  <p className="sub">Nessuno slot libero nelle prossime due settimane.</p>
+                ) : (
+                  <select value={sceltaSlot} onChange={(e) => setSceltaSlot(e.target.value)}>
+                    <option value="">Scegli data e ora…</option>
+                    {slotProposti.map((s) => (
+                      <option key={chiaveSlot(s)} value={chiaveSlot(s)}>
+                        {dataEstesa(s.data)} · {s.oraInizio}–{s.oraFine}
+                      </option>
+                    ))}
+                  </select>
+                )}
+
+                {richiedi.error && <p className="msg-errore mt-2">{messaggioErrore(richiedi.error)}</p>}
+
+                <button
+                  type="button"
+                  className="btn btn-sm mt-3"
+                  onClick={handleInvia}
+                  disabled={!sceltaSlot || richiedi.isPending}
+                >
+                  {richiedi.isPending ? 'Invio…' : 'Invia richiesta'}
+                </button>
+              </>
+            )}
           </div>
         )}
 
