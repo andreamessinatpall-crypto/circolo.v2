@@ -3442,14 +3442,6 @@
     flex-shrink: 0;
   }
 
-  /* Medaglie podio nella classifica */
-  .cl-podio {
-    flex: 0 0 38px;
-    font-size: 1rem;
-    line-height: 1;
-    text-align: left;
-  }
-
   /* Chip livello nella classifica */
   .cl-lv-chip {
     font-size: 0.62rem;
@@ -4273,17 +4265,6 @@
     flex: 1 1 auto;
     text-align: left;
     font-weight: 700;
-  }
-  .podio-punti {
-    display: inline-block;
-    margin-top: 8px;
-    padding: 4px 14px;
-    border-radius: 999px;
-    font-weight: 700;
-    font-size: 0.85rem;
-    color: var(--v900);
-    background: linear-gradient(135deg, var(--g300), var(--g400));
-    border: 1px solid var(--g500);
   }
   .podio-lista {
     margin: 14px auto 0;
