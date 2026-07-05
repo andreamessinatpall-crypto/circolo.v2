@@ -75,6 +75,7 @@ export default function GestioneGiocatori() {
   const [ordine, setOrdine] = useState<Ordine>('punti')
   const [selezionatoId, setSelezionatoId] = useState<string | null>(null)
   const [espandiSospesi, setEspandiSospesi] = useState(false)
+  const [espandiCancellati, setEspandiCancellati] = useState(false)
 
   if (isLoading) return <p className="text-ink-2">Caricamento giocatori…</p>
   if (error) return <p className="msg-errore">Impossibile caricare i giocatori: {error.message}</p>
@@ -117,6 +118,7 @@ export default function GestioneGiocatori() {
   const gruppoSospesi    = tutti.filter((s) => !!s.sospeso && !isCancellato(s) && match(s)).sort(perCognome)
   const gruppoStaff      = tutti.filter((s) => s.attivo && !s.sospeso && !isCancellato(s) && isStaff(s) && match(s)).sort(perCognome)
   const gruppoAttivi     = tutti.filter((s) => s.attivo && !s.sospeso && !isCancellato(s) && !isStaff(s) && match(s)).sort(cmp)
+  const gruppoCancellati = tutti.filter((s) => isCancellato(s) && match(s)).sort(perCognome)
 
   const selezionato = tutti.find((s) => s.id === selezionatoId) ?? null
 
@@ -218,10 +220,10 @@ export default function GestioneGiocatori() {
           </SezHeader>
         )}
 
-        {gruppoAttivi.length === 0 && gruppoInAttesa.length === 0 && !q && (
+        {gruppoAttivi.length === 0 && gruppoInAttesa.length === 0 && gruppoSospesi.length === 0 && gruppoCancellati.length === 0 && !q && (
           <p className="text-ink-2">Nessun giocatore.</p>
         )}
-        {gruppoAttivi.length === 0 && q && gruppoInAttesa.length === 0 && gruppoSospesi.length === 0 && (
+        {gruppoAttivi.length === 0 && q && gruppoInAttesa.length === 0 && gruppoSospesi.length === 0 && gruppoCancellati.length === 0 && (
           <p className="text-ink-2">Nessun giocatore corrisponde alla ricerca.</p>
         )}
 
@@ -272,6 +274,52 @@ export default function GestioneGiocatori() {
             {espandiSospesi && (
               <div className="flex flex-col gap-1.5 mt-2">
                 {gruppoSospesi.map((s) => (
+                  <RigaSocio
+                    key={s.id}
+                    socio={s}
+                    modalitaPremi={!!modalitaPremi}
+                    attivita={attivita?.get(s.id) ?? null}
+                    onApri={() => setSelezionatoId(s.id)}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── Sezione account cancellati (collassabile) ── */}
+        {gruppoCancellati.length > 0 && (
+          <div style={{ marginTop: gruppoAttivi.length > 0 || gruppoSospesi.length > 0 ? '1.25rem' : 0 }}>
+            <button
+              type="button"
+              onClick={() => setEspandiCancellati(!espandiCancellati)}
+              style={{
+                width: '100%', display: 'flex', alignItems: 'center', gap: '0.5rem',
+                padding: '0.5rem 0',
+                borderTop: '1px solid var(--border)',
+                background: 'none', border: 'none',
+                borderTopColor: 'var(--border)',
+                borderTopWidth: 1,
+                borderTopStyle: 'solid',
+                cursor: 'pointer',
+                textAlign: 'left',
+                color: 'var(--ink-3)',
+                fontSize: '0.8rem', fontWeight: 600,
+                letterSpacing: '0.05em', textTransform: 'uppercase',
+              }}
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6M14 11v6" /><path d="M9 6V4h6v2" />
+              </svg>
+              Account cancellati ({gruppoCancellati.length})
+              <span style={{ marginLeft: 'auto', fontSize: '0.75rem' }}>
+                {espandiCancellati ? '▲ Nascondi' : '▼ Mostra'}
+              </span>
+            </button>
+
+            {espandiCancellati && (
+              <div className="flex flex-col gap-1.5 mt-2">
+                {gruppoCancellati.map((s) => (
                   <RigaSocio
                     key={s.id}
                     socio={s}
