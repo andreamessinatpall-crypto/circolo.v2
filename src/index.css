@@ -3376,16 +3376,11 @@
     margin-bottom: 4px;
   }
   .club-hero-pos {
-    font-size: 2.4rem;
+    font-size: 1.8rem;
     font-weight: 800;
     color: #fff;
     line-height: 1;
     letter-spacing: -0.02em;
-  }
-  .club-hero-pos-sub {
-    font-size: 0.78rem;
-    color: rgba(200,240,210,0.75);
-    margin-top: 4px;
   }
   .club-hero-stats {
     display: flex;
@@ -3401,7 +3396,7 @@
     padding: 0 14px;
   }
   .club-hero-stat-num {
-    font-size: 1.25rem;
+    font-size: 1.8rem;
     font-weight: 800;
     color: #fff;
     line-height: 1;
