@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { useSociPubblici } from '@/features/prenotazioni/datiAmichevoli'
+import { useSociEtichette } from '@/features/prenotazioni/datiAmichevoli'
 import { incontroDisputato } from './calendario'
 import {
   calcolaClassifica,
@@ -27,7 +27,10 @@ export default function RiepilogoPunti({
   compBySquadra: Record<string, Componente[]>
   americanoPartite?: AmericanoPartita[]
 }) {
-  const sociQuery = useSociPubblici()
+  // soci_etichette (non soci_pubblici): riepilogo punti di un torneo già
+  // giocato, deve restare leggibile anche se un giocatore è stato nel
+  // frattempo sospeso o ha cancellato l'account.
+  const sociQuery = useSociEtichette()
   const etichette = useMemo(() => {
     const m = new Map<string, string>()
     for (const s of sociQuery.data ?? []) m.set(s.id, s.etichetta)

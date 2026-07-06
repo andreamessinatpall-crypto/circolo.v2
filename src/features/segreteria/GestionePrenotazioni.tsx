@@ -5,7 +5,7 @@ import { useAuth } from '@/auth/useAuth'
 import { classiErrore, classiOk } from '@/components/stili'
 import { mancaTabella, messaggioErrore } from '@/lib/errori'
 import { useCampi } from '@/features/prenotazioni/datiPrenotazioni'
-import { mancaColonnaManuale, useSociPubblici } from '@/features/prenotazioni/datiAmichevoli'
+import { mancaColonnaManuale, useSociEtichette, useSociPubblici } from '@/features/prenotazioni/datiAmichevoli'
 import { SchedaPartita } from '@/features/prenotazioni/MieAmichevoli'
 import { assegnaPuntiPresenza, annullaPuntiPresenza } from '@/features/prenotazioni/puntiPresenze'
 import { oraLocale } from '@/features/prenotazioni/orari'
@@ -92,6 +92,11 @@ export default function GestionePrenotazioni() {
 
   const campiQuery = useCampi()
   const sociQuery = useSociPubblici()
+  // soci_etichette (non soci_pubblici): per i nomi mostrati/esportati sulle
+  // prenotazioni già registrate, così un partecipante sospeso o cancellato
+  // resta leggibile col vero nome. sociQuery/candidati restano su
+  // soci_pubblici per la selezione di nuovi giocatori, dove vanno esclusi.
+  const etichetteQuery = useSociEtichette()
   const istruttoriQuery = useQuery({
     queryKey: ['istruttori-attivi'],
     queryFn: async () => {
@@ -127,9 +132,9 @@ export default function GestionePrenotazioni() {
 
   const etichette = useMemo(() => {
     const m = new Map<string, string>()
-    for (const s of sociQuery.data ?? []) m.set(s.id, s.etichetta)
+    for (const s of etichetteQuery.data ?? []) m.set(s.id, s.etichetta)
     return m
-  }, [sociQuery.data])
+  }, [etichetteQuery.data])
 
   // Prenotazioni per giorno (ymd) e partecipanti per prenotazione.
   const prenPerGiorno = new Map<string, MiaPrenotazione[]>()
@@ -438,7 +443,7 @@ export default function GestionePrenotazioni() {
 
       // Mappa socio_id → nome leggibile.
       const nomi = new Map<string, string>()
-      for (const s of sociQuery.data ?? []) nomi.set(s.id, s.etichetta)
+      for (const s of etichetteQuery.data ?? []) nomi.set(s.id, s.etichetta)
 
       const due = (n: number) => String(n).padStart(2, '0')
       function fmtData(iso: string) {

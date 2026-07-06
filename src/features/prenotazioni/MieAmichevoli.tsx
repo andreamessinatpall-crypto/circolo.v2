@@ -8,7 +8,7 @@ import { useValoriPunti } from '@/features/segreteria/datiPunti'
 import { useIntervalliCrediti } from '@/features/segreteria/datiIntervalli'
 import { useModalitaPremi } from '@/features/premi/datiPremi'
 import { useCampi } from './datiPrenotazioni'
-import { mancaColonnaManuale, useMieAmichevoli, useSociPubblici } from './datiAmichevoli'
+import { mancaColonnaManuale, useMieAmichevoli, useSociEtichette, useSociPubblici } from './datiAmichevoli'
 import { assegnaPuntiPresenza, annullaPuntiPresenza } from './puntiPresenze'
 import { oraLocale } from './orari'
 import { TipoAttivitaIcona } from '@/components/IconeAttivita'
@@ -27,6 +27,7 @@ export default function MieAmichevoli({ sport }: { sport: Sport }) {
   const qc = useQueryClient()
   const campiQuery = useCampi()
   const sociQuery = useSociPubblici()
+  const etichetteQuery = useSociEtichette()
   const amiciData = useAmici(profilo?.id ?? '')
   const valoriQuery = useValoriPunti()
   const modalitaPremiQuery = useModalitaPremi()
@@ -44,12 +45,15 @@ export default function MieAmichevoli({ sport }: { sport: Sport }) {
 
   const amichevoli = useMieAmichevoli(sport, idCampi, profilo?.id ?? '')
 
+  // Nomi già presenti in una prenotazione (storico): usa soci_etichette, non
+  // soci_pubblici, così un partecipante sospeso o cancellato resta leggibile
+  // col suo vero nome invece di sparire dietro un placeholder generico.
   const etichette = useMemo(() => {
     const m = new Map<string, string>()
-    for (const s of sociQuery.data ?? []) m.set(s.id, s.etichetta)
+    for (const s of etichetteQuery.data ?? []) m.set(s.id, s.etichetta)
     if (profilo) m.set(profilo.id, `${profilo.nome} ${profilo.cognome}`)
     return m
-  }, [sociQuery.data, profilo])
+  }, [etichetteQuery.data, profilo])
 
   const aggiorna = () => {
     qc.invalidateQueries({ queryKey: ['amichevoli'] })

@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/auth/useAuth'
 import { mancaRpc, messaggioErrore } from '@/lib/errori'
-import { useSociPubblici } from '@/features/prenotazioni/datiAmichevoli'
+import { useSociEtichette } from '@/features/prenotazioni/datiAmichevoli'
 import { oraLocale } from '@/features/prenotazioni/orari'
 import { SportIcona } from '@/components/IconeSport'
 import { TipoAttivitaIcona } from '@/components/IconeAttivita'
@@ -45,7 +45,10 @@ interface Attivita {
 
 export default function AttivitaInProgramma() {
   const { profilo } = useAuth()
-  const sociQuery = useSociPubblici()
+  // soci_etichette (non soci_pubblici): una prenotazione già registrata deve
+  // restare leggibile col vero nome anche se il partecipante è nel frattempo
+  // stato sospeso o ha cancellato l'account.
+  const sociQuery = useSociEtichette()
 
   const query = useQuery({
     queryKey: ['attivita-programma', profilo?.id],

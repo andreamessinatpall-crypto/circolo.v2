@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { useAuth } from '@/auth/useAuth'
 import { mancaTabella, messaggioErrore } from '@/lib/errori'
 import { useCampi } from './datiPrenotazioni'
-import { useMieLezioni, useSociPubblici } from './datiAmichevoli'
+import { useMieLezioni, useSociEtichette } from './datiAmichevoli'
 import { oraLocale } from './orari'
 import GestioneDisponibilita from '@/features/lezioni/GestioneDisponibilita'
 import RichiesteLezioneSezione from '@/features/lezioni/RichiesteLezioneSezione'
@@ -24,7 +24,10 @@ const ICONA_CAL = (
 export default function VistaLezioni() {
   const { profilo } = useAuth()
   const campiQuery = useCampi()
-  const sociQuery = useSociPubblici()
+  // soci_etichette (non soci_pubblici): un allievo già in una lezione
+  // registrata deve restare leggibile col vero nome anche se sospeso o
+  // se ha cancellato l'account nel frattempo.
+  const sociQuery = useSociEtichette()
 
   const idCampi = useMemo(
     () => (campiQuery.data ?? []).map((c) => c.id),

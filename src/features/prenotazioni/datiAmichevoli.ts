@@ -43,6 +43,9 @@ export interface MiaPrenotazione {
 }
 
 // Elenco soci attivi (per etichette e selettore). Condivide la cache con gli amici.
+// Esclude sospesi e cancellati: non va usato per risolvere nomi nello storico
+// delle prenotazioni (vedi useSociEtichette), solo per liste "amici"/selezione
+// di nuovi giocatori, dove sospesi e cancellati non devono comparire.
 export function useSociPubblici() {
   return useQuery({
     queryKey: ['soci_pubblici'],
@@ -53,6 +56,24 @@ export function useSociPubblici() {
         id: s.id,
         etichetta: titleCase(s.etichetta),
         genere: s.genere ?? null,
+      }))
+    },
+  })
+}
+
+// Nomi di TUTTI i soci, inclusi sospesi e cancellati: usata solo per
+// risolvere id → nome nello storico delle prenotazioni già registrate (una
+// cancellazione anonimizza email/telefono ma lascia apposta nome e cognome
+// leggibili nello storico).
+export function useSociEtichette() {
+  return useQuery({
+    queryKey: ['soci_etichette'],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('soci_etichette')
+      if (error) throw error
+      return ((data ?? []) as { id: string; etichetta: string }[]).map((s) => ({
+        id: s.id,
+        etichetta: titleCase(s.etichetta),
       }))
     },
   })
