@@ -332,40 +332,37 @@ export function SchedaPartita({
   const selezionabili = candidati.filter((c) => !giaIds.has(c.id))
 
   const cap4 = sport === 'padel' && !pren.allenamento && lista.length >= 4
-  const disabilita = cap4 || amiciVuoti
-  const testoVuoto = cap4
-    ? 'Coppie complete (4/4)'
-    : amiciVuoti
-      ? 'Aggiungi prima degli amici dal Profilo'
-      : staff
-        ? '— Aggiungi giocatori —'
-        : 'Iscrivi un amico'
+  const disabilita = amiciVuoti
+  const testoVuoto = amiciVuoti
+    ? 'Aggiungi prima degli amici dal Profilo'
+    : staff
+      ? '— Aggiungi giocatori —'
+      : 'Annulla'
 
   return (
     <div className={'amichevole-riga' + (inModale ? ' in-modale' : '')}>
       <div className="amichevole-cap">
-        <div>
-          {!inModale && (
-            <div className="orario">
-              {oraLocale(inizio)}–{oraLocale(fine)}
-              {campo && (
-                <>
-                  <span className="orario-sep">·</span>
-                  <span className="orario-campo">{campo.nome}</span>
-                </>
-              )}
-            </div>
-          )}
+        <div className="sp-top">
+          <div className="sp-riga1">
+            {!inModale && (
+              <div className="orario">
+                {oraLocale(inizio)}–{oraLocale(fine)}
+                {campo && (
+                  <>
+                    <span className="orario-sep">·</span>
+                    <span className="orario-campo">{campo.nome}</span>
+                  </>
+                )}
+              </div>
+            )}
+            <TipoAttivitaIcona
+              tipo={pren.allenamento ? 'allenamento' : pren.torneo_nome ? 'torneo' : 'partita'}
+              titolo={pren.torneo_nome ?? undefined}
+            />
+          </div>
           {pren.allenamento && pren.allenatore_id && (
             <div className="dove">Istruttore: {etichette.get(pren.allenatore_id) ?? '—'}</div>
           )}
-        </div>
-        <div className="cap-destra">
-          <TipoAttivitaIcona
-            tipo={pren.allenamento ? 'allenamento' : pren.torneo_nome ? 'torneo' : 'partita'}
-            titolo={pren.torneo_nome ?? undefined}
-          />
-          {sport === 'padel' && <span className="part-conta">{lista.length}/4</span>}
         </div>
       </div>
 
@@ -516,8 +513,18 @@ export function SchedaPartita({
                 </span>
               )
             })}
+            {!cap4 && !staff && !pren.incontro_id && (
+              <Selettore
+                opzioni={selezionabili}
+                disabilitato={disabilita}
+                testoVuoto={testoVuoto}
+                onScegli={(id) => onAggiungi(id, false)}
+                onOspite={onAggiungiOspite}
+                variante="icona"
+              />
+            )}
           </div>
-          {(staff || !pren.incontro_id) && (
+          {!cap4 && staff && (
             <Selettore
               opzioni={selezionabili}
               disabilitato={disabilita}
@@ -538,45 +545,88 @@ export function SchedaPartita({
   )
 }
 
+function IconaPiuAmico() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="9" cy="8" r="4" />
+      <path d="M2 20c0-3.9 3.1-7 7-7s7 3.1 7 7" />
+      <line x1="19" y1="8" x2="19" y2="14" />
+      <line x1="16" y1="11" x2="22" y2="11" />
+    </svg>
+  )
+}
+
 function Selettore({
   opzioni,
   disabilitato,
   testoVuoto,
   onScegli,
   onOspite,
+  variante,
 }: {
   opzioni: { id: string; etichetta: string }[]
   disabilitato: boolean
   testoVuoto: string
   onScegli: (id: string) => void
   onOspite?: (nome: string) => void
+  // "icona": bottone tondo con icona "+ amico" al posto del testo (usato per
+  // i soci normali). testoVuoto diventa l'opzione "Annulla" nel menu che si
+  // apre: selezionarla non fa nulla, così si può chiudere senza scegliere.
+  variante?: 'icona'
 }) {
-  return (
-    <div className="aggiungi-part">
-      <select
-        value=""
-        disabled={disabilitato}
-        onChange={(e) => {
-          const v = e.target.value
-          if (!v) return
-          // (Tappa 11) Voce "ospite": chiede il nome in una finestra a comparsa
-          // e aggiunge un giocatore non registrato.
-          if (v === '__ospite__') {
-            const nome = window.prompt('Nome dell’ospite (giocatore non registrato):')
-            if (nome && nome.trim()) onOspite?.(nome.trim())
-            return
-          }
-          onScegli(v)
-        }}
-      >
-        <option value="">{testoVuoto}</option>
-        {onOspite && <option value="__ospite__">＋ Ospite (non registrato)…</option>}
-        {opzioni.map((o) => (
-          <option key={o.id} value={o.id}>
-            {o.etichetta}
-          </option>
-        ))}
-      </select>
-    </div>
+  const select = (
+    <select
+      className={variante === 'icona' ? 'sr-only-select' : undefined}
+      value=""
+      disabled={disabilitato}
+      aria-label={variante === 'icona' ? testoVuoto : undefined}
+      onChange={(e) => {
+        const v = e.target.value
+        if (!v) return
+        // (Tappa 11) Voce "ospite": chiede il nome in una finestra a comparsa
+        // e aggiunge un giocatore non registrato.
+        if (v === '__ospite__') {
+          const nome = window.prompt('Nome dell’ospite (giocatore non registrato):')
+          if (nome && nome.trim()) onOspite?.(nome.trim())
+          return
+        }
+        onScegli(v)
+      }}
+    >
+      <option value="">{testoVuoto}</option>
+      {onOspite && <option value="__ospite__">＋ Ospite (non registrato)…</option>}
+      {opzioni.map((o) => (
+        <option key={o.id} value={o.id}>
+          {o.etichetta}
+        </option>
+      ))}
+    </select>
   )
+
+  if (variante === 'icona') {
+    // Disabilitato (niente amici da invitare): il title HTML non si vede su
+    // mobile (niente hover), quindi il pulsante resta cliccabile e mostra il
+    // motivo con un avviso vero e proprio invece di restare muto.
+    if (disabilitato) {
+      return (
+        <button
+          type="button"
+          className="btn-icona-amico disabilitato"
+          onClick={() => window.alert(testoVuoto)}
+        >
+          <IconaPiuAmico />
+        </button>
+      )
+    }
+    return (
+      <div className="aggiungi-part-icona">
+        <span className="btn-icona-amico" aria-hidden="true">
+          <IconaPiuAmico />
+        </span>
+        {select}
+      </div>
+    )
+  }
+
+  return <div className="aggiungi-part">{select}</div>
 }

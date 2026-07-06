@@ -57,7 +57,7 @@ export default function SezioneCompagni() {
         </button>
       </div>
 
-      <button type="button" className="btn btn-riflesso btn-block mb-3" onClick={() => setNuovoAnnuncio(true)}>
+      <button type="button" className="btn btn-verde-scuro btn-block mb-3" onClick={() => setNuovoAnnuncio(true)}>
         + Nuovo annuncio
       </button>
 

@@ -616,6 +616,13 @@
     transform: none;
     box-shadow: none;
   }
+  .btn-verde-scuro {
+    background: linear-gradient(135deg, var(--v700) 0%, var(--v900) 100%);
+    color: #fff;
+  }
+  .btn-verde-scuro:hover:not(:disabled) {
+    background: linear-gradient(135deg, var(--v600) 0%, var(--v800) 100%);
+  }
 
   .btn-pericolo {
     background: transparent;
@@ -1979,6 +1986,25 @@
     color: var(--ink2);
     margin-top: 2px;
   }
+  /* Scheda "Le mie prenotazioni": icona tipo attività sulla stessa riga
+     dell'orario/campo, centrata verticalmente con il testo; il conteggio
+     coppie (part-conta) va invece su una riga propria, sotto, a destra. */
+  .sp-top {
+    width: 100%;
+  }
+  .sp-riga1 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .sp-riga1 .orario {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .sp-riga1 .tipo-ico {
+    margin-left: auto;
+    flex-shrink: 0;
+  }
   .att-sport {
     display: flex;
     align-items: center;
@@ -2024,24 +2050,8 @@
     white-space: nowrap;
     flex-shrink: 0;
   }
-  .part-conta {
-    font-size: 0.7rem;
-    color: var(--ink3);
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    font-weight: 700;
-    white-space: nowrap;
-    padding-top: 2px;
-  }
   /* Blocco in alto a destra della scheda: icona tipo attività + eventuale
      conteggio giocatori, impilati e allineati a destra. */
-  .cap-destra {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 6px;
-    flex: 0 0 auto;
-  }
   .tipo-ico {
     display: inline-flex;
     align-items: center;
@@ -2388,6 +2398,7 @@
   .chips {
     display: flex;
     flex-wrap: wrap;
+    align-items: center;
     gap: 6px;
     margin-top: 10px;
   }
@@ -2603,6 +2614,49 @@
   }
   .aggiungi-part select {
     flex: 1 1 180px;
+  }
+  /* Bottone icona "+ amico" (soci normali): il <select> nativo resta
+     funzionante ma invisibile, sovrapposto al bottone stilizzato sotto. */
+  .aggiungi-part-icona {
+    position: relative;
+    display: inline-flex;
+  }
+  .btn-icona-amico {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 31px;
+    height: 31px;
+    border-radius: 999px;
+    border: none;
+    background: var(--v600);
+    color: #fff;
+    cursor: pointer;
+  }
+  .btn-icona-amico svg {
+    width: 15px;
+    height: 15px;
+  }
+  .btn-icona-amico.disabilitato {
+    opacity: 0.45;
+  }
+  /* Il cerchio decorativo sotto il <select> invisibile non deve intercettare
+     i click: passano tutti al <select> sovrapposto sopra. */
+  .aggiungi-part-icona .btn-icona-amico {
+    pointer-events: none;
+  }
+  .aggiungi-part-icona select.sr-only-select {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: transparent;
+    opacity: 0;
+    cursor: pointer;
+    z-index: 1;
   }
 
   /* Riga di un componente (giocatore) dentro una coppia/squadra del torneo */
