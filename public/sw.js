@@ -1,8 +1,16 @@
 // Service worker del Circolo Sportivo.
-// Due strategie diverse a seconda del tipo di risorsa:
-// - risorse statiche same-origin (JS/CSS/HTML/icone): stale-while-revalidate,
-//   risposta istantanea dalla cache + aggiornamento in background. Vanno bene
-//   perché cambiano raramente e la velocità percepita conta più della freschezza.
+// Tre strategie diverse a seconda del tipo di risorsa:
+// - navigazione (l'HTML della pagina, cioè ogni apertura/riapertura
+//   dell'app): network-first. È il file che punta ai bundle JS/CSS della
+//   build corrente, quindi deve sempre riflettere l'ultima versione appena
+//   la rete è disponibile — altrimenti un'app installata sul telefono, che
+//   resta sospesa e viene "riaperta" invece che ricaricata da zero, potrebbe
+//   continuare a mostrare indefinitamente l'ultima versione già in cache
+//   anche a distanza di settimane da un aggiornamento.
+// - JS/CSS/icone same-origin: stale-while-revalidate, risposta istantanea
+//   dalla cache + aggiornamento in background. Va bene perché i file
+//   JS/CSS della build hanno un hash nel nome (cambiano nome ad ogni
+//   modifica, quindi non c'è mai staleness reale su di essi).
 // - letture Supabase (GET /rest/v1/...): network-first con la cache SOLO come
 //   ripiego se la rete non risponde (offline/rete instabile). Questi dati sono
 //   già gestiti da TanStack Query con invalidation/realtime propri: se li
@@ -13,7 +21,7 @@
 // Le scritture (POST/PATCH/DELETE) non passano mai dalla cache: falliscono
 // normalmente offline, gestite dagli errori già presenti nell'app.
 
-const CACHE_STATICA = 'circolo-statica-v1'
+const CACHE_STATICA = 'circolo-statica-v2'
 const CACHE_DATI = 'circolo-dati-v1'
 const CACHE_ATTUALI = [CACHE_STATICA, CACHE_DATI]
 
@@ -87,6 +95,10 @@ self.addEventListener('fetch', (event) => {
   }
 
   if (url.origin === self.location.origin) {
+    if (request.mode === 'navigate') {
+      event.respondWith(networkFirst(request, CACHE_STATICA))
+      return
+    }
     event.respondWith(staleWhileRevalidate(request, CACHE_STATICA))
   }
 })
