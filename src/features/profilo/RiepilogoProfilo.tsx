@@ -6,10 +6,19 @@ import { LIVELLI_PUNTI_DEFAULT, livelloDaPunti, useLivelliPunti } from './livell
 import { svgMedagliaColore } from './badge/medaglieSvg'
 import { MedagliaRuolo } from './ruoloBadge'
 import AttivitaInProgramma from './AttivitaInProgramma'
+import SezioneCompagni from '@/features/compagni/SezioneCompagni'
 import { oraLocale } from '@/features/prenotazioni/orari'
 import { useRichiesteInviate } from '@/features/lezioni/useRichiesteLezione'
 
 const ETICHETTE_SPORT_RICHIESTA: Record<string, string> = { padel: 'Padel', calcio: 'Calcio' }
+
+function IcoCompagni() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="9" cy="7" r="4" /><path d="M1 20c0-3.8 3.6-7 8-7s8 3.2 8 7" /><path d="M17 8a3 3 0 1 1 0 6" /><path d="M22 20c0-2.6-1.7-4.8-4-5.6" />
+    </svg>
+  )
+}
 
 // Le richieste di lezione inviate a un istruttore (Fase 5): in attesa di
 // risposta, o appena rifiutate. Una volta accettate diventano una vera
@@ -252,6 +261,12 @@ export default function RiepilogoProfilo() {
         <div className="card">
           <AttivitaInProgramma />
         </div>
+
+        <div className="club-sez-header" style={{ marginTop: '2rem' }}>
+          <span className="club-sez-icona"><IcoCompagni /></span>
+          <h2 className="club-sez-titolo">Cerco giocatori</h2>
+        </div>
+        <SezioneCompagni />
       </div>
     )
   }
@@ -348,6 +363,12 @@ export default function RiepilogoProfilo() {
       <div className="card">
         <AttivitaInProgramma />
       </div>
+
+      <div className="club-sez-header" style={{ marginTop: '2rem' }}>
+        <span className="club-sez-icona"><IcoCompagni /></span>
+        <h2 className="club-sez-titolo">Cerco giocatori</h2>
+      </div>
+      <SezioneCompagni />
     </div>
   )
 }

@@ -3,7 +3,6 @@ import { supabase } from '@/lib/supabase'
 import type { Livello } from '@/features/profilo/livelloGioco/domande'
 
 export type Sport = 'padel' | 'calcio'
-export type FasciaOraria = 'mattina' | 'pomeriggio' | 'sera'
 export type StatoCandidatura = 'in_attesa' | 'accettato' | 'rifiutato'
 
 export interface RichiestaPartner {
@@ -13,7 +12,7 @@ export interface RichiestaPartner {
   livello: Livello | null
   giocatori_mancanti: number | null
   giorno: string
-  fascia_oraria: FasciaOraria
+  ora_inizio: string
   creato_il: string
   scade_il: string
 }
@@ -84,7 +83,7 @@ export function useRichiestePartner(profiloId: string | undefined) {
       livello: Livello | null
       giocatori_mancanti: number | null
       giorno: string
-      fascia_oraria: FasciaOraria
+      ora_inizio: string
     }) => {
       if (!profiloId) throw new Error('Utente non autenticato')
       const { error } = await supabase.from('richieste_partner').insert({ socio_id: profiloId, ...dati })

@@ -2697,18 +2697,6 @@
     background: transparent;
     vertical-align: middle;
   }
-  .cl-rank.m1 {
-    background: linear-gradient(135deg, #e8c878, #c8972e);
-    color: var(--v900);
-  }
-  .cl-rank.m2 {
-    background: linear-gradient(135deg, #d7dce0, #9ba3aa);
-    color: #2b2f33;
-  }
-  .cl-rank.m3 {
-    background: linear-gradient(135deg, #e0a878, #b07a45);
-    color: #fff;
-  }
 
   /* (Fase 6c) Intestazione "wow" del dettaglio torneo: nome in evidenza su
      fondo verde, con lo stato modificabile in alto a destra. */
@@ -3309,52 +3297,24 @@
     line-height: 1;
   }
 
-  /* Bacheca scura (classifica del club) */
+  /* Bacheca (classifica del club) */
   .bacheca {
     position: relative;
     overflow: hidden;
     border-radius: 22px;
     padding: 20px;
-    color: #eaf1e9;
-    background: linear-gradient(135deg, var(--v600) 0%, var(--v800) 100%);
-    box-shadow: 0 10px 30px rgba(12, 51, 25, 0.18);
-  }
-  .bacheca::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(55% 80% at 50% -10%, rgba(200, 151, 46, 0.18), transparent 60%);
-    pointer-events: none;
-  }
-  .bacheca > * {
-    position: relative;
-    z-index: 1;
-  }
-  .bacheca .classifica-riga {
-    color: #eaf1e9;
-  }
-  .bacheca .classifica-riga:nth-child(odd) {
-    background: rgba(255, 255, 255, 0.06);
-  }
-  .bacheca .classifica-riga.io {
-    background: rgba(200, 151, 46, 0.2);
-  }
-  .bacheca .classifica-riga .cl-pos {
-    color: var(--g300);
-  }
-  .bacheca .classifica-riga .cl-nick {
-    color: #fff;
-  }
-  .bacheca .classifica-riga .cl-punti {
-    color: rgba(228, 240, 232, 0.72);
+    color: var(--ink);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    box-shadow: var(--ombra-card);
   }
   .cl-espandi {
     width: 100%;
     padding: 6px 12px;
-    border: 1px dashed rgba(255, 255, 255, 0.2);
+    border: 1px dashed var(--border2);
     border-radius: 8px;
     background: transparent;
-    color: rgba(228, 240, 232, 0.55);
+    color: var(--ink3);
     font-size: 0.78rem;
     font-weight: 600;
     letter-spacing: 0.03em;
@@ -3364,8 +3324,8 @@
     transition: background 0.15s, color 0.15s;
   }
   .cl-espandi:hover {
-    background: rgba(255, 255, 255, 0.07);
-    color: rgba(228, 240, 232, 0.9);
+    background: var(--v050);
+    color: var(--v700);
   }
   .cl-comprimi {
     margin-top: 6px;
@@ -3501,22 +3461,6 @@
     flex-shrink: 0;
   }
 
-  /* Chip livello nella classifica */
-  .cl-lv-chip {
-    font-size: 0.62rem;
-    font-weight: 700;
-    padding: 2px 8px;
-    border-radius: 999px;
-    border: 1px solid;
-    flex-shrink: 0;
-    white-space: nowrap;
-  }
-  .bacheca .classifica-riga .cl-lv-chip {
-    background: rgba(255,255,255,0.08);
-    border-color: rgba(255,255,255,0.16);
-    color: rgba(228,240,232,0.7);
-  }
-
   /* Card torneo nella sezione Club */
   .torneo-club-card {
     border: 1px solid var(--border);
@@ -3559,13 +3503,10 @@
     padding: 3px 9px;
     border-radius: 999px;
   }
-  .tcl-sport-padel {
-    background: var(--v100);
-    color: var(--v700);
-  }
+  .tcl-sport-padel,
   .tcl-sport-calcio {
-    background: #dbeafe;
-    color: #1d4ed8;
+    background: linear-gradient(135deg, var(--v600) 0%, var(--v800) 100%);
+    color: #fff;
   }
   .tcl-chevron {
     font-size: 1.1rem;
@@ -5819,6 +5760,26 @@
     padding: 10px 12px;
     border-radius: 10px;
     background: var(--fondo);
+  }
+  /* Invito a fare il questionario del livello, nel modale "Nuovo annuncio"
+     di Cerco giocatori (al posto del vecchio avviso rosso) */
+  .livello-cta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: rgba(232, 200, 120, 0.16);
+    border: 1px solid rgba(232, 200, 120, 0.4);
+    margin: 10px 0 0;
+  }
+  .livello-cta-testo {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #fbe8a6;
+    flex: 1 1 200px;
   }
   .livello-gioco-info {
     display: flex;

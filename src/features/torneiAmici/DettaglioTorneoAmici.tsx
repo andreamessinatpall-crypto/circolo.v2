@@ -8,6 +8,7 @@ import { formattaSet, incontroDisputato, setVinti } from '@/features/tornei/cale
 import { formatNomeAmericano } from '@/features/tornei/americano'
 import { useAmici } from '@/features/profilo/amici/useAmici'
 import { MedagliaLv } from '@/features/profilo/MedagliaLv'
+import { MedagliaPodio } from '@/components/MedagliaPodio'
 import { calcolaClassificaAmici } from './classificaAmici'
 import InvitaAltriAmiciModal from './InvitaAltriAmiciModal'
 import { BottoneProgrammaAmici } from './ProgrammaIncontroAmici'
@@ -410,7 +411,7 @@ export default function DettaglioTorneoAmici({
                         : [r.g, r.v, r.p, dd, r.pti]
                     return (
                       <tr key={r.id}>
-                        <td><span className={'cl-rank' + (i < 3 ? ' m' + (i + 1) : '')}>{i + 1}</span></td>
+                        <td>{i < 3 ? <MedagliaPodio pos={(i + 1) as 1 | 2 | 3} /> : <span className="cl-rank">{i + 1}</span>}</td>
                         <td className="nome-cl">{nomeSquadra(squadre.find((s) => s.id === r.id), partecipanti, nomiSoci, true)}</td>
                         {celle.map((val, idx) => (
                           <td key={idx} className={idx === celle.length - 1 ? 'pti' : undefined}>{val}</td>

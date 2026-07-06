@@ -4,13 +4,8 @@ import { useAuth } from '@/auth/useAuth'
 import { messaggioErrore } from '@/lib/errori'
 import { ETICHETTE_LIVELLO } from '@/features/profilo/livelloGioco/domande'
 import { useLivelloGiocoPadel } from '@/features/profilo/livelloGioco/useLivelliGioco'
-import type { FasciaOraria, Sport, useRichiestePartner } from './useRichiestePartner'
-
-const ETICHETTE_FASCIA: Record<FasciaOraria, string> = {
-  mattina: 'Mattina',
-  pomeriggio: 'Pomeriggio',
-  sera: 'Sera',
-}
+import QuestionarioLivello from '@/features/profilo/livelloGioco/QuestionarioLivello'
+import type { Sport, useRichiestePartner } from './useRichiestePartner'
 
 interface Props {
   crea: ReturnType<typeof useRichiestePartner>['crea']
@@ -26,12 +21,19 @@ export default function NuovaRichiestaModal({ crea, onChiudi }: Props) {
 
   const [sport, setSport] = useState<Sport>('padel')
   const [giorno, setGiorno] = useState('')
-  const [fasciaOraria, setFasciaOraria] = useState<FasciaOraria>('sera')
+  const [oraInizio, setOraInizio] = useState('19:00')
   const [giocatoriMancanti, setGiocatoriMancanti] = useState(1)
+  const [questionario, setQuestionario] = useState(false)
 
   if (!profilo) return null
 
-  const puoPubblicare = giorno && (sport === 'calcio' || (sport === 'padel' && !!livelloPadel))
+  const maxMancanti = sport === 'padel' ? 3 : 13
+  const puoPubblicare = giorno && oraInizio && (sport === 'calcio' || (sport === 'padel' && !!livelloPadel))
+
+  function cambiaSport(s: Sport) {
+    setSport(s)
+    setGiocatoriMancanti(1)
+  }
 
   function onSubmit(e: FormEvent) {
     e.preventDefault()
@@ -40,16 +42,17 @@ export default function NuovaRichiestaModal({ crea, onChiudi }: Props) {
       {
         sport,
         livello: sport === 'padel' ? (livelloPadel?.livello ?? null) : null,
-        giocatori_mancanti: sport === 'calcio' ? giocatoriMancanti : null,
+        giocatori_mancanti: giocatoriMancanti,
         giorno,
-        fascia_oraria: fasciaOraria,
+        ora_inizio: oraInizio,
       },
       { onSuccess: onChiudi },
     )
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onChiudi}>
+    <>
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onChiudi}>
       <form onSubmit={onSubmit} className="card w-full max-w-md form-verde" onClick={(e) => e.stopPropagation()}>
         <h2 className="mb-3">Nuovo annuncio</h2>
 
@@ -58,14 +61,14 @@ export default function NuovaRichiestaModal({ crea, onChiudi }: Props) {
           <button
             type="button"
             className={'seg-btn' + (sport === 'padel' ? ' attivo' : '')}
-            onClick={() => setSport('padel')}
+            onClick={() => cambiaSport('padel')}
           >
             Padel
           </button>
           <button
             type="button"
             className={'seg-btn' + (sport === 'calcio' ? ' attivo' : '')}
-            onClick={() => setSport('calcio')}
+            onClick={() => cambiaSport('calcio')}
           >
             Calcio
           </button>
@@ -81,26 +84,29 @@ export default function NuovaRichiestaModal({ crea, onChiudi }: Props) {
                 {ETICHETTE_LIVELLO[livelloPadel.livello]} — verrà mostrato nell'annuncio così i compagni sanno cosa aspettarsi.
               </p>
             ) : (
-              <p className="msg-errore">
-                Devi prima fare il questionario "Livello di gioco" in Profilo → I tuoi dati.
-              </p>
+              <div className="livello-cta">
+                <span className="livello-cta-testo">
+                  Non hai ancora fatto il questionario del livello di gioco.
+                </span>
+                <button type="button" className="btn btn-oro btn-sm" onClick={() => setQuestionario(true)}>
+                  Fai il questionario
+                </button>
+              </div>
             )}
           </div>
         )}
 
-        {sport === 'calcio' && (
-          <div className="mt-3">
-            <span className="etichetta">Quanti giocatori mancano?</span>
-            <input
-              type="number"
-              min={1}
-              max={13}
-              value={giocatoriMancanti}
-              onChange={(e) => setGiocatoriMancanti(Math.max(1, Number(e.target.value)))}
-              className="casella-num"
-            />
-          </div>
-        )}
+        <div className="mt-3">
+          <span className="etichetta">Quanti giocatori mancano?</span>
+          <input
+            type="number"
+            min={1}
+            max={maxMancanti}
+            value={giocatoriMancanti}
+            onChange={(e) => setGiocatoriMancanti(Math.min(maxMancanti, Math.max(1, Number(e.target.value))))}
+            className="casella-num"
+          />
+        </div>
 
         <div className="dati-coppia mt-3">
           <div>
@@ -114,12 +120,13 @@ export default function NuovaRichiestaModal({ crea, onChiudi }: Props) {
             />
           </div>
           <div>
-            <span className="etichetta">Fascia oraria</span>
-            <select value={fasciaOraria} onChange={(e) => setFasciaOraria(e.target.value as FasciaOraria)}>
-              {(Object.entries(ETICHETTE_FASCIA) as [FasciaOraria, string][]).map(([valore, testo]) => (
-                <option key={valore} value={valore}>{testo}</option>
-              ))}
-            </select>
+            <span className="etichetta">Ora</span>
+            <input
+              type="time"
+              value={oraInizio}
+              onChange={(e) => setOraInizio(e.target.value)}
+              required
+            />
           </div>
         </div>
 
@@ -136,6 +143,9 @@ export default function NuovaRichiestaModal({ crea, onChiudi }: Props) {
 
         <p className="sub mt-2">L'annuncio scade automaticamente dopo 48 ore.</p>
       </form>
-    </div>
+      </div>
+
+      {questionario && <QuestionarioLivello socioId={profilo.id} onChiudi={() => setQuestionario(false)} />}
+    </>
   )
 }

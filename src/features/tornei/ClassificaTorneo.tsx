@@ -1,5 +1,6 @@
 import { calcolaClassifica, incontriDelGirone, mappaLoghi, nomeGirone, numGironi, squadreDelGirone, unitaTorneo } from './gironi'
 import { NomeSquadra } from './NomeSquadra'
+import { MedagliaPodio } from '@/components/MedagliaPodio'
 import type { Incontro, Squadra, Torneo } from './tipi'
 
 // (Fase 6c) Classifica all'italiana del torneo. Con più gironi mostra una
@@ -99,8 +100,7 @@ function TabellaClassifica({
             return (
               <tr key={r.id}>
                 <td>
-                  {/* medaglia per i primi 3 */}
-                  <span className={'cl-rank' + (idx < 3 ? ' m' + (idx + 1) : '')}>{idx + 1}</span>
+                  {idx < 3 ? <MedagliaPodio pos={(idx + 1) as 1 | 2 | 3} /> : <span className="cl-rank">{idx + 1}</span>}
                 </td>
                 {celle.map((val, i) => (
                   <td

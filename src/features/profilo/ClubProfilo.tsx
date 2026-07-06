@@ -11,7 +11,7 @@ import { useAmici, type VoceStaff } from './amici/useAmici'
 import { MedagliaRuolo } from './ruoloBadge'
 import { SportIcona } from '@/components/IconeSport'
 import DisponibilitaIstruttoreModal from '@/features/lezioni/DisponibilitaIstruttoreModal'
-import SezioneCompagni from '@/features/compagni/SezioneCompagni'
+import { MedagliaPodio } from '@/components/MedagliaPodio'
 
 interface RigaClassifica {
   posizione: number
@@ -22,45 +22,19 @@ interface RigaClassifica {
 
 const TOP = 10
 
-const PODIO_CFG = {
-  1: { hi: '#FFE566', mid: '#F5C518', lo: '#C49A08', text: '#6B4700' },
-  2: { hi: '#F4F4F4', mid: '#C8C8C8', lo: '#989898', text: '#444' },
-  3: { hi: '#ECA96E', mid: '#CD7F32', lo: '#9B5E1E', text: '#4A2800' },
-} as const
-
-function MedagliaPodio({ pos }: { pos: 1 | 2 | 3 }) {
-  const c = PODIO_CFG[pos]
-  return (
-    <div style={{ flexShrink: 0, width: 38, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{
-        width: 30, height: 30,
-        borderRadius: '50%',
-        background: `linear-gradient(145deg, ${c.hi} 0%, ${c.mid} 50%, ${c.lo} 100%)`,
-        boxShadow: `0 0 0 2px ${c.lo}, inset 0 1px 0 rgba(255,255,255,0.55), 0 3px 8px rgba(0,0,0,0.22)`,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontFamily: 'var(--font-display)',
-        fontWeight: 900,
-        fontSize: '0.8rem',
-        color: c.text,
-        letterSpacing: '-0.01em',
-        userSelect: 'none' as const,
-        textShadow: '0 1px 0 rgba(255,255,255,0.5)',
-      }}>
-        {pos}
-      </div>
-    </div>
-  )
-}
-
 function RigaCl({ r }: { r: RigaClassifica }) {
   const isPodio = r.posizione >= 1 && r.posizione <= 3
   const lv = livelloDaPunti(r.punti ?? 0, LIVELLI_PUNTI_DEFAULT)
   const cfg = LIVELLI_PUNTI_DEFAULT[lv - 1]
   return (
     <div className={'classifica-riga' + (r.is_me ? ' io' : '')}>
-      {isPodio
-        ? <MedagliaPodio pos={r.posizione as 1 | 2 | 3} />
-        : <span className="cl-pos">{r.posizione}º</span>}
+      {isPodio ? (
+        <span style={{ flexShrink: 0, width: 38, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <MedagliaPodio pos={r.posizione as 1 | 2 | 3} />
+        </span>
+      ) : (
+        <span className="cl-pos">{r.posizione}º</span>
+      )}
       <span className="cl-nick">
         {r.etichetta ? titleCase(String(r.etichetta)) : cfg.nome}
       </span>
@@ -81,7 +55,6 @@ const IcoTrofeo = <Ico d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-
 const IcoZap = <Ico><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></Ico>
 const IcoCal = <Ico><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></Ico>
 const IcoScudo = <Ico d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-const IcoCompagni = <Ico><circle cx="9" cy="7" r="4"/><path d="M1 20c0-3.8 3.6-7 8-7s8 3.2 8 7"/><path d="M17 8a3 3 0 1 1 0 6"/><path d="M22 20c0-2.6-1.7-4.8-4-5.6"/></Ico>
 
 function CardStaff({ voce, onClick }: { voce: VoceStaff; onClick?: () => void }) {
   const cliccabile = voce.ruolo === 'istruttore' && !!onClick
@@ -254,11 +227,6 @@ export default function ClubProfilo() {
             </div>
           )}
         </div>
-      </SezClub>
-
-      {/* ── Cerco giocatori ──────────────────────────────────── */}
-      <SezClub icona={IcoCompagni} titolo="Cerco giocatori">
-        <SezioneCompagni />
       </SezClub>
 
       {/* ── Tornei in corso ──────────────────────────────────── */}

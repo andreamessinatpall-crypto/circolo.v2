@@ -6,12 +6,10 @@ import { ETICHETTE_LIVELLO } from '@/features/profilo/livelloGioco/domande'
 import ChatModal from '@/features/chat/ChatModal'
 import NuovaRichiestaModal from './NuovaRichiestaModal'
 import { useRichiestePartner } from './useRichiestePartner'
-import type { FasciaOraria, Sport } from './useRichiestePartner'
+import type { Sport } from './useRichiestePartner'
 
-const ETICHETTE_FASCIA: Record<FasciaOraria, string> = {
-  mattina: 'Mattina',
-  pomeriggio: 'Pomeriggio',
-  sera: 'Sera',
+function orario(t: string): string {
+  return t.slice(0, 5)
 }
 
 // Sezione "Cerco giocatori" incorporata dentro la tab Club del profilo
@@ -59,7 +57,7 @@ export default function SezioneCompagni() {
         </button>
       </div>
 
-      <button type="button" className="btn btn-block mb-3" onClick={() => setNuovoAnnuncio(true)}>
+      <button type="button" className="btn btn-riflesso btn-block mb-3" onClick={() => setNuovoAnnuncio(true)}>
         + Nuovo annuncio
       </button>
 
@@ -83,14 +81,19 @@ export default function SezioneCompagni() {
                 <div className="compagni-card-head">
                   <span className="compagni-card-nome">{nome}</span>
                   <span className="compagni-card-quando">
-                    {dataEstesa(r.giorno)} · {ETICHETTE_FASCIA[r.fascia_oraria]}
+                    {dataEstesa(r.giorno)} · {orario(r.ora_inizio)}
                   </span>
                 </div>
 
                 {r.sport === 'padel' && r.livello && (
                   <p className="sub">Livello: {ETICHETTE_LIVELLO[r.livello]}</p>
                 )}
-                {r.sport === 'calcio' && (
+                {r.sport === 'padel' ? (
+                  <p className="sub">
+                    Manca{r.giocatori_mancanti === 1 ? '' : 'no'} {r.giocatori_mancanti} giocator
+                    {r.giocatori_mancanti === 1 ? 'e' : 'i'}
+                  </p>
+                ) : (
                   <p className="sub">Mancano {Math.max(0, (r.giocatori_mancanti ?? 0) - accettati)} giocatori</p>
                 )}
 

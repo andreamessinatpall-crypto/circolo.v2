@@ -1,4 +1,5 @@
 import { calcolaClassificaAmericano, formatNomeAmericano } from './americano'
+import { MedagliaPodio } from '@/components/MedagliaPodio'
 import type { AmericanoPartita, Squadra } from './tipi'
 
 export default function ClassificaAmericano({
@@ -28,7 +29,7 @@ export default function ClassificaAmericano({
           {arr.map((r, idx) => (
             <tr key={r.id}>
               <td>
-                <span className={'cl-rank' + (idx < 3 ? ' m' + (idx + 1) : '')}>{idx + 1}</span>
+                {idx < 3 ? <MedagliaPodio pos={(idx + 1) as 1 | 2 | 3} /> : <span className="cl-rank">{idx + 1}</span>}
               </td>
               <td className="nome-cl">{formatNomeAmericano(r.nome)}</td>
               <td>{r.g}</td>
