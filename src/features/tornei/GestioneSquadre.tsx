@@ -7,6 +7,7 @@ import { useSociPubblici } from '@/features/prenotazioni/datiAmichevoli'
 import { nomeSquadraElegante } from './gironi'
 import { annullaPuntiIscrizione, assegnaPuntiIscrizione } from './punti'
 import { IconaCalcio } from '@/components/IconeSport'
+import { ICO_MATITA, ICO_TRASH } from './icone'
 import type { Componente, RichiestaIscrizione, Squadra, Torneo } from './tipi'
 
 // Cognome del socio: l'etichetta è "Cognome Nome" (es. "Rossi Mario"),
@@ -438,7 +439,7 @@ function RigaSquadra({
               if (nome && nome !== squadra.nome) onRinomina(nome)
             }}
           >
-            ✏️
+            <span style={{ display: 'inline-flex' }}>{ICO_MATITA}</span>
           </button>
           <button
             type="button"
@@ -448,7 +449,7 @@ function RigaSquadra({
               if (window.confirm('Eliminare “' + squadra.nome + '”?')) onElimina()
             }}
           >
-            🗑
+            <span style={{ display: 'inline-flex' }}>{ICO_TRASH}</span>
           </button>
         </div>
       </div>

@@ -31,6 +31,7 @@ import {
 } from './eliminazione'
 import { NomeSquadra } from './NomeSquadra'
 import { BottoneAnnullaProgrammazione, BottoneProgramma } from './ProgrammaIncontro'
+import { ICO_CAL, ICO_TROFEO } from './icone'
 import type { Componente, Incontro, SetPunteggio, Squadra, Torneo } from './tipi'
 
 // ---------------------------------------------------------------------------
@@ -400,7 +401,7 @@ export default function TabelloneEliminazione({
               className={`bs-col bs-col-final${finaleUpcoming ? ' bs-col-upcoming' : ''}`}
             >
               <div className="bs-col-header">
-                <span aria-hidden>🏆</span>{' '}
+                <span aria-hidden>{ICO_TROFEO}</span>
                 {nomeRound(totRound, totRound)}
               </div>
               <div className="bs-col-slots">
@@ -1061,8 +1062,8 @@ function RigaMatch({
       <div className="match-meta">
         {dPren ? (
           <span className={'chip-data' + (disputata ? '' : ' prog')}>
-            {(disputata ? '' : '📅 ') +
-              dPren.toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'long' }) +
+            {!disputata && ICO_CAL}
+            {dPren.toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'long' }) +
               ' · ' +
               dPren.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
           </span>

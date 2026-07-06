@@ -39,6 +39,7 @@ import type { PuntiSet, StatoTorneo, Torneo } from './tipi'
 import { azzeraChiave } from '@/lib/punti'
 import { assegnaPuntiAmericano } from './punti'
 import { SportIcona } from '@/components/IconeSport'
+import { ICO_TRASH, ICO_WARN, IcoMedaglia } from './icone'
 
 // Terna di punti tutta a zero (default dei form).
 const puntiZero = (): PuntiSet => ({ iscrizione: 0, vittoria: 0, torneo: 0 })
@@ -578,7 +579,7 @@ function NuovoTorneo({ onCreato }: { onCreato: (id: number | string) => void }) 
               className={`opzione-btn${terzoPosto ? ' attivo' : ''}`}
               onClick={() => setTerzoPosto(!terzoPosto)}
             >
-              <span className="opzione-btn-icon">🥉</span>
+              <span className="opzione-btn-icon"><IcoMedaglia size={20} style={{ marginRight: 0 }} /></span>
               <span className="opzione-btn-nome">3°/4°{' '}posto</span>
             </button>
           )}
@@ -768,7 +769,7 @@ function NuovoTorneo({ onCreato }: { onCreato: (id: number | string) => void }) 
 
             {orarioNonValido && (
               <p className="sub mt-2" style={{ color: '#fb923c', fontSize: '0.82rem' }}>
-                ⚠️ L'orario di fine non può essere uguale o precedente all'orario di inizio.
+                {ICO_WARN}L'orario di fine non può essere uguale o precedente all'orario di inizio.
               </p>
             )}
 
@@ -778,7 +779,7 @@ function NuovoTorneo({ onCreato }: { onCreato: (id: number | string) => void }) 
                   <p className="sub" style={{ fontSize: '0.8rem' }}>Verifica disponibilità…</p>
                 ) : slotDisponibile.data && slotDisponibile.data.length > 0 ? (
                   <p className="sub" style={{ color: '#fb923c', fontSize: '0.82rem' }}>
-                    ⚠️ {amCampiIds.length > 1 ? 'Uno o più campi già occupati' : 'Campo già occupato'} in questo orario ({slotDisponibile.data.length} conflitto/i).
+                    {ICO_WARN}{amCampiIds.length > 1 ? 'Uno o più campi già occupati' : 'Campo già occupato'} in questo orario ({slotDisponibile.data.length} conflitto/i).
                   </p>
                 ) : slotDisponibile.data ? (
                   <p className="sub" style={{ color: '#86efac', fontSize: '0.82rem' }}>
@@ -1134,7 +1135,7 @@ function DettaglioTorneo({
           onClick={avviaCancellazione}
           disabled={cancella.isPending}
         >
-          {cancella.isPending ? 'Cancellazione…' : '🗑️ Cancella torneo'}
+          {cancella.isPending ? 'Cancellazione…' : <>{ICO_TRASH}Cancella torneo</>}
         </button>
       </div>
     </div>
@@ -1271,14 +1272,14 @@ function DettaglioTorneo({
               className={'subtab-btn' + (scheda === 'gestione' ? ' attivo' : '')}
               onClick={() => setScheda('gestione')}
             >
-              ⚙️ Gestione torneo
+              {ICO_SETTINGS}Gestione torneo
             </button>
             <button
               type="button"
               className={'subtab-btn' + (scheda === 'risultati' ? ' attivo' : '')}
               onClick={() => setScheda('risultati')}
             >
-              🏆 Risultati e Classifica
+              {ICO_TROFEO}Risultati e Classifica
             </button>
           </nav>
           {scheda === 'gestione' ? schedaGestione : schedaRisultati}

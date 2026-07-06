@@ -16,6 +16,7 @@ import {
   perRoundAmericano,
   validaIscrizioneMista,
 } from './americano'
+import { ICO_CAL, ICO_REFRESH, ICO_WARN } from './icone'
 import type { AmericanoPartita, Componente, Squadra, Torneo } from './tipi'
 
 export default function GestioneAmericano({
@@ -105,6 +106,11 @@ export default function GestioneAmericano({
 
       const { error } = await supabase.from('americano_partite').insert(righe)
       if (error) throw error
+
+      // Generare i turni avvia di fatto il torneo.
+      if (torneo.stato === 'bozza' || torneo.stato === 'in_programma') {
+        await supabase.from('tornei').update({ stato: 'in_corso' }).eq('id', torneo.id)
+      }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['tornei'] })
@@ -168,8 +174,8 @@ export default function GestioneAmericano({
             {genera.isPending
               ? 'Generazione…'
               : esistono
-                ? '🔄 Rigenera turni'
-                : '📅 Genera turni'}
+                ? <>{ICO_REFRESH}Rigenera turni</>
+                : <>{ICO_CAL}Genera turni</>}
           </button>
           <span className="sub" style={{ alignSelf: 'center' }}>
             {esistono
@@ -183,7 +189,7 @@ export default function GestioneAmericano({
 
       {gestore && isMisto && erroreMisto && (
         <p className="mb-3" style={{ fontSize: '0.82rem', color: 'var(--errore, #b91c1c)' }}>
-          ⚠️ {erroreMisto}
+          {ICO_WARN}{erroreMisto}
         </p>
       )}
 

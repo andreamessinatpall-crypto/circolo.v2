@@ -12,6 +12,7 @@ import {
   unitaTorneo,
 } from './gironi'
 import { ricalcolaPuntiTorneo } from './punti'
+import { ICO_DADO } from './icone'
 import type { Componente, Incontro, Squadra, Torneo } from './tipi'
 
 // (Fase 6c) Pannello staff per organizzare le squadre/coppie nei gironi:
@@ -151,7 +152,7 @@ export default function GestioneGironi({
         </select>
         {n > 1 && (
           <button type="button" className="btn btn-secondario" onClick={avviaSorteggio}>
-            🎲 Sorteggia nei gironi
+            {ICO_DADO}Sorteggia nei gironi
           </button>
         )}
       </div>

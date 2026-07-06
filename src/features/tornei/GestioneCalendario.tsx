@@ -6,6 +6,7 @@ import { generaTurni, incontroDisputato, SCRIPT_INCONTRI } from './calendario'
 import { gironeSquadra, mancaColonnaGironi, nomeGirone, numGironi, SCRIPT_GIRONI, unitaTorneo } from './gironi'
 import { azzeraChiave } from '@/lib/punti'
 import { ricalcolaPuntiTorneo } from './punti'
+import { ICO_CAL, ICO_REFRESH } from './icone'
 import type { Componente, Incontro, SetPunteggio, Squadra, Torneo } from './tipi'
 
 // Chiave che identifica una coppia di squadre, indipendente da chi gioca in casa.
@@ -128,6 +129,11 @@ export default function GestioneCalendario({
 
       // Riassegno i punti sui nuovi incontri (partite mantenute + vittorie di girone).
       await ricalcolaPuntiTorneo(torneo, squadre, (nuovi ?? []) as Incontro[], compBySquadra)
+
+      // Generare il calendario avvia di fatto il torneo.
+      if (torneo.stato === 'bozza' || torneo.stato === 'in_programma') {
+        await supabase.from('tornei').update({ stato: 'in_corso' }).eq('id', torneo.id)
+      }
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['tornei'] }),
     onError: (e: unknown) =>
@@ -195,7 +201,11 @@ export default function GestioneCalendario({
   return (
     <div className="aggiungi-part" style={{ marginBottom: 4 }}>
       <button type="button" className="btn" onClick={avviaGenerazione} disabled={genera.isPending}>
-        {genera.isPending ? 'Generazione…' : esistono ? '🔄 Rigenera calendario' : '📅 Genera calendario'}
+        {genera.isPending
+          ? 'Generazione…'
+          : esistono
+            ? <>{ICO_REFRESH}Rigenera calendario</>
+            : <>{ICO_CAL}Genera calendario</>}
       </button>
       <span className="sub" style={{ alignSelf: 'center' }}>
         {esistono

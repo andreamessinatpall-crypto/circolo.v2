@@ -10,6 +10,7 @@ import { messaggioErrore } from '@/lib/errori'
 import { useSociPubblici } from '@/features/prenotazioni/datiAmichevoli'
 import { assegnaPuntiIscrizione, annullaPuntiIscrizione } from './punti'
 import { genereEffettivoComponente, validaIscrizioneMista } from './americano'
+import { ICO_WARN } from './icone'
 import type { Componente, Squadra, Torneo } from './tipi'
 
 export default function GestioneGiocatoriAmericano({
@@ -156,7 +157,7 @@ export default function GestioneGiocatoriAmericano({
       )}
       {erroreMisto && (
         <p className="mb-2" style={{ fontSize: '0.82rem', color: 'var(--errore, #b91c1c)' }}>
-          ⚠️ {erroreMisto}
+          {ICO_WARN}{erroreMisto}
         </p>
       )}
       {!pieno && (

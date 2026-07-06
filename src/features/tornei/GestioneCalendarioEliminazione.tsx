@@ -15,6 +15,7 @@ import {
   turnoCorrenteEliminazione,
 } from './eliminazione'
 import { unitaTorneo } from './gironi'
+import { ICO_CHECK_CERCHIO, ICO_DADO, ICO_MATITA, ICO_TROFEO } from './icone'
 import type { Incontro, Squadra, Torneo } from './tipi'
 
 export default function GestioneCalendarioEliminazione({
@@ -120,6 +121,11 @@ export default function GestioneCalendarioEliminazione({
       }))
       const { error } = await supabase.from('incontri').insert(righe)
       if (error) throw error
+
+      // Generare il tabellone avvia di fatto il torneo.
+      if (torneo.stato === 'bozza' || torneo.stato === 'in_programma') {
+        await supabase.from('tornei').update({ stato: 'in_corso' }).eq('id', torneo.id)
+      }
     },
     onSuccess: () => {
       setModalitaManuale(false)
@@ -147,6 +153,11 @@ export default function GestioneCalendarioEliminazione({
       }))
       const { error } = await supabase.from('incontri').insert(righe)
       if (error) throw error
+
+      // Generare il tabellone avvia di fatto il torneo.
+      if (torneo.stato === 'bozza' || torneo.stato === 'in_programma') {
+        await supabase.from('tornei').update({ stato: 'in_corso' }).eq('id', torneo.id)
+      }
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['tornei'] }),
     onError: (e: unknown) =>
@@ -255,7 +266,7 @@ export default function GestioneCalendarioEliminazione({
             onClick={handleConferma}
             disabled={generaManualeMut.isPending}
           >
-            {generaManualeMut.isPending ? 'Generazione…' : '🏆 Conferma tabellone'}
+            {generaManualeMut.isPending ? 'Generazione…' : <>{ICO_TROFEO}Conferma tabellone</>}
           </button>
           <button
             type="button"
@@ -263,7 +274,7 @@ export default function GestioneCalendarioEliminazione({
             onClick={rimescola}
             disabled={generaManualeMut.isPending}
           >
-            🎲 Rimescola
+            {ICO_DADO}Rimescola
           </button>
           <button
             type="button"
@@ -289,7 +300,7 @@ export default function GestioneCalendarioEliminazione({
             onClick={() => generaPrimo.mutate()}
             disabled={generaPrimo.isPending}
           >
-            {generaPrimo.isPending ? 'Generazione…' : '🎲 Sorteggio casuale'}
+            {generaPrimo.isPending ? 'Generazione…' : <>{ICO_DADO}Sorteggio casuale</>}
           </button>
           <button
             type="button"
@@ -297,7 +308,7 @@ export default function GestioneCalendarioEliminazione({
             onClick={apriManuale}
             disabled={generaPrimo.isPending}
           >
-            ✏️ Distribuzione manuale
+            {ICO_MATITA}Distribuzione manuale
           </button>
           <span className="sub" style={{ alignSelf: 'center', width: '100%' }}>
             Sorteggio tra {N} {unitaTorneo(torneo.sport, true)} —{' '}
@@ -308,7 +319,7 @@ export default function GestioneCalendarioEliminazione({
       ) : tuttiFiniti ? (
         <>
           <span className="sub" style={{ alignSelf: 'center' }}>
-            ✅ Tabellone completato.
+            {ICO_CHECK_CERCHIO}Tabellone completato.
           </span>
           <button
             type="button"

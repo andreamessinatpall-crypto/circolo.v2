@@ -22,6 +22,7 @@ import { SIMBOLO_ANDATA, SIMBOLO_RITORNO } from './eliminazione'
 import { assegnaPuntiPartita, assegnaPuntiVittoriaAuto } from './punti'
 import { NomeSquadra } from './NomeSquadra'
 import { BottoneAnnullaProgrammazione, BottoneProgramma } from './ProgrammaIncontro'
+import { ICO_CAL } from './icone'
 import type { Componente, Incontro, SetPunteggio, Squadra, Torneo } from './tipi'
 
 // (Fase 6d) Calendario + risultati. Con più gironi mostra una sezione per
@@ -338,8 +339,8 @@ function RigaRisultato({
         {dPren ? (
           // C'è una prenotazione: mostro data (e l'ora se non ancora disputata).
           <span className={'chip-data' + (disputata ? '' : ' prog')}>
-            {(disputata ? '' : '📅 ') +
-              dPren.toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'long' }) +
+            {!disputata && ICO_CAL}
+            {dPren.toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'long' }) +
               ' · ' +
               dPren.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
           </span>

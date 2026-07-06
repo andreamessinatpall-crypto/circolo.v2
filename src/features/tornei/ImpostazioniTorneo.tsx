@@ -12,6 +12,7 @@ import { useCampi } from '@/features/prenotazioni/datiPrenotazioni'
 import { costruisciPuntiGironi, numGironi, puntiBase, puntiGironiArray } from './gironi'
 import { ricalcolaPuntiTorneo } from './punti'
 import EditorPuntiTorneo from './EditorPuntiTorneo'
+import { ICO_WARN, IcoMedaglia } from './icone'
 import { SPORT_LABEL } from './tipi'
 import type { Componente, Incontro, PuntiSet, Squadra, Torneo } from './tipi'
 
@@ -386,7 +387,7 @@ export default function ImpostazioniTorneo({
                         <p className="sub" style={{ fontSize: '0.8rem' }}>Verifica disponibilità…</p>
                       ) : slotDisponibile.data && slotDisponibile.data.length > 0 ? (
                         <p className="sub" style={{ color: '#fb923c', fontSize: '0.82rem' }}>
-                          ⚠️ {amCampiIds.length > 1 ? 'Uno o più campi già occupati' : 'Il campo è già occupato'} in questo orario ({slotDisponibile.data.length} prenotazione/i in conflitto).
+                          {ICO_WARN}{amCampiIds.length > 1 ? 'Uno o più campi già occupati' : 'Il campo è già occupato'} in questo orario ({slotDisponibile.data.length} prenotazione/i in conflitto).
                         </p>
                       ) : slotDisponibile.data ? (
                         <p className="sub" style={{ color: 'var(--ok, #1a6b3c)', fontSize: '0.82rem' }}>
@@ -495,7 +496,7 @@ export default function ImpostazioniTorneo({
                     className={`opzione-btn${terzoPosto ? ' attivo' : ''}`}
                     onClick={() => setTerzoPosto(!terzoPosto)}
                   >
-                    <span className="opzione-btn-icon">🥉</span>
+                    <span className="opzione-btn-icon"><IcoMedaglia size={20} style={{ marginRight: 0 }} /></span>
                     <span className="opzione-btn-nome">3°/4°{' '}posto</span>
                   </button>
                 )}
