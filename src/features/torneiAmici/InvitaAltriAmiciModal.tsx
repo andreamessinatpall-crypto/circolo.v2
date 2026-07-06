@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useBloccaScrollBody } from '@/hooks/useBloccaScrollBody'
 import { messaggioErrore } from '@/lib/errori'
 import { titleCase } from '@/lib/formato'
 import type { VoceAmico } from '@/features/profilo/amici/useAmici'
@@ -16,6 +17,7 @@ export default function InvitaAltriAmiciModal({
   }
   onChiudi: () => void
 }) {
+  useBloccaScrollBody()
   const [selezionati, setSelezionati] = useState<Set<string>>(new Set())
 
   function toggle(id: string) {

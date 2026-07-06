@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/auth/useAuth'
+import { useBloccaScrollBody } from '@/hooks/useBloccaScrollBody'
 import { classiErrore, classiOk } from '@/components/stili'
 import { mancaTabella, messaggioErrore } from '@/lib/errori'
 import { useCampi } from '@/features/prenotazioni/datiPrenotazioni'
@@ -89,6 +90,7 @@ export default function GestionePrenotazioni() {
   // (Fase 8g · B) Editor degli orari aperto? Lo stato sta qui perché il trigger
   // (icona matita) è nell'intestazione della finestra, separato dall'editor.
   const [editOrario, setEditOrario] = useState(false)
+  useBloccaScrollBody(!!slot)
 
   const campiQuery = useCampi()
   const sociQuery = useSociPubblici()

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import { useBloccaScrollBody } from '@/hooks/useBloccaScrollBody'
 import { mancaTabella, messaggioErrore } from '@/lib/errori'
 import { generaTurni, incontroDisputato, SCRIPT_INCONTRI } from './calendario'
 import { gironeSquadra, mancaColonnaGironi, nomeGirone, numGironi, SCRIPT_GIRONI, unitaTorneo } from './gironi'
@@ -39,6 +40,7 @@ export default function GestioneCalendario({
   const n = numGironi(torneo)
   // Modale di scelta mantieni/azzera (solo in rigenerazione).
   const [chiediScelta, setChiediScelta] = useState(false)
+  useBloccaScrollBody(chiediScelta)
   const giocate = incontri.filter(incontroDisputato).length
 
   const genera = useMutation({

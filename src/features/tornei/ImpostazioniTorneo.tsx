@@ -5,6 +5,7 @@ import { z } from 'zod'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/auth/useAuth'
+import { useBloccaScrollBody } from '@/hooks/useBloccaScrollBody'
 import { messaggioErrore } from '@/lib/errori'
 import { classiErrore, classiInput, classiOk } from '@/components/stili'
 import NumeroInput from '@/components/NumeroInput'
@@ -51,6 +52,7 @@ export default function ImpostazioniTorneo({
   incontri: Incontro[]
   compBySquadra: Record<string, Componente[]>
 }) {
+  useBloccaScrollBody()
   const { profilo } = useAuth()
   const qc = useQueryClient()
   const campiQuery = useCampi()

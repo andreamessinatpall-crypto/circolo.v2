@@ -1264,16 +1264,6 @@
     position: relative;
     z-index: 1;
   }
-  /* Alone dorato dietro lo stemma: dà l'idea di un medaglione illuminato
-     invece di un adesivo piatto appoggiato sullo sfondo. */
-  .auth-crest::before {
-    content: '';
-    position: absolute;
-    inset: -18%;
-    z-index: 0;
-    background: radial-gradient(circle, rgba(239, 196, 57, 0.35) 0%, rgba(239, 196, 57, 0.12) 45%, transparent 72%);
-    filter: blur(2px);
-  }
   .auth-crest-logo {
     position: relative;
     z-index: 1;
@@ -1296,6 +1286,12 @@
     position: relative;
     z-index: 1;
     color: #fff;
+    /* Stesso rilievo/luce radente del logo (vedi .auth-crest-logo). */
+    text-shadow:
+      -1px -1px 0.5px rgba(255, 255, 255, 0.55),
+      1px 1.5px 1px rgba(0, 0, 0, 0.35),
+      2px 4px 3px rgba(0, 0, 0, 0.45),
+      0 6px 10px rgba(0, 0, 0, 0.4);
   }
   .auth-titolo::after {
     content: '';
@@ -2100,6 +2096,18 @@
     box-shadow: none;
     padding: 0;
   }
+  /* Striscia laterale colorata per il tipo (stessa idea degli slot del
+     tabellone): sostituisce l'icona vs/allenamento/torneo, che nella scheda
+     di admin/collaboratori resta riservata alla vista del giocatore. */
+  .amichevole-riga.in-modale.tipo-partita,
+  .amichevole-riga.in-modale.tipo-allenamento,
+  .amichevole-riga.in-modale.tipo-torneo {
+    border-radius: 8px;
+    padding-left: 12px;
+  }
+  .amichevole-riga.in-modale.tipo-partita     { box-shadow: inset 3px 0 0 0 var(--v700); }
+  .amichevole-riga.in-modale.tipo-allenamento { box-shadow: inset 3px 0 0 0 var(--g500); }
+  .amichevole-riga.in-modale.tipo-torneo      { box-shadow: inset 3px 0 0 0 var(--terra); }
   .in-modale .chip.conf {
     background: var(--v050);
     color: var(--v700);
@@ -2625,8 +2633,8 @@
   .aggiungi-part select {
     flex: 1 1 180px;
   }
-  /* Bottone icona "+ amico" (soci normali): il <select> nativo resta
-     funzionante ma invisibile, sovrapposto al bottone stilizzato sotto. */
+  /* Bottone icona "+ amico" (soci normali): apre il menu personalizzato
+     .cerca-lista con l'elenco degli amici (vedi MenuAmici in MieAmichevoli). */
   .aggiungi-part-icona {
     position: relative;
     display: inline-flex;
@@ -2650,23 +2658,10 @@
   .btn-icona-amico.disabilitato {
     opacity: 0.45;
   }
-  /* Il cerchio decorativo sotto il <select> invisibile non deve intercettare
-     i click: passano tutti al <select> sovrapposto sopra. */
-  .aggiungi-part-icona .btn-icona-amico {
-    pointer-events: none;
-  }
-  .aggiungi-part-icona select.sr-only-select {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    margin: 0;
-    padding: 0;
-    border: none;
-    background: transparent;
-    opacity: 0;
-    cursor: pointer;
-    z-index: 1;
+  .aggiungi-part-icona .cerca-lista {
+    min-width: 200px;
+    right: 0;
+    left: auto;
   }
 
   /* Riga di un componente (giocatore) dentro una coppia/squadra del torneo */
@@ -2847,8 +2842,14 @@
     line-height: 1.15;
     letter-spacing: 0.02em;
     font-weight: 700;
-    color: #f3dfa8;
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+    color: #fff;
+    /* Stesso rilievo/luce radente del logo (vedi .auth-crest-logo): luce
+       bianca in alto a sinistra, ombre scure crescenti in basso a destra. */
+    text-shadow:
+      -1px -1px 0.5px rgba(255, 255, 255, 0.55),
+      1px 1.5px 1px rgba(0, 0, 0, 0.35),
+      2px 4px 3px rgba(0, 0, 0, 0.45),
+      0 6px 10px rgba(0, 0, 0, 0.4);
     white-space: normal;
     word-break: break-word;
     text-align: center;

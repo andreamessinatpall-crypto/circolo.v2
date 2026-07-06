@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/auth/useAuth'
+import { useBloccaScrollBody } from '@/hooks/useBloccaScrollBody'
 import { mancaRpc, messaggioErrore } from '@/lib/errori'
 import { puoGestireTornei } from '@/auth/ruoli'
 import { useCampi, usePrenotazioniGiorno } from '@/features/prenotazioni/datiPrenotazioni'
@@ -127,6 +128,7 @@ function ModaleProgramma({
   titolo: string
   onChiudi: () => void
 }) {
+  useBloccaScrollBody()
   const { profilo } = useAuth()
   const qc = useQueryClient()
   const campiQuery = useCampi()

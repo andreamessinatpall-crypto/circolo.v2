@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/auth/useAuth'
+import { useBloccaScrollBody } from '@/hooks/useBloccaScrollBody'
 import { puoGestirePrenotazioni, prenotaSenzaLimite } from '@/auth/ruoli'
 import { messaggioErrore } from '@/lib/errori'
 import { useCampi, useImpostazioni, usePrenotazioniGiorno } from './datiPrenotazioni'
@@ -22,6 +23,7 @@ export default function GrigliaPrenotazioni({ sport }: { sport: Sport }) {
   const [scelta, setScelta] = useState<{ campo: Campo; inizio: Date; fine: Date } | null>(null)
   const [offset, setOffset] = useState(0)
   const [annullaPending, setAnnullaPending] = useState<{ id: string; domanda: string } | null>(null)
+  useBloccaScrollBody(!!scelta)
   const prenQuery = usePrenotazioniGiorno(giorno)
   // ID amico da pre-aggiungere alla prenotazione (passato da AmiciProfilo via state).
   // Usato una volta sola: dopo la prima prenotazione lo azzerizziamo.

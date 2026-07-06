@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
@@ -339,9 +339,10 @@ export function SchedaPartita({
   // proporre, si nasconde in silenzio (come a coppie complete) invece di
   // mostrare "Non hai ancora amici", che sarebbe fuorviante.
   const nienteDaAggiungere = !staff && !amiciVuoti && selezionabili.length === 0
+  const tipo = pren.allenamento ? 'allenamento' : pren.torneo_nome ? 'torneo' : 'partita'
 
   return (
-    <div className={'amichevole-riga' + (inModale ? ' in-modale' : '')}>
+    <div className={'amichevole-riga' + (inModale ? ` in-modale tipo-${tipo}` : '')}>
       <div className="amichevole-cap">
         <div className="sp-top">
           <div className="sp-riga1">
@@ -356,10 +357,12 @@ export function SchedaPartita({
                 )}
               </div>
             )}
-            <TipoAttivitaIcona
-              tipo={pren.allenamento ? 'allenamento' : pren.torneo_nome ? 'torneo' : 'partita'}
-              titolo={pren.torneo_nome ?? undefined}
-            />
+            {/* Nella scheda di admin/collaboratori (inModale) il tipo si distingue
+                con la striscia laterale colorata sulla card, non con l'icona:
+                l'icona resta solo lato giocatore. */}
+            {!inModale && (
+              <TipoAttivitaIcona tipo={tipo} titolo={pren.torneo_nome ?? undefined} />
+            )}
           </div>
           {pren.allenamento && pren.allenatore_id && (
             <div className="dove">Istruttore: {etichette.get(pren.allenatore_id) ?? '—'}</div>
@@ -580,44 +583,6 @@ function Selettore({
   // senza voce vuota "Annulla": si chiude toccando fuori, come ogni menu.
   variante?: 'icona'
 }) {
-  const iconaSenzaPlaceholder = variante === 'icona'
-  const select = (
-    <select
-      className={iconaSenzaPlaceholder ? 'sr-only-select' : undefined}
-      value=""
-      disabled={disabilitato}
-      aria-label={iconaSenzaPlaceholder ? 'Aggiungi un amico alla partita' : undefined}
-      onChange={(e) => {
-        const v = e.target.value
-        if (!v) return
-        // (Tappa 11) Voce "ospite": chiede il nome in una finestra a comparsa
-        // e aggiunge un giocatore non registrato.
-        if (v === '__ospite__') {
-          const nome = window.prompt('Nome dell’ospite (giocatore non registrato):')
-          if (nome && nome.trim()) onOspite?.(nome.trim())
-          return
-        }
-        onScegli(v)
-      }}
-    >
-      {iconaSenzaPlaceholder ? (
-        // Opzione vuota presente ma nascosta dalla lista: senza, il valore
-        // controllato "" non corrisponde a nessuna opzione e il browser
-        // mostra comunque la prima voce come se fosse già selezionata,
-        // impedendo di scegliere proprio quella (nessun evento di cambio).
-        <option value="" disabled hidden />
-      ) : (
-        <option value="">{testoVuoto}</option>
-      )}
-      {onOspite && <option value="__ospite__">＋ Ospite (non registrato)…</option>}
-      {opzioni.map((o) => (
-        <option key={o.id} value={o.id}>
-          {o.etichetta}
-        </option>
-      ))}
-    </select>
-  )
-
   if (variante === 'icona') {
     // Niente amici da invitare: niente pulsante, un messaggio con un link
     // diretto alla sezione "Aggiungi un amico" del profilo.
@@ -629,15 +594,105 @@ function Selettore({
         </span>
       )
     }
-    return (
-      <div className="aggiungi-part-icona">
-        <span className="btn-icona-amico" aria-hidden="true">
-          <IconaPiuAmico />
-        </span>
-        {select}
-      </div>
-    )
+    return <MenuAmici opzioni={opzioni} onScegli={onScegli} onOspite={onOspite} />
   }
 
-  return <div className="aggiungi-part">{select}</div>
+  return (
+    <div className="aggiungi-part">
+      <select
+        value=""
+        disabled={disabilitato}
+        onChange={(e) => {
+          const v = e.target.value
+          if (!v) return
+          // (Tappa 11) Voce "ospite": chiede il nome in una finestra a comparsa
+          // e aggiunge un giocatore non registrato.
+          if (v === '__ospite__') {
+            const nome = window.prompt('Nome dell’ospite (giocatore non registrato):')
+            if (nome && nome.trim()) onOspite?.(nome.trim())
+            return
+          }
+          onScegli(v)
+        }}
+      >
+        <option value="">{testoVuoto}</option>
+        {onOspite && <option value="__ospite__">＋ Ospite (non registrato)…</option>}
+        {opzioni.map((o) => (
+          <option key={o.id} value={o.id}>
+            {o.etichetta}
+          </option>
+        ))}
+      </select>
+    </div>
+  )
+}
+
+// Bottone tondo "+ amico" con menu a comparsa personalizzato (soci normali).
+// Sostituisce il vecchio trucco del <select> nativo reso invisibile e
+// sovrapposto al bottone: su iPhone, Safari disegnava comunque la sua
+// tendina di sistema con la spunta di selezione sopra i nomi. Con un menu
+// tutto nostro (stessa lista già usata per "Cerca amico" nel profilo) il
+// risultato è identico su ogni dispositivo.
+function MenuAmici({
+  opzioni,
+  onScegli,
+  onOspite,
+}: {
+  opzioni: { id: string; etichetta: string }[]
+  onScegli: (id: string) => void
+  onOspite?: (nome: string) => void
+}) {
+  const [aperto, setAperto] = useState(false)
+  const wrapRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!aperto) return
+    function handleClick(e: MouseEvent) {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setAperto(false)
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [aperto])
+
+  function scegli(id: string) {
+    setAperto(false)
+    onScegli(id)
+  }
+
+  function scegliOspite() {
+    setAperto(false)
+    const nome = window.prompt('Nome dell’ospite (giocatore non registrato):')
+    if (nome && nome.trim()) onOspite?.(nome.trim())
+  }
+
+  return (
+    <div ref={wrapRef} className="aggiungi-part-icona">
+      <button
+        type="button"
+        className="btn-icona-amico"
+        aria-label="Aggiungi un amico alla partita"
+        aria-haspopup="true"
+        aria-expanded={aperto}
+        onClick={() => setAperto((v) => !v)}
+      >
+        <IconaPiuAmico />
+      </button>
+      {aperto && (
+        <div className="cerca-lista">
+          {onOspite && (
+            <button type="button" className="cerca-riga" onClick={scegliOspite}>
+              <span className="cerca-riga-nome">Ospite (non registrato)</span>
+              <span className="cerca-riga-ico" aria-hidden="true">+</span>
+            </button>
+          )}
+          {opzioni.map((o) => (
+            <button key={o.id} type="button" className="cerca-riga" onClick={() => scegli(o.id)}>
+              <span className="cerca-riga-nome">{o.etichetta}</span>
+              <span className="cerca-riga-ico" aria-hidden="true">+</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
 }

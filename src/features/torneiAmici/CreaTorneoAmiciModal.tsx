@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useBloccaScrollBody } from '@/hooks/useBloccaScrollBody'
 import { messaggioErrore } from '@/lib/errori'
 import type { Sport } from '@/features/prenotazioni/tipi'
 import type { FormatoTorneoAmici } from './tipi'
@@ -25,6 +26,7 @@ export default function CreaTorneoAmiciModal({
   }
   onChiudi: () => void
 }) {
+  useBloccaScrollBody()
   const [nome, setNome] = useState('')
   const [sport, setSport] = useState<Sport>('padel')
   const [formato, setFormato] = useState<FormatoTorneoAmici>('girone')

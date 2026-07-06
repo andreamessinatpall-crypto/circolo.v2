@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { useAuth } from '@/auth/useAuth'
+import { useBloccaScrollBody } from '@/hooks/useBloccaScrollBody'
 import { messaggioErrore } from '@/lib/errori'
 import { ETICHETTE_LIVELLO } from '@/features/profilo/livelloGioco/domande'
 import { useLivelloGiocoPadel } from '@/features/profilo/livelloGioco/useLivelliGioco'
@@ -19,6 +20,7 @@ interface Props {
 // quella hook apre un canale realtime, e una seconda istanza con lo stesso nome
 // canale manderebbe in crash l'app (visto già in Fase 2 con la chat).
 export default function NuovaRichiestaModal({ crea, aggiorna, onChiudi, modifica }: Props) {
+  useBloccaScrollBody()
   const { profilo } = useAuth()
   const { attuale: livelloPadel, caricamento: caricamentoLivello } = useLivelloGiocoPadel(profilo?.id)
 

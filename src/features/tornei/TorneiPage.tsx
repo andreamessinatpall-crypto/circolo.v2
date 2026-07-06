@@ -39,7 +39,7 @@ import type { PuntiSet, StatoTorneo, Torneo } from './tipi'
 import { azzeraChiave } from '@/lib/punti'
 import { assegnaPuntiAmericano } from './punti'
 import { SportIcona } from '@/components/IconeSport'
-import { ICO_TRASH, ICO_WARN, IcoMedaglia } from './icone'
+import { ICO_COPIA, ICO_TRASH, ICO_WARN, IcoMedaglia } from './icone'
 
 // Terna di punti tutta a zero (default dei form).
 const puntiZero = (): PuntiSet => ({ iscrizione: 0, vittoria: 0, torneo: 0 })
@@ -212,6 +212,7 @@ export default function TorneiPage() {
           gestore={gestore}
           dati={d}
           onCancellato={() => setApertoId(null)}
+          onDuplicato={(id) => setApertoId(String(id))}
         />
       </div>
     )
@@ -892,11 +893,13 @@ function DettaglioTorneo({
   gestore,
   dati,
   onCancellato,
+  onDuplicato,
 }: {
   torneo: Torneo
   gestore: boolean
   dati: DatiTornei
   onCancellato: () => void
+  onDuplicato: (id: number | string) => void
 }) {
   const qc = useQueryClient()
   const { profilo } = useAuth()
@@ -984,6 +987,82 @@ function DettaglioTorneo({
       onCancellato()
     },
     onError: (e: unknown) => window.alert('Cancellazione non riuscita: ' + messaggioErrore(e)),
+  })
+
+  // Copia le regole del torneo (formato, punti, durata…) e gli iscritti
+  // (squadre/giocatori con i loro componenti). Calendario, risultati e
+  // richieste di iscrizione restano fuori: il nuovo torneo riparte da zero.
+  const duplica = useMutation({
+    mutationFn: async () => {
+      const nuovoPayload = {
+        nome: `${torneo.nome} (copia)`,
+        sport: torneo.sport,
+        formato: torneo.formato,
+        stato: 'bozza' as StatoTorneo,
+        data_inizio: null,
+        data_fine: null,
+        creato_da: profilo!.id,
+        numero_gironi: torneo.numero_gironi,
+        nomi_gironi: torneo.nomi_gironi,
+        punti_gironi: torneo.punti_gironi,
+        durata_minuti: torneo.durata_minuti,
+        max_squadre: torneo.max_squadre,
+        punti_iscrizione: torneo.punti_iscrizione,
+        punti_vittoria: torneo.punti_vittoria,
+        punti_torneo: torneo.punti_torneo,
+        andata_ritorno: torneo.andata_ritorno,
+        finale_secca: torneo.finale_secca,
+        terzo_posto: torneo.terzo_posto,
+        modalita_americano: torneo.modalita_americano,
+        punti_posizioni: torneo.punti_posizioni,
+        americano_campo_id: null,
+        americano_campi_ids: null,
+        americano_inizio: null,
+        americano_fine: null,
+        bracket_seed: null,
+      }
+      const { data: nuovo, error } = await supabase.from('tornei').insert(nuovoPayload).select('id').single()
+      if (error) throw error
+      const nuovoId = nuovo.id as number | string
+
+      // Le squadre si inseriscono una alla volta (invece che in blocco) per
+      // sapere con certezza a quale nuovo id corrisponde ciascuna squadra
+      // originale, ed agganciarci i componenti giusti.
+      const mappaSquadre = new Map<string, number | string>()
+      for (const s of squadre) {
+        const { data: nuovaSquadra, error: errSq } = await supabase
+          .from('squadre')
+          .insert({ torneo_id: nuovoId, nome: s.nome, logo_url: s.logo_url, girone: s.girone })
+          .select('id')
+          .single()
+        if (errSq) throw errSq
+        mappaSquadre.set(String(s.id), nuovaSquadra.id as number | string)
+      }
+
+      const nuoviComponenti = squadre.flatMap((s) => {
+        const nuovaSquadraId = mappaSquadre.get(String(s.id))
+        if (nuovaSquadraId == null) return []
+        return (dati.perSquadraComp[String(s.id)] ?? []).map((c) => ({
+          squadra_id: nuovaSquadraId,
+          torneo_id: nuovoId,
+          socio_id: c.socio_id,
+          riserva: c.riserva,
+          nome_manuale: c.nome_manuale ?? null,
+          genere: c.genere ?? null,
+        }))
+      })
+      if (nuoviComponenti.length) {
+        const { error: errComp } = await supabase.from('squadra_componenti').insert(nuoviComponenti)
+        if (errComp) throw errComp
+      }
+
+      return nuovoId
+    },
+    onSuccess: async (nuovoId) => {
+      await qc.invalidateQueries({ queryKey: ['tornei'] })
+      onDuplicato(nuovoId)
+    },
+    onError: (e: unknown) => window.alert('Duplicazione non riuscita: ' + messaggioErrore(e)),
   })
 
   function avviaCancellazione() {
@@ -1124,6 +1203,22 @@ function DettaglioTorneo({
           incontri={incontri}
           compBySquadra={dati.perSquadraComp}
         />
+      </div>
+
+      <div className="mt-6 border-t border-[var(--border)] pt-4">
+        <div className="eyebrow">Duplica torneo</div>
+        <p className="sub mt-2 mb-3">
+          Crea un nuovo torneo in bozza con le stesse regole (formato, punti, durata…) e gli stessi iscritti
+          {isAmericano ? ' (giocatori)' : ' (squadre e componenti)'}. Calendario e risultati non vengono copiati.
+        </p>
+        <button
+          type="button"
+          className="btn btn-secondario"
+          onClick={() => duplica.mutate()}
+          disabled={duplica.isPending}
+        >
+          {duplica.isPending ? 'Duplico…' : <>{ICO_COPIA}Duplica torneo</>}
+        </button>
       </div>
 
       <div className="mt-6 border-t border-[var(--border)] pt-4">

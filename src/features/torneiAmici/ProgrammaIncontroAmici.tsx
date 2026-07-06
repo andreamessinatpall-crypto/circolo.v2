@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/auth/useAuth'
+import { useBloccaScrollBody } from '@/hooks/useBloccaScrollBody'
 import { messaggioErrore } from '@/lib/errori'
 import { useCampi, usePrenotazioniGiorno } from '@/features/prenotazioni/datiPrenotazioni'
 import { dataDa, oraLocale, orariCampo, SLOT_MINUTI, ymd } from '@/features/prenotazioni/orari'
@@ -51,6 +52,7 @@ function ModaleProgrammaAmici({
   incontroId: string
   onChiudi: () => void
 }) {
+  useBloccaScrollBody()
   const { profilo } = useAuth()
   const qc = useQueryClient()
   const campiQuery = useCampi()

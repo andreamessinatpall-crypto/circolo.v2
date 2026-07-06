@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import { useBloccaScrollBody } from '@/hooks/useBloccaScrollBody'
 import { titleCase, dataEstesa } from '@/lib/formato'
 import { classiErrore, classiOk } from '@/components/stili'
 import { costruisciCsv, scaricaCsv } from '@/lib/csv'
@@ -20,6 +21,7 @@ export default function DettaglioGiocatore({
   meId: string | undefined
   onChiudi: () => void
 }) {
+  useBloccaScrollBody()
   const qc = useQueryClient()
   const [modifica, setModifica] = useState(false)
   const [msg, setMsg] = useState<{ tipo: 'ok' | 'errore'; testo: string } | null>(null)

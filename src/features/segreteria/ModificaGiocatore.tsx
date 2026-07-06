@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import { useBloccaScrollBody } from '@/hooks/useBloccaScrollBody'
 import { classiInput, classiErrore } from '@/components/stili'
 import type { SocioAdmin } from './datiSoci'
 
@@ -44,6 +45,7 @@ export default function ModificaGiocatore({
   socio: SocioAdmin
   onChiudi: () => void
 }) {
+  useBloccaScrollBody()
   const qc = useQueryClient()
   const [errore, setErrore] = useState('')
 

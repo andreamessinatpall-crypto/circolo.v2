@@ -76,6 +76,12 @@ export const ICO_DADO = (
     <circle cx="16" cy="16" r="1.3" fill="currentColor" stroke="none" />
   </Ico>
 )
+export const ICO_COPIA = (
+  <Ico>
+    <rect x="9" y="9" width="13" height="13" rx="2" />
+    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+  </Ico>
+)
 export const ICO_MATITA = <Ico d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
 export const ICO_CHECK = <Ico d="M20 6 9 17l-5-5" />
 export const ICO_CHECK_CERCHIO = (

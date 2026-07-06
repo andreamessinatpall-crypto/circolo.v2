@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import { useBloccaScrollBody } from '@/hooks/useBloccaScrollBody'
 import { messaggioErrore } from '@/lib/errori'
 import { useCampi, usePrenotazioniGiorno } from '@/features/prenotazioni/datiPrenotazioni'
 import { dataDa, oraLocale, orariCampo, SLOT_MINUTI, ymd } from '@/features/prenotazioni/orari'
@@ -91,6 +92,7 @@ function ModaleProgrammaAmericano({
   sociBySquadra: Record<string, string | null>
   onChiudi: () => void
 }) {
+  useBloccaScrollBody()
   const qc = useQueryClient()
   const campiQuery = useCampi()
   const durataMn = torneo.durata_minuti ?? SLOT_MINUTI
