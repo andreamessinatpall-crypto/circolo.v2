@@ -48,6 +48,8 @@ export interface Torneo {
   finale_secca: boolean | null
   // (Tappa 31) Solo eliminazione: aggiunge la partita per il 3°/4° posto.
   terzo_posto: boolean | null
+  // (Fase 6bis) Solo americano: "normale" o "misto" (coppie sempre uomo-donna).
+  modalita_americano: 'normale' | 'misto' | null
 }
 
 export interface Squadra {
@@ -68,6 +70,10 @@ export interface Componente {
   // dall'organizzatore. Quando è valorizzato, socio_id è null e il giocatore
   // non guadagna punti né crediti.
   nome_manuale?: string | null
+  // (Fase 6bis) Genere per questo torneo (serve all'Americano Misto). Se
+  // null e il componente è un socio registrato, si usa il genere del suo
+  // profilo; per gli ospiti resta null finché non lo si imposta qui.
+  genere?: string | null
 }
 
 // (Fase 6c) Un incontro del girone fra due squadre/coppie.

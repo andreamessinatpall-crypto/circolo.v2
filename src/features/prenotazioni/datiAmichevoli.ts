@@ -6,6 +6,7 @@ import type { Sport } from './tipi'
 export interface SocioPubblico {
   id: string
   etichetta: string
+  genere?: string | null
 }
 
 export interface Partecipante {
@@ -51,6 +52,7 @@ export function useSociPubblici() {
       return ((data ?? []) as SocioPubblico[]).map((s) => ({
         id: s.id,
         etichetta: titleCase(s.etichetta),
+        genere: s.genere ?? null,
       }))
     },
   })

@@ -9,6 +9,7 @@ import { supabase } from '@/lib/supabase'
 import { messaggioErrore } from '@/lib/errori'
 import { useSociPubblici } from '@/features/prenotazioni/datiAmichevoli'
 import { assegnaPuntiIscrizione, annullaPuntiIscrizione } from './punti'
+import { genereEffettivoComponente, validaIscrizioneMista } from './americano'
 import type { Componente, Squadra, Torneo } from './tipi'
 
 export default function GestioneGiocatoriAmericano({
@@ -31,6 +32,33 @@ export default function GestioneGiocatoriAmericano({
     for (const s of sociQuery.data ?? []) m.set(s.id, s.etichetta)
     return m
   }, [sociQuery.data])
+
+  // (Fase 6bis) Genere per socio, per validare l'iscrizione alla modalità Mista.
+  const genereBySocio = useMemo(() => {
+    const m = new Map<string, string | null>()
+    for (const s of sociQuery.data ?? []) m.set(s.id, s.genere ?? null)
+    return m
+  }, [sociQuery.data])
+
+  const isMisto = torneo.modalita_americano === 'misto'
+  const conteggioGenere = useMemo(() => {
+    if (!isMisto) return null
+    let uomini = 0, donne = 0, senzaGenere = 0
+    for (const g of giocatori) {
+      const comp = compBySquadra[String(g.id)]?.[0]
+      const genere = genereEffettivoComponente(comp, genereBySocio)
+      if (genere === 'M') uomini++
+      else if (genere === 'F') donne++
+      else senzaGenere++
+    }
+    return { uomini, donne, senzaGenere }
+  }, [isMisto, giocatori, compBySquadra, genereBySocio])
+
+  const erroreMisto = conteggioGenere
+    ? conteggioGenere.senzaGenere > 0
+      ? `${conteggioGenere.senzaGenere} ${conteggioGenere.senzaGenere === 1 ? 'giocatore non ha' : 'giocatori non hanno'} il genere impostato (M/F): non ${conteggioGenere.senzaGenere === 1 ? 'può' : 'possono'} partecipare alla modalità Mista.`
+      : validaIscrizioneMista(conteggioGenere.uomini, conteggioGenere.donne)
+    : null
 
   const aggiorna = () => {
     qc.invalidateQueries({ queryKey: ['tornei'] })
@@ -84,6 +112,17 @@ export default function GestioneGiocatoriAmericano({
     onError: (e: unknown) => window.alert('Non riuscito: ' + messaggioErrore(e)),
   })
 
+  // (Fase 6bis) Imposta/corregge il genere di un componente per questo torneo
+  // (override rispetto al profilo, unico modo per assegnarlo agli ospiti).
+  const aggiornaGenere = useMutation({
+    mutationFn: async ({ compId, genere }: { compId: number | string; genere: string | null }) => {
+      const { error } = await supabase.from('squadra_componenti').update({ genere }).eq('id', compId)
+      if (error) throw error
+    },
+    onSuccess: aggiorna,
+    onError: (e: unknown) => window.alert('Non riuscito: ' + messaggioErrore(e)),
+  })
+
   const rimuovi = useMutation({
     mutationFn: async (squadraId: number | string) => {
       // Annulla punti iscrizione prima di eliminare il record.
@@ -109,6 +148,17 @@ export default function GestioneGiocatoriAmericano({
 
   return (
     <div>
+      {conteggioGenere && (
+        <p className="sub mb-2" style={{ fontSize: '0.82rem' }}>
+          Modalità Mista: {conteggioGenere.uomini} uomini · {conteggioGenere.donne} donne
+          {conteggioGenere.senzaGenere > 0 ? ` · ${conteggioGenere.senzaGenere} senza genere` : ''}
+        </p>
+      )}
+      {erroreMisto && (
+        <p className="mb-2" style={{ fontSize: '0.82rem', color: 'var(--errore, #b91c1c)' }}>
+          ⚠️ {erroreMisto}
+        </p>
+      )}
       {!pieno && (
         <div className="mb-3 flex items-center gap-3">
           <select
@@ -126,8 +176,8 @@ export default function GestioneGiocatoriAmericano({
             className="flex-1"
             style={{ maxWidth: 320 }}
           >
-            <option value="">— Aggiungi giocatore —</option>
-            <option value="__ospite__">＋ Ospite (non registrato)…</option>
+            <option value="">Aggiungi</option>
+            <option value="__ospite__">＋ Ospite</option>
             {selezionabili.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.etichetta}
@@ -160,6 +210,27 @@ export default function GestioneGiocatoriAmericano({
                   {g.nome}
                   {isOspite && <span className="sub text-xs"> · ospite</span>}
                 </span>
+                {isMisto && (
+                  <select
+                    value={genereEffettivoComponente(comp, genereBySocio) ?? ''}
+                    disabled={aggiornaGenere.isPending}
+                    onChange={(e) =>
+                      comp && aggiornaGenere.mutate({ compId: comp.id, genere: e.target.value || null })
+                    }
+                    style={{
+                      fontSize: '0.78rem',
+                      padding: '2px 0',
+                      marginLeft: 'auto',
+                      width: '2.6rem',
+                      textAlign: 'center',
+                      textAlignLast: 'center',
+                    }}
+                  >
+                    <option value="">—</option>
+                    <option value="M">M</option>
+                    <option value="F">F</option>
+                  </select>
+                )}
                 <button
                   type="button"
                   className="border-0 bg-transparent px-1 text-xl font-bold leading-none text-red-700"

@@ -293,6 +293,8 @@ function NuovoTorneo({ onCreato }: { onCreato: (id: number | string) => void }) 
   const [andataRitorno, setAndataRitorno] = useState(false)
   const [finaleSecca, setFinaleSecca] = useState(false)
   const [terzoPosto, setTerzoPosto] = useState(false)
+  // (Fase 6bis) Solo americano: Normale o Misto (coppie uomo-donna).
+  const [modalitaAmericano, setModalitaAmericano] = useState<'normale' | 'misto'>('normale')
 
   const slotDisponibile = useQuery({
     queryKey: ['am-disponibilita', amCampiIds, amData, amOraInizio, amOraFine],
@@ -378,6 +380,7 @@ function NuovoTorneo({ onCreato }: { onCreato: (id: number | string) => void }) 
       andata_ritorno: andataRitorno,
       finale_secca: v.formato === 'eliminazione' ? finaleSecca : false,
       terzo_posto: v.formato === 'eliminazione' ? terzoPosto : false,
+      modalita_americano: v.formato === 'americano' ? modalitaAmericano : 'normale',
     }
     if (puntiGironi) payload.punti_gironi = puntiGironi
     if (v.formato === 'americano') {
@@ -428,6 +431,7 @@ function NuovoTorneo({ onCreato }: { onCreato: (id: number | string) => void }) 
     setAmCampiIds([]); setAmData(''); setAmOraInizio(''); setAmOraFine('')
     setPuntiIscrizioneAm(0); setPuntiPosizioniAm({})
     setAndataRitorno(false); setFinaleSecca(false); setTerzoPosto(false)
+    setModalitaAmericano('normale')
     // Aspetta che il refetch completi: così il nuovo torneo è già in cache
     // quando onCreato naviga verso il suo ID, evitando la pagina bianca.
     await qc.invalidateQueries({ queryKey: ['tornei'] })
@@ -508,6 +512,37 @@ function NuovoTorneo({ onCreato }: { onCreato: (id: number | string) => void }) 
             </button>
           )}
         </div>
+
+        {/* ── (Fase 6bis) Modalità Americano: Normale / Misto ──── */}
+        {isAmericano && (
+          <>
+            <label>Modalità</label>
+            <div className="opzione-grid">
+              <button
+                type="button"
+                className={`opzione-btn${modalitaAmericano === 'normale' ? ' attivo' : ''}`}
+                onClick={() => setModalitaAmericano('normale')}
+              >
+                <span className="opzione-btn-icon">◉</span>
+                <span className="opzione-btn-nome">Normale</span>
+              </button>
+              <button
+                type="button"
+                className={`opzione-btn${modalitaAmericano === 'misto' ? ' attivo' : ''}`}
+                onClick={() => setModalitaAmericano('misto')}
+              >
+                <span className="opzione-btn-icon">⚥</span>
+                <span className="opzione-btn-nome">Misto</span>
+              </button>
+            </div>
+            {modalitaAmericano === 'misto' && (
+              <p className="sub mb-2" style={{ fontSize: '0.82rem' }}>
+                Le coppie di ogni round saranno sempre uomo-donna. Servono lo stesso numero di
+                uomini e donne iscritti (numeri pari).
+              </p>
+            )}
+          </>
+        )}
 
         {/* ── Sola andata / Andata e ritorno ───────────────────── */}
         <div className="opzione-grid">
@@ -1016,6 +1051,7 @@ function DettaglioTorneo({
           <GestioneAmericano
             torneo={torneo}
             giocatori={squadre}
+            compBySquadra={dati.perSquadraComp}
             partite={americanoPartite}
             gestore={true}
             soloControlli={true}
@@ -1118,6 +1154,7 @@ function DettaglioTorneo({
         <GestioneAmericano
           torneo={torneo}
           giocatori={squadre}
+          compBySquadra={dati.perSquadraComp}
           partite={americanoPartite}
           gestore={false}
           puoModificare={gestore}
@@ -1221,7 +1258,9 @@ function DettaglioTorneo({
       </div>
       {/* Formato + periodo: fuori dal riquadro verde, sotto al titolo. */}
       <div className="torneo-hero-sub">
-        {(FORMATI_TORNEO[torneo.formato] ?? torneo.formato) + periodo}
+        {(FORMATI_TORNEO[torneo.formato] ?? torneo.formato) +
+          (isAmericano && torneo.modalita_americano === 'misto' ? ' · Misto' : '') +
+          periodo}
       </div>
 
       {gestore ? (

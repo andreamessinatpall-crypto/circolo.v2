@@ -93,6 +93,96 @@ export function generaRoundsAmericano(
   return [...result, ...ritorno]
 }
 
+// (Fase 6bis) Genera i round della modalità Mista: le coppie sono sempre
+// composte da un uomo e una donna. U e D devono avere la stessa lunghezza k
+// (validare con validaIscrizioneMista prima di chiamare questa funzione).
+// Quadrato latino ciclico: al round r (0-based) si accoppia U[i] con
+// D[(i+r) % k]. Su k round ogni uomo gioca in coppia con ogni donna
+// esattamente una volta. Poi, come nell'Americano normale, ogni 2 coppie
+// adiacenti formano un incontro su un campo (k deve quindi essere pari).
+export function generaRoundsAmericanoMisto(
+  uomini: (number | string)[],
+  donne: (number | string)[],
+  andataRitorno = false,
+): {
+  round: number
+  campo: number
+  p1: number | string
+  p2: number | string
+  p3: number | string
+  p4: number | string
+}[][] {
+  const k = Math.floor(Math.min(uomini.length, donne.length) / 2) * 2
+  if (k < 2) return []
+
+  const U = uomini.slice(0, k)
+  const D = donne.slice(0, k)
+
+  const result: ReturnType<typeof generaRoundsAmericanoMisto> = []
+
+  for (let r = 0; r < k; r++) {
+    const coppie: [number | string, number | string][] = []
+    for (let i = 0; i < k; i++) {
+      coppie.push([U[i], D[(i + r) % k]])
+    }
+
+    const courts: (typeof result)[number] = []
+    for (let c = 0; c < coppie.length; c += 2) {
+      courts.push({
+        round: r + 1,
+        campo: c / 2 + 1,
+        p1: coppie[c][0],
+        p2: coppie[c][1],
+        p3: coppie[c + 1][0],
+        p4: coppie[c + 1][1],
+      })
+    }
+    result.push(courts)
+  }
+
+  if (!andataRitorno) return result
+
+  const ritorno = result.map((courts, r) =>
+    courts.map((c) => ({
+      round: k + r + 1,
+      campo: c.campo,
+      p1: c.p3,
+      p2: c.p4,
+      p3: c.p1,
+      p4: c.p2,
+    })),
+  )
+  return [...result, ...ritorno]
+}
+
+// (Fase 6bis) Genere effettivo di un componente di squadra per l'Americano
+// Misto: se il torneo ha un genere impostato esplicitamente su questo
+// componente (override, utile per gli ospiti senza profilo) lo usa; altrimenti
+// ricade sul genere del profilo socio (se registrato).
+export function genereEffettivoComponente(
+  comp: { genere?: string | null; socio_id?: string | null } | undefined,
+  genereBySocio: Map<string, string | null | undefined>,
+): string | null {
+  if (!comp) return null
+  if (comp.genere) return comp.genere
+  if (comp.socio_id) return genereBySocio.get(comp.socio_id) ?? null
+  return null
+}
+
+// (Fase 6bis) Valida i numeri di uomini/donne iscritti per la modalità Mista:
+// devono essere esattamente uguali ed entrambi multipli di 2 (servono coppie
+// complete per formare i campi). Restituisce il messaggio di errore da
+// mostrare, o null se l'iscrizione è valida.
+export function validaIscrizioneMista(uomini: number, donne: number): string | null {
+  if (uomini !== donne) {
+    return `Servono lo stesso numero di uomini e donne per la modalità Mista: attualmente ${uomini} uomini e ${donne} donne.`
+  }
+  if (uomini < 2 || uomini % 2 !== 0) {
+    return `Servono numeri pari di uomini e donne (almeno 2 e 2) per la modalità Mista: attualmente ${uomini} uomini e ${donne} donne.`
+  }
+  return null
+}
+
 // Calcola la classifica individuale: ogni giocatore somma i propri game-point.
 export function calcolaClassificaAmericano(
   squadre: Squadra[],

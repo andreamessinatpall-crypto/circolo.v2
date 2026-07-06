@@ -2,16 +2,26 @@
 // Genera i turni (round-robin con rotazione partner), mostra le partite
 // per round con editor punteggi e mantiene la classifica aggiornata.
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { messaggioErrore } from '@/lib/errori'
-import { americanoDisputata, formatNomeAmericano, generaRoundsAmericano, perRoundAmericano } from './americano'
-import type { AmericanoPartita, Squadra, Torneo } from './tipi'
+import { useSociPubblici } from '@/features/prenotazioni/datiAmichevoli'
+import {
+  americanoDisputata,
+  formatNomeAmericano,
+  generaRoundsAmericano,
+  generaRoundsAmericanoMisto,
+  genereEffettivoComponente,
+  perRoundAmericano,
+  validaIscrizioneMista,
+} from './americano'
+import type { AmericanoPartita, Componente, Squadra, Torneo } from './tipi'
 
 export default function GestioneAmericano({
   torneo,
   giocatori,
+  compBySquadra,
   partite,
   gestore,
   puoModificare,
@@ -19,6 +29,7 @@ export default function GestioneAmericano({
 }: {
   torneo: Torneo
   giocatori: Squadra[]
+  compBySquadra: Record<string, Componente[]>
   partite: AmericanoPartita[]
   gestore: boolean
   puoModificare?: boolean
@@ -26,6 +37,8 @@ export default function GestioneAmericano({
 }) {
   const qc = useQueryClient()
   const [roundSel, setRoundSel] = useState<number | null>(null)
+  const isMisto = torneo.modalita_americano === 'misto'
+  const sociQuery = useSociPubblici()
 
   const esistono = partite.length > 0
   const rounds = perRoundAmericano(partite)
@@ -34,10 +47,39 @@ export default function GestioneAmericano({
   const nomi: Record<string, string> = {}
   for (const g of giocatori) nomi[String(g.id)] = g.nome
 
+  // (Fase 6bis) Divide i giocatori in uomini/donne (per socio_id) per la modalità Mista.
+  const { uominiIds, donneIds, erroreMisto } = useMemo(() => {
+    if (!isMisto) return { uominiIds: [], donneIds: [], erroreMisto: null as string | null }
+    const genereBySocio = new Map<string, string | null>()
+    for (const s of sociQuery.data ?? []) genereBySocio.set(s.id, s.genere ?? null)
+
+    const uomini: (number | string)[] = []
+    const donne: (number | string)[] = []
+    let senzaGenere = 0
+    for (const g of giocatori) {
+      const comp = compBySquadra[String(g.id)]?.[0]
+      const genere = genereEffettivoComponente(comp, genereBySocio)
+      if (genere === 'M') uomini.push(g.id)
+      else if (genere === 'F') donne.push(g.id)
+      else senzaGenere++
+    }
+    const errore =
+      senzaGenere > 0
+        ? `${senzaGenere} ${senzaGenere === 1 ? 'giocatore non ha' : 'giocatori non hanno'} il genere impostato (M/F).`
+        : validaIscrizioneMista(uomini.length, donne.length)
+    return { uominiIds: uomini, donneIds: donne, erroreMisto: errore }
+  }, [isMisto, giocatori, compBySquadra, sociQuery.data])
+
   const genera = useMutation({
     mutationFn: async () => {
-      const nValido = Math.floor(giocatori.length / 4) * 4
-      if (nValido < 4) throw new Error('Servono almeno 4 giocatori (multiplo di 4).')
+      const ar = !!(torneo as { andata_ritorno?: boolean | null }).andata_ritorno
+
+      if (isMisto) {
+        if (erroreMisto) throw new Error(erroreMisto)
+      } else {
+        const nValido = Math.floor(giocatori.length / 4) * 4
+        if (nValido < 4) throw new Error('Servono almeno 4 giocatori (multiplo di 4).')
+      }
 
       // Cancella i turni precedenti
       if (esistono) {
@@ -48,8 +90,9 @@ export default function GestioneAmericano({
         if (errDel) throw errDel
       }
 
-      const ar = !!(torneo as { andata_ritorno?: boolean | null }).andata_ritorno
-      const schedule = generaRoundsAmericano(giocatori.map((g) => g.id), ar)
+      const schedule = isMisto
+        ? generaRoundsAmericanoMisto(uominiIds, donneIds, ar)
+        : generaRoundsAmericano(giocatori.map((g) => g.id), ar)
       const righe = schedule.flat().map((c) => ({
         torneo_id: torneo.id,
         round: c.round,
@@ -81,17 +124,24 @@ export default function GestioneAmericano({
   })
 
   function avviaGenerazione() {
-    const nValido = Math.floor(giocatori.length / 4) * 4
-    if (nValido < 4) {
-      window.alert('Servono almeno 4 giocatori (multiplo di 4) per generare i turni.')
-      return
-    }
-    if (giocatori.length % 4 !== 0) {
-      const esclusi = giocatori.length - nValido
-      if (!window.confirm(
-        `${giocatori.length} giocatori: ${esclusi} ${esclusi === 1 ? 'verrà escluso' : 'verranno esclusi'} ` +
-        `(solo multipli di 4 partecipano all'Americano).\n\nProcedo con ${nValido} giocatori?`
-      )) return
+    if (isMisto) {
+      if (erroreMisto) {
+        window.alert(erroreMisto)
+        return
+      }
+    } else {
+      const nValido = Math.floor(giocatori.length / 4) * 4
+      if (nValido < 4) {
+        window.alert('Servono almeno 4 giocatori (multiplo di 4) per generare i turni.')
+        return
+      }
+      if (giocatori.length % 4 !== 0) {
+        const esclusi = giocatori.length - nValido
+        if (!window.confirm(
+          `${giocatori.length} giocatori: ${esclusi} ${esclusi === 1 ? 'verrà escluso' : 'verranno esclusi'} ` +
+          `(solo multipli di 4 partecipano all'Americano).\n\nProcedo con ${nValido} giocatori?`
+        )) return
+      }
     }
     if (esistono && giocate > 0) {
       if (!window.confirm(
@@ -129,6 +179,12 @@ export default function GestioneAmericano({
                   : 'Crea il calendario dei round con rotazione automatica delle coppie.')}
           </span>
         </div>
+      )}
+
+      {gestore && isMisto && erroreMisto && (
+        <p className="mb-3" style={{ fontSize: '0.82rem', color: 'var(--errore, #b91c1c)' }}>
+          ⚠️ {erroreMisto}
+        </p>
       )}
 
       {!esistono && !soloControlli && (
