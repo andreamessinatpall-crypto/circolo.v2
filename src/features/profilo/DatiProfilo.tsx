@@ -361,7 +361,7 @@ export default function DatiProfilo() {
             <span className="sezione-moderna-icona"><IcoTrofeo /></span>
             <div className="sezione-moderna-testi">
               <h3 className="sezione-moderna-titolo">Classifica del club</h3>
-              <p className="sezione-moderna-sub">Scegli se il tuo nominativo è visibile agli altri giocatori</p>
+              <p className="sezione-moderna-sub">Scegli se essere visibile agli altri giocatori</p>
             </div>
           </div>
           <div className="seg-group mt-2">
