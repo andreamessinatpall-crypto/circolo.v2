@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from 'react'
 import { useAuth } from '@/auth/useAuth'
-import { dataEstesa } from '@/lib/formato'
+import { dataEstesa, etichettaSport } from '@/lib/formato'
 import { mancaTabella, messaggioErrore } from '@/lib/errori'
 import type { Sport } from '@/features/prenotazioni/tipi'
 import { useDisponibilita } from './useDisponibilita'
@@ -28,9 +28,12 @@ export default function DisponibilitaIstruttoreModal({ istruttoreId, nome, onChi
   const { data: impegni = [] } = useImpegniIstruttore(istruttoreId)
   const richiedi = useInviaRichiestaLezione(profilo?.id)
 
-  const [sport, setSport] = useState<Sport>('padel')
   const [sceltaSlot, setSceltaSlot] = useState('')
   const [inviata, setInviata] = useState(false)
+
+  // Un istruttore è esclusivo per un solo sport (tappa70): tutte le sue
+  // fasce lo riportano già, niente scelta da parte di chi richiede la lezione.
+  const sport = (fasce[0]?.sport ?? 'padel') as Sport
 
   const slotProposti = useMemo(() => {
     const generati = generaSlotProposti(fasce)
@@ -98,16 +101,7 @@ export default function DisponibilitaIstruttoreModal({ istruttoreId, nome, onChi
               <p className="msg-ok">Richiesta inviata! Ti avviseremo quando {nome} risponde.</p>
             ) : (
               <>
-                <span className="etichetta">Richiedi una lezione</span>
-
-                <div className="seg-group mb-2">
-                  <button type="button" className={'seg-btn' + (sport === 'padel' ? ' attivo' : '')} onClick={() => { setSport('padel'); setSceltaSlot('') }}>
-                    Padel
-                  </button>
-                  <button type="button" className={'seg-btn' + (sport === 'calcio' ? ' attivo' : '')} onClick={() => { setSport('calcio'); setSceltaSlot('') }}>
-                    Calcio
-                  </button>
-                </div>
+                <span className="etichetta">Richiedi una lezione di {etichettaSport(sport)}</span>
 
                 {slotProposti.length === 0 ? (
                   <p className="sub">Nessuno slot libero nelle prossime due settimane.</p>

@@ -92,7 +92,7 @@ export default function VistaLezioni() {
     <div>
       <RichiesteLezioneSezione istruttoreId={profilo.id} etichette={etichette} />
 
-      <GestioneDisponibilita istruttoreId={profilo.id} />
+      <GestioneDisponibilita istruttoreId={profilo.id} sport={profilo.sport_preferito} />
 
       {lista.length === 0 ? (
         <p className="sub mt-3">

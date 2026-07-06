@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -12,18 +12,23 @@ import { classiInput, classiErrore, classiOk } from '@/components/stili'
 // (persistSession:false) così NON si tocca la sessione dell'admin, poi si
 // inserisce la scheda nella tabella `soci`.
 
-const schema = z.object({
-  nome: z.string().trim().min(1, 'Inserisci il nome'),
-  cognome: z.string().trim().min(1, 'Inserisci il cognome'),
-  email: z.string().trim().email('Email non valida'),
-  data_nascita: z.string().min(1, 'Inserisci la data di nascita'),
-  genere: z.enum(['M', 'F', 'altro']),
-  sport_preferito: z.enum(['padel', 'calcio', 'entrambi']),
-  telefono: z.string().trim().optional(),
-  password: z.string().min(8, 'La password provvisoria deve avere almeno 8 caratteri'),
-  is_allenatore: z.boolean(),
-  e_allenatore: z.boolean(),
-})
+const schema = z
+  .object({
+    nome: z.string().trim().min(1, 'Inserisci il nome'),
+    cognome: z.string().trim().min(1, 'Inserisci il cognome'),
+    email: z.string().trim().email('Email non valida'),
+    data_nascita: z.string().min(1, 'Inserisci la data di nascita'),
+    genere: z.enum(['M', 'F', 'altro']),
+    sport_preferito: z.enum(['padel', 'calcio', 'entrambi']),
+    telefono: z.string().trim().optional(),
+    password: z.string().min(8, 'La password provvisoria deve avere almeno 8 caratteri'),
+    is_allenatore: z.boolean(),
+    e_allenatore: z.boolean(),
+  })
+  .refine((v) => !(v.e_allenatore && v.sport_preferito === 'entrambi'), {
+    message: 'Un istruttore deve essere esclusivo per Padel o per Calcio, non entrambi.',
+    path: ['sport_preferito'],
+  })
 
 type DatiNuovoSocio = z.infer<typeof schema>
 
@@ -36,6 +41,8 @@ export default function NuovoSocio() {
     register,
     handleSubmit,
     reset,
+    watch,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<DatiNuovoSocio>({
     resolver: zodResolver(schema),
@@ -46,6 +53,16 @@ export default function NuovoSocio() {
       e_allenatore: false,
     },
   })
+
+  // Un istruttore è sempre esclusivo per un solo sport: se si spunta la
+  // casella con "Padel e Calcio" già selezionato, si passa subito a Padel.
+  const eAllenatore = watch('e_allenatore')
+  const sportPreferito = watch('sport_preferito')
+  useEffect(() => {
+    if (eAllenatore && sportPreferito === 'entrambi') {
+      setValue('sport_preferito', 'padel')
+    }
+  }, [eAllenatore, sportPreferito, setValue])
 
   async function onSubmit(valori: DatiNuovoSocio) {
     setErroreGenerale('')
@@ -139,13 +156,16 @@ export default function NuovoSocio() {
             </select>
           </Campo>
 
-          <Campo>
+          <Campo errore={errors.sport_preferito?.message}>
             <label>Sport preferito</label>
             <select className={classiInput} {...register('sport_preferito')}>
-              <option value="entrambi">Padel e Calcio</option>
+              {!eAllenatore && <option value="entrambi">Padel e Calcio</option>}
               <option value="padel">Padel</option>
               <option value="calcio">Calcio</option>
             </select>
+            {eAllenatore && (
+              <p className="mt-1 text-xs text-ink-3">Un istruttore insegna un solo sport.</p>
+            )}
           </Campo>
           <Campo>
             <label>Telefono (facoltativo)</label>

@@ -8,6 +8,7 @@ export interface Disponibilita {
   data: string | null
   ora_inizio: string
   ora_fine: string
+  sport: string
 }
 
 export interface NuovaDisponibilita {
@@ -15,6 +16,7 @@ export interface NuovaDisponibilita {
   data: string | null
   ora_inizio: string
   ora_fine: string
+  sport: string
 }
 
 // Fasce di disponibilità di un istruttore per lezioni private (Fase 4).

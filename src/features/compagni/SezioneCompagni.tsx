@@ -6,7 +6,7 @@ import { ETICHETTE_LIVELLO } from '@/features/profilo/livelloGioco/domande'
 import ChatModal from '@/features/chat/ChatModal'
 import NuovaRichiestaModal from './NuovaRichiestaModal'
 import { useRichiestePartner } from './useRichiestePartner'
-import type { Sport } from './useRichiestePartner'
+import type { RichiestaPartner, Sport } from './useRichiestePartner'
 
 function orario(t: string): string {
   return t.slice(0, 5)
@@ -17,10 +17,11 @@ function orario(t: string): string {
 // indipendentemente dal ruolo (socio, collaboratore o istruttore).
 export default function SezioneCompagni() {
   const { profilo } = useAuth()
-  const { richieste, candidature, sociById, caricamento, errore, crea, elimina, candidati, rispondiCandidatura } =
+  const { richieste, candidature, sociById, caricamento, errore, crea, aggiorna, elimina, candidati, rispondiCandidatura } =
     useRichiestePartner(profilo?.id)
   const [sport, setSport] = useState<Sport>('padel')
-  const [nuovoAnnuncio, setNuovoAnnuncio] = useState(false)
+  // null = chiuso, 'nuovo' = crea, altrimenti l'annuncio da modificare.
+  const [modaleAnnuncio, setModaleAnnuncio] = useState<'nuovo' | RichiestaPartner | null>(null)
   const [chatCon, setChatCon] = useState<{ id: string; etichetta: string } | null>(null)
 
   if (!profilo) return null
@@ -57,7 +58,7 @@ export default function SezioneCompagni() {
         </button>
       </div>
 
-      <button type="button" className="btn btn-verde-scuro btn-block mb-3" onClick={() => setNuovoAnnuncio(true)}>
+      <button type="button" className="btn btn-verde-scuro btn-block mb-3" onClick={() => setModaleAnnuncio('nuovo')}>
         + Nuovo annuncio
       </button>
 
@@ -130,14 +131,23 @@ export default function SezioneCompagni() {
                         ))}
                       </div>
                     )}
-                    <button
-                      type="button"
-                      className="btn btn-pericolo btn-mini mt-2"
-                      onClick={() => elimina.mutate(r.id)}
-                      disabled={elimina.isPending}
-                    >
-                      Elimina annuncio
-                    </button>
+                    <div className="flex gap-1.5 mt-2">
+                      <button
+                        type="button"
+                        className="btn btn-secondario btn-mini"
+                        onClick={() => setModaleAnnuncio(r)}
+                      >
+                        Modifica
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-pericolo btn-mini"
+                        onClick={() => elimina.mutate(r.id)}
+                        disabled={elimina.isPending}
+                      >
+                        Elimina annuncio
+                      </button>
+                    </div>
                   </>
                 ) : r.sport === 'padel' ? (
                   <button
@@ -171,7 +181,14 @@ export default function SezioneCompagni() {
         </div>
       )}
 
-      {nuovoAnnuncio && <NuovaRichiestaModal crea={crea} onChiudi={() => setNuovoAnnuncio(false)} />}
+      {modaleAnnuncio && (
+        <NuovaRichiestaModal
+          crea={crea}
+          aggiorna={aggiorna}
+          modifica={modaleAnnuncio !== 'nuovo' ? modaleAnnuncio : undefined}
+          onChiudi={() => setModaleAnnuncio(null)}
+        />
+      )}
       {chatCon && <ChatModal profiloId={profilo.id} amico={chatCon} onChiudi={() => setChatCon(null)} />}
     </div>
   )

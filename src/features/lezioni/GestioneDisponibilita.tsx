@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { mancaTabella, messaggioErrore } from '@/lib/errori'
-import { dataEstesa } from '@/lib/formato'
+import { dataEstesa, etichettaSport } from '@/lib/formato'
 import { useDisponibilita } from './useDisponibilita'
 
 const GIORNI = ['Domenica', 'Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato']
@@ -20,7 +20,15 @@ function IcoOrologio() {
 // Sezione dentro VistaLezioni.tsx: l'istruttore aggiunge/rimuove le proprie
 // fasce di disponibilità per lezioni private (usate dalla prenotazione
 // lezioni, Fase 5). Nessuna modifica diretta: solo aggiungere/rimuovere.
-export default function GestioneDisponibilita({ istruttoreId }: { istruttoreId: string }) {
+// Un istruttore è esclusivo per un solo sport (tappa70): ogni fascia lo
+// riporta esplicitamente, niente scelta perché non ce n'è bisogno.
+export default function GestioneDisponibilita({
+  istruttoreId,
+  sport,
+}: {
+  istruttoreId: string
+  sport: string
+}) {
   const { fasce, caricamento, errore, aggiungi, rimuovi } = useDisponibilita(istruttoreId)
   const [tipo, setTipo] = useState<Tipo>('ricorrente')
   const [giornoSettimana, setGiornoSettimana] = useState(1)
@@ -48,6 +56,7 @@ export default function GestioneDisponibilita({ istruttoreId }: { istruttoreId: 
         data: tipo === 'specifica' ? data : null,
         ora_inizio: oraInizio,
         ora_fine: oraFine,
+        sport,
       },
       { onSuccess: () => setData('') },
     )
@@ -59,7 +68,7 @@ export default function GestioneDisponibilita({ istruttoreId }: { istruttoreId: 
         <span className="sezione-moderna-icona"><IcoOrologio /></span>
         <div className="sezione-moderna-testi">
           <h3 className="sezione-moderna-titolo">Le tue disponibilità</h3>
-          <p className="sezione-moderna-sub">Fasce orarie per lezioni private</p>
+          <p className="sezione-moderna-sub">Fasce orarie per lezioni private di {etichettaSport(sport)}</p>
         </div>
         {fasce.length > 0 && <span className="sezione-moderna-pill off">{fasce.length}</span>}
       </div>

@@ -1,11 +1,20 @@
+// "VS": a icona così piccola (badge da 30px) un disegno di spade incrociate
+// si riduce a una X illeggibile — un monogramma resta nitido a ogni size ed
+// è un simbolo di sfida/confronto immediatamente riconoscibile.
 function IconaPartita({ size = 16 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M5 19 19 5" />
-      <path d="M15 5h4v4" />
-      <path d="M19 19 5 5" />
-      <path d="M9 5H5v4" />
-    </svg>
+    <span
+      aria-hidden="true"
+      style={{
+        fontFamily: 'var(--font-display)',
+        fontWeight: 800,
+        fontSize: size * 0.76,
+        letterSpacing: '0.02em',
+        lineHeight: 1,
+      }}
+    >
+      VS
+    </span>
   )
 }
 

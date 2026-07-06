@@ -92,6 +92,26 @@ export function useRichiestePartner(profiloId: string | undefined) {
     onSuccess: ricarica,
   })
 
+  const aggiorna = useMutation({
+    mutationFn: async ({
+      id,
+      dati,
+    }: {
+      id: number
+      dati: {
+        sport: Sport
+        livello: Livello | null
+        giocatori_mancanti: number | null
+        giorno: string
+        ora_inizio: string
+      }
+    }) => {
+      const { error } = await supabase.from('richieste_partner').update(dati).eq('id', id)
+      if (error) throw error
+    },
+    onSuccess: ricarica,
+  })
+
   const elimina = useMutation({
     mutationFn: async (id: number) => {
       const { error } = await supabase.from('richieste_partner').delete().eq('id', id)
@@ -159,6 +179,7 @@ export function useRichiestePartner(profiloId: string | undefined) {
     caricamento: richiesteQuery.isLoading || sociQuery.isLoading,
     errore: richiesteQuery.error,
     crea,
+    aggiorna,
     elimina,
     candidati,
     rispondiCandidatura,

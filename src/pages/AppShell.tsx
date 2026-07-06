@@ -31,7 +31,7 @@ function vociMenu(p: Socio, premiVisibile: boolean): Voce[] {
       { path: '/prenotazioni', label: 'Prenotazioni' },
       { path: '/tornei', label: 'Tornei' },
       { path: '/premi', label: 'Premi' },
-      { path: '/profilo', label: 'Profilo' },
+      { path: '/profilo', label: 'myCLUB' },
     ]
   }
 
@@ -40,14 +40,14 @@ function vociMenu(p: Socio, premiVisibile: boolean): Voce[] {
       { path: '/prenota', label: 'Prenota' },
       { path: '/soci', label: 'Giocatori' },
       { path: '/tornei', label: 'Tornei' },
-      { path: '/profilo', label: 'Profilo' },
+      { path: '/profilo', label: 'myCLUB' },
     ]
   }
 
   // Giocatore regolare
   const voci: Voce[] = [
     { path: '/prenota', label: 'Prenota' },
-    { path: '/profilo', label: 'Profilo' },
+    { path: '/profilo', label: 'myCLUB' },
     { path: '/tornei', label: 'Tornei' },
   ]
   if (premiVisibile) voci.push({ path: '/premi', label: 'Premi' })

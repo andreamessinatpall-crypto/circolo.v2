@@ -26,19 +26,19 @@ export default function ProfiloPage() {
   let schede: { id: SottoScheda; label: string }[]
   if (collaboratore) {
     schede = [
-      { id: 'riepilogo', label: 'Riepilogo' },
+      { id: 'riepilogo', label: 'Bacheca' },
       { id: 'giocatori', label: 'Giocatori' },
       { id: 'club',      label: 'Club' },
     ]
   } else if (istruttore) {
     schede = [
-      { id: 'riepilogo', label: 'Riepilogo' },
+      { id: 'riepilogo', label: 'Bacheca' },
       { id: 'lezioni',   label: 'Lezioni' },
       { id: 'club',      label: 'Club' },
     ]
   } else {
     schede = [
-      { id: 'riepilogo', label: 'Riepilogo' },
+      { id: 'riepilogo', label: 'Bacheca' },
       { id: 'amici',     label: 'Amici' },
       { id: 'club',      label: 'Club' },
     ]

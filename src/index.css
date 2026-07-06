@@ -1460,16 +1460,17 @@
      Font e padding ridotti perché su iOS il controllo nativo ha larghezza minima
      intrinseca che non rispetta width:100% — valori più piccoli lo tengono
      dentro il contenitore. min-width:0 + overflow:hidden completano il fix. */
-  .form-verde input[type='date'] {
+  .form-verde input[type='date'],
+  .form-verde input[type='time'] {
     color-scheme: dark;
+    height: 47px;
+  }
+  .form-verde input[type='date'] {
     font-size: 0.8rem;
     padding: 9px 6px;
     min-width: 0;
     max-width: 100%;
     overflow: hidden;
-  }
-  .form-verde input[type='time'] {
-    color-scheme: dark;
   }
 
   .form-verde select option {
@@ -2048,34 +2049,22 @@
     justify-content: center;
     width: 30px;
     height: 30px;
-    border-radius: 999px;
+    border-radius: 9px;
+    border: 1.5px solid;
+    background: #fff;
     flex: 0 0 auto;
-    color: #fff;
   }
   .tipo-ico-partita {
-    background: #16a34a;
+    color: var(--v700);
+    border-color: var(--v700);
   }
   .tipo-ico-allenamento {
-    background: #ea580c;
+    color: #ea580c;
+    border-color: #ea580c;
   }
   .tipo-ico-torneo {
-    position: relative;
-    overflow: hidden;
-    color: var(--v900);
-    background: #FFD700;
-    box-shadow: 0 2px 8px rgba(220, 180, 0, 0.4);
-  }
-  .tipo-ico-torneo::after {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: -60%;
-    width: 38%;
-    height: 100%;
-    background: linear-gradient(105deg, transparent, rgba(255, 255, 255, 0.75), transparent);
-    transform: skewX(-20deg);
-    animation: brilla-oro 3.5s ease-in-out infinite;
-    pointer-events: none;
+    color: var(--g600);
+    border-color: var(--g500);
   }
   .part-vuoto {
     font-size: 0.82rem;

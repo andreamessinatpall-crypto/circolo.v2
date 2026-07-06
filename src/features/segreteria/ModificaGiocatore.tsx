@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -11,17 +11,22 @@ import type { SocioAdmin } from './datiSoci'
 // Per scelta non si può promuovere/declassare ad AMMINISTRATORE dall'app
 // (come per l'iscrizione): si gestisce solo da Supabase.
 
-const schema = z.object({
-  nome: z.string().trim().min(1, 'Il nome non può essere vuoto'),
-  cognome: z.string().trim().min(1, 'Il cognome non può essere vuoto'),
-  email: z.string().trim().email('Email non valida'),
-  genere: z.enum(['', 'M', 'F', 'altro']),
-  sport_preferito: z.enum(['padel', 'calcio', 'entrambi']),
-  telefono: z.string().trim().optional(),
-  data_nascita: z.string().optional(),
-  is_allenatore: z.boolean(),
-  e_allenatore: z.boolean(),
-})
+const schema = z
+  .object({
+    nome: z.string().trim().min(1, 'Il nome non può essere vuoto'),
+    cognome: z.string().trim().min(1, 'Il cognome non può essere vuoto'),
+    email: z.string().trim().email('Email non valida'),
+    genere: z.enum(['', 'M', 'F', 'altro']),
+    sport_preferito: z.enum(['padel', 'calcio', 'entrambi']),
+    telefono: z.string().trim().optional(),
+    data_nascita: z.string().optional(),
+    is_allenatore: z.boolean(),
+    e_allenatore: z.boolean(),
+  })
+  .refine((v) => !(v.e_allenatore && v.sport_preferito === 'entrambi'), {
+    message: 'Un istruttore deve essere esclusivo per Padel o per Calcio, non entrambi.',
+    path: ['sport_preferito'],
+  })
 
 type DatiModifica = z.infer<typeof schema>
 
@@ -45,6 +50,8 @@ export default function ModificaGiocatore({
   const {
     register,
     handleSubmit,
+    watch,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<DatiModifica>({
     resolver: zodResolver(schema),
@@ -62,6 +69,16 @@ export default function ModificaGiocatore({
       e_allenatore: !!socio.e_allenatore,
     },
   })
+
+  // Un istruttore è sempre esclusivo per un solo sport: se si spunta la
+  // casella con "Padel e Calcio" già selezionato, si passa subito a Padel.
+  const eAllenatore = watch('e_allenatore')
+  const sportPreferito = watch('sport_preferito')
+  useEffect(() => {
+    if (eAllenatore && sportPreferito === 'entrambi') {
+      setValue('sport_preferito', 'padel')
+    }
+  }, [eAllenatore, sportPreferito, setValue])
 
   async function onSubmit(v: DatiModifica) {
     setErrore('')
@@ -143,10 +160,16 @@ export default function ModificaGiocatore({
           <div>
             <label>Sport preferito</label>
             <select className={classiInput} {...register('sport_preferito')}>
-              <option value="entrambi">Padel e Calcio</option>
+              {!eAllenatore && <option value="entrambi">Padel e Calcio</option>}
               <option value="padel">Padel</option>
               <option value="calcio">Calcio</option>
             </select>
+            {errors.sport_preferito && (
+              <p className="mt-1 text-xs text-red-700">{errors.sport_preferito.message}</p>
+            )}
+            {eAllenatore && (
+              <p className="mt-1 text-xs text-ink-3">Un istruttore insegna un solo sport.</p>
+            )}
           </div>
 
           <div>
