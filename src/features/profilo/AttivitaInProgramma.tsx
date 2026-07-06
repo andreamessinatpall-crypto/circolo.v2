@@ -6,6 +6,7 @@ import { mancaRpc, messaggioErrore } from '@/lib/errori'
 import { useSociPubblici } from '@/features/prenotazioni/datiAmichevoli'
 import { oraLocale } from '@/features/prenotazioni/orari'
 import { SportIcona } from '@/components/IconeSport'
+import { TipoAttivitaIcona } from '@/components/IconeAttivita'
 
 const SPORT_LABEL: Record<string, string> = { padel: 'Padel', calcio: 'Calcio' }
 
@@ -222,13 +223,10 @@ export default function AttivitaInProgramma() {
                       <div className="dove">Prenotato da {label(m.prenotante_id)}</div>
                     )}
                   </div>
-                  {m.allenamento ? (
-                    <div className="allenamento-badge" style={{ marginTop: 0 }}>Allenamento</div>
-                  ) : m.torneo_nome ? (
-                    <div className="torneo-badge" style={{ marginTop: 0 }}>{m.torneo_nome}</div>
-                  ) : (
-                    <div className="partita-badge" style={{ marginTop: 0 }}>Partita</div>
-                  )}
+                  <TipoAttivitaIcona
+                    tipo={m.allenamento ? 'allenamento' : m.torneo_nome ? 'torneo' : 'partita'}
+                    titolo={m.torneo_nome ?? undefined}
+                  />
                 </div>
                 {m.parti.length > 0 && (
                   <div className="att-parti">

@@ -233,7 +233,7 @@ export default function GrigliaPrenotazioni({ sport }: { sport: Sport }) {
             <button
               key={g.chiave}
               type="button"
-              className={'cal-giorno' + (g.isOggi ? ' oggi' : '') + (g.chiave === giorno ? ' sel' : '')}
+              className={'cal-giorno cal-giorno-compatto' + (g.isOggi ? ' oggi' : '') + (g.chiave === giorno ? ' sel' : '')}
               onClick={() => setGiorno(g.chiave)}
             >
               <span className="cal-giorno-dow">{g.dow}</span>

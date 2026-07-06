@@ -11,6 +11,7 @@ import { useCampi } from './datiPrenotazioni'
 import { mancaColonnaManuale, useMieAmichevoli, useSociPubblici } from './datiAmichevoli'
 import { assegnaPuntiPresenza, annullaPuntiPresenza } from './puntiPresenze'
 import { oraLocale } from './orari'
+import { TipoAttivitaIcona } from '@/components/IconeAttivita'
 import type { MiaPrenotazione, Partecipante } from './datiAmichevoli'
 import type { Campo, Sport } from './tipi'
 
@@ -351,20 +352,17 @@ export function SchedaPartita({
               )}
             </div>
           )}
-          {pren.allenamento ? (
-            <>
-              <div className="allenamento-badge">Allenamento</div>
-              {pren.allenatore_id && (
-                <div className="dove">Istruttore: {etichette.get(pren.allenatore_id) ?? '—'}</div>
-              )}
-            </>
-          ) : pren.torneo_nome ? (
-            <div className="torneo-badge">{pren.torneo_nome}</div>
-          ) : (
-            <div className="partita-badge">Partita</div>
+          {pren.allenamento && pren.allenatore_id && (
+            <div className="dove">Istruttore: {etichette.get(pren.allenatore_id) ?? '—'}</div>
           )}
         </div>
-        {sport === 'padel' && <span className="part-conta">{lista.length}/4</span>}
+        <div className="cap-destra">
+          <TipoAttivitaIcona
+            tipo={pren.allenamento ? 'allenamento' : pren.torneo_nome ? 'torneo' : 'partita'}
+            titolo={pren.torneo_nome ?? undefined}
+          />
+          {sport === 'padel' && <span className="part-conta">{lista.length}/4</span>}
+        </div>
       </div>
 
       {lista.length === 0 ? (
