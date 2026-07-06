@@ -34,8 +34,10 @@ function CardTorneoAmici({
   const unita = unitaTorneo(torneo.sport, nSquadre !== 1)
   const pct = incontri.totali > 0 ? Math.round((incontri.disputate / incontri.totali) * 100) : 0
 
+  const concluso = torneo.stato === 'concluso'
+
   return (
-    <div className="torneo-club-card verde">
+    <div className={'torneo-club-card' + (concluso ? ' concluso' : ' verde')}>
       <button type="button" className="torneo-club-header" onClick={onApri}>
         <div className="tcl-top-row">
           <div className="tcl-nome">{torneo.nome}</div>
@@ -126,7 +128,7 @@ export default function SezioneTorneiAmici() {
           )}
 
           {conclusi.length > 0 && (
-            <Sezione titolo={`Conclusi (${conclusi.length})`} apertaIniziale={false}>
+            <Sezione titolo={`Conclusi (${conclusi.length})`} apertaIniziale={false} variante="chiaro">
               <div className="flex flex-col gap-3 mb-3">
                 {conclusi.map(cardDi)}
               </div>

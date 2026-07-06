@@ -546,6 +546,17 @@
   .eyebrow.eyebrow-toggle::after {
     display: none;
   }
+  /* Variante chiara: bianca con contorno e testo verde scuro (es. "Conclusi"
+     nei tornei), al posto del pieno verde scuro di default. */
+  .eyebrow.eyebrow-toggle.eyebrow-chiaro {
+    background: var(--surface);
+    border: 1.5px solid var(--v700);
+    border-radius: 8px;
+    color: var(--v800);
+  }
+  .eyebrow.eyebrow-toggle.eyebrow-chiaro .eyebrow-chevron {
+    color: var(--v700);
+  }
 
   /* Pulsanti */
   .btn {
@@ -3614,6 +3625,28 @@
   }
   .torneo-club-card.verde .tcl-progress-track {
     background: rgba(255, 255, 255, 0.18);
+  }
+
+  /* Variante "concluso": sfondo bianco, contorno e testo verde scuro, per
+     distinguerlo a colpo d'occhio dai tornei attivi (verde pieno sopra). */
+  .torneo-club-card.concluso {
+    background: var(--surface);
+    border: 1.5px solid var(--v700);
+  }
+  .torneo-club-card.concluso .torneo-club-header:hover {
+    background: var(--v050);
+  }
+  .torneo-club-card.concluso .tcl-nome {
+    color: var(--v800);
+  }
+  .torneo-club-card.concluso .tcl-info-sport,
+  .torneo-club-card.concluso .tcl-chevron,
+  .torneo-club-card.concluso .tcl-progress-label,
+  .torneo-club-card.concluso .tcl-info-dettagli {
+    color: var(--v700);
+  }
+  .torneo-club-card.concluso .tcl-progress-track {
+    background: var(--v100);
   }
 
   /* Card torneo in programma: niente expand, solo info + CTA */

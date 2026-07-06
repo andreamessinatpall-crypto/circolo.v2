@@ -5,10 +5,14 @@ import { useState, type ReactNode } from 'react'
 export default function Sezione({
   titolo,
   apertaIniziale = true,
+  variante,
   children,
 }: {
   titolo: ReactNode
   apertaIniziale?: boolean
+  // "chiaro": barra bianca con contorno e testo verde scuro, al posto del
+  // pieno verde scuro di default (usata per distinguere i tornei conclusi).
+  variante?: 'chiaro'
   children: ReactNode
 }) {
   const [aperta, setAperta] = useState(apertaIniziale)
@@ -16,7 +20,7 @@ export default function Sezione({
     <div>
       <button
         type="button"
-        className="eyebrow eyebrow-toggle"
+        className={'eyebrow eyebrow-toggle' + (variante === 'chiaro' ? ' eyebrow-chiaro' : '')}
         aria-expanded={aperta}
         onClick={() => setAperta((a) => !a)}
       >
