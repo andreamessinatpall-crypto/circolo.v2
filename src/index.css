@@ -143,6 +143,15 @@
     color: var(--ink);
     transition: border-color 0.15s, box-shadow 0.15s;
   }
+  /* Su iOS Safari il testo del valore (es. "6 lug 2026") impone una
+     larghezza minima interna che ignora width:100%, facendo sporgere il
+     box oltre gli altri campi del form. -webkit-appearance:none forza il
+     controllo nativo a rispettare il box model come gli altri input. */
+  input[type='date'],
+  input[type='time'] {
+    -webkit-appearance: none;
+    appearance: none;
+  }
   input:focus,
   select:focus,
   textarea:focus {
