@@ -497,6 +497,14 @@
   .campo-body {
     padding: 12px 13px;
   }
+  /* Tendine HH/MM di apertura/chiusura: più strette del campo standard
+     (contenuto di 2 cifre) così le due coppie affiancate restano dentro
+     la scheda anche su mobile, senza toccarne il bordo. Il font resta a
+     16px (non si tocca: sotto quella soglia iOS zooma sul focus). */
+  .ora-select {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
 
   /* Eyebrow: titoletto di sezione con barretta oro */
   .eyebrow {

@@ -61,7 +61,7 @@ function SelettoreOra({ valore, onChange }: { valore: string; onChange: (v: stri
   return (
     <div className="inline-flex items-center gap-1">
       <select
-        className="campo !mt-0 !w-auto"
+        className="campo ora-select !mt-0 !w-auto"
         value={h}
         onChange={(e) => onChange(`${e.target.value}:${m}`)}
       >
@@ -73,7 +73,7 @@ function SelettoreOra({ valore, onChange }: { valore: string; onChange: (v: stri
       </select>
       <span className="text-ink-3">:</span>
       <select
-        className="campo !mt-0 !w-auto"
+        className="campo ora-select !mt-0 !w-auto"
         value={m}
         onChange={(e) => onChange(`${h}:${e.target.value}`)}
       >
@@ -191,7 +191,7 @@ function RigaCampo({ campo }: { campo: Campo }) {
         </label>
 
         {/* Orari, sulla stessa riga */}
-        <div className="mt-2.5 flex items-end gap-5">
+        <div className="mt-2.5 flex items-end gap-3">
           <label className="block">
             <span className="etichetta !mb-1">Apertura</span>
             <SelettoreOra valore={apertura} onChange={setApertura} />
