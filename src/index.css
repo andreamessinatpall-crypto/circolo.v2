@@ -1264,6 +1264,16 @@
     position: relative;
     z-index: 1;
   }
+  /* Alone dorato dietro lo stemma: dà l'idea di un medaglione illuminato
+     invece di un adesivo piatto appoggiato sullo sfondo. */
+  .auth-crest::before {
+    content: '';
+    position: absolute;
+    inset: -18%;
+    z-index: 0;
+    background: radial-gradient(circle, rgba(239, 196, 57, 0.35) 0%, rgba(239, 196, 57, 0.12) 45%, transparent 72%);
+    filter: blur(2px);
+  }
   .auth-crest-logo {
     position: relative;
     z-index: 1;
@@ -1271,8 +1281,10 @@
     height: 100%;
     object-fit: contain;
     filter:
-      drop-shadow(1px 1.5px 1px rgba(0, 0, 0, 0.25))
-      drop-shadow(0 5px 7px rgba(0, 0, 0, 0.3));
+      drop-shadow(-1px -1px 0.5px rgba(255, 255, 255, 0.55))
+      drop-shadow(1px 1.5px 1px rgba(0, 0, 0, 0.35))
+      drop-shadow(2px 4px 3px rgba(0, 0, 0, 0.45))
+      drop-shadow(0 6px 10px rgba(0, 0, 0, 0.4));
   }
   .auth-titolo {
     font-family: var(--font-display);
@@ -1290,7 +1302,7 @@
     display: block;
     width: 44px;
     height: 2px;
-    background: var(--g500);
+    background: #efc439;
     margin: 10px auto 0;
     border-radius: 1px;
   }
