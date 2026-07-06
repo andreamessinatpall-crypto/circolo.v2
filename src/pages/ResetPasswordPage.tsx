@@ -35,7 +35,7 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="flex min-h-[100dvh] flex-col items-center px-4 py-8">
+    <div className="flex min-h-[100svh] flex-col items-center px-4 py-8">
       <div className="w-full max-w-[420px]">
         <AuthHero />
         <div className="card auth-card">

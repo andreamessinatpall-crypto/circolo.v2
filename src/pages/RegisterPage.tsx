@@ -86,7 +86,7 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="flex h-[100dvh] flex-col items-center overflow-y-auto px-4 py-5">
+    <div className="flex h-[100svh] flex-col items-center overflow-y-auto px-4 py-5 [overscroll-behavior-y:contain]">
       <div className="w-full max-w-[680px]">
       <AuthHero />
 

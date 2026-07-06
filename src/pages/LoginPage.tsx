@@ -35,6 +35,9 @@ export default function LoginPage() {
       )
       return
     }
+    // Chiude subito la tastiera: evita che lo scroll residuo per tenere il
+    // campo password sopra la tastiera resti visibile dopo l'ingresso in app.
+    ;(document.activeElement as HTMLElement | null)?.blur()
   }
 
   async function onRecupero(e: FormEvent) {
@@ -60,7 +63,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex h-[100dvh] flex-col items-center overflow-y-auto px-4 py-5">
+    <div className="flex h-[100svh] flex-col items-center overflow-y-auto px-4 py-5 [overscroll-behavior-y:contain]">
       <div className="flex w-full max-w-[420px] flex-1 flex-col justify-center">
         <AuthHero />
 

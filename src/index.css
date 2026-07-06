@@ -135,7 +135,10 @@
   textarea {
     width: 100%;
     padding: 11px 14px;
-    font-size: 0.95rem;
+    /* 16px minimo: sotto questa soglia iOS/Chrome mobile zoomano
+       automaticamente la pagina quando il campo prende il focus, e lo zoom
+       resta "agganciato" anche dopo il cambio pagina al login riuscito. */
+    font-size: 16px;
     font-family: inherit;
     border: 1.5px solid var(--border2);
     border-radius: 10px;
@@ -1063,15 +1066,19 @@
     align-items: center;
     justify-content: space-between;
     gap: 10px;
-    height: 56px;
+    /* box-sizing: border-box (Tailwind preflight) fa sì che il padding-top
+       si "mangi" lo spazio extra, lasciando 56px di barra effettiva sotto
+       la notch/status bar invece di farla sparire dietro di essa. */
+    height: calc(56px + env(safe-area-inset-top, 0px));
     padding: 0 16px;
+    padding-top: env(safe-area-inset-top, 0px);
   }
 
   /* NOTA: niente overflow su questo elemento — position:sticky + overflow:auto
      si annullano a vicenda nel browser. Lo scroll è gestito da .header-tabs. */
   .app-subnav {
     position: sticky;
-    top: 56px;
+    top: calc(56px + env(safe-area-inset-top, 0px));
     z-index: 19;
     /* Separatore sottile interno tra header e tab (non percepito come bordo esterno) */
     border-top: 1px solid rgba(255, 255, 255, 0.055);
@@ -1154,11 +1161,12 @@
       margin-top: 3px;
     }
     .app-header {
-      height: 62px;
+      height: calc(62px + env(safe-area-inset-top, 0px));
       padding: 0 24px;
+      padding-top: env(safe-area-inset-top, 0px);
     }
     .app-subnav {
-      top: 62px;
+      top: calc(62px + env(safe-area-inset-top, 0px));
     }
     .brand {
       font-size: 1.35rem;

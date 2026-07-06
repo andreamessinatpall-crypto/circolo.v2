@@ -10,6 +10,13 @@ import App from './App.tsx'
 // TanStack Query gestisce caricamento, cache ed errori delle chiamate a Supabase.
 const queryClient = new QueryClient()
 
+// Disattiva il ripristino automatico dello scroll del browser: su mobile
+// spesso scatta dopo il mount di React, sovrascrivendo il nostro scrollTo(0,0)
+// e facendo apparire la pagina già scrollata sotto l'header.
+if ('scrollRestoration' in window.history) {
+  window.history.scrollRestoration = 'manual'
+}
+
 registraServiceWorker()
 
 createRoot(document.getElementById('root')!).render(

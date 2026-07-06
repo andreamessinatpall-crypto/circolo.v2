@@ -1,4 +1,5 @@
-import { NavLink, Outlet } from 'react-router-dom'
+import { useEffect } from 'react'
+import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '@/auth/useAuth'
 import { puoGestirePrenotazioni } from '@/auth/ruoli'
 import type { Socio } from '@/auth/tipi'
@@ -31,7 +32,7 @@ function vociMenu(p: Socio, premiVisibile: boolean): Voce[] {
       { path: '/prenotazioni', label: 'Prenotazioni' },
       { path: '/tornei', label: 'Tornei' },
       { path: '/premi', label: 'Premi' },
-      { path: '/profilo', label: 'myCLUB' },
+      { path: '/profilo', label: 'Area Club' },
     ]
   }
 
@@ -40,14 +41,14 @@ function vociMenu(p: Socio, premiVisibile: boolean): Voce[] {
       { path: '/prenota', label: 'Prenota' },
       { path: '/soci', label: 'Giocatori' },
       { path: '/tornei', label: 'Tornei' },
-      { path: '/profilo', label: 'myCLUB' },
+      { path: '/profilo', label: 'Area Club' },
     ]
   }
 
   // Giocatore regolare
   const voci: Voce[] = [
     { path: '/prenota', label: 'Prenota' },
-    { path: '/profilo', label: 'myCLUB' },
+    { path: '/profilo', label: 'Area Club' },
     { path: '/tornei', label: 'Tornei' },
   ]
   if (premiVisibile) voci.push({ path: '/premi', label: 'Premi' })
@@ -56,14 +57,37 @@ function vociMenu(p: Socio, premiVisibile: boolean): Voce[] {
 
 export default function AppShell() {
   const { profilo } = useAuth()
+  const { pathname } = useLocation()
   useRealtimeCircolo()
   const { data: modalitaPremi } = useModalitaPremi()
+
+  // Senza questo reset lo scroll residuo della pagina precedente (es. login
+  // con tastiera aperta) resta e l'header sticky "in alto" parte già scrollato.
+  // Su mobile la tastiera si chiude con un attimo di ritardo: il primo
+  // scrollTo può arrivare troppo presto, quindi riproviamo anche quando il
+  // visual viewport finisce di ridimensionarsi (fine chiusura tastiera).
+  useEffect(() => {
+    const reset = () => window.scrollTo(0, 0)
+    reset()
+    // Su iOS un rimbalzo elastico (overscroll) in corso sulla pagina precedente
+    // può "restare congelato" a metà quando il DOM cambia: un solo scrollTo
+    // non basta perché l'inerzia del bounce lo sovrascrive subito dopo.
+    // Ripetiamo per i primi istanti finché l'inerzia si esaurisce.
+    const timers = [50, 150, 300, 500].map((ms) => setTimeout(reset, ms))
+    const vv = window.visualViewport
+    if (vv) vv.addEventListener('resize', reset, { once: true })
+    return () => {
+      timers.forEach(clearTimeout)
+      if (vv) vv.removeEventListener('resize', reset)
+    }
+  }, [pathname])
+
   if (!profilo) return null
 
   const voci = vociMenu(profilo, !!modalitaPremi)
 
   return (
-    <div className="flex min-h-[100dvh] flex-col">
+    <div className="flex min-h-[100svh] flex-col">
       {/* Barra superiore: marchio e utente */}
       <header className="app-header">
         <div className="brand">
