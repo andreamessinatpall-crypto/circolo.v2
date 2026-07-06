@@ -152,7 +152,7 @@ export default function SezioneCompagni() {
                 ) : r.sport === 'padel' ? (
                   <button
                     type="button"
-                    className="btn btn-sm mt-2"
+                    className="btn btn-bianco btn-sm mt-2"
                     onClick={() => setChatCon({ id: r.socio_id, etichetta: nome })}
                   >
                     Rispondi

@@ -395,6 +395,11 @@ export default function AmiciProfilo() {
         </section>
       )}
 
+      {/* ── Crea un torneo tra amici ───────────────────────── */}
+      <Link to="/tornei?vista=amici" className="btn btn-oro btn-riflesso btn-block text-center">
+        Crea un torneo con i tuoi amici
+      </Link>
+
       {chatAmico && (
         <ChatModal
           key={chatAmico.id}

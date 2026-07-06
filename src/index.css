@@ -3748,7 +3748,7 @@
   }
 
   .tcl-disdici-btn {
-    background: rgba(239, 68, 68, 0.12);
+    background: #fff;
     border: 1.5px solid rgba(239, 68, 68, 0.7);
     border-radius: 20px;
     cursor: pointer;

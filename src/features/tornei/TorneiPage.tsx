@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import ModalConferma from '@/components/ModalConferma'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -130,7 +131,12 @@ function CardTorneoClub({
 
 export default function TorneiPage() {
   const { profilo } = useAuth()
-  const [vista, setVista] = useState<'club' | 'amici'>('club')
+  const [searchParams] = useSearchParams()
+  // Deep link da altre pagine (es. "Crea un torneo con i tuoi amici" negli
+  // Amici del profilo): ?vista=amici apre subito la scheda giusta.
+  const [vista, setVista] = useState<'club' | 'amici'>(() =>
+    searchParams.get('vista') === 'amici' ? 'amici' : 'club',
+  )
   const torneiQuery = useTornei()
   const [apertoId, setApertoId] = useState<string | null>(null)
   const [creando, setCreando] = useState(false)
