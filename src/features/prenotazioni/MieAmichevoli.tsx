@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { Link } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/auth/useAuth'
@@ -333,11 +334,11 @@ export function SchedaPartita({
 
   const cap4 = sport === 'padel' && !pren.allenamento && lista.length >= 4
   const disabilita = amiciVuoti
-  const testoVuoto = amiciVuoti
-    ? 'Aggiungi prima degli amici dal Profilo'
-    : staff
-      ? '— Aggiungi giocatori —'
-      : 'Annulla'
+  const testoVuoto = staff ? '— Aggiungi giocatori —' : ''
+  // Ha amici ma li ha già aggiunti tutti a questa partita: niente da
+  // proporre, si nasconde in silenzio (come a coppie complete) invece di
+  // mostrare "Non hai ancora amici", che sarebbe fuorviante.
+  const nienteDaAggiungere = !staff && !amiciVuoti && selezionabili.length === 0
 
   return (
     <div className={'amichevole-riga' + (inModale ? ' in-modale' : '')}>
@@ -423,7 +424,8 @@ export function SchedaPartita({
                       </span>
                       {nome}
                       {ospite}
-                      {!r.confermato && (
+                      {/* Non si può mai togliere il proprio nominativo dalla prenotazione. */}
+                      {!r.confermato && r.socio_id !== mioId && (
                         <button type="button" className="x" title="Togli" onClick={() => { if (window.confirm(`Rimuovere ${nome} da questa partita?`)) onRimuovi(r) }}>
                           ×
                         </button>
@@ -455,7 +457,8 @@ export function SchedaPartita({
                     </span>
                     {nome}
                     {ospite}
-                    {!r.confermato && (
+                    {/* Non si può mai togliere il proprio nominativo dalla prenotazione. */}
+                    {!r.confermato && r.socio_id !== mioId && (
                       <button
                         type="button"
                         className="x"
@@ -500,20 +503,23 @@ export function SchedaPartita({
                           ✓
                         </button>
                       )}
-                      <button
-                        type="button"
-                        className="x"
-                        title="Togli"
-                        onClick={() => { if (window.confirm(`Rimuovere ${nome} da questa partita?`)) onRimuovi(r) }}
-                      >
-                        ×
-                      </button>
+                      {/* Non si può mai togliere il proprio nominativo dalla prenotazione. */}
+                      {r.socio_id !== mioId && (
+                        <button
+                          type="button"
+                          className="x"
+                          title="Togli"
+                          onClick={() => { if (window.confirm(`Rimuovere ${nome} da questa partita?`)) onRimuovi(r) }}
+                        >
+                          ×
+                        </button>
+                      )}
                     </>
                   )}
                 </span>
               )
             })}
-            {!cap4 && !staff && !pren.incontro_id && (
+            {!cap4 && !staff && !pren.incontro_id && !nienteDaAggiungere && (
               <Selettore
                 opzioni={selezionabili}
                 disabilitato={disabilita}
@@ -570,16 +576,17 @@ function Selettore({
   onScegli: (id: string) => void
   onOspite?: (nome: string) => void
   // "icona": bottone tondo con icona "+ amico" al posto del testo (usato per
-  // i soci normali). testoVuoto diventa l'opzione "Annulla" nel menu che si
-  // apre: selezionarla non fa nulla, così si può chiudere senza scegliere.
+  // i soci normali). Il menu che si apre mostra solo i nomi degli amici,
+  // senza voce vuota "Annulla": si chiude toccando fuori, come ogni menu.
   variante?: 'icona'
 }) {
+  const iconaSenzaPlaceholder = variante === 'icona'
   const select = (
     <select
-      className={variante === 'icona' ? 'sr-only-select' : undefined}
+      className={iconaSenzaPlaceholder ? 'sr-only-select' : undefined}
       value=""
       disabled={disabilitato}
-      aria-label={variante === 'icona' ? testoVuoto : undefined}
+      aria-label={iconaSenzaPlaceholder ? 'Aggiungi un amico alla partita' : undefined}
       onChange={(e) => {
         const v = e.target.value
         if (!v) return
@@ -593,7 +600,15 @@ function Selettore({
         onScegli(v)
       }}
     >
-      <option value="">{testoVuoto}</option>
+      {iconaSenzaPlaceholder ? (
+        // Opzione vuota presente ma nascosta dalla lista: senza, il valore
+        // controllato "" non corrisponde a nessuna opzione e il browser
+        // mostra comunque la prima voce come se fosse già selezionata,
+        // impedendo di scegliere proprio quella (nessun evento di cambio).
+        <option value="" disabled hidden />
+      ) : (
+        <option value="">{testoVuoto}</option>
+      )}
       {onOspite && <option value="__ospite__">＋ Ospite (non registrato)…</option>}
       {opzioni.map((o) => (
         <option key={o.id} value={o.id}>
@@ -604,18 +619,14 @@ function Selettore({
   )
 
   if (variante === 'icona') {
-    // Disabilitato (niente amici da invitare): il title HTML non si vede su
-    // mobile (niente hover), quindi il pulsante resta cliccabile e mostra il
-    // motivo con un avviso vero e proprio invece di restare muto.
+    // Niente amici da invitare: niente pulsante, un messaggio con un link
+    // diretto alla sezione "Aggiungi un amico" del profilo.
     if (disabilitato) {
       return (
-        <button
-          type="button"
-          className="btn-icona-amico disabilitato"
-          onClick={() => window.alert(testoVuoto)}
-        >
-          <IconaPiuAmico />
-        </button>
+        <span className="chips-nessun-amico">
+          Non hai ancora amici.{' '}
+          <Link to="/profilo?sezione=amici">Aggiungi amici</Link>
+        </span>
       )
     }
     return (

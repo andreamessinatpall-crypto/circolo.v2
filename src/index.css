@@ -2392,6 +2392,18 @@
     gap: 6px;
     margin-top: 10px;
   }
+  /* Messaggio "niente amici da invitare" nella riga dei chip: a piena
+     larghezza (riga propria) invece di stare incastrato tra le capsule. */
+  .chips-nessun-amico {
+    flex-basis: 100%;
+    font-size: 0.82rem;
+    color: var(--ink2);
+  }
+  .chips-nessun-amico a {
+    font-weight: 700;
+    color: var(--v700);
+    text-decoration: underline;
+  }
   .chip {
     display: inline-flex;
     align-items: center;
