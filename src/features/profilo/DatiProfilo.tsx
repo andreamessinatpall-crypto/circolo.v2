@@ -49,6 +49,14 @@ function IcoCampanella() {
   )
 }
 
+function IcoTrofeo() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18M4 22h16M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22M18 2H6v7a6 6 0 0 0 12 0V2z" />
+    </svg>
+  )
+}
+
 const PILL_STATO: Record<string, { testo: string; classe: string }> = {
   attivo: { testo: 'Attive', classe: 'ok' },
   'non-attivo': { testo: 'Non attive', classe: 'off' },
@@ -154,8 +162,8 @@ export default function DatiProfilo() {
 
   if (!profilo) return null
 
-  async function handleToggleMostraNome() {
-    const nuovo = !mostraNome
+  async function impostaMostraNome(nuovo: boolean) {
+    if (nuovo === mostraNome) return
     setMostraNome(nuovo)
     await supabase.from('soci').update({ mostra_in_classifica: nuovo }).eq('id', profilo!.id)
     await ricaricaProfilo()
@@ -348,18 +356,30 @@ export default function DatiProfilo() {
       </form>
 
       {!istruttore && (
-        <div className="card" style={{ marginTop: '0.75rem' }}>
-          <label className="dati-check-row" style={{ margin: 0 }}>
-            <input
-              type="checkbox"
-              className="dati-check"
-              checked={mostraNome}
-              onChange={handleToggleMostraNome}
-            />
-            <span>
-              <span className="dati-check-titolo">Mostra il mio nome nella classifica del club agli altri giocatori</span>
-            </span>
-          </label>
+        <div className="card sezione-moderna" style={{ marginTop: '0.75rem' }}>
+          <div className="sezione-moderna-head">
+            <span className="sezione-moderna-icona"><IcoTrofeo /></span>
+            <div className="sezione-moderna-testi">
+              <h3 className="sezione-moderna-titolo">Classifica del club</h3>
+              <p className="sezione-moderna-sub">Scegli se il tuo nominativo è visibile agli altri giocatori</p>
+            </div>
+          </div>
+          <div className="seg-group mt-2">
+            <button
+              type="button"
+              className={'seg-btn' + (mostraNome ? ' attivo' : '')}
+              onClick={() => impostaMostraNome(true)}
+            >
+              Visibile
+            </button>
+            <button
+              type="button"
+              className={'seg-btn' + (!mostraNome ? ' attivo' : '')}
+              onClick={() => impostaMostraNome(false)}
+            >
+              Non visibile
+            </button>
+          </div>
         </div>
       )}
 

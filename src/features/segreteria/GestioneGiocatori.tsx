@@ -10,7 +10,7 @@ import { useSoci, useAttivitaSoci, type SocioAdmin, type AttivitaSocio } from '.
 import DettaglioGiocatore from './DettaglioGiocatore'
 import { SportIcona, IconaPadel, IconaCalcio } from '@/components/IconeSport'
 
-type Ordine = 'punti' | 'cognome'
+type Ordine = 'ultima_desc' | 'ultima_asc' | 'cognome'
 
 function isCancellato(s: SocioAdmin): boolean {
   return (s.email ?? '').endsWith('@cancellato.invalid')
@@ -72,7 +72,7 @@ export default function GestioneGiocatori() {
   const { data: attivita } = useAttivitaSoci()
   const { data: modalitaPremi } = useModalitaPremi()
   const [cerca, setCerca] = useState('')
-  const [ordine, setOrdine] = useState<Ordine>('punti')
+  const [ordine, setOrdine] = useState<Ordine>('ultima_desc')
   const [selezionatoId, setSelezionatoId] = useState<string | null>(null)
   const [espandiSospesi, setEspandiSospesi] = useState(false)
   const [espandiCancellati, setEspandiCancellati] = useState(false)
@@ -83,20 +83,12 @@ export default function GestioneGiocatori() {
   const tutti = soci ?? []
 
   // Stats (su tutti, non filtrati dalla ricerca)
-  const nAttivi      = tutti.filter((s) => s.attivo && !s.sospeso && !isCancellato(s)).length
+  const nGiocatori   = tutti.filter((s) => s.attivo && !s.sospeso && !isCancellato(s) && !isStaff(s)).length
   const nInAttesa    = tutti.filter((s) => !s.attivo && !isCancellato(s)).length
 
   const nDaEliminare = tutti.filter((s) => !!s.richiesta_cancellazione).length
   const nPadel  = tutti.filter((s) => !isCancellato(s) && (s.sport_preferito === 'padel'  || s.sport_preferito === 'entrambi')).length
   const nCalcio = tutti.filter((s) => !isCancellato(s) && (s.sport_preferito === 'calcio' || s.sport_preferito === 'entrambi')).length
-  const trentaGiorniFa = Date.now() - 30 * 86_400_000
-  const nInCampo = attivita
-    ? tutti.filter((s) => {
-        if (isCancellato(s) || s.sospeso || !s.attivo) return false
-        const a = attivita.get(s.id)
-        return !!a?.ultima && new Date(a.ultima).getTime() >= trentaGiorniFa
-      }).length
-    : null
 
   // Ricerca
   const q = cerca.trim().toLowerCase()
@@ -108,10 +100,16 @@ export default function GestioneGiocatori() {
 
   const perCognome = (a: SocioAdmin, b: SocioAdmin) =>
     (a.cognome ?? '').localeCompare(b.cognome ?? '', 'it')
+  const tempoUltima = (s: SocioAdmin) => {
+    const iso = attivita?.get(s.id)?.ultima
+    return iso ? new Date(iso).getTime() : -Infinity
+  }
   const cmp =
     ordine === 'cognome'
       ? perCognome
-      : (a: SocioAdmin, b: SocioAdmin) => (b.punti ?? 0) - (a.punti ?? 0) || perCognome(a, b)
+      : ordine === 'ultima_asc'
+        ? (a: SocioAdmin, b: SocioAdmin) => tempoUltima(a) - tempoUltima(b) || perCognome(a, b)
+        : (a: SocioAdmin, b: SocioAdmin) => tempoUltima(b) - tempoUltima(a) || perCognome(a, b)
 
   // Cinque gruppi separati
   const gruppoInAttesa   = tutti.filter((s) => !s.attivo && !isCancellato(s) && match(s)).sort(perCognome)
@@ -128,8 +126,7 @@ export default function GestioneGiocatori() {
 
       <div className="gioc-stats-strip">
         <StatItem num={tutti.length} label="Iscritti" />
-        <StatItem num={nAttivi + nInAttesa} label="Attivi" />
-        {nInCampo !== null && <StatItem num={nInCampo} label="Ultimi 30gg" />}
+        <StatItem num={nGiocatori} label="Giocatori" />
         {nInAttesa > 0 && <StatItem num={nInAttesa} label="In attesa" colore="#92400e" />}
 {nDaEliminare > 0 && <StatItem num={nDaEliminare} label="Richieste" colore="#b91c1c" />}
         <StatItem num={nPadel}  label={<><IconaPadel size={12} /> Padel</>} />
@@ -151,7 +148,8 @@ export default function GestioneGiocatori() {
             value={ordine}
             onChange={(e) => setOrdine(e.target.value as Ordine)}
           >
-            <option value="punti">Punti ↓</option>
+            <option value="ultima_desc">Ultima partita ↓</option>
+            <option value="ultima_asc">Ultima partita ↑</option>
             <option value="cognome">A → Z</option>
           </select>
         </div>
@@ -236,6 +234,7 @@ export default function GestioneGiocatori() {
                 modalitaPremi={!!modalitaPremi}
                 attivita={attivita?.get(s.id) ?? null}
                 onApri={() => setSelezionatoId(s.id)}
+                soloLivelloSport
               />
             ))}
           </div>
@@ -377,11 +376,14 @@ function RigaSocio({
   modalitaPremi,
   attivita,
   onApri,
+  soloLivelloSport,
 }: {
   socio: SocioAdmin
   modalitaPremi: boolean
   attivita: AttivitaSocio | null
   onApri: () => void
+  // Nella lista "Giocatori attivi": niente punti/crediti, solo livello e sport.
+  soloLivelloSport?: boolean
 }) {
   const cancellato = isCancellato(socio)
   const lv = livelloDaPunti(socio.punti ?? 0, LIVELLI_PUNTI_DEFAULT)
@@ -442,13 +444,13 @@ function RigaSocio({
         {!cancellato && (
           <div className="gioc-adm-row2">
             <span style={{ color: ruoloColore ?? cfg.colore }}>{ruoloNome ?? cfg.nome}</span>
-            {!socio.punti_bloccati && (
+            {!soloLivelloSport && !socio.punti_bloccati && (
               <>
                 <span className="gioc-adm-sep">·</span>
                 <span>{socio.punti ?? 0} pt</span>
               </>
             )}
-            {modalitaPremi && !socio.crediti_bloccati && (
+            {!soloLivelloSport && modalitaPremi && !socio.crediti_bloccati && (
               <>
                 <span className="gioc-adm-sep">·</span>
                 <span>{socio.crediti ?? 0} cr</span>
