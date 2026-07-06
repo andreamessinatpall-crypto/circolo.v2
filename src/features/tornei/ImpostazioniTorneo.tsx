@@ -248,7 +248,7 @@ export default function ImpostazioniTorneo({
           onClick={() => setAperto(false)}
         >
           <div
-            className="card max-h-[90vh] w-full max-w-md overflow-y-auto"
+            className="card form-verde max-h-[90vh] w-full max-w-md overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between">
