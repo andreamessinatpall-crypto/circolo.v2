@@ -22,6 +22,12 @@ function inizioSettimana(): string {
   const dow = (d.getDay() + 6) % 7
   return new Date(d.getFullYear(), d.getMonth(), d.getDate() - dow).toISOString()
 }
+function inizioSettimanaPrecedente(): string {
+  const d = new Date()
+  const dow = (d.getDay() + 6) % 7
+  const inizioCorrente = new Date(d.getFullYear(), d.getMonth(), d.getDate() - dow)
+  return new Date(inizioCorrente.getFullYear(), inizioCorrente.getMonth(), inizioCorrente.getDate() - 7).toISOString()
+}
 
 const MESI = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic']
 const DOW = ['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab']
@@ -58,6 +64,24 @@ function dowRanking(items: PrenRow[]) {
   const perDow = new Array(7).fill(0)
   for (const p of items) perDow[new Date(p.inizio).getDay()]++
   return DOW_ORD.map(i => ({ label: DOW[i], val: perDow[i] }))
+}
+
+function settimanaTrend(items: PrenRow[], settimane = 8) {
+  const oggi = new Date()
+  const dow = (oggi.getDay() + 6) % 7
+  const inizioCorrente = new Date(oggi.getFullYear(), oggi.getMonth(), oggi.getDate() - dow)
+  const risultato: { label: string; val: number }[] = []
+  for (let i = settimane - 1; i >= 0; i--) {
+    const inizio = new Date(inizioCorrente.getFullYear(), inizioCorrente.getMonth(), inizioCorrente.getDate() - i * 7)
+    const fine = new Date(inizio.getFullYear(), inizio.getMonth(), inizio.getDate() + 7)
+    const count = items.filter(p => {
+      const t = new Date(p.inizio)
+      return t >= inizio && t < fine
+    }).length
+    const label = i === 0 ? 'Questa' : `${String(inizio.getDate()).padStart(2, '0')}/${String(inizio.getMonth() + 1).padStart(2, '0')}`
+    risultato.push({ label, val: count })
+  }
+  return risultato
 }
 
 function oreOccupate(items: PrenRow[]) {
@@ -109,9 +133,11 @@ function useStatPren() {
       const meseStr = inizioMese()
       const mesePrecStr = inizioMesePrecedente()
       const settimanaStr = inizioSettimana()
+      const settimanaPrecStr = inizioSettimanaPrecedente()
       const mese     = lista.filter(p => p.inizio >= meseStr)
       const mesePred = lista.filter(p => p.inizio >= mesePrecStr && p.inizio < meseStr)
       const settimana = lista.filter(p => p.inizio >= settimanaStr)
+      const settimanaPrec = lista.filter(p => p.inizio >= settimanaPrecStr && p.inizio < settimanaStr)
 
       // Per-sport (anno e mese)
       const padelAnno   = bySport(lista, 'padel')
@@ -137,9 +163,11 @@ function useStatPren() {
         .sort((a, b) => b[1] - a[1])
         .map(([id, n]) => ({ nome: campiById.get(id) ?? 'Campo ' + id, count: n }))
 
+      // Andamento settimanale (per modale)
+      const perSettimana = settimanaTrend(lista)
+
       // Ranking fasce e giorni
       const oraRanking        = fasciaRanking(mese)
-      const dowOrd            = dowRanking(mese)
       const padelOraRanking   = fasciaRanking(mesePadel)
       const calcioOraRanking  = fasciaRanking(meseCalcio)
       const padelDowRanking   = dowRanking(mesePadel)
@@ -153,14 +181,14 @@ function useStatPren() {
       return {
         // Riepilogo generale
         settimanaCount: settimana.length,
+        settimanaPrecCount: settimanaPrec.length,
+        perSettimana,
         meseCount: mese.length,
         mesePrecCount: mesePred.length,
         oreAnno: oreOccupate(lista),
         tipoTotale,
         fasciaTop: oraRanking[0]?.label ?? '—',
         oraRanking,
-        giornoTop: topLabel(dowOrd),
-        dowOrd,
         campoTop: campiRanking[0]?.nome ?? '—',
         campiRanking,
         perMese,
@@ -234,8 +262,8 @@ const COLORI: Record<string, string> = {
   rose:   '#e11d48',
 }
 
-function KpiCard({ n, label, color, delta, onClick }: {
-  n: number | string; label: string; color: string; delta?: number | null; onClick?: () => void
+function KpiCard({ n, label, color, delta, deltaLabel = 'mese scorso', onClick }: {
+  n: number | string; label: string; color: string; delta?: number | null; deltaLabel?: string; onClick?: () => void
 }) {
   return (
     <button type="button" className={'stat-kpi' + (onClick ? ' click' : '')} onClick={onClick}>
@@ -244,7 +272,7 @@ function KpiCard({ n, label, color, delta, onClick }: {
       <div className="stat-kpi-lbl">{label}</div>
       {delta != null && (
         <div className={'stat-kpi-delta ' + (delta >= 0 ? 'up' : 'down')}>
-          {delta >= 0 ? '▲' : '▼'} {Math.abs(delta)}% vs mese scorso
+          {delta >= 0 ? '▲' : '▼'} {Math.abs(delta)}% vs {deltaLabel}
         </div>
       )}
       {onClick && <span className="stat-kpi-arr">›</span>}
@@ -314,6 +342,9 @@ export default function StatistichePage() {
   const delta = p.mesePrecCount > 0
     ? Math.round((p.meseCount - p.mesePrecCount) / p.mesePrecCount * 100)
     : null
+  const deltaSettimana = p.settimanaPrecCount > 0
+    ? Math.round((p.settimanaCount - p.settimanaPrecCount) / p.settimanaPrecCount * 100)
+    : null
 
   return (
     <div className="stat-page">
@@ -327,8 +358,8 @@ export default function StatistichePage() {
         </div>
 
         <div className="stat-row">
-          <KpiCard n={p.settimanaCount} label="Prenotazioni settimana" color="teal"
-            onClick={() => setModale('giorni')} />
+          <KpiCard n={p.settimanaCount} label="Prenotazioni settimana" color="teal" delta={deltaSettimana}
+            deltaLabel="settimana scorsa" onClick={() => setModale('settimana')} />
           <KpiCard n={p.meseCount} label="Questo mese" color="indigo" delta={delta}
             onClick={() => setModale('mese')} />
           <KpiCard n={p.oreAnno + 'h'} label={'Ore campo ' + anno} color="amber"
@@ -432,11 +463,15 @@ export default function StatistichePage() {
                 dati={p.perMese.map(m => ({ label: m.label, val: Math.round(m.ore) }))} suffisso="h" />
             </>
           )}
-          {modale === 'giorni' && (
+          {modale === 'settimana' && (
             <>
-              <ModaleTitolo titolo="Affollamento per giorno" kpi={p.giornoTop} kpiLabel="giorno di punta" />
-              <p className="stat-modal-sub">Prenotazioni nel mese corrente per giorno della settimana</p>
-              <BarChart dati={p.dowOrd} percentuale />
+              <ModaleTitolo titolo="Prenotazioni questa settimana" kpi={String(p.settimanaCount)} />
+              {deltaSettimana !== null && (
+                <p className={'stat-modal-delta ' + (deltaSettimana >= 0 ? 'up' : 'down')}>
+                  {deltaSettimana >= 0 ? '▲' : '▼'} {Math.abs(deltaSettimana)}% rispetto alla settimana scorsa ({p.settimanaPrecCount})
+                </p>
+              )}
+              <BarChart titolo="Andamento settimanale" className="mt-5" dati={p.perSettimana} />
             </>
           )}
 
