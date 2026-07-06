@@ -11,6 +11,7 @@ import { useAmici, type VoceStaff } from './amici/useAmici'
 import { MedagliaRuolo } from './ruoloBadge'
 import { SportIcona } from '@/components/IconeSport'
 import DisponibilitaIstruttoreModal from '@/features/lezioni/DisponibilitaIstruttoreModal'
+import SezioneCompagni from '@/features/compagni/SezioneCompagni'
 
 interface RigaClassifica {
   posizione: number
@@ -80,6 +81,7 @@ const IcoTrofeo = <Ico d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-
 const IcoZap = <Ico><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></Ico>
 const IcoCal = <Ico><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></Ico>
 const IcoScudo = <Ico d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+const IcoCompagni = <Ico><circle cx="9" cy="7" r="4"/><path d="M1 20c0-3.8 3.6-7 8-7s8 3.2 8 7"/><path d="M17 8a3 3 0 1 1 0 6"/><path d="M22 20c0-2.6-1.7-4.8-4-5.6"/></Ico>
 
 function CardStaff({ voce, onClick }: { voce: VoceStaff; onClick?: () => void }) {
   const cliccabile = voce.ruolo === 'istruttore' && !!onClick
@@ -252,6 +254,11 @@ export default function ClubProfilo() {
             </div>
           )}
         </div>
+      </SezClub>
+
+      {/* ── Cerco giocatori ──────────────────────────────────── */}
+      <SezClub icona={IcoCompagni} titolo="Cerco giocatori">
+        <SezioneCompagni />
       </SezClub>
 
       {/* ── Tornei in corso ──────────────────────────────────── */}

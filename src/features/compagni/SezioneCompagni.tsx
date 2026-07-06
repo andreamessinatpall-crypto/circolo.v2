@@ -14,9 +14,9 @@ const ETICHETTE_FASCIA: Record<FasciaOraria, string> = {
   sera: 'Sera',
 }
 
-// Sezione "Cerco compagno" incorporata dentro la tab Amici del profilo
-// (niente tab/route dedicata: l'utente la vuole integrata, non un'altra
-// voce di menu, per non affollare la navigazione su mobile).
+// Sezione "Cerco giocatori" incorporata dentro la tab Club del profilo
+// (niente tab/route dedicata) così è visibile a tutti i soci del club,
+// indipendentemente dal ruolo (socio, collaboratore o istruttore).
 export default function SezioneCompagni() {
   const { profilo } = useAuth()
   const { richieste, candidature, sociById, caricamento, errore, crea, elimina, candidati, rispondiCandidatura } =

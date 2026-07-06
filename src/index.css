@@ -4803,6 +4803,11 @@
     font-size: 0.72rem;
     color: var(--ink3);
   }
+  .amici-card-partite {
+    margin-top: 1px;
+    font-size: 0.72rem;
+    color: var(--ink3);
+  }
   .amici-card-azioni {
     display: flex;
     align-items: center;
@@ -4832,66 +4837,6 @@
     color: rgba(255, 255, 255, 0.97);
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
     letter-spacing: -0.02em;
-  }
-
-  /* Mini-classifica tra amici */
-  .amici-rank-riga {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px 16px;
-    border-bottom: 1px solid var(--border);
-    transition: background 0.1s;
-  }
-  .amici-rank-riga:last-child {
-    border-bottom: none;
-  }
-  .amici-rank-me {
-    background: color-mix(in srgb, var(--v100) 60%, transparent);
-  }
-  .amici-rank-pos {
-    flex-shrink: 0;
-    width: 18px;
-    text-align: center;
-    font-size: 0.72rem;
-    font-weight: 700;
-    color: var(--ink3);
-  }
-  .amici-rank-nome {
-    flex: 1 1 0;
-    font-size: 0.85rem;
-    font-weight: 500;
-    color: var(--ink);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .amici-rank-bar-wrap {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-shrink: 0;
-  }
-  .amici-rank-bar-track {
-    width: 72px;
-    height: 5px;
-    border-radius: 999px;
-    background: var(--v100);
-    overflow: hidden;
-  }
-  .amici-rank-bar-fill {
-    height: 100%;
-    border-radius: 999px;
-    background: linear-gradient(90deg, var(--v500), var(--v400));
-    transition: width 0.4s ease;
-  }
-  .amici-rank-punti {
-    width: 52px;
-    text-align: right;
-    font-size: 0.72rem;
-    font-weight: 700;
-    font-variant-numeric: tabular-nums;
-    color: var(--ink2);
   }
 
   /* ── Elenco giocatori (condiviso admin + istruttore) ─────── */

@@ -11,7 +11,6 @@ import { useAmici, type Amicizia, type VoceAmico } from './useAmici'
 import { SportIcona } from '@/components/IconeSport'
 import { useConversazioni } from '@/features/chat/useChat'
 import ChatModal from '@/features/chat/ChatModal'
-import SezioneCompagni from '@/features/compagni/SezioneCompagni'
 
 
 function IcoCalendario() {
@@ -69,8 +68,12 @@ function CardAmico({
           {lvNome}
           {' · '}
           {voce.punti} pt
-          {voce.nPartite > 0 && ` · ${voce.nPartite} ${voce.nPartite === 1 ? 'partita' : 'partite'}`}
         </div>
+        {voce.nPartite > 0 && (
+          <div className="amici-card-partite">
+            {voce.nPartite} {voce.nPartite === 1 ? 'partita giocata insieme' : 'partite giocate insieme'}
+          </div>
+        )}
       </div>
       <div className="amici-card-azioni">
         <button
@@ -132,12 +135,10 @@ function Ico({ children, d }: { children?: React.ReactNode; d?: string }) {
   )
 }
 
-const IcoMedagliaA = <Ico><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11" strokeLinecap="round"/></Ico>
 const IcoAmici = <Ico><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></Ico>
 const IcoInbox = <Ico><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></Ico>
 const IcoSend = <Ico><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></Ico>
 const IcoPiu = <Ico><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></Ico>
-const IcoCompagni = <Ico><circle cx="9" cy="7" r="4"/><path d="M1 20c0-3.8 3.6-7 8-7s8 3.2 8 7"/><path d="M17 8a3 3 0 1 1 0 6"/><path d="M22 20c0-2.6-1.7-4.8-4-5.6"/></Ico>
 
 function Eyebrow({ icona, children }: { icona?: React.ReactNode; children: React.ReactNode }) {
   return (
@@ -279,16 +280,6 @@ export default function AmiciProfilo() {
     })
   }
 
-  // Mini-classifica: amici + me ordinati per punti
-  const mioSocio = amici.sociPubblici.find((s) => s.id === profilo.id)
-  const classifica = [
-    ...(mioSocio
-      ? [{ id: 'me', etichetta: 'Tu', punti: mioSocio.punti, isMe: true }]
-      : []),
-    ...amici.amici.map((v) => ({ id: v.id, etichetta: v.etichetta, punti: v.punti, isMe: false })),
-  ].sort((a, b) => b.punti - a.punti)
-  const maxPunti = Math.max(1, ...classifica.map((t) => t.punti))
-
   const conta = amici.amici.length
   const nRichieste = amici.ricevute.length
 
@@ -349,12 +340,25 @@ export default function AmiciProfilo() {
         </section>
       )}
 
+      {/* ── Aggiungi un amico ──────────────────────────────── */}
+      <section>
+        <Eyebrow icona={IcoPiu}>Aggiungi un amico</Eyebrow>
+        <div className="card">
+          <CercaAmico
+            selezionabili={selezionabili}
+            onInvia={invia}
+            isPending={amici.invia.isPending}
+          />
+          {msg && <p className="mt-2 text-sm text-red-700">{msg}</p>}
+        </div>
+      </section>
+
       {/* ── I tuoi amici ───────────────────────────────────── */}
       <section>
         <Eyebrow icona={IcoAmici}>I tuoi amici</Eyebrow>
         {amici.amici.length === 0 ? (
           <div className="card py-6 text-center text-sm text-ink-3">
-            Non hai ancora amici. Cerca un giocatore qui sotto.
+            Non hai ancora amici. Cerca un giocatore qui sopra.
           </div>
         ) : (
           <div className="flex flex-col gap-2">
@@ -369,54 +373,6 @@ export default function AmiciProfilo() {
             ))}
           </div>
         )}
-      </section>
-
-      {/* ── Cerco compagno ─────────────────────────────────── */}
-      <section>
-        <Eyebrow icona={IcoCompagni}>Cerco compagno</Eyebrow>
-        <SezioneCompagni />
-      </section>
-
-      {/* ── Classifica tra amici ───────────────────────────── */}
-      {classifica.length > 1 && (
-        <section>
-          <Eyebrow icona={IcoMedagliaA}>Classifica tra amici</Eyebrow>
-          <div className="card overflow-hidden !p-0">
-            {classifica.map((t, i) => (
-              <div
-                key={t.id}
-                className={'amici-rank-riga' + (t.isMe ? ' amici-rank-me' : '')}
-              >
-                <span className="amici-rank-pos">{i + 1}</span>
-                <span className={'amici-rank-nome' + (t.isMe ? ' font-bold text-verde-700' : '')}>
-                  {t.etichetta}
-                </span>
-                <div className="amici-rank-bar-wrap">
-                  <div className="amici-rank-bar-track">
-                    <div
-                      className="amici-rank-bar-fill"
-                      style={{ width: `${(t.punti / maxPunti) * 100}%` }}
-                    />
-                  </div>
-                  <span className="amici-rank-punti">{t.punti} pt</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* ── Aggiungi un amico ──────────────────────────────── */}
-      <section>
-        <Eyebrow icona={IcoPiu}>Aggiungi un amico</Eyebrow>
-        <div className="card">
-          <CercaAmico
-            selezionabili={selezionabili}
-            onInvia={invia}
-            isPending={amici.invia.isPending}
-          />
-          {msg && <p className="mt-2 text-sm text-red-700">{msg}</p>}
-        </div>
       </section>
 
       {/* ── Richieste inviate ──────────────────────────────── */}

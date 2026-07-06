@@ -115,7 +115,7 @@ export function useRichiestePartner(profiloId: string | undefined) {
             socio_id: richiesta.socio_id,
             titolo: 'Nuovo candidato',
             corpo: 'Qualcuno si è candidato per la tua ricerca giocatori di calcio.',
-            url: '/profilo?sezione=amici',
+            url: '/profilo?sezione=club',
           },
         })
         .catch(() => {})
@@ -143,7 +143,7 @@ export function useRichiestePartner(profiloId: string | undefined) {
               stato === 'accettato'
                 ? 'Sei stato accettato per la partita di calcio!'
                 : 'La tua candidatura non è stata accettata questa volta.',
-            url: '/profilo?sezione=amici',
+            url: '/profilo?sezione=club',
           },
         })
         .catch(() => {})
