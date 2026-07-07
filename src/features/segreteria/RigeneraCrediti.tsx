@@ -68,8 +68,12 @@ export default function RigeneraCrediti() {
               rigenera.mutate()
           }}
         >
+          {rigenera.isPending && <span className="spinner-mini" aria-hidden="true" />}
           {rigenera.isPending ? 'Rigenerazione in corso…' : 'Rigenera crediti'}
         </button>
+        {rigenera.isPending && (
+          <p className="sub mt-2 mb-0">Può richiedere qualche minuto: non chiudere la pagina.</p>
+        )}
         {msg && <p className={`mt-3 ${msg.tipo === 'ok' ? classiOk : classiErrore}`}>{msg.testo}</p>}
       </div>
     </div>
