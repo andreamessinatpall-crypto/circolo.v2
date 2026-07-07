@@ -57,6 +57,9 @@ export function useRealtimeCircolo() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tornei_amici_incontri' }, () =>
         inval(['tornei_amici_dettaglio']),
       )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'annunci' }, () =>
+        inval(['annunci']),
+      )
       .subscribe()
 
     return () => {

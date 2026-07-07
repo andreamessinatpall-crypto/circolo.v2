@@ -6,6 +6,7 @@ import { LIVELLI_PUNTI_DEFAULT, livelloDaPunti, useLivelliPunti } from './livell
 import { svgMedagliaColore } from './badge/medaglieSvg'
 import { MedagliaRuolo } from './ruoloBadge'
 import AttivitaInProgramma from './AttivitaInProgramma'
+import Bacheca from './Bacheca'
 import SezioneCompagni from '@/features/compagni/SezioneCompagni'
 import { oraLocale } from '@/features/prenotazioni/orari'
 import { useRichiesteInviate } from '@/features/lezioni/useRichiesteLezione'
@@ -254,6 +255,16 @@ export default function RiepilogoProfilo() {
 
         <div className="club-sez-header" style={{ marginTop: '2rem' }}>
           <span className="club-sez-icona">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>
+          </span>
+          <h2 className="club-sez-titolo">Comunicazioni del club</h2>
+        </div>
+        <div className="card">
+          <Bacheca />
+        </div>
+
+        <div className="club-sez-header" style={{ marginTop: '2rem' }}>
+          <span className="club-sez-icona">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
           </span>
           <h2 className="club-sez-titolo">Attività in programma</h2>
@@ -353,6 +364,16 @@ export default function RiepilogoProfilo() {
       </div>
 
       <RichiesteLezioneInviate />
+
+      <div className="club-sez-header" style={{ marginTop: '2rem' }}>
+        <span className="club-sez-icona">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>
+        </span>
+        <h2 className="club-sez-titolo">Comunicazioni del club</h2>
+      </div>
+      <div className="card">
+        <Bacheca />
+      </div>
 
       <div className="club-sez-header" style={{ marginTop: '2rem' }}>
         <span className="club-sez-icona">

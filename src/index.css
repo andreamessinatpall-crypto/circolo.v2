@@ -6203,6 +6203,70 @@
     padding-left: 6px;
   }
 
+  /* ── Comunicazioni del club (Fase 10) ────────────────────────────
+     Stile "Cartellone": filo oro in alto + etichetta maiuscola, niente
+     avatar/icona mittente — scelto dall'utente tra 3 mockup (vedi
+     memoria progetto). */
+  .annuncio-card {
+    position: relative;
+    overflow: hidden;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    box-shadow: var(--ombra-card);
+    padding: 16px 18px 14px;
+    margin-bottom: 10px;
+  }
+  .annuncio-card:last-child {
+    margin-bottom: 0;
+  }
+  .annuncio-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--g400), var(--g600));
+  }
+  .annuncio-eyebrow {
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--g600);
+    margin-bottom: 6px;
+  }
+  .annuncio-titolo {
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--ink);
+    margin-bottom: 4px;
+  }
+  .annuncio-testo {
+    color: var(--ink2);
+    font-size: 0.88rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
+  }
+  .annuncio-footer {
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .annuncio-data {
+    font-size: 0.72rem;
+    color: var(--ink3);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .annuncio-azioni {
+    display: flex;
+    gap: 6px;
+  }
+
   /* ── Richieste di lezione (Fase 5) ────────────────────────────── */
   .richiesta-lezione-riga {
     display: flex;
