@@ -66,7 +66,7 @@ export function usePushNotifiche(socioId: string | undefined) {
       )
       if (error) throw error
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['push-stato'] }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['push-stato'] }) },
   })
 
   const disattiva = useMutation({
@@ -78,7 +78,7 @@ export function usePushNotifiche(socioId: string | undefined) {
         await subscription.unsubscribe()
       }
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['push-stato'] }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['push-stato'] }) },
   })
 
   return {

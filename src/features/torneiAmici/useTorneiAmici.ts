@@ -102,7 +102,7 @@ export function useCreaTorneoAmici(profiloId: string | undefined) {
 
       return torneo as TorneoAmici
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['tornei_amici', profiloId] }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['tornei_amici', profiloId] }) },
   })
 }
 
@@ -130,7 +130,7 @@ export function useInvitaAltriAmiciTorneo(torneoId: string, nomeTorneo: string, 
         })
       }
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['tornei_amici_dettaglio', torneoId] }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['tornei_amici_dettaglio', torneoId] }) },
   })
 }
 
@@ -218,7 +218,7 @@ export function useFormaSquadra(torneoId: string) {
         .in('id', coppia)
       if (errPart) throw errPart
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['tornei_amici_dettaglio', torneoId] }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['tornei_amici_dettaglio', torneoId] }) },
   })
 }
 
@@ -231,7 +231,7 @@ export function useScioglieSquadra(torneoId: string) {
       const { error } = await supabase.from('tornei_amici_squadre').delete().eq('id', squadraId)
       if (error) throw error
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['tornei_amici_dettaglio', torneoId] }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['tornei_amici_dettaglio', torneoId] }) },
   })
 }
 
@@ -263,7 +263,7 @@ export function useAvviaTorneoAmici(torneoId: string) {
         .eq('id', torneoId)
       if (error) throw error
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['tornei_amici_dettaglio', torneoId] }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['tornei_amici_dettaglio', torneoId] }) },
   })
 }
 
@@ -329,7 +329,7 @@ export function useInserisciRisultatoAmici(torneo: TorneoAmici, incontriAttuali:
         })
       }
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['tornei_amici_dettaglio', torneo.id] }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['tornei_amici_dettaglio', torneo.id] }) },
   })
 }
 
@@ -357,7 +357,7 @@ export function useEliminaTorneoAmici(profiloId: string | undefined) {
       const { error } = await supabase.from('tornei_amici').delete().eq('id', torneoId)
       if (error) throw error
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['tornei_amici', profiloId] }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['tornei_amici', profiloId] }) },
   })
 }
 
@@ -381,7 +381,7 @@ export function useAnnullaPrenotazioneAmici(torneoId: string) {
       const { error } = await supabase.from('prenotazioni').delete().eq('id', prenotazioneId)
       if (error) throw error
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['tornei_amici_dettaglio', torneoId] }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['tornei_amici_dettaglio', torneoId] }) },
   })
 }
 

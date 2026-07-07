@@ -305,7 +305,7 @@ function RigaRisultato({
       const incontriAgg = incontriTorneo.map((x) => (x.id === m.id ? aggiornato : x))
       await assegnaPuntiVittoriaAuto(torneo, squadreTorneo, incontriAgg, compBySquadra)
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['tornei'] }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['tornei'] }) },
     onError: (e: unknown) =>
       window.alert(
         mancaColonnaRisultato(e) ? SCRIPT_RISULTATO : 'Salvataggio non riuscito: ' + messaggioErrore(e),

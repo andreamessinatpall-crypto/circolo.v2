@@ -284,7 +284,7 @@ function RigaPartitaAmericano({
         .eq('id', m.id)
       if (error) throw error
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['tornei'] }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['tornei'] }) },
     onError: (e: unknown) => window.alert('Salvataggio non riuscito: ' + messaggioErrore(e)),
   })
 

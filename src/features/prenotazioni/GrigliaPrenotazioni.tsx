@@ -136,7 +136,7 @@ export default function GrigliaPrenotazioni({ sport }: { sport: Sport }) {
       const { error } = await supabase.from('prenotazioni').delete().eq('id', id)
       if (error) throw error
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['prenotazioni'] }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['prenotazioni'] }) },
     onError: (e: unknown) =>
       window.alert('Annullamento non riuscito: ' + messaggioErrore(e)),
   })

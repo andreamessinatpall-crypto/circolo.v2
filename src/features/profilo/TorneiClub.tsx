@@ -299,7 +299,7 @@ function CardTorneoInProgramma({
       const { error } = await supabase.rpc('disdici_torneo', { p_torneo_id: torneo.id })
       if (error) throw error
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['tornei'] }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['tornei'] }) },
     onError: (e: unknown) => window.alert('Errore: ' + messaggioErrore(e)),
   })
 

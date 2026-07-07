@@ -137,7 +137,7 @@ export default function GestioneCalendario({
         await supabase.from('tornei').update({ stato: 'in_corso' }).eq('id', torneo.id)
       }
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['tornei'] }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['tornei'] }) },
     onError: (e: unknown) =>
       window.alert(
         mancaTabella(e, 'incontri')

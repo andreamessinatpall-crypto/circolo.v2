@@ -38,7 +38,7 @@ export function useLivelloGiocoPadel(socioId: string | undefined) {
         )
       if (error) throw error
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey }) },
   })
 
   return {

@@ -63,10 +63,21 @@ function staleWhileRevalidate(request, nomeCache) {
   )
 }
 
+// Rete senza timeout di default: su una connessione lenta/instabile il fetch
+// può restare appeso invece di fallire, e finché non fallisce non scatta il
+// ripiego sulla cache qui sotto. Con AbortController forziamo un timeout,
+// così una rete pessima produce un fallback rapido invece di un blocco a
+// tempo indeterminato.
+function fetchConTimeout(request, timeoutMs) {
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
+  return fetch(request, { signal: controller.signal }).finally(() => clearTimeout(timeoutId))
+}
+
 // Prova sempre la rete per prima: solo se fallisce (offline) ripiega sulla
 // cache. Così i dati letti/aggiornati mentre si è online sono sempre freschi.
 function networkFirst(request, nomeCache) {
-  return fetch(request)
+  return fetchConTimeout(request, 8000)
     .then((rispostaRete) => {
       if (rispostaRete && rispostaRete.ok) {
         // Clonare SUBITO, in modo sincrono: se lo facessimo dentro il .then()

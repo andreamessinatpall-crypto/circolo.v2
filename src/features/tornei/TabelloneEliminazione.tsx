@@ -1004,7 +1004,7 @@ function RigaMatch({
         }
       }
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['tornei'] }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['tornei'] }) },
     onError: (e: unknown) =>
       window.alert(
         mancaColonnaRisultato(e)

@@ -147,7 +147,7 @@ export function useInviaRichiestaLezione(socioId: string | undefined) {
         })
         .catch(() => {})
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['richieste_lezione_inviate', socioId] }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['richieste_lezione_inviate', socioId] }) },
   })
 }
 

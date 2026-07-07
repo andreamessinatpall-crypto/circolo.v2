@@ -960,7 +960,7 @@ function DettaglioTorneo({
         await assegnaPuntiAmericano(torneo, squadre, americanoPartite, dati.perSquadraComp)
       }
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['tornei'] }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['tornei'] }) },
     onError: (e: unknown) => window.alert('Aggiornamento non riuscito: ' + messaggioErrore(e)),
   })
 

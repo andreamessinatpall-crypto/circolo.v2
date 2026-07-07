@@ -159,7 +159,7 @@ export default function GestioneCalendarioEliminazione({
         await supabase.from('tornei').update({ stato: 'in_corso' }).eq('id', torneo.id)
       }
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['tornei'] }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['tornei'] }) },
     onError: (e: unknown) =>
       window.alert(
         mancaTabella(e, 'incontri')
@@ -176,7 +176,7 @@ export default function GestioneCalendarioEliminazione({
       await supabase.from('incontri').delete().eq('torneo_id', torneo.id)
       await supabase.from('tornei').update({ bracket_seed: null }).eq('id', torneo.id)
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['tornei'] }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['tornei'] }) },
     onError: (e: unknown) => window.alert('Errore: ' + messaggioErrore(e)),
   })
 

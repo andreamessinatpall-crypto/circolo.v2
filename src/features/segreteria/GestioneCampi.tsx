@@ -144,7 +144,7 @@ function RigaCampo({ campo }: { campo: Campo }) {
       if (!esito.ok)
         throw new Error(esito.mancaPermesso ? MSG_PERMESSO : esito.messaggio ?? 'Eliminazione non riuscita.')
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['campi'] }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['campi'] }) },
     onError: (e: Error) => setMsg({ tipo: 'errore', testo: e.message }),
   })
 

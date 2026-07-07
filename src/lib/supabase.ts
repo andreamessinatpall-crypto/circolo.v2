@@ -12,4 +12,21 @@ if (!supabaseUrl || !supabaseAnonKey) {
   )
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+// `fetch` di default non ha un timeout: su una rete lenta/instabile (es. fuori
+// casa, dati mobili con poco segnale) una richiesta può restare "appesa"
+// invece di fallire, e siccome sia le mutation che invalidano query sia le
+// query stesse aspettano questa promise, tutta l'interfaccia sembra bloccata
+// a tempo indeterminato. Con questo timeout la richiesta fallisce dopo 20s e
+// l'errore risale normalmente (query.error / mutation.error) invece di
+// restare in caricamento per sempre.
+const TIMEOUT_FETCH_MS = 20000
+
+function fetchConTimeout(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_FETCH_MS)
+  return fetch(input, { ...init, signal: controller.signal }).finally(() => clearTimeout(timeoutId))
+}
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  global: { fetch: fetchConTimeout },
+})
