@@ -63,11 +63,11 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex h-[100svh] flex-col items-center overflow-y-auto px-4 py-5 [overscroll-behavior-y:contain]">
+    <div className="auth-page flex h-[100svh] flex-col items-center overflow-y-auto px-4 py-5 [overscroll-behavior-y:contain]">
       <div className="flex w-full max-w-[420px] flex-1 flex-col justify-center">
         <AuthHero />
 
-        <div className="card auth-card">
+        <div className="card auth-card form-verde">
           {vistaRecupero ? (
             <>
               <h2 className="mb-1 text-xl">Recupero password</h2>
@@ -126,30 +126,26 @@ export default function LoginPage() {
               {/* Form email + password */}
               <form onSubmit={onSubmit}>
                 <label htmlFor="login-email">Email</label>
-                <div className="auth-field">
-                  <input
-                    id="login-email"
-                    type="email"
-                    autoComplete="username"
-                    className={classiInput}
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
-                </div>
+                <input
+                  id="login-email"
+                  type="email"
+                  autoComplete="username"
+                  className={classiInput}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
 
                 <label htmlFor="login-password">Password</label>
-                <div className="auth-field">
-                  <input
-                    id="login-password"
-                    type="password"
-                    autoComplete="current-password"
-                    className={classiInput}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                  />
-                </div>
+                <input
+                  id="login-password"
+                  type="password"
+                  autoComplete="current-password"
+                  className={classiInput}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
 
                 <div className="mt-4 text-right">
                   <button
@@ -169,15 +165,12 @@ export default function LoginPage() {
               </form>
 
               {/* CTA registrazione in fondo */}
-              <div className="mt-7 border-t" style={{ borderColor: 'rgba(12, 51, 25, 0.10)' }} />
+              <div className="mt-7 border-t" style={{ borderColor: 'rgba(255, 255, 255, 0.18)' }} />
               <Link
                 to="/registrati"
-                className="mt-4 flex items-center gap-4 rounded-2xl border bg-gradient-to-br from-verde-50 to-white px-4 py-4 shadow-sm transition hover:shadow-md hover:from-verde-100"
-                style={{ borderColor: 'rgba(12, 51, 25, 0.18)' }}
-                onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'rgba(12, 51, 25, 0.32)')}
-                onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'rgba(12, 51, 25, 0.18)')}
+                className="mt-4 flex items-center gap-4 rounded-2xl border border-white/25 bg-white/10 px-4 py-4 transition hover:bg-white/15"
               >
-                <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-verde-700 text-white shadow-sm">
+                <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-white/15 text-white shadow-sm">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                     <rect x="2" y="5" width="20" height="14" rx="2"/>
                     <circle cx="8" cy="11" r="2"/>
@@ -185,8 +178,8 @@ export default function LoginPage() {
                   </svg>
                 </span>
                 <span className="flex-1">
-                  <span className="block text-sm font-bold text-verde-900">Non fai ancora parte del Club?</span>
-                  <span className="block text-sm text-verde-700">Registrati qui →</span>
+                  <span className="block text-sm font-bold text-white">Non fai ancora parte del Club?</span>
+                  <span className="block text-sm text-[var(--g300)]">Registrati qui →</span>
                 </span>
               </Link>
             </>

@@ -86,11 +86,11 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="flex h-[100svh] flex-col items-center overflow-y-auto px-4 py-5 [overscroll-behavior-y:contain]">
+    <div className="auth-page flex h-[100svh] flex-col items-center overflow-y-auto px-4 py-5 [overscroll-behavior-y:contain]">
       <div className="w-full max-w-[680px]">
       <AuthHero />
 
-      <form onSubmit={handleSubmit(onSubmit)} className="card auth-card">
+      <form onSubmit={handleSubmit(onSubmit)} className="card auth-card form-verde">
         <h1 className="text-2xl">Registrati</h1>
         <p className="sub mb-4 mt-1">
           Entra nel Club! Dopo aver confermato l'email la segreteria approverà il profilo.
@@ -220,7 +220,7 @@ export default function RegisterPage() {
 }
 
 function Obbligatorio() {
-  return <span aria-hidden="true" style={{ color: 'var(--errore)', marginLeft: 2 }}>*</span>
+  return <span aria-hidden="true" style={{ color: '#fecaca', marginLeft: 2 }}>*</span>
 }
 
 function Campo({
