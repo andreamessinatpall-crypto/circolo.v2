@@ -6204,21 +6204,34 @@
   }
 
   /* ── Comunicazioni del club (Fase 10) ────────────────────────────
-     Stile "Cartellone": filo oro in alto + etichetta maiuscola, niente
-     avatar/icona mittente — scelto dall'utente tra 3 mockup (vedi
-     memoria progetto). */
+     Vive dentro l'hero scuro (.riep-wow in RiepilogoProfilo.tsx),
+     subito sotto le statistiche — non più una sezione a parte (su
+     richiesta esplicita, per non ripetere "comunicazione del club" tra
+     titolo e card). Stile "Cartellone" (filo oro + etichetta
+     maiuscola) adattato a card translucide coerenti con .riep-oggi,
+     dato che sta sullo sfondo scuro dell'hero invece che su superficie
+     chiara. */
+  .annuncio-blocco {
+    position: relative;
+    z-index: 1;
+    margin-top: 14px;
+  }
+  .annuncio-nota {
+    margin: 0;
+    font-size: 0.85rem;
+    color: rgba(228, 240, 232, 0.72);
+  }
   .annuncio-card {
     position: relative;
     overflow: hidden;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    box-shadow: var(--ombra-card);
-    padding: 16px 18px 14px;
-    margin-bottom: 10px;
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    padding: 14px 16px 12px;
+    margin-top: 10px;
   }
-  .annuncio-card:last-child {
-    margin-bottom: 0;
+  .annuncio-card:first-child {
+    margin-top: 0;
   }
   .annuncio-card::before {
     content: '';
@@ -6227,25 +6240,25 @@
     left: 0;
     right: 0;
     height: 3px;
-    background: linear-gradient(90deg, var(--g400), var(--g600));
+    background: linear-gradient(90deg, var(--g300), var(--g500));
   }
   .annuncio-eyebrow {
-    font-size: 0.68rem;
+    font-size: 0.66rem;
     font-weight: 700;
     letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: var(--g600);
+    color: var(--g300);
     margin-bottom: 6px;
   }
   .annuncio-titolo {
     font-weight: 700;
-    font-size: 1rem;
-    color: var(--ink);
+    font-size: 0.95rem;
+    color: #fff;
     margin-bottom: 4px;
   }
   .annuncio-testo {
-    color: var(--ink2);
-    font-size: 0.88rem;
+    color: rgba(228, 240, 232, 0.78);
+    font-size: 0.85rem;
     line-height: 1.5;
     white-space: pre-wrap;
   }
@@ -6257,14 +6270,26 @@
     gap: 8px;
   }
   .annuncio-data {
-    font-size: 0.72rem;
-    color: var(--ink3);
+    font-size: 0.7rem;
+    color: rgba(228, 240, 232, 0.55);
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
   }
   .annuncio-azioni {
     display: flex;
     gap: 6px;
+  }
+  /* Solo il bottone "＋ Nuovo annuncio" (sta direttamente sull'hero
+     scuro) — non i bottoni dentro i riquadri chiari di form/modifica,
+     che restano con lo stile .btn-secondario di default. */
+  .annuncio-toggle.btn-secondario {
+    background: rgba(255, 255, 255, 0.14);
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.4);
+  }
+  .annuncio-toggle.btn-secondario:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.24);
+    border-color: rgba(255, 255, 255, 0.6);
   }
 
   /* ── Richieste di lezione (Fase 5) ────────────────────────────── */

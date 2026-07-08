@@ -8,11 +8,14 @@ import { creaAnnuncio, eliminaAnnuncio, salvaAnnuncio, useAnnunci, type Annuncio
 
 type Esito = { tipo: 'errore'; testo: string } | null
 
-// Fase 10 — Comunicazioni del club, dentro la tab "Bacheca" del profilo
-// (prima di "Attività in programma"). Sola lettura per tutti i soci;
-// creazione/modifica/eliminazione riservate all'admin (RLS). Stile
-// "Cartellone" (filo oro + etichetta maiuscola, niente avatar/icona
-// mittente) scelto dall'utente tra 3 mockup confrontati con Playtomic.
+// Fase 10 — Comunicazioni del club. Vive dentro l'hero scuro
+// (.riep-wow in RiepilogoProfilo.tsx), subito sotto le statistiche
+// punti/crediti/posizione — non più una sezione a parte, per non
+// ripetere "comunicazione del club" tra titolo sezione ed etichetta
+// della card. Sola lettura per tutti i soci; creazione/modifica/
+// eliminazione riservate all'admin (RLS). Stile "Cartellone"
+// (filo oro + etichetta maiuscola), qui adattato a card translucide
+// coerenti con ".riep-oggi" per stare sullo sfondo scuro dell'hero.
 export default function Bacheca() {
   const { profilo } = useAuth()
   const sonoAdmin = !!profilo?.is_admin
@@ -20,15 +23,15 @@ export default function Bacheca() {
   const lista = data ?? []
 
   return (
-    <div>
+    <div className="annuncio-blocco">
       {sonoAdmin && <FormNuovoAnnuncio autoreId={profilo!.id} />}
 
       {isLoading ? (
-        <p className="text-ink-2">Caricamento…</p>
+        <p className="annuncio-nota">Caricamento…</p>
       ) : error ? (
         <p className={classiErrore}>Impossibile caricare gli annunci: {messaggioErrore(error)}</p>
       ) : lista.length === 0 ? (
-        <p className="text-ink-2">
+        <p className="annuncio-nota">
           {sonoAdmin ? 'Nessun annuncio: pubblica il primo qui sopra.' : 'Nessun annuncio al momento.'}
         </p>
       ) : (
@@ -69,7 +72,7 @@ function FormNuovoAnnuncio({ autoreId }: { autoreId: string }) {
 
   if (!aperto)
     return (
-      <button type="button" className="btn btn-secondario mb-3" onClick={() => setAperto(true)}>
+      <button type="button" className="annuncio-toggle btn btn-secondario mb-3" onClick={() => setAperto(true)}>
         ＋ Nuovo annuncio
       </button>
     )
@@ -152,8 +155,10 @@ function CardAnnuncio({ annuncio, sonoAdmin }: { annuncio: Annuncio; sonoAdmin: 
   })
 
   if (inModifica) {
+    // Stessa "isola" chiara del form di creazione: più leggibile che
+    // scrivere direttamente sulla card translucida scura dell'hero.
     return (
-      <div className="annuncio-card">
+      <div className="mt-2.5 rounded-xl border border-dashed border-ottone-300 bg-verde-50 px-4 py-3">
         <label className="block">
           <span className="etichetta !mb-1">Titolo</span>
           <input
@@ -207,7 +212,7 @@ function CardAnnuncio({ annuncio, sonoAdmin }: { annuncio: Annuncio; sonoAdmin: 
             <button
               type="button"
               title="Modifica"
-              className="btn-icona-premio text-ink-2 hover:bg-black/5"
+              className="btn-icona-premio text-white/70 hover:bg-white/10"
               onClick={() => setInModifica(true)}
             >
               <svg className="h-[16px] w-[16px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
@@ -218,7 +223,7 @@ function CardAnnuncio({ annuncio, sonoAdmin }: { annuncio: Annuncio; sonoAdmin: 
             <button
               type="button"
               title="Elimina"
-              className="btn-icona-premio text-terra hover:bg-terra/10 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="btn-icona-premio text-red-300 hover:bg-red-500/15 disabled:opacity-40 disabled:cursor-not-allowed"
               disabled={elimina.isPending}
               onClick={() => {
                 setMsg(null)
