@@ -1,26 +1,37 @@
 import { useEffect } from 'react'
+import type { ComponentType } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '@/auth/useAuth'
 import { puoGestirePrenotazioni } from '@/auth/ruoli'
 import type { Socio } from '@/auth/tipi'
 import { useRealtimeCircolo } from '@/hooks/useRealtimeCircolo'
-import { useModalitaPremi } from '@/features/premi/datiPremi'
 import FooterLegale from '@/components/legale/FooterLegale'
 import InstallaAppBanner from '@/components/InstallaAppBanner'
 import MenuUtente from '@/components/MenuUtente'
+import CampanellaNotifiche from '@/components/CampanellaNotifiche'
+import {
+  IconaPrenota,
+  IconaStatistiche,
+  IconaGiocatori,
+  IconaTornei,
+  IconaAreaClub,
+} from '@/components/IconeMenu'
 
 interface Voce {
   path: string
   label: string
+  Icona: ComponentType
 }
 
-function vociMenu(p: Socio, premiVisibile: boolean): Voce[] {
+// "Premi" non è più una voce di primo livello: vive come sotto-scheda
+// dentro Area Club (ProfiloPage.tsx), accanto a Bacheca/Amici/Club.
+function vociMenu(p: Socio): Voce[] {
   if (p.is_admin) {
     return [
-      { path: '/prenotazioni', label: 'Prenotazioni' },
-      { path: '/statistiche', label: 'Statistiche' },
-      { path: '/soci', label: 'Giocatori' },
-      { path: '/tornei', label: 'Tornei' },
+      { path: '/prenotazioni', label: 'Prenotazioni', Icona: IconaPrenota },
+      { path: '/statistiche', label: 'Statistiche', Icona: IconaStatistiche },
+      { path: '/soci', label: 'Giocatori', Icona: IconaGiocatori },
+      { path: '/tornei', label: 'Tornei', Icona: IconaTornei },
     ]
   }
 
@@ -29,37 +40,33 @@ function vociMenu(p: Socio, premiVisibile: boolean): Voce[] {
 
   if (collaboratore) {
     return [
-      { path: '/prenotazioni', label: 'Prenotazioni' },
-      { path: '/tornei', label: 'Tornei' },
-      { path: '/premi', label: 'Premi' },
-      { path: '/profilo', label: 'Area Club' },
+      { path: '/prenotazioni', label: 'Prenotazioni', Icona: IconaPrenota },
+      { path: '/tornei', label: 'Tornei', Icona: IconaTornei },
+      { path: '/profilo', label: 'Area Club', Icona: IconaAreaClub },
     ]
   }
 
   if (istruttore) {
     return [
-      { path: '/prenota', label: 'Prenota' },
-      { path: '/soci', label: 'Giocatori' },
-      { path: '/tornei', label: 'Tornei' },
-      { path: '/profilo', label: 'Area Club' },
+      { path: '/prenota', label: 'Prenota', Icona: IconaPrenota },
+      { path: '/soci', label: 'Giocatori', Icona: IconaGiocatori },
+      { path: '/tornei', label: 'Tornei', Icona: IconaTornei },
+      { path: '/profilo', label: 'Area Club', Icona: IconaAreaClub },
     ]
   }
 
   // Giocatore regolare
-  const voci: Voce[] = [
-    { path: '/prenota', label: 'Prenota' },
-    { path: '/profilo', label: 'Area Club' },
-    { path: '/tornei', label: 'Tornei' },
+  return [
+    { path: '/prenota', label: 'Prenota', Icona: IconaPrenota },
+    { path: '/profilo', label: 'Area Club', Icona: IconaAreaClub },
+    { path: '/tornei', label: 'Tornei', Icona: IconaTornei },
   ]
-  if (premiVisibile) voci.push({ path: '/premi', label: 'Premi' })
-  return voci
 }
 
 export default function AppShell() {
   const { profilo } = useAuth()
   const { pathname } = useLocation()
   useRealtimeCircolo()
-  const { data: modalitaPremi } = useModalitaPremi()
 
   // Senza questo reset lo scroll residuo della pagina precedente (es. login
   // con tastiera aperta) resta e l'header sticky "in alto" parte già scrollato.
@@ -84,7 +91,7 @@ export default function AppShell() {
 
   if (!profilo) return null
 
-  const voci = vociMenu(profilo, !!modalitaPremi)
+  const voci = vociMenu(profilo)
 
   return (
     <div className="flex min-h-[100svh] flex-col">
@@ -128,11 +135,14 @@ export default function AppShell() {
               </svg>
             </NavLink>
           )}
+          <CampanellaNotifiche />
           <MenuUtente />
         </div>
       </header>
 
-      {/* Sotto-header: tab di navigazione */}
+      {/* Su schermi larghi: sotto-header sticky. Su mobile: barra fissa in
+          fondo (più comoda da raggiungere col pollice, come le app native
+          — vedi media query in index.css). */}
       <div className="app-subnav">
         <nav className="header-tabs" aria-label="Navigazione principale">
           {voci.map((v) => (
@@ -141,7 +151,8 @@ export default function AppShell() {
               to={v.path}
               className={({ isActive }) => 'header-tab' + (isActive ? ' attivo' : '')}
             >
-              {v.label}
+              <v.Icona />
+              <span>{v.label}</span>
             </NavLink>
           ))}
         </nav>
@@ -149,8 +160,9 @@ export default function AppShell() {
 
       <InstallaAppBanner />
 
-      {/* Contenuto */}
-      <main className="mx-auto w-full max-w-[900px] flex-1 px-5 pb-10 pt-4">
+      {/* Contenuto. pb-24 su mobile lascia spazio alla barra fissa in
+          fondo (rimossa da min-width:640px, dove torna pb-10). */}
+      <main className="mx-auto w-full max-w-[900px] flex-1 px-5 pb-24 pt-4 sm:pb-10">
         <Outlet />
       </main>
 

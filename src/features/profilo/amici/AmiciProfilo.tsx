@@ -266,7 +266,9 @@ export default function AmiciProfilo() {
     ...amici.ricevute.map((v) => v.id),
     ...amici.inviate.map((v) => v.id),
   ])
-  const selezionabili = amici.sociPubblici.filter((s) => !collegati.has(s.id))
+  // Gli account privati non compaiono nella ricerca per nuove amicizie
+  // (restano visibili a chi era già amico prima di diventare privato).
+  const selezionabili = amici.sociPubblici.filter((s) => !collegati.has(s.id) && !s.account_privato)
 
   function invia(destinatario: string) {
     setMsg('')

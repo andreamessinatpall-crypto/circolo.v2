@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { classiErrore, classiOk } from '@/components/stili'
 import { IconaCalcio, IconaPadel } from '@/components/IconeSport'
+import { IconaCoperto, IconaScoperto } from '@/components/IconeMeteo'
 import { etichettaSport } from '@/lib/formato'
 import { useCampi, useImpostazioni } from '@/features/prenotazioni/datiPrenotazioni'
 import { orariCampo, SLOT_MINUTI } from '@/features/prenotazioni/orari'
@@ -95,6 +96,7 @@ function RigaCampo({ campo }: { campo: Campo }) {
   const [chiusura, setChiusura] = useState((campo.chiusura || '22:00').slice(0, 5))
   const [inServizio, setInServizio] = useState(campo.in_servizio !== false)
   const [nota, setNota] = useState(campo.nota_servizio || '')
+  const [outdoor, setOutdoor] = useState(campo.outdoor === true)
   const [msg, setMsg] = useState<Esito>(null)
 
   const minuti = (s: string) => Number(s.slice(0, 2)) * 60 + Number(s.slice(3, 5))
@@ -114,6 +116,7 @@ function RigaCampo({ campo }: { campo: Campo }) {
         chiusura,
         in_servizio: inServizio,
         nota_servizio: inServizio ? null : nota.trim() || null,
+        outdoor,
       })
       if (!esito.ok)
         throw new Error(
@@ -201,6 +204,21 @@ function RigaCampo({ campo }: { campo: Campo }) {
             <SelettoreOra valore={chiusura} onChange={setChiusura} />
           </label>
         </div>
+
+        {/* Scoperto/coperto: decide se mostrare il badge meteo in griglia */}
+        <button
+          type="button"
+          className="campo-outdoor-toggle"
+          aria-pressed={outdoor}
+          title={outdoor ? 'Campo scoperto · clicca se è coperto' : 'Campo coperto · clicca se è scoperto'}
+          onClick={() => {
+            setOutdoor((v) => !v)
+            setMsg(null)
+          }}
+        >
+          {outdoor ? <IconaScoperto size={15} /> : <IconaCoperto size={15} />}
+          {outdoor ? 'Scoperto (outdoor)' : 'Coperto'}
+        </button>
 
         {/* Motivo, solo quando il campo è sospeso */}
         {!inServizio && (

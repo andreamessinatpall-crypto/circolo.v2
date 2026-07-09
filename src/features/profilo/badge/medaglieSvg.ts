@@ -17,8 +17,8 @@ export function svgMedagliaColore(liv: number, colore: string): string {
   const rn = numeroRomano(liv)
   return (
     '<svg viewBox="0 0 100 104" xmlns="http://www.w3.org/2000/svg">' +
-    '<polygon points="34,6 50,42 30,52" fill="#14532A"/>' +
-    '<polygon points="66,6 50,42 70,52" fill="#0D3B1E"/>' +
+    '<polygon points="34,6 50,42 30,52" fill="#14532A" stroke="#fff" stroke-width="2.5" stroke-linejoin="round"/>' +
+    '<polygon points="66,6 50,42 70,52" fill="#0D3B1E" stroke="#fff" stroke-width="2.5" stroke-linejoin="round"/>' +
     '<circle cx="50" cy="64" r="33" fill="' + col + '" stroke="#fff" stroke-width="2.5"/>' +
     '<circle cx="50" cy="64" r="27" fill="#0D3B1E" opacity=".16"/>' +
     '<text x="50" y="72" text-anchor="middle" font-size="22" font-weight="700" fill="#fff" font-family="Saira Condensed, sans-serif">' +

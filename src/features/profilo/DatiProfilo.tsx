@@ -1,256 +1,148 @@
 import { useRef, useState } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
+import { useMutation } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/auth/useAuth'
 import { etichettaGenere } from '@/lib/formato'
-import { mancaTabella, messaggioErrore } from '@/lib/errori'
-import { usePushNotifiche } from '@/hooks/usePushNotifiche'
+import { messaggioErrore } from '@/lib/errori'
+import { logoDaFile } from '@/lib/immagini'
 import { classiErrore, classiOk } from '@/components/stili'
-import { MedagliaLv } from './MedagliaLv'
 import StoricoMovimenti from './StoricoMovimenti'
-import CancellaAccount from './CancellaAccount'
-import ModalConfermaPassword from './ModalConfermaPassword'
+import CambiaPasswordModal from './CambiaPasswordModal'
 import SezioneLivelloGioco from './livelloGioco/SezioneLivelloGioco'
+import SezionePreferenze from './preferenze/SezionePreferenze'
 
-const schema = z
-  .object({
-    email: z.string().trim().email('Email non valida'),
-    telefono: z.string().trim().optional(),
-    data_nascita: z.string().optional(),
-    sport_preferito: z.enum(['padel', 'calcio', 'entrambi']),
-    password_nuova: z.string().optional(),
-    password_conferma: z.string().optional(),
-  })
-  .refine(
-    (d) => !d.password_nuova || d.password_nuova.length >= 8,
-    { message: 'La nuova password deve avere almeno 8 caratteri.', path: ['password_nuova'] },
-  )
-  .refine(
-    (d) => !d.password_nuova || d.password_nuova === d.password_conferma,
-    { message: 'Le password non coincidono.', path: ['password_conferma'] },
-  )
+const RE_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
-type DatiForm = z.infer<typeof schema>
-
-type Modale = 'salva' | null
-
-function eIos() {
-  return /iphone|ipad|ipod/i.test(window.navigator.userAgent)
-}
-
-function IcoCampanella() {
+function IcoFotocamera() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-      <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+      <circle cx="12" cy="13" r="4" />
     </svg>
-  )
-}
-
-function IcoTrofeo() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18M4 22h16M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22M18 2H6v7a6 6 0 0 0 12 0V2z" />
-    </svg>
-  )
-}
-
-const PILL_STATO: Record<string, { testo: string; classe: string }> = {
-  attivo: { testo: 'Attive', classe: 'ok' },
-  'non-attivo': { testo: 'Non attive', classe: 'off' },
-  negato: { testo: 'Bloccate', classe: 'bloccato' },
-  'non-supportato': { testo: 'Non disponibili', classe: 'off' },
-}
-
-// Sezione "Notifiche push": permesso richiesto a mano dal socio (mai forzato
-// all'avvio), riusata come base da chat/lista d'attesa nelle fasi successive.
-function SezioneNotifiche({ socioId }: { socioId: string }) {
-  const { stato, caricamento, attiva, disattiva } = usePushNotifiche(socioId)
-
-  if (caricamento) return null
-
-  const erroreTabella =
-    (attiva.error && mancaTabella(attiva.error, 'push_subscriptions')) ||
-    (disattiva.error && mancaTabella(disattiva.error, 'push_subscriptions'))
-  const pill = PILL_STATO[stato]
-
-  return (
-    <div className="card sezione-moderna" style={{ marginTop: '0.75rem' }}>
-      <div className="sezione-moderna-head">
-        <span className="sezione-moderna-icona"><IcoCampanella /></span>
-        <div className="sezione-moderna-testi">
-          <h3 className="sezione-moderna-titolo">Notifiche push</h3>
-          <p className="sezione-moderna-sub">Avvisi in tempo reale su questo dispositivo</p>
-        </div>
-        <span className={`sezione-moderna-pill ${pill.classe}`}>{pill.testo}</span>
-      </div>
-
-      {erroreTabella && (
-        <p className={classiErrore}>
-          Esegui lo script tappa43-push-subscriptions.sql su Supabase per attivare le notifiche.
-        </p>
-      )}
-
-      {stato === 'non-supportato' && (
-        <p className="sub">
-          {eIos()
-            ? "Su iPhone/iPad le notifiche funzionano solo se l'app è installata sulla schermata Home (tocca Condividi → Aggiungi alla schermata Home nel browser Safari) e la apri da lì, con iOS 16.4 o successivo."
-            : 'Le notifiche push non sono supportate su questo browser.'}
-        </p>
-      )}
-
-      {stato === 'negato' && (
-        <p className="sub">Le notifiche sono bloccate nelle impostazioni del browser per questo sito.</p>
-      )}
-
-      {stato === 'attivo' && (
-        <button
-          type="button"
-          className="btn btn-secondario btn-sm"
-          onClick={() => disattiva.mutate()}
-          disabled={disattiva.isPending}
-        >
-          {disattiva.isPending ? 'Disattivo…' : 'Disattiva'}
-        </button>
-      )}
-
-      {stato === 'non-attivo' && (
-        <button
-          type="button"
-          className="btn btn-sm"
-          onClick={() => attiva.mutate()}
-          disabled={attiva.isPending}
-        >
-          {attiva.isPending ? 'Attivo…' : 'Attiva notifiche'}
-        </button>
-      )}
-
-      {attiva.error && !erroreTabella && (
-        <p className={`mt-2 ${classiErrore}`}>{messaggioErrore(attiva.error)}</p>
-      )}
-    </div>
   )
 }
 
 export default function DatiProfilo() {
   const { profilo, utente, ricaricaProfilo } = useAuth()
+  const fotoInputRef = useRef<HTMLInputElement>(null)
+  const [modalePassword, setModalePassword] = useState(false)
   const [msg, setMsg] = useState<{ tipo: 'ok' | 'errore'; testo: string } | null>(null)
-  const [modale, setModale] = useState<Modale>(null)
-  const pendingData = useRef<DatiForm | null>(null)
+  const [email, setEmail] = useState(profilo?.email ?? '')
+  const [emailErrore, setEmailErrore] = useState('')
+  const [telefono, setTelefono] = useState(profilo?.telefono ?? '')
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    reset,
-  } = useForm<DatiForm>({
-    resolver: zodResolver(schema),
-    defaultValues: {
-      email: profilo?.email ?? '',
-      telefono: profilo?.telefono ?? '',
-      data_nascita: profilo?.data_nascita ?? '',
-      sport_preferito: profilo?.sport_preferito ?? 'entrambi',
-      password_nuova: '',
-      password_conferma: '',
+  const salvaFoto = useMutation({
+    mutationFn: async (dataUrl: string | null) => {
+      const { error } = await supabase.from('soci').update({ foto_url: dataUrl }).eq('id', profilo!.id)
+      if (error) throw error
     },
+    onSuccess: ricaricaProfilo,
+    onError: (e: unknown) => window.alert('Salvataggio foto non riuscito: ' + messaggioErrore(e)),
   })
 
-  const istruttore = !!profilo?.e_allenatore && !profilo?.is_allenatore && !profilo?.is_admin
-  const [mostraNome, setMostraNome] = useState(profilo?.mostra_in_classifica ?? false)
+  // Le modifiche a "I tuoi dati" si salvano da sole (niente più bottone "Salva
+  // modifiche", richiesto esplicitamente): un campo si aggiorna appena perde
+  // il focus (o cambia, per select/date), senza bisogno di conferma password.
+  const salvaCampo = useMutation({
+    mutationFn: async (patch: Record<string, unknown>) => {
+      const { error } = await supabase.from('soci').update(patch).eq('id', profilo!.id)
+      if (error) throw error
+    },
+    onSuccess: () => {
+      ricaricaProfilo()
+      setMsg({ tipo: 'ok', testo: 'Dati aggiornati.' })
+    },
+    onError: (e: unknown) => setMsg({ tipo: 'errore', testo: 'Salvataggio non riuscito: ' + messaggioErrore(e) }),
+  })
 
   if (!profilo) return null
 
-  async function impostaMostraNome(nuovo: boolean) {
-    if (nuovo === mostraNome) return
-    setMostraNome(nuovo)
-    await supabase.from('soci').update({ mostra_in_classifica: nuovo }).eq('id', profilo!.id)
-    await ricaricaProfilo()
+  function salvaTelefonoSeCambiato() {
+    const nuovo = telefono.trim() || null
+    if (nuovo === (profilo!.telefono ?? null)) return
+    salvaCampo.mutate({ telefono: nuovo })
   }
 
-  function apriModale(data: DatiForm) {
-    pendingData.current = data
-    setModale('salva')
+  function salvaDataNascita(v: string) {
+    salvaCampo.mutate({ data_nascita: v || null })
   }
 
-  async function confermaSalva(password: string) {
-    const data = pendingData.current
-    if (!data) return
+  function salvaSport(v: string) {
+    salvaCampo.mutate({ sport_preferito: v })
+  }
+
+  async function salvaEmailSeCambiata() {
     const emailCorrente = utente?.email ?? profilo!.email ?? ''
-
-    // 1. Verifica password
-    const { error: errPw } = await supabase.auth.signInWithPassword({
-      email: emailCorrente,
-      password,
-    })
-    if (errPw) throw new Error('Password non corretta.')
-
-    // 2. Aggiorna dati soci (telefono, data nascita, sport, classifica, email display)
-    const aggiornaSoci: Record<string, unknown> = {
-      telefono: data.telefono?.trim() || null,
-      data_nascita: data.data_nascita || null,
-      sport_preferito: data.sport_preferito,
+    const nuova = email.trim()
+    if (nuova === emailCorrente) return
+    if (!RE_EMAIL.test(nuova)) {
+      setEmailErrore('Email non valida')
+      return
     }
-    const emailCambiata = data.email.trim() !== emailCorrente
-    if (emailCambiata) aggiornaSoci.email = data.email.trim()
-
-    const { error: errSoci } = await supabase
-      .from('soci')
-      .update(aggiornaSoci)
-      .eq('id', profilo!.id)
-    if (errSoci) throw new Error('Salvataggio non riuscito: ' + errSoci.message)
-
-    // 3. Se email cambiata: invia link di conferma
-    if (emailCambiata) {
-      const { error: errEmail } = await supabase.auth.updateUser({ email: data.email.trim() })
-      if (errEmail) throw new Error('Cambio email non riuscito: ' + errEmail.message)
+    setEmailErrore('')
+    const { error: errSoci } = await supabase.from('soci').update({ email: nuova }).eq('id', profilo!.id)
+    if (errSoci) {
+      setMsg({ tipo: 'errore', testo: 'Salvataggio non riuscito: ' + errSoci.message })
+      return
     }
-
-    // 4. Se nuova password: aggiorna
-    if (data.password_nuova) {
-      const { error: errPwNuova } = await supabase.auth.updateUser({ password: data.password_nuova })
-      if (errPwNuova) throw new Error('Cambio password non riuscito: ' + errPwNuova.message)
+    const { error: errAuth } = await supabase.auth.updateUser({ email: nuova })
+    if (errAuth) {
+      setMsg({ tipo: 'errore', testo: 'Cambio email non riuscito: ' + errAuth.message })
+      return
     }
-
     await ricaricaProfilo()
-    setModale(null)
-    pendingData.current = null
-    reset({
-      email: data.email.trim(),
-      telefono: data.telefono,
-      data_nascita: data.data_nascita,
-      sport_preferito: data.sport_preferito,
-      password_nuova: '',
-      password_conferma: '',
-    })
     setMsg({
       tipo: 'ok',
-      testo: emailCambiata
-        ? `Dati aggiornati. Abbiamo inviato un link di conferma a ${data.email.trim()}. Il cambio diventerà effettivo solo dopo aver cliccato il link nella tua casella di posta.`
-        : 'Dati aggiornati.',
+      testo: `Abbiamo inviato un link di conferma a ${nuova}. Il cambio diventerà effettivo solo dopo aver cliccato il link nella tua casella di posta.`,
     })
   }
 
   return (
     <div>
-      <div className="sez-hero">
-        <div className="sez-hero-top">
-          <MedagliaLv punti={profilo.punti ?? 0} size={54} />
-          <div className="sez-hero-info">
-            <div className="sez-hero-eyebrow">Il tuo profilo</div>
-            <h2>{profilo.nome} {profilo.cognome}</h2>
-          </div>
+      <div className="foto-profilo-sola">
+        <div className="sez-foto-wrap">
+          {profilo.foto_url ? (
+            <img src={profilo.foto_url} alt="" className="sez-hero-av sez-hero-av-grande sez-hero-av-img" />
+          ) : (
+            <div className="sez-hero-av sez-hero-av-grande">{profilo.nome.charAt(0).toUpperCase()}</div>
+          )}
+          <input
+            ref={fotoInputRef}
+            type="file"
+            accept="image/*"
+            style={{ display: 'none' }}
+            onChange={async (e) => {
+              const file = e.target.files?.[0]
+              e.target.value = ''
+              if (!file) return
+              try {
+                const dataUrl = await logoDaFile(file, 200, 4096)
+                salvaFoto.mutate(dataUrl)
+              } catch (err) {
+                window.alert(messaggioErrore(err))
+              }
+            }}
+          />
+          <button
+            type="button"
+            className="sez-foto-cambia"
+            title="Cambia foto profilo"
+            onClick={() => fotoInputRef.current?.click()}
+          >
+            <IcoFotocamera />
+          </button>
         </div>
+        {profilo.foto_url && (
+          <button type="button" className="sez-foto-rimuovi" onClick={() => salvaFoto.mutate(null)}>
+            Rimuovi foto
+          </button>
+        )}
       </div>
 
       <div className="club-sez-header" style={{ marginTop: '2rem' }}>
-        <span className="club-sez-icona">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
-        </span>
         <h2 className="club-sez-titolo">I tuoi dati</h2>
       </div>
-      <form onSubmit={handleSubmit(apriModale)} className="card form-verde form-campo">
+      <div className="card form-verde">
 
         {/* Nome + Cognome separati con icona propria */}
         <div className="dati-coppia" style={{ marginTop: 0 }}>
@@ -280,7 +172,14 @@ export default function DatiProfilo() {
             <span className="dati-riga-ico" aria-hidden="true">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
             </span>
-            <input id="dati-data-nascita" type="date" max="9999-12-31" aria-label="Data di nascita" {...register('data_nascita')} />
+            <input
+              id="dati-data-nascita"
+              type="date"
+              max="9999-12-31"
+              aria-label="Data di nascita"
+              defaultValue={profilo.data_nascita ?? ''}
+              onChange={(e) => salvaDataNascita(e.target.value)}
+            />
           </div>
         </div>
 
@@ -291,15 +190,30 @@ export default function DatiProfilo() {
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 7 10-7"/></svg>
             </span>
             <div className="flex-1 min-w-0">
-              <input id="dati-email" type="email" autoComplete="email" aria-label="Email" {...register('email')} />
-              {errors.email && <p className={`mt-1 ${classiErrore}`}>{errors.email.message}</p>}
+              <input
+                id="dati-email"
+                type="email"
+                autoComplete="email"
+                aria-label="Email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                onBlur={salvaEmailSeCambiata}
+              />
+              {emailErrore && <p className={`mt-1 ${classiErrore}`}>{emailErrore}</p>}
             </div>
           </div>
           <div className="dati-riga">
             <span className="dati-riga-ico" aria-hidden="true">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13 19.79 19.79 0 0 1 1.61 4.4 2 2 0 0 1 3.6 2.22h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.18 6.18l.95-.95a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
             </span>
-            <input id="dati-telefono" type="tel" aria-label="Telefono" {...register('telefono')} />
+            <input
+              id="dati-telefono"
+              type="tel"
+              aria-label="Telefono"
+              value={telefono}
+              onChange={(e) => setTelefono(e.target.value)}
+              onBlur={salvaTelefonoSeCambiato}
+            />
           </div>
         </div>
 
@@ -314,91 +228,40 @@ export default function DatiProfilo() {
               <circle cx="39" cy="24" r="9" strokeWidth="3.4" />
             </svg>
           </span>
-          <select id="dati-sport" aria-label="Sport preferito" {...register('sport_preferito')}>
+          <select
+            id="dati-sport"
+            aria-label="Sport preferito"
+            defaultValue={profilo.sport_preferito}
+            onChange={(e) => salvaSport(e.target.value)}
+          >
             <option value="entrambi">Padel e Calcio</option>
             <option value="padel">Padel</option>
             <option value="calcio">Calcio</option>
           </select>
         </div>
 
-        {/* Password */}
-        <div style={{ marginTop: '1.25rem', borderTop: '1px solid rgba(255,255,255,0.15)', paddingTop: '1.25rem' }}>
-          <div className="dati-riga">
-            <span className="dati-riga-ico" aria-hidden="true">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            </span>
-            <div className="flex-1 min-w-0">
-              <p className="mb-1 text-xs font-semibold opacity-70">Nuova password</p>
-              <input id="dati-pw-nuova" type="password" autoComplete="new-password" aria-label="Nuova password (min. 8 caratteri)" placeholder="Min. 8 caratteri" {...register('password_nuova')} />
-              {errors.password_nuova && <p className={`mt-1 ${classiErrore}`}>{errors.password_nuova.message}</p>}
-            </div>
-          </div>
-
-          <div className="dati-riga">
-            <span className="dati-riga-ico" aria-hidden="true">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/><polyline points="9 16 11 18 15 14"/></svg>
-            </span>
-            <div className="flex-1 min-w-0">
-              <p className="mb-1 text-xs font-semibold opacity-70">Conferma password</p>
-              <input id="dati-pw-conferma" type="password" autoComplete="new-password" aria-label="Ripeti la nuova password" placeholder="Ripeti la password" {...register('password_conferma')} />
-              {errors.password_conferma && <p className={`mt-1 ${classiErrore}`}>{errors.password_conferma.message}</p>}
-            </div>
-          </div>
-        </div>
-
         {msg && (
           <p className={`mt-4 ${msg.tipo === 'ok' ? classiOk : classiErrore}`}>{msg.testo}</p>
         )}
+      </div>
 
-        <button type="submit" className="btn mt-4" style={{ border: '2px solid rgba(255,255,255,0.7)' }}>
-          Salva modifiche
+      <div className="club-sez-header" style={{ marginTop: '2rem' }}>
+        <h2 className="club-sez-titolo">Password</h2>
+      </div>
+      <div className="card">
+        <p className="sub" style={{ marginBottom: '0.75rem' }}>Cambia la password di accesso al tuo account</p>
+        <button type="button" className="btn btn-secondario btn-sm" onClick={() => setModalePassword(true)}>
+          Cambia password
         </button>
-      </form>
+      </div>
 
-      {!istruttore && (
-        <div className="card sezione-moderna" style={{ marginTop: '0.75rem' }}>
-          <div className="sezione-moderna-head">
-            <span className="sezione-moderna-icona"><IcoTrofeo /></span>
-            <div className="sezione-moderna-testi">
-              <h3 className="sezione-moderna-titolo">Classifica del club</h3>
-              <p className="sezione-moderna-sub">Scegli se essere visibile agli altri giocatori</p>
-            </div>
-          </div>
-          <div className="seg-group mt-2">
-            <button
-              type="button"
-              className={'seg-btn' + (mostraNome ? ' attivo' : '')}
-              onClick={() => impostaMostraNome(true)}
-            >
-              Visibile
-            </button>
-            <button
-              type="button"
-              className={'seg-btn' + (!mostraNome ? ' attivo' : '')}
-              onClick={() => impostaMostraNome(false)}
-            >
-              Non visibile
-            </button>
-          </div>
-        </div>
-      )}
+      <SezionePreferenze socioId={profilo.id} sportPreferito={profilo.sport_preferito} />
 
       <SezioneLivelloGioco socioId={profilo.id} sportPreferito={profilo.sport_preferito} />
 
-      <SezioneNotifiche socioId={profilo.id} />
-
       <StoricoMovimenti />
 
-      <CancellaAccount />
-
-      {modale === 'salva' && (
-        <ModalConfermaPassword
-          titolo="Conferma le modifiche"
-          descrizione="Inserisci la password attuale per salvare i dati."
-          onConferma={confermaSalva}
-          onAnnulla={() => setModale(null)}
-        />
-      )}
+      {modalePassword && <CambiaPasswordModal onChiudi={() => setModalePassword(false)} />}
     </div>
   )
 }

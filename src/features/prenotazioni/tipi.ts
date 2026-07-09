@@ -9,6 +9,7 @@ export interface Campo {
   chiusura: string | null
   in_servizio: boolean | null
   nota_servizio: string | null
+  outdoor: boolean | null
 }
 
 // Riga restituita dalla RPC prenotazioni_giorno (include l'etichetta di chi prenota).

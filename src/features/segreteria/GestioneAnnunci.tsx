@@ -4,43 +4,39 @@ import { classiErrore } from '@/components/stili'
 import { messaggioErrore } from '@/lib/errori'
 import { tempoRelativo } from '@/lib/formato'
 import { useAuth } from '@/auth/useAuth'
-import { creaAnnuncio, eliminaAnnuncio, salvaAnnuncio, useAnnunci, type Annuncio } from './datiAnnunci'
+import { creaAnnuncio, eliminaAnnuncio, salvaAnnuncio, useAnnunci, type Annuncio } from '@/features/profilo/datiAnnunci'
 
 type Esito = { tipo: 'errore'; testo: string } | null
 
-// Fase 10 — Comunicazioni del club. Vive dentro l'hero scuro
-// (.riep-wow in RiepilogoProfilo.tsx), subito sotto le statistiche
-// punti/crediti/posizione — non più una sezione a parte, per non
-// ripetere "comunicazione del club" tra titolo sezione ed etichetta
-// della card. Sola lettura per tutti i soci; creazione/modifica/
-// eliminazione riservate all'admin (RLS). Stile "Cartellone"
-// (filo oro + etichetta maiuscola), qui adattato a card translucide
-// coerenti con ".riep-oggi" per stare sullo sfondo scuro dell'hero.
-export default function Bacheca() {
+// Spostata qui da Profilo → Bacheca (Fase 10): i soci ora vedono gli
+// annunci solo come notifica (campanella), non più come feed nel
+// riepilogo profilo — la gestione (creare/modificare/eliminare) resta
+// riservata all'admin, quindi vive in Segreteria come le altre.
+export default function GestioneAnnunci() {
   const { profilo } = useAuth()
-  const sonoAdmin = !!profilo?.is_admin
   const { data, isLoading, error } = useAnnunci()
   const lista = data ?? []
 
   return (
-    <div className="annuncio-blocco">
-      {sonoAdmin && <FormNuovoAnnuncio autoreId={profilo!.id} />}
-
-      {isLoading ? (
-        <p className="annuncio-nota">Caricamento…</p>
-      ) : error ? (
-        <p className={classiErrore}>Impossibile caricare gli annunci: {messaggioErrore(error)}</p>
-      ) : lista.length === 0 ? (
-        <p className="annuncio-nota">
-          {sonoAdmin ? 'Nessun annuncio: pubblica il primo qui sopra.' : 'Nessun annuncio al momento.'}
+    <div>
+      <div className="eyebrow">Comunicazioni del club</div>
+      <div className="card">
+        <p className="sub mb-3">
+          Ogni annuncio pubblicato notifica automaticamente tutti i soci (campanella + push).
         </p>
-      ) : (
-        <div>
-          {lista.map((a) => (
-            <CardAnnuncio key={a.id} annuncio={a} sonoAdmin={sonoAdmin} />
-          ))}
+        <FormNuovoAnnuncio autoreId={profilo!.id} />
+        <div className="mt-4">
+          {isLoading ? (
+            <p className="text-ink-2">Caricamento…</p>
+          ) : error ? (
+            <p className={classiErrore}>Impossibile caricare gli annunci: {messaggioErrore(error)}</p>
+          ) : lista.length === 0 ? (
+            <p className="text-ink-2">Nessun annuncio: pubblica il primo qui sopra.</p>
+          ) : (
+            lista.map((a) => <RigaAnnuncio key={a.id} annuncio={a} />)
+          )}
         </div>
-      )}
+      </div>
     </div>
   )
 }
@@ -72,14 +68,14 @@ function FormNuovoAnnuncio({ autoreId }: { autoreId: string }) {
 
   if (!aperto)
     return (
-      <button type="button" className="annuncio-toggle btn btn-secondario mb-3" onClick={() => setAperto(true)}>
+      <button type="button" className="btn btn-secondario" onClick={() => setAperto(true)}>
         ＋ Nuovo annuncio
       </button>
     )
 
   return (
     <form
-      className="mb-3 rounded-xl border border-dashed border-ottone-300 bg-verde-50 px-4 py-3"
+      className="rounded-xl border border-dashed border-ottone-300 bg-verde-50 px-4 py-3"
       onSubmit={(e) => {
         e.preventDefault()
         setMsg(null)
@@ -123,7 +119,7 @@ function FormNuovoAnnuncio({ autoreId }: { autoreId: string }) {
   )
 }
 
-function CardAnnuncio({ annuncio, sonoAdmin }: { annuncio: Annuncio; sonoAdmin: boolean }) {
+function RigaAnnuncio({ annuncio }: { annuncio: Annuncio }) {
   const qc = useQueryClient()
   const [inModifica, setInModifica] = useState(false)
   const [titolo, setTitolo] = useState(annuncio.titolo)
@@ -155,8 +151,6 @@ function CardAnnuncio({ annuncio, sonoAdmin }: { annuncio: Annuncio; sonoAdmin: 
   })
 
   if (inModifica) {
-    // Stessa "isola" chiara del form di creazione: più leggibile che
-    // scrivere direttamente sulla card translucida scura dell'hero.
     return (
       <div className="mt-2.5 rounded-xl border border-dashed border-ottone-300 bg-verde-50 px-4 py-3">
         <label className="block">
@@ -202,46 +196,38 @@ function CardAnnuncio({ annuncio, sonoAdmin }: { annuncio: Annuncio; sonoAdmin: 
   }
 
   return (
-    <div className="annuncio-card">
-      <div className="annuncio-eyebrow">Comunicazione del club</div>
-      <div className="annuncio-titolo">{annuncio.titolo}</div>
-      <div className="annuncio-testo">{annuncio.testo}</div>
-      <div className="annuncio-footer">
-        {sonoAdmin ? (
-          <div className="annuncio-azioni">
-            <button
-              type="button"
-              title="Modifica"
-              className="btn-icona-premio text-white/70 hover:bg-white/10"
-              onClick={() => setInModifica(true)}
-            >
-              <svg className="h-[16px] w-[16px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-                <path d="m15 5 4 4" />
-              </svg>
-            </button>
-            <button
-              type="button"
-              title="Elimina"
-              className="btn-icona-premio text-red-300 hover:bg-red-500/15 disabled:opacity-40 disabled:cursor-not-allowed"
-              disabled={elimina.isPending}
-              onClick={() => {
-                setMsg(null)
-                if (window.confirm(`Eliminare l'annuncio "${annuncio.titolo}"? L'operazione non si può annullare.`))
-                  elimina.mutate()
-              }}
-            >
-              <svg className="h-[16px] w-[16px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="3 6 5 6 21 6" />
-                <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2" />
-              </svg>
-            </button>
-          </div>
-        ) : (
-          <span />
-        )}
-        <span className="annuncio-data">{tempoRelativo(annuncio.creato_il)}</span>
+    <div className="mt-2.5 rounded-xl border border-verde-100 px-4 py-3">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="font-semibold">{annuncio.titolo}</div>
+          <p className="sub m-0 mt-0.5 whitespace-pre-wrap">{annuncio.testo}</p>
+        </div>
+        <div className="flex flex-shrink-0 items-center gap-1">
+          <button type="button" title="Modifica" className="icon-btn" onClick={() => setInModifica(true)}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+              <path d="m15 5 4 4" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            title="Elimina"
+            className="icon-btn icon-btn-pericolo"
+            disabled={elimina.isPending}
+            onClick={() => {
+              setMsg(null)
+              if (window.confirm(`Eliminare l'annuncio "${annuncio.titolo}"? L'operazione non si può annullare.`))
+                elimina.mutate()
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="3 6 5 6 21 6" />
+              <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2" />
+            </svg>
+          </button>
+        </div>
       </div>
+      <div className="mt-1.5 text-xs text-ink-3">{tempoRelativo(annuncio.creato_il)}</div>
       {msg && <p className={`mt-2 ${classiErrore}`}>{msg.testo}</p>}
     </div>
   )

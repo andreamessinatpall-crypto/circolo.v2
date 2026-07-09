@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { supabase } from '@/lib/supabase'
 import { classiInput, classiErrore, classiOk } from '@/components/stili'
+import { IconaLucchetto } from '@/components/IconeCampo'
 import AuthHero from './AuthHero'
 import FooterLegale from '@/components/legale/FooterLegale'
 
@@ -48,28 +49,36 @@ export default function ResetPasswordPage() {
             </p>
           ) : (
             <form onSubmit={onSubmit}>
-              <label htmlFor="rp-password">Nuova password</label>
-              <input
-                id="rp-password"
-                type="password"
-                autoComplete="new-password"
-                className={classiInput}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={6}
-              />
+              <label htmlFor="rp-password" className="sr-only">Nuova password</label>
+              <div className="campo-con-icona">
+                <IconaLucchetto />
+                <input
+                  id="rp-password"
+                  type="password"
+                  autoComplete="new-password"
+                  placeholder="Nuova password"
+                  className={classiInput}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  minLength={6}
+                />
+              </div>
 
-              <label htmlFor="rp-conferma">Conferma password</label>
-              <input
-                id="rp-conferma"
-                type="password"
-                autoComplete="new-password"
-                className={classiInput}
-                value={conferma}
-                onChange={(e) => setConferma(e.target.value)}
-                required
-              />
+              <label htmlFor="rp-conferma" className="sr-only">Conferma password</label>
+              <div className="campo-con-icona">
+                <IconaLucchetto />
+                <input
+                  id="rp-conferma"
+                  type="password"
+                  autoComplete="new-password"
+                  placeholder="Conferma password"
+                  className={classiInput}
+                  value={conferma}
+                  onChange={(e) => setConferma(e.target.value)}
+                  required
+                />
+              </div>
 
               {errore && <p className={`mt-3 ${classiErrore}`}>{errore}</p>}
 

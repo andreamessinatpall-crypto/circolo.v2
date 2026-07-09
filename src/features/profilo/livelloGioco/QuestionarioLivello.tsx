@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
+import { useBloccaScrollBody } from '@/hooks/useBloccaScrollBody'
 import { messaggioErrore } from '@/lib/errori'
 import { DOMANDE_PADEL, calcolaMedia, livelloDaMedia, ETICHETTE_LIVELLO, ETICHETTE_AREA } from './domande'
 import { useLivelloGiocoPadel } from './useLivelliGioco'
@@ -8,22 +10,23 @@ interface Props {
   onChiudi: () => void
 }
 
+// Renderizzato con un portale su document.body: se restasse annidato dentro
+// .account-schermo-vista-corpo erediterebbe lo stile "vetro" trasparente
+// pensato per le card di quella schermata.
 export default function QuestionarioLivello({ socioId, onChiudi }: Props) {
   const [passo, setPasso] = useState(0)
   const [risposte, setRisposte] = useState<(number | null)[]>(() => new Array(DOMANDE_PADEL.length).fill(null))
   const [risultato, setRisultato] = useState<string | null>(null)
   const { salva } = useLivelloGiocoPadel(socioId)
 
+  useBloccaScrollBody()
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onChiudi()
     }
     document.addEventListener('keydown', onKey)
-    document.body.style.overflow = 'hidden'
-    return () => {
-      document.removeEventListener('keydown', onKey)
-      document.body.style.overflow = ''
-    }
+    return () => document.removeEventListener('keydown', onKey)
   }, [onChiudi])
 
   const domanda = DOMANDE_PADEL[passo]
@@ -45,9 +48,9 @@ export default function QuestionarioLivello({ socioId, onChiudi }: Props) {
     salva.mutate(livello, { onSuccess: () => setRisultato(ETICHETTE_LIVELLO[livello]) })
   }
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onChiudi}>
-      <div className="card w-full max-w-lg form-verde questionario-modal" onClick={(e) => e.stopPropagation()}>
+  return createPortal(
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 p-4" onClick={onChiudi}>
+      <div className="card w-full max-w-lg questionario-modal" onClick={(e) => e.stopPropagation()}>
         {!risultato && (
           <button type="button" className="questionario-chiudi" onClick={onChiudi} aria-label="Annulla">
             ✕
@@ -116,6 +119,7 @@ export default function QuestionarioLivello({ socioId, onChiudi }: Props) {
           </>
         )}
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }

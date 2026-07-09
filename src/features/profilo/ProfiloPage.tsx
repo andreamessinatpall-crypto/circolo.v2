@@ -1,19 +1,27 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useAuth } from '@/auth/useAuth'
+import { useModalitaPremi } from '@/features/premi/datiPremi'
 import RiepilogoProfilo from './RiepilogoProfilo'
 import ClubProfilo from './ClubProfilo'
 import DatiProfilo from './DatiProfilo'
 import AmiciProfilo from './amici/AmiciProfilo'
 import SociPage from '@/features/segreteria/SociPage'
 import VistaLezioni from '@/features/prenotazioni/VistaLezioni'
+import PremiPage from '@/features/premi/PremiPage'
+import GestionePremi from '@/features/segreteria/GestionePremi'
+import AttivitaPage from './AttivitaPage'
+import ImpostazioniAccountPage from './ImpostazioniAccountPage'
 
-type SottoScheda = 'riepilogo' | 'club' | 'dati' | 'amici' | 'giocatori' | 'lezioni'
+type SottoScheda =
+  | 'riepilogo' | 'club' | 'dati' | 'amici' | 'giocatori' | 'lezioni' | 'premi'
+  | 'attivita' | 'impostazioni-account'
 
 export default function ProfiloPage() {
   const { profilo } = useAuth()
   const [searchParams] = useSearchParams()
   const [scheda, setScheda] = useState<SottoScheda>('riepilogo')
+  const { data: modalitaPremi } = useModalitaPremi()
 
   useEffect(() => {
     const sezione = searchParams.get('sezione') as SottoScheda | null
@@ -29,6 +37,7 @@ export default function ProfiloPage() {
       { id: 'riepilogo', label: 'Bacheca' },
       { id: 'giocatori', label: 'Giocatori' },
       { id: 'club',      label: 'Club' },
+      { id: 'premi',     label: 'Premi' },
     ]
   } else if (istruttore) {
     schede = [
@@ -41,6 +50,7 @@ export default function ProfiloPage() {
       { id: 'riepilogo', label: 'Bacheca' },
       { id: 'amici',     label: 'Amici' },
       { id: 'club',      label: 'Club' },
+      ...(modalitaPremi ? [{ id: 'premi' as const, label: 'Premi' }] : []),
     ]
   }
 
@@ -65,6 +75,9 @@ export default function ProfiloPage() {
       {scheda === 'amici'      && <AmiciProfilo />}
       {scheda === 'giocatori'  && <SociPage />}
       {scheda === 'lezioni'    && <VistaLezioni />}
+      {scheda === 'premi'      && (collaboratore ? <GestionePremi /> : <PremiPage />)}
+      {scheda === 'attivita'   && <AttivitaPage />}
+      {scheda === 'impostazioni-account' && <ImpostazioniAccountPage />}
     </div>
   )
 }

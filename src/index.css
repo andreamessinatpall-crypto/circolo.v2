@@ -7,16 +7,18 @@
      bg-verde-800   text-ottone-400   border-verde-700
    ───────────────────────────────────────────────────────────── */
 @theme {
-  /* Verde campo */
-  --color-verde-900: #071510;
-  --color-verde-800: #0c3319;
-  --color-verde-700: #14532a;
-  --color-verde-600: #1c6b3a;
-  --color-verde-500: #2e8b50;
-  --color-verde-100: #e4efe9;
-  --color-verde-50: #f1f7f3;
+  /* Blu campo da padel (era verde: nomi/classi "verde-*" lasciati invariati
+     per non dover toccare centinaia di className in tutta l'app — cambiato
+     solo il valore. Vedi memoria "Tema blu campo da padel" per il perché). */
+  --color-verde-900: #051526;
+  --color-verde-800: #0a2f4d;
+  --color-verde-700: #0e4a78;
+  --color-verde-600: #135f99;
+  --color-verde-500: #1a78bb;
+  --color-verde-100: #dce8f2;
+  --color-verde-50: #eef4f9;
 
-  /* Ottone */
+  /* Ottone (oro del logo, invariato) */
   --color-ottone-700: #7a5010;
   --color-ottone-600: #9a6f18;
   --color-ottone-500: #c8972e;
@@ -24,13 +26,15 @@
   --color-ottone-300: #e8c878;
   --color-ottone-100: #fdf9ee;
 
-  /* Inchiostro / testo */
+  /* Inchiostro / testo (invariato: le card restano bianche, il testo
+     scuro resta leggibile lì — solo lo sfondo pagina e gli accenti
+     diventano blu, vedi --color-fondo sotto) */
   --color-ink: #1b2219;
   --color-ink-2: #546252;
   --color-ink-3: #8a9c88;
 
   /* Superfici */
-  --color-fondo: #f0f4ee;
+  --color-fondo: #eef2f6;
   --color-superficie: #ffffff;
   --color-terra: #be5436;
 
@@ -59,8 +63,8 @@
   --surface: var(--color-superficie);
   --bg: var(--color-fondo);
   --terra: var(--color-terra);
-  --border: rgba(20, 83, 42, 0.1);
-  --border2: rgba(20, 83, 42, 0.18);
+  --border: rgba(14, 74, 120, 0.12);
+  --border2: rgba(14, 74, 120, 0.2);
   --errore: #a3262c;
   --ok: #1a7a3c;
   --grad-ottone: linear-gradient(135deg, var(--g400) 0%, var(--g600) 100%);
@@ -153,6 +157,37 @@
 
 /* ─── COMPONENTI ───────────────────────────────────────────── */
 @layer components {
+  /* Campo con icona a sinistra (sostituisce la <label> sopra il campo: il
+     nome del campo è il placeholder dell'input, sparisce scrivendo).
+     Icona nello stesso stile Feather/Lucide già usato in tutta l'app
+     (viewBox 24, stroke currentColor, strokeWidth 2, angoli arrotondati)
+     — vedi es. il lucchetto in CambiaPassword.tsx. Riusabile ovunque, non
+     solo nei form di autenticazione.
+     margin-top come quello che dava la <label> visibile che sostituisce
+     (ora sr-only, non occupa più spazio in flusso): senza, i campi
+     consecutivi si toccherebbero. */
+  .campo-con-icona {
+    position: relative;
+    margin-top: 14px;
+  }
+  .campo-icona {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--ink3);
+    pointer-events: none;
+  }
+  .campo-con-icona input {
+    padding-left: 40px;
+  }
+  .form-verde .campo-icona {
+    color: rgba(255, 255, 255, 0.55);
+  }
+  .form-verde .campo-con-icona input::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+  }
+
   /* Casella numerica centrata e senza frecce spinner (valori punti/crediti) */
   .casella-num {
     text-align: center;
@@ -484,6 +519,27 @@
   .campo-body {
     padding: 12px 13px;
   }
+  /* pillola per marcare un campo come scoperto (outdoor): usata dalla Fase
+     11 per decidere su quali campi mostrare il badge meteo in griglia. */
+  .campo-outdoor-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 10px;
+    padding: 5px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--color-verde-100);
+    background: #fff;
+    color: var(--ink-2);
+    font-size: 0.8rem;
+    font-weight: 600;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+  }
+  .campo-outdoor-toggle[aria-pressed='true'] {
+    background: linear-gradient(135deg, var(--g300), var(--g400));
+    color: var(--color-ottone-700);
+    border-color: transparent;
+  }
   /* Tendine HH/MM di apertura/chiusura: più strette del campo standard
      (contenuto di 2 cifre) così le due coppie affiancate restano dentro
      la scheda anche su mobile, senza toccarne il bordo. Il font resta a
@@ -574,7 +630,7 @@
   .btn:hover:not(:disabled) {
     background: var(--v600);
     transform: translateY(-1px);
-    box-shadow: 0 4px 14px rgba(20, 83, 42, 0.15);
+    box-shadow: 0 4px 14px rgba(14, 74, 120, 0.15);
   }
   .btn:active {
     transform: translateY(0);
@@ -606,7 +662,7 @@
   .btn-bianco {
     background: #fff;
     color: var(--v700);
-    border: 1.5px solid rgba(20, 83, 42, 0.22);
+    border: 1.5px solid rgba(14, 74, 120, 0.22);
   }
   .btn-bianco:hover:not(:disabled) {
     background: var(--v050);
@@ -770,7 +826,7 @@
     background: var(--v700);
     color: #fff;
     border-color: var(--v700);
-    box-shadow: 0 2px 10px rgba(20, 83, 42, 0.2);
+    box-shadow: 0 2px 10px rgba(14, 74, 120, 0.2);
   }
 
   /* Sotto-tab (a pillola, contornate) */
@@ -1054,14 +1110,14 @@
   .app-header,
   .app-subnav {
     background:
-      radial-gradient(ellipse 90% 260% at 0% 36%, rgba(200, 151, 46, 0.14) 0%, transparent 52%),
-      radial-gradient(ellipse 55% 180% at 100% 80%, rgba(46, 139, 80, 0.06) 0%, transparent 55%),
+      radial-gradient(ellipse 90% 260% at 0% 36%, rgba(212, 165, 44, 0.14) 0%, transparent 52%),
+      radial-gradient(ellipse 55% 180% at 100% 80%, rgba(30, 110, 168, 0.1) 0%, transparent 55%),
       repeating-linear-gradient(
         -52deg,
         transparent 0px, transparent 11px,
         rgba(255, 255, 255, 0.018) 11px, rgba(255, 255, 255, 0.018) 12px
       ),
-      linear-gradient(172deg, #10441e 0%, #0b2f16 42%, #071b0d 100%);
+      linear-gradient(172deg, #0e4a78 0%, #082c48 42%, #020d18 100%);
     color: #fff;
   }
 
@@ -1081,15 +1137,19 @@
     padding-top: env(safe-area-inset-top, 0px);
   }
 
-  /* NOTA: niente overflow su questo elemento — position:sticky + overflow:auto
-     si annullano a vicenda nel browser. Lo scroll è gestito da .header-tabs. */
+  /* Su mobile (sotto 640px) la subnav è la barra di navigazione fissa in
+     fondo allo schermo, come nelle app native: più comoda da raggiungere
+     col pollice di una barra in alto. Da 640px in su torna ad essere il
+     sotto-header sticky di sempre (vedi media query sotto). */
   .app-subnav {
-    position: sticky;
-    top: calc(56px + env(safe-area-inset-top, 0px));
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
     z-index: 19;
-    /* Separatore sottile interno tra header e tab (non percepito come bordo esterno) */
-    border-top: 1px solid rgba(255, 255, 255, 0.055);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.32);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.32);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
     display: flex;
     justify-content: center;
   }
@@ -1172,14 +1232,42 @@
       padding: 0 24px;
       padding-top: env(safe-area-inset-top, 0px);
     }
-    .app-subnav {
-      top: calc(62px + env(safe-area-inset-top, 0px));
-    }
     .brand {
       font-size: 1.35rem;
     }
     .header-chip-nome {
       font-size: 0.88rem;
+    }
+  }
+
+  /* Da 640px in su (tablet/desktop): la subnav torna il sotto-header
+     sticky orizzontale di sempre, non più la barra fissa in fondo —
+     su schermi larghi non c'è il vantaggio "pollice" del mobile, e una
+     barra fissa in fondo sarebbe fuori posto accanto a un mouse. */
+  @media (min-width: 640px) {
+    .app-subnav {
+      position: sticky;
+      top: calc(62px + env(safe-area-inset-top, 0px));
+      bottom: auto;
+      left: auto;
+      right: auto;
+      padding-bottom: 0;
+      border-top: 1px solid rgba(255, 255, 255, 0.055);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.32);
+    }
+    .header-tab {
+      flex-direction: row;
+      gap: 6px;
+      font-size: 0.7rem;
+      letter-spacing: 0.07em;
+      padding: 11px 10px 8px;
+    }
+    .header-tab svg {
+      width: 16px;
+      height: 16px;
+    }
+    .header-tab.attivo {
+      border-bottom-color: var(--g300);
     }
   }
 
@@ -1209,28 +1297,39 @@
     display: none;
   }
 
+  /* Mobile: icona sopra, etichetta piccola sotto (come le app native).
+     Da 640px in su torna orizzontale con l'indicatore a barra — vedi
+     media query più sotto. */
   .header-tab {
     flex: 1 0 0;
-    min-width: 64px;
+    min-width: 56px;
     max-width: 160px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
     text-align: center;
     white-space: nowrap;
     font-family: var(--font-display);
     text-transform: uppercase;
-    letter-spacing: 0.07em;
+    letter-spacing: 0.04em;
     font-weight: 700;
-    font-size: 0.7rem;
-    padding: 11px 10px 8px;
-    color: rgba(255, 255, 255, 0.48);
+    font-size: 0.6rem;
+    padding: 7px 4px 6px;
+    color: rgba(255, 255, 255, 0.5);
     border-bottom: 3px solid transparent;
     transition: color 0.15s, border-color 0.15s;
+  }
+  .header-tab svg {
+    width: 20px;
+    height: 20px;
   }
   .header-tab:hover {
     color: rgba(255, 255, 255, 0.82);
   }
   .header-tab.attivo {
     color: #fff;
-    border-bottom-color: var(--g300);
   }
 
   .header-utente {
@@ -1249,7 +1348,7 @@
     position: relative;
     background:
       radial-gradient(ellipse 90% 55% at 50% 0%, rgba(212, 165, 44, 0.16) 0%, transparent 60%),
-      linear-gradient(175deg, #1a6ea8 0%, #0d3f66 55%, #051b2e 100%);
+      linear-gradient(175deg, #0e4a78 0%, #082c48 55%, #020d18 100%);
   }
 
   /* Login / registrazione. Stessa trama "premium" dell'header dell'app
@@ -1288,7 +1387,7 @@
     width: 3px;
     height: 3px;
     border-radius: 50%;
-    background: var(--g300);
+    background: #fff;
     margin: 0 auto 14px;
     position: relative;
     z-index: 1;
@@ -1300,7 +1399,7 @@
     top: 50%;
     width: 26px;
     height: 1px;
-    background: var(--g300);
+    background: #fff;
     opacity: 0.55;
   }
   .auth-rule::before { right: 100%; margin-right: 8px; }
@@ -1424,6 +1523,12 @@
 
   .form-verde label {
     color: #fff;
+  }
+
+  .form-verde .ro {
+    background: rgba(0, 0, 0, 0.2);
+    border-color: rgba(255, 255, 255, 0.18);
+    color: rgba(255, 255, 255, 0.85);
   }
 
   .form-verde .eyebrow {
@@ -1636,6 +1741,19 @@
     color: var(--ink3);
   }
 
+  /* Badge meteo (Fase 11), accanto al nome dei campi scoperti in griglia. */
+  .meteo-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-family: var(--font-body, inherit);
+    text-transform: none;
+    letter-spacing: normal;
+    font-weight: 600;
+    font-size: 0.78rem;
+    color: var(--ink3);
+  }
+
   /* ── Prenotazioni: selettore giorni e griglia slot ── */
   .giorni-nav {
     display: flex;
@@ -1780,7 +1898,7 @@
   .slot.libero {
     background: transparent;
     color: var(--v700);
-    border: 1.5px solid rgba(20, 83, 42, 0.28);
+    border: 1.5px solid rgba(14, 74, 120, 0.28);
   }
   .slot.libero:hover {
     background: var(--v700);
@@ -1920,7 +2038,7 @@
   .squadra-card .amichevole-cap {
     flex-wrap: nowrap;
     align-items: center;
-    background: linear-gradient(135deg, #0c3319 0%, #17492e 100%);
+    background: linear-gradient(135deg, #0a2f4d 0%, #145a8c 100%);
     border-top: 3px solid #d4a52c;
     border-bottom: 1px solid rgba(212, 165, 44, 0.22);
     border-radius: 10px 10px 0 0;
@@ -2116,10 +2234,10 @@
   .in-modale .chip.conf {
     background: var(--v050);
     color: var(--v700);
-    border-color: rgba(20, 83, 42, 0.3);
+    border-color: rgba(14, 74, 120, 0.3);
   }
   .in-modale .chip.conf .chip-conf svg circle {
-    fill: rgba(20, 83, 42, 0.12);
+    fill: rgba(14, 74, 120, 0.12);
   }
 
   /* ─── PREMI (Fase 7c) — portate dalla v1 ─────────────── */
@@ -2145,7 +2263,7 @@
       ),
       linear-gradient(140deg, var(--v700) 0%, var(--v900, #0a3318) 100%);
     border: 1px solid rgba(200,151,46,0.28);
-    box-shadow: 0 10px 30px rgba(12,51,25,0.18);
+    box-shadow: 0 10px 30px rgba(10, 47, 77,0.18);
     margin-bottom: 16px;
     overflow: hidden;
   }
@@ -2746,7 +2864,7 @@
     border: none;
   }
   .classifica-wow .classifica tbody tr:nth-child(odd) td {
-    background: rgba(20, 83, 42, 0.025);
+    background: rgba(14, 74, 120, 0.025);
   }
   .classifica-wow .classifica td.nome-cl {
     text-align: left;
@@ -3030,9 +3148,9 @@
     margin-bottom: 18px;
     padding: 24px 22px 20px;
     color: #fff;
-    background: linear-gradient(140deg, var(--v600) 0%, var(--v800) 55%, var(--v900) 100%);
-    box-shadow: 0 14px 42px rgba(12, 51, 25, 0.24);
-    border: 1px solid rgba(200, 151, 46, 0.22);
+    background: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 14px 42px rgba(10, 47, 77, 0.24);
+    border: 1px solid rgba(255, 255, 255, 0.2);
   }
   .riep-wow::after {
     content: '';
@@ -3164,13 +3282,17 @@
   .riep-wow-hi {
     min-width: 0;
   }
+  /* Nome del giocatore in corsivo "a mano" (font Caveat), stesso linguaggio
+     della citazione nel login (.auth-claim) — richiesto esplicitamente. */
   .riep-wow-hi h1 {
-    font-family: var(--font-display);
-    font-size: 1.6rem;
-    letter-spacing: 0.02em;
-    line-height: 1.05;
+    font-family: 'Caveat', cursive;
+    font-weight: 700;
+    font-size: 2rem;
+    letter-spacing: 0.01em;
+    line-height: 1.1;
     margin: 0;
     color: #fff;
+    text-transform: none;
   }
   .riep-liv-eyebrow {
     margin: 4px 0 0;
@@ -3219,34 +3341,29 @@
     z-index: 1;
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 8px;
-    margin-top: 18px;
+    gap: 6px;
+    margin-top: 16px;
   }
   .riep-stat {
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
-    padding: 12px 8px;
+    background: rgba(255, 255, 255, 0.16);
+    border: 1px solid rgba(255, 255, 255, 0.24);
+    border-radius: 10px;
+    padding: 10px 4px;
     text-align: center;
   }
   .riep-stat .valore {
     font-family: var(--font-display);
     font-weight: 700;
-    font-size: 1.65rem;
+    font-size: 1.2rem;
     color: #fff;
     line-height: 1;
   }
   .riep-stat .nome-stat {
-    font-size: 0.6rem;
+    font-size: 0.56rem;
     text-transform: uppercase;
-    letter-spacing: 0.12em;
+    letter-spacing: 0.05em;
     color: rgba(228, 240, 232, 0.72);
-    margin-top: 4px;
-  }
-  @media (max-width: 520px) {
-    .riep-griglia {
-      grid-template-columns: repeat(2, 1fr);
-    }
+    margin-top: 3px;
   }
 
   /* Variante 2-colonne (per singola stat o coppie) */
@@ -3430,7 +3547,7 @@
     border-radius: 22px;
     padding: 20px 22px;
     background: linear-gradient(135deg, var(--v600) 0%, var(--v800) 100%);
-    box-shadow: 0 10px 30px rgba(12, 51, 25, 0.18);
+    box-shadow: 0 10px 30px rgba(10, 47, 77, 0.18);
     display: flex;
     align-items: center;
     gap: 16px;
@@ -3929,7 +4046,7 @@
     margin-bottom: 16px;
     color: #fff;
     background: linear-gradient(135deg, var(--v600) 0%, var(--v800) 100%);
-    box-shadow: 0 10px 32px rgba(12, 51, 25, 0.2);
+    box-shadow: 0 10px 32px rgba(10, 47, 77, 0.2);
     border: 1px solid rgba(200, 151, 46, 0.2);
   }
   .sez-hero::before {
@@ -3968,6 +4085,61 @@
     color: #fff;
     flex: 0 0 auto;
   }
+  .sez-hero-av-img {
+    object-fit: cover;
+    display: block;
+  }
+  .sez-foto-wrap {
+    position: relative;
+    flex: 0 0 auto;
+  }
+  .sez-foto-cambia {
+    position: absolute;
+    right: -2px;
+    bottom: -2px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--g400);
+    border: 2px solid var(--v800);
+    color: #3a2906;
+    cursor: pointer;
+    padding: 0;
+  }
+  .sez-foto-cambia:hover {
+    background: var(--g500);
+  }
+  .sez-foto-rimuovi {
+    margin-top: 4px;
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: 0.72rem;
+    color: rgba(255, 255, 255, 0.65);
+    text-decoration: underline;
+    cursor: pointer;
+  }
+  /* Modifica profilo: solo la foto, centrata, direttamente sullo sfondo
+     (niente blocco rettangolare attorno — richiesto esplicitamente), niente
+     nome/cognome né testo "Il tuo profilo". */
+  .foto-profilo-sola {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    margin: 8px 0 28px;
+  }
+  .sez-hero-av-grande {
+    width: 84px;
+    height: 84px;
+    font-size: 2.4rem;
+  }
+  .foto-profilo-sola .sez-foto-rimuovi {
+    margin-top: 10px;
+  }
   .sez-hero-info {
     min-width: 0;
   }
@@ -3994,7 +4166,7 @@
     overflow: hidden;
     color: #fff;
     background: linear-gradient(135deg, var(--v800) 0%, var(--v600) 100%);
-    box-shadow: 0 10px 24px rgba(12, 51, 25, 0.22);
+    box-shadow: 0 10px 24px rgba(10, 47, 77, 0.22);
   }
   .giornata-band::before {
     content: '';
@@ -4061,7 +4233,7 @@
   }
   @media (hover: hover) {
     .match:hover {
-      box-shadow: 0 8px 22px rgba(12, 51, 25, 0.1);
+      box-shadow: 0 8px 22px rgba(10, 47, 77, 0.1);
       transform: translateY(-1px);
     }
   }
@@ -4287,7 +4459,7 @@
     color: #fff;
     border: 1px solid rgba(232, 200, 120, 0.45);
     box-shadow:
-      0 18px 44px rgba(20, 83, 42, 0.4),
+      0 18px 44px rgba(14, 74, 120, 0.4),
       0 0 0 1px rgba(232, 200, 120, 0.12),
       inset 0 1px 0 rgba(255, 255, 255, 0.14);
   }
@@ -4501,7 +4673,7 @@
     letter-spacing: 0.11em;
     text-transform: uppercase;
     white-space: nowrap;
-    box-shadow: 0 3px 10px rgba(12, 51, 25, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    box-shadow: 0 3px 10px rgba(10, 47, 77, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.1);
   }
   .bs-col.bs-col-final .bs-col-header {
     background: linear-gradient(135deg, #5a3d09 0%, var(--g300, #d4a836) 100%);
@@ -4542,7 +4714,7 @@
   }
   .bs-match-box.giocata {
     box-shadow:
-      0 2px 10px rgba(12, 51, 25, 0.09),
+      0 2px 10px rgba(10, 47, 77, 0.09),
       0 0 0 1.5px var(--border2);
   }
   .bs-col.bs-col-final .bs-match-box {
@@ -4787,7 +4959,7 @@
     color: #fff;
     font-size: 0.95rem;
     font-weight: 500;
-    box-shadow: 0 8px 24px rgba(12, 51, 25, 0.18);
+    box-shadow: 0 8px 24px rgba(10, 47, 77, 0.18);
     border: 1px solid rgba(200, 151, 46, 0.25);
   }
   .amici-hero-strip strong {
@@ -5551,6 +5723,13 @@
   .menu-utente {
     position: relative;
   }
+  .menu-utente-foto {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    object-fit: cover;
+    display: block;
+  }
   .campanella-badge {
     position: absolute;
     top: -2px;
@@ -5571,7 +5750,7 @@
     inset: 0;
     z-index: 30;
   }
-  /* Pannello traslucido verde, coerente con l'header scuro da cui si apre. */
+  /* Pannello traslucido blu scuro, coerente con l'header da cui si apre. */
   .campanella-panel {
     position: absolute;
     top: calc(100% + 8px);
@@ -5580,16 +5759,175 @@
     width: min(340px, 88vw);
     max-height: 420px;
     overflow-y: auto;
-    background: rgba(11, 41, 22, 0.92);
+    background: rgba(8, 32, 53, 0.94);
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
     border: 1px solid rgba(255, 255, 255, 0.14);
     border-radius: 14px;
     box-shadow: 0 12px 36px rgba(0, 0, 0, 0.35);
   }
-  /* Vista menu (Notifiche / I miei dati / Esci): più stretta della lista notifiche. */
-  .campanella-panel-stretta {
-    width: min(215px, 80vw);
+  /* Scheda account (MenuUtente): non un pannello a comparsa ma una vera
+     finestra a schermo intero (richiesto esplicitamente), con un'icona
+     avatar in cima (niente nome, solo icona/foto profilo) e le voci
+     raggruppate per sezione. */
+  .account-schermo {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    overflow-y: auto;
+    background: linear-gradient(172deg, #0e4a78 0%, #082c48 42%, #020d18 100%);
+    padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px);
+  }
+  /* position:fixed + "left" calcolato invece di "right": verificato che
+     "right" su un elemento fixed non si dipinge affatto in Chrome in
+     questo setup (bug isolato con un caso minimo), "left" invece va bene. */
+  .account-schermo-chiudi {
+    position: fixed;
+    top: calc(env(safe-area-inset-top, 0px) + 16px);
+    left: calc(100% - 52px);
+    z-index: 61;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    color: #fff;
+  }
+  .account-schermo-corpo {
+    max-width: 460px;
+    margin: 0 auto;
+    padding: calc(env(safe-area-inset-top, 0px) + 64px) 16px 32px;
+  }
+  .account-panel-sezione {
+    padding: 14px 0 0;
+  }
+  .account-panel-sezione + .account-panel-sezione {
+    margin-top: 6px;
+  }
+  .account-panel-titolo {
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    font-weight: 700;
+    font-size: 0.98rem;
+    color: var(--g300);
+    padding: 0 4px 8px;
+  }
+  /* Sotto-vista (Modifica profilo / Storico attività / Impostazioni): il
+     contenuto è quello già esistente della pagina Profilo, "tradotto" in
+     vetro traslucido sullo stesso sfondo blu del resto del menu account
+     (richiesto esplicitamente, stesso linguaggio della card di benvenuto
+     e dei pulsanti). */
+  .account-schermo-vista-head {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: calc(env(safe-area-inset-top, 0px) + 14px) 16px 14px;
+    background: linear-gradient(180deg, #0e4a78 0%, rgba(14, 74, 120, 0.85) 100%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+  }
+  .account-schermo-vista-head h2 {
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 1.02rem;
+    color: #fff;
+    letter-spacing: -0.01em;
+  }
+  .account-schermo-indietro,
+  .account-schermo-vista-chiudi {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #fff;
+    cursor: pointer;
+  }
+  .account-schermo-vista-corpo {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 18px 16px 32px;
+  }
+  .account-schermo-vista-corpo .card {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: none;
+    color: #fff;
+  }
+  /* Titoli di sezione (I tuoi dati, Storico movimenti...): stesso stile
+     dorato dei titoli nella schermata precedente del menu account
+     (.account-panel-titolo), niente icona a fianco — richiesto
+     esplicitamente per coerenza tra le due schermate. */
+  .account-schermo-vista-corpo .club-sez-icona {
+    display: none;
+  }
+  .account-schermo-vista-corpo .club-sez-titolo {
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    font-weight: 700;
+    font-size: 0.98rem;
+    color: var(--g300);
+  }
+  .account-schermo-vista-corpo .sezione-moderna-icona {
+    background: rgba(255, 255, 255, 0.16);
+    box-shadow: none;
+  }
+  .account-schermo-vista-corpo .sezione-moderna-titolo {
+    color: var(--g300);
+  }
+  .account-schermo-vista-corpo .sezione-moderna-sub,
+  .account-schermo-vista-corpo .sub,
+  .account-schermo-vista-corpo .text-ink-2,
+  .account-schermo-vista-corpo .text-ink2,
+  .account-schermo-vista-corpo .text-ink3 {
+    color: rgba(255, 255, 255, 0.7);
+  }
+  .account-schermo-vista-corpo .livello-gioco-sport {
+    color: #fff;
+  }
+  .account-schermo-vista-corpo .livello-gioco-stato {
+    color: rgba(255, 255, 255, 0.7);
+  }
+  .account-schermo-vista-corpo .btn-secondario {
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.35);
+  }
+  .account-schermo-vista-corpo .btn-secondario:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.6);
+  }
+  .account-schermo-vista-corpo .zona-pericolo-card {
+    background: rgba(255, 180, 163, 0.08) !important;
+    border-color: rgba(255, 180, 163, 0.28) !important;
+  }
+  .account-schermo-vista-corpo .zona-pericolo-titolo,
+  .account-schermo-vista-corpo .zona-pericolo-etichetta {
+    color: #ffb4a3;
+  }
+  .account-schermo-vista-corpo .zona-pericolo-testo {
+    color: rgba(255, 255, 255, 0.72);
+  }
+  .account-schermo-vista-corpo .zona-pericolo-linea {
+    background: rgba(255, 180, 163, 0.3);
+  }
+  .account-schermo-vista-corpo .zona-pericolo-avviso {
+    color: #ffb4a3;
+    background: rgba(255, 180, 163, 0.1);
+    border-color: rgba(255, 180, 163, 0.28);
   }
   .campanella-head {
     display: flex;
@@ -5685,57 +6023,54 @@
     color: #fff;
   }
 
-  /* Menu principale (vista "menu" di MenuUtente): Notifiche / I miei dati / Esci */
-  .menu-utente-lista {
-    display: flex;
-    flex-direction: column;
-    padding: 6px;
-  }
-  .menu-utente-voce {
+  /* Menu principale (vista "menu" di MenuUtente): veri pulsanti grandi,
+     come una pagina mobile a tutto schermo (richiesto esplicitamente, non
+     una lista di voci sottili). */
+  .account-menu-voce {
+    box-sizing: border-box;
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
     width: 100%;
-    padding: 9px 10px;
-    background: none;
-    border: none;
-    border-radius: 9px;
-    font-size: 0.84rem;
-    font-weight: 600;
-    color: rgba(255, 255, 255, 0.88);
-    text-decoration: none;
+    padding: 14px;
+    margin-bottom: 8px;
+    background: rgba(255, 255, 255, 0.16);
+    border: 1px solid rgba(255, 255, 255, 0.24);
+    border-radius: 14px;
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: #fff;
     cursor: pointer;
     text-align: left;
   }
-  .menu-utente-voce:hover {
-    background: rgba(255, 255, 255, 0.1);
+  .account-menu-voce:hover {
+    background: rgba(255, 255, 255, 0.24);
   }
-  .menu-utente-voce.pericolo {
+  .account-menu-voce.pericolo {
     color: #ffb4a3;
+    justify-content: center;
   }
-  .menu-utente-voce-ico {
+  .account-menu-voce-ico {
     flex: 0 0 auto;
-    display: inline-flex;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.2);
     color: var(--g300);
   }
-  .menu-utente-voce.pericolo .menu-utente-voce-ico {
+  .account-menu-voce.pericolo .account-menu-voce-ico {
     color: #ffb4a3;
   }
-  .menu-utente-voce-testo {
+  .account-menu-voce-testo {
     flex: 1;
     min-width: 0;
   }
-  .menu-utente-indietro {
-    background: none;
-    border: none;
-    padding: 0;
-    cursor: pointer;
-    font-family: var(--font-display);
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    font-size: 0.78rem;
-    color: #fff;
+  .account-menu-voce-freccia {
+    flex: 0 0 auto;
+    color: rgba(255, 255, 255, 0.4);
   }
 
   /* ── Chat (Fase 2) ────────────────────────────────────────────────
@@ -5925,6 +6260,115 @@
     color: var(--ok);
   }
 
+  /* ── Preferenze del giocatore (Fase C): pillole di scelta + giorni ────
+     Il questionario è un modale bianco pieno (vedi QuestionarioPreferenze,
+     portato fuori da .account-schermo con un portale), quindi qui i colori
+     sono pensati per sfondo chiaro, non per il "vetro" scuro del menu
+     account. */
+  .pref-domanda-titolo {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--ink);
+    margin: 16px 0 6px;
+  }
+  .pref-domanda-titolo:first-of-type {
+    margin-top: 12px;
+  }
+  .pref-pill-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .pref-pill {
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: var(--bg);
+    border: 1.5px solid var(--border2);
+    color: var(--ink2);
+    font-size: 0.84rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.13s, color 0.13s;
+  }
+  .pref-pill:hover:not(.attivo) {
+    background: var(--v050);
+    color: var(--v800);
+  }
+  .pref-pill.attivo {
+    background: var(--v700);
+    color: #fff;
+    border-color: var(--v700);
+  }
+  .pref-giorni-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .giorno-chip {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 0.7rem;
+    background: var(--bg);
+    border: 1.5px solid var(--border2);
+    color: var(--ink2);
+    cursor: pointer;
+    transition: background 0.13s, color 0.13s;
+  }
+  .giorno-chip:hover:not(.attivo) {
+    background: var(--v050);
+    color: var(--v800);
+  }
+  .giorno-chip.attivo {
+    background: var(--v700);
+    color: #fff;
+    border-color: var(--v700);
+  }
+
+  /* ── Storico attività (Fase D): righe di storico partite/lezioni/tornei ── */
+  .storico-riga {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  }
+  .storico-riga:last-child {
+    border-bottom: none;
+  }
+  .storico-riga-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+  .storico-riga-titolo {
+    font-weight: 700;
+    font-size: 0.88rem;
+    color: #fff;
+  }
+  .storico-riga-sub {
+    font-size: 0.76rem;
+    color: rgba(255, 255, 255, 0.6);
+  }
+  .storico-riga-pill {
+    flex: 0 0 auto;
+    font-size: 0.66rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.14);
+    color: var(--g300);
+  }
+
   /* ── Card sezione "moderna": icona in badge + titolo + sottotitolo (+ pill) ── */
   .sezione-moderna-head {
     display: flex;
@@ -5942,7 +6386,7 @@
     justify-content: center;
     background: linear-gradient(135deg, var(--v600), var(--v800));
     color: var(--g300);
-    box-shadow: 0 4px 12px rgba(12, 51, 25, 0.22);
+    box-shadow: 0 4px 12px rgba(10, 47, 77, 0.22);
   }
   .sezione-moderna-testi {
     flex: 1;
@@ -6013,7 +6457,7 @@
   }
   .questionario-risultato-intro {
     font-size: 1.1rem;
-    color: rgba(255, 255, 255, 0.85);
+    color: var(--ink2);
     margin: 4px 0 2px;
   }
   .questionario-risultato-livello {
@@ -6021,9 +6465,8 @@
     font-size: 2.6rem;
     font-weight: 800;
     letter-spacing: 0.03em;
-    color: var(--g300);
+    color: var(--v700);
     margin: 0 0 14px;
-    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
   }
   .questionario-chiudi {
     position: absolute;
@@ -6035,17 +6478,18 @@
     align-items: center;
     justify-content: center;
     border-radius: 999px;
-    border: 1.5px solid rgba(223, 0, 36, 0.4);
-    background: rgba(223, 0, 36, 0.14);
-    color: #ff6b6b;
+    border: 1.5px solid var(--border2);
+    background: #fff;
+    color: var(--v700);
     font-size: 0.95rem;
     line-height: 1;
     cursor: pointer;
     z-index: 1;
   }
   .questionario-chiudi:hover {
-    background: rgba(223, 0, 36, 0.24);
-    color: #fff;
+    background: var(--v050);
+    border-color: var(--v700);
+    color: var(--v800);
   }
   .questionario-progresso {
     display: flex;
@@ -6060,12 +6504,12 @@
     font-weight: 500;
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    color: rgba(255, 255, 255, 0.75);
+    color: var(--ink2);
   }
   .questionario-barra {
     height: 5px;
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.15);
+    background: var(--border);
     overflow: hidden;
   }
   .questionario-barra-fill {
@@ -6085,7 +6529,7 @@
     margin-bottom: 6px;
   }
   .questionario-domanda {
-    color: #fff;
+    color: var(--ink);
     font-size: 1.3rem;
     font-weight: 400;
     text-transform: none;
@@ -6097,22 +6541,22 @@
     display: block;
     padding: 9px 14px;
     border-radius: 10px;
-    border: 1.5px solid rgba(255, 255, 255, 0.22);
-    background: rgba(0, 0, 0, 0.16);
-    color: rgba(255, 255, 255, 0.92);
+    border: 1.5px solid var(--border2);
+    background: var(--bg);
+    color: var(--ink2);
     font-size: 1rem;
     line-height: 1.4;
     cursor: pointer;
     transition: background 0.14s, border-color 0.14s, color 0.14s;
   }
   .questionario-opzione:hover {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.4);
+    background: var(--v050);
+    border-color: var(--v500);
   }
   .questionario-opzione.selezionata {
-    background: rgba(255, 255, 255, 0.94);
-    border-color: #fff;
-    color: var(--v900);
+    background: var(--v700);
+    border-color: var(--v700);
+    color: #fff;
   }
 
   /* ── Cerco compagno (Fase 3) ──────────────────────────────────── */
@@ -6186,95 +6630,6 @@
     white-space: nowrap;
     text-align: right;
     padding-left: 6px;
-  }
-
-  /* ── Comunicazioni del club (Fase 10) ────────────────────────────
-     Vive dentro l'hero scuro (.riep-wow in RiepilogoProfilo.tsx),
-     subito sotto le statistiche — non più una sezione a parte (su
-     richiesta esplicita, per non ripetere "comunicazione del club" tra
-     titolo e card). Stile "Cartellone" (filo oro + etichetta
-     maiuscola) adattato a card translucide coerenti con .riep-oggi,
-     dato che sta sullo sfondo scuro dell'hero invece che su superficie
-     chiara. */
-  .annuncio-blocco {
-    position: relative;
-    z-index: 1;
-    margin-top: 14px;
-  }
-  .annuncio-nota {
-    margin: 0;
-    font-size: 0.85rem;
-    color: rgba(228, 240, 232, 0.72);
-  }
-  .annuncio-card {
-    position: relative;
-    overflow: hidden;
-    background: rgba(255, 255, 255, 0.07);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 12px;
-    padding: 14px 16px 12px;
-    margin-top: 10px;
-  }
-  .annuncio-card:first-child {
-    margin-top: 0;
-  }
-  .annuncio-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 3px;
-    background: linear-gradient(90deg, var(--g300), var(--g500));
-  }
-  .annuncio-eyebrow {
-    font-size: 0.66rem;
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--g300);
-    margin-bottom: 6px;
-  }
-  .annuncio-titolo {
-    font-weight: 700;
-    font-size: 0.95rem;
-    color: #fff;
-    margin-bottom: 4px;
-  }
-  .annuncio-testo {
-    color: rgba(228, 240, 232, 0.78);
-    font-size: 0.85rem;
-    line-height: 1.5;
-    white-space: pre-wrap;
-  }
-  .annuncio-footer {
-    margin-top: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-  }
-  .annuncio-data {
-    font-size: 0.7rem;
-    color: rgba(228, 240, 232, 0.55);
-    font-variant-numeric: tabular-nums;
-    white-space: nowrap;
-  }
-  .annuncio-azioni {
-    display: flex;
-    gap: 6px;
-  }
-  /* Solo il bottone "＋ Nuovo annuncio" (sta direttamente sull'hero
-     scuro) — non i bottoni dentro i riquadri chiari di form/modifica,
-     che restano con lo stile .btn-secondario di default. */
-  .annuncio-toggle.btn-secondario {
-    background: rgba(255, 255, 255, 0.14);
-    color: #fff;
-    border-color: rgba(255, 255, 255, 0.4);
-  }
-  .annuncio-toggle.btn-secondario:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.24);
-    border-color: rgba(255, 255, 255, 0.6);
   }
 
   /* ── Richieste di lezione (Fase 5) ────────────────────────────── */

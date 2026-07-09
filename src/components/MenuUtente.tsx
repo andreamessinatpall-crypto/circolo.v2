@@ -1,27 +1,60 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/auth/useAuth'
-import { useNotifiche, type Notifica } from '@/features/notifiche/useNotifiche'
-import { mancaTabella, messaggioErrore } from '@/lib/errori'
-import { tempoRelativo } from '@/lib/formato'
+import ModaleLegale from './legale/ModaleLegale'
+import { PrivacyContent, TerminiContent } from './legale/DocumentiLegali'
+import DatiProfilo from '@/features/profilo/DatiProfilo'
+import AttivitaPage from '@/features/profilo/AttivitaPage'
+import ImpostazioniAccountPage from '@/features/profilo/ImpostazioniAccountPage'
+import BenvenutoHero from '@/features/profilo/BenvenutoHero'
 
-type Vista = 'menu' | 'notifiche'
-
-function IcoNotifiche() {
+function IcoAvatar() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-      <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="12" cy="8" r="4" />
+      <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
     </svg>
   )
 }
 
-function IcoDati() {
+function IcoModifica() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <circle cx="12" cy="12" r="10" />
-      <circle cx="12" cy="10" r="3" />
-      <path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662" />
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+      <path d="m15 5 4 4" />
+    </svg>
+  )
+}
+
+function IcoAttivita() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+    </svg>
+  )
+}
+
+function IcoImpostazioni() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+    </svg>
+  )
+}
+
+function IcoDocumento() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <polyline points="14 2 14 8 20 8" />
+    </svg>
+  )
+}
+
+function IcoScudo() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" />
     </svg>
   )
 }
@@ -36,27 +69,54 @@ function IcoEsci() {
   )
 }
 
-// Sostituisce le vecchie icone separate (profilo, campanella, esci) nell'header:
-// un solo bottone "omino" apre una lista a discesa con Notifiche, I miei dati,
-// Esci.
+function IcoChiudi() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <line x1="18" y1="6" x2="6" y2="18" />
+      <line x1="6" y1="6" x2="18" y2="18" />
+    </svg>
+  )
+}
+
+function IcoIndietro() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <polyline points="15 18 9 12 15 6" />
+    </svg>
+  )
+}
+
+function IcoFreccia() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="account-menu-voce-freccia">
+      <polyline points="9 18 15 12 9 6" />
+    </svg>
+  )
+}
+
+type Vista = 'menu' | 'dati' | 'attivita' | 'impostazioni'
+type Legale = 'privacy' | 'termini' | null
+
+const TITOLI_VISTA: Record<Exclude<Vista, 'menu'>, string> = {
+  dati: 'Modifica profilo',
+  attivita: 'Storico attività',
+  impostazioni: 'Impostazioni',
+}
+
+// Un bottone "omino" (solo icona/foto profilo, niente nome — richiesto
+// esplicitamente) apre a schermo intero (non un pannello a comparsa) la
+// scheda account: Il tuo account (Modifica profilo/Storico attività/
+// Impostazioni), Informazioni legali, Esci. La campanella notifiche è
+// un'icona a parte (vedi CampanellaNotifiche.tsx).
 export default function MenuUtente() {
-  const { profilo, esci } = useAuth()
-  const navigate = useNavigate()
+  const { esci, profilo } = useAuth()
   const [aperto, setAperto] = useState(false)
   const [vista, setVista] = useState<Vista>('menu')
-  const { notifiche, nonLette, errore, segnaLetta, segnaTutteLette, elimina } = useNotifiche(profilo?.id)
-
-  if (!profilo) return null
+  const [legale, setLegale] = useState<Legale>(null)
 
   function chiudi() {
     setAperto(false)
     setVista('menu')
-  }
-
-  function apriNotifica(n: Notifica) {
-    if (!n.letta) segnaLetta.mutate(n.id)
-    chiudi()
-    if (n.url) navigate(n.url)
   }
 
   return (
@@ -65,89 +125,104 @@ export default function MenuUtente() {
         type="button"
         onClick={() => setAperto((v) => !v)}
         title="Il mio account"
-        className="relative flex items-center rounded-lg p-1.5 text-white/60 transition hover:bg-white/10 hover:text-white"
+        className="flex items-center rounded-lg p-1.5 text-white/60 transition hover:bg-white/10 hover:text-white"
       >
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <circle cx="12" cy="12" r="10" />
-          <circle cx="12" cy="10" r="3" />
-          <path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662" />
-        </svg>
-        {nonLette > 0 && <span className="campanella-badge">{nonLette > 9 ? '9+' : nonLette}</span>}
+        {profilo?.foto_url ? (
+          <img src={profilo.foto_url} alt="" className="menu-utente-foto" />
+        ) : (
+          <IcoAvatar />
+        )}
       </button>
 
       {aperto && (
-        <>
-          <div className="campanella-overlay" onClick={chiudi} />
-          <div className={'campanella-panel' + (vista === 'menu' ? ' campanella-panel-stretta' : '')}>
-            {vista === 'menu' ? (
-              <div className="menu-utente-lista">
-                <button type="button" className="menu-utente-voce" onClick={() => setVista('notifiche')}>
-                  <span className="menu-utente-voce-ico"><IcoNotifiche /></span>
-                  <span className="menu-utente-voce-testo">Notifiche</span>
-                  {nonLette > 0 && <span className="amici-n-badge">{nonLette}</span>}
-                </button>
-                <Link to="/profilo?sezione=dati" className="menu-utente-voce" onClick={chiudi}>
-                  <span className="menu-utente-voce-ico"><IcoDati /></span>
-                  <span className="menu-utente-voce-testo">I miei dati</span>
-                </Link>
-                <button
-                  type="button"
-                  className="menu-utente-voce pericolo"
-                  onClick={() => {
-                    chiudi()
-                    esci()
-                  }}
-                >
-                  <span className="menu-utente-voce-ico"><IcoEsci /></span>
-                  <span className="menu-utente-voce-testo">Esci</span>
-                </button>
-              </div>
-            ) : (
-              <>
-                <div className="campanella-head">
-                  <button type="button" className="menu-utente-indietro" onClick={() => setVista('menu')}>
-                    ‹ Notifiche
+        <div className="account-schermo">
+          {vista === 'menu' ? (
+            <>
+              <button type="button" className="account-schermo-chiudi" onClick={chiudi} aria-label="Chiudi">
+                <IcoChiudi />
+              </button>
+
+              <div className="account-schermo-corpo">
+                <BenvenutoHero />
+
+                <div className="account-panel-sezione">
+                  <div className="account-panel-titolo">Il tuo account</div>
+                  <button type="button" className="account-menu-voce" onClick={() => setVista('dati')}>
+                    <span className="account-menu-voce-ico"><IcoModifica /></span>
+                    <span className="account-menu-voce-testo">Modifica profilo</span>
+                    <IcoFreccia />
                   </button>
-                  {nonLette > 0 && (
-                    <button type="button" className="campanella-segna-tutte" onClick={() => segnaTutteLette.mutate()}>
-                      Segna tutte lette
-                    </button>
-                  )}
+                  <button type="button" className="account-menu-voce" onClick={() => setVista('attivita')}>
+                    <span className="account-menu-voce-ico"><IcoAttivita /></span>
+                    <span className="account-menu-voce-testo">Storico attività</span>
+                    <IcoFreccia />
+                  </button>
+                  <button type="button" className="account-menu-voce" onClick={() => setVista('impostazioni')}>
+                    <span className="account-menu-voce-ico"><IcoImpostazioni /></span>
+                    <span className="account-menu-voce-testo">Impostazioni</span>
+                    <IcoFreccia />
+                  </button>
                 </div>
 
-                {errore ? (
-                  <p className="campanella-vuoto">
-                    {mancaTabella(errore, 'notifiche')
-                      ? 'Esegui lo script tappa44-notifiche.sql su Supabase.'
-                      : messaggioErrore(errore)}
-                  </p>
-                ) : notifiche.length === 0 ? (
-                  <p className="campanella-vuoto">Nessuna notifica.</p>
-                ) : (
-                  <ul className="campanella-lista">
-                    {notifiche.map((n) => (
-                      <li key={n.id} className={'campanella-item' + (n.letta ? '' : ' non-letta')}>
-                        <button type="button" className="campanella-item-btn" onClick={() => apriNotifica(n)}>
-                          <span className="campanella-item-titolo">{n.titolo}</span>
-                          {n.corpo && <span className="campanella-item-corpo">{n.corpo}</span>}
-                          <span className="campanella-item-tempo">{tempoRelativo(n.creato_il)}</span>
-                        </button>
-                        <button
-                          type="button"
-                          className="campanella-item-x"
-                          onClick={() => elimina.mutate(n.id)}
-                          aria-label="Elimina notifica"
-                        >
-                          ✕
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </>
-            )}
-          </div>
-        </>
+                <div className="account-panel-sezione">
+                  <div className="account-panel-titolo">Informazioni legali</div>
+                  <button type="button" className="account-menu-voce" onClick={() => setLegale('termini')}>
+                    <span className="account-menu-voce-ico"><IcoDocumento /></span>
+                    <span className="account-menu-voce-testo">Condizioni d'uso</span>
+                    <IcoFreccia />
+                  </button>
+                  <button type="button" className="account-menu-voce" onClick={() => setLegale('privacy')}>
+                    <span className="account-menu-voce-ico"><IcoScudo /></span>
+                    <span className="account-menu-voce-testo">Informativa Privacy</span>
+                    <IcoFreccia />
+                  </button>
+                </div>
+
+                <div className="account-panel-sezione">
+                  <button
+                    type="button"
+                    className="account-menu-voce pericolo"
+                    onClick={() => {
+                      chiudi()
+                      esci()
+                    }}
+                  >
+                    <span className="account-menu-voce-ico"><IcoEsci /></span>
+                    <span className="account-menu-voce-testo">Esci</span>
+                  </button>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="account-schermo-vista">
+              <div className="account-schermo-vista-head">
+                <button type="button" className="account-schermo-indietro" onClick={() => setVista('menu')} aria-label="Torna al menu">
+                  <IcoIndietro />
+                </button>
+                <h2>{TITOLI_VISTA[vista]}</h2>
+                <button type="button" className="account-schermo-vista-chiudi" onClick={chiudi} aria-label="Chiudi">
+                  <IcoChiudi />
+                </button>
+              </div>
+              <div className="account-schermo-vista-corpo">
+                {vista === 'dati' && <DatiProfilo />}
+                {vista === 'attivita' && <AttivitaPage />}
+                {vista === 'impostazioni' && <ImpostazioniAccountPage />}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {legale === 'termini' && (
+        <ModaleLegale titolo="Condizioni d'uso" onChiudi={() => setLegale(null)}>
+          <TerminiContent />
+        </ModaleLegale>
+      )}
+      {legale === 'privacy' && (
+        <ModaleLegale titolo="Informativa Privacy" onChiudi={() => setLegale(null)}>
+          <PrivacyContent />
+        </ModaleLegale>
       )}
     </div>
   )

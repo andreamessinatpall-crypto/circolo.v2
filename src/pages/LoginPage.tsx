@@ -1,11 +1,18 @@
 import { useState, type FormEvent } from 'react'
-import { Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { classiInput, classiErrore, classiOk } from '@/components/stili'
+import { IconaEmail, IconaLucchetto } from '@/components/IconeCampo'
 import AuthHero from './AuthHero'
 import FooterLegale from '@/components/legale/FooterLegale'
 
 export default function LoginPage() {
+  const navigate = useNavigate()
+
+  // Login in due passi: prima solo l'email. Se corrisponde a un socio già
+  // registrato si passa al passo password; altrimenti si manda dritti alla
+  // registrazione (l'utente non deve capire da solo che non è ancora iscritto).
+  const [fase, setFase] = useState<'email' | 'password'>('email')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [errore, setErrore] = useState('')
@@ -18,7 +25,26 @@ export default function LoginPage() {
   const [erroreRecupero, setErroreRecupero] = useState('')
   const [invioInCorso, setInvioInCorso] = useState(false)
 
-  async function onSubmit(e: FormEvent) {
+  async function onSubmitEmail(e: FormEvent) {
+    e.preventDefault()
+    setErrore('')
+    setInCorso(true)
+    const emailPulita = email.trim().toLowerCase()
+    const { data: esiste, error } = await supabase.rpc('email_esiste', { p_email: emailPulita })
+    setInCorso(false)
+    if (error) {
+      setErrore('Verifica email non riuscita: ' + error.message)
+      return
+    }
+    if (esiste) {
+      setEmail(emailPulita)
+      setFase('password')
+    } else {
+      navigate('/registrati', { state: { email: emailPulita } })
+    }
+  }
+
+  async function onSubmitPassword(e: FormEvent) {
     e.preventDefault()
     setErrore('')
     setInCorso(true)
@@ -38,6 +64,12 @@ export default function LoginPage() {
     // Chiude subito la tastiera: evita che lo scroll residuo per tenere il
     // campo password sopra la tastiera resti visibile dopo l'ingresso in app.
     ;(document.activeElement as HTMLElement | null)?.blur()
+  }
+
+  function cambiaEmail() {
+    setFase('email')
+    setPassword('')
+    setErrore('')
   }
 
   async function onRecupero(e: FormEvent) {
@@ -68,6 +100,7 @@ export default function LoginPage() {
         <AuthHero />
 
         <div className="card auth-card form-verde">
+          {!vistaRecupero && <h1 className="mb-1 text-center text-2xl">Accedi o registrati</h1>}
           {vistaRecupero ? (
             <>
               <h2 className="mb-1 text-xl">Recupero password</h2>
@@ -90,16 +123,20 @@ export default function LoginPage() {
                     Inserisci la tua email: ti invieremo un link per scegliere una nuova password.
                   </p>
                   <form onSubmit={onRecupero}>
-                    <label htmlFor="rec-email">Email</label>
-                    <input
-                      id="rec-email"
-                      type="email"
-                      autoComplete="email"
-                      className={classiInput}
-                      value={emailRecupero}
-                      onChange={(e) => setEmailRecupero(e.target.value)}
-                      required
-                    />
+                    <label htmlFor="rec-email" className="sr-only">Email</label>
+                    <div className="campo-con-icona">
+                      <IconaEmail />
+                      <input
+                        id="rec-email"
+                        type="email"
+                        autoComplete="email"
+                        placeholder="Email"
+                        className={classiInput}
+                        value={emailRecupero}
+                        onChange={(e) => setEmailRecupero(e.target.value)}
+                        required
+                      />
+                    </div>
                     {erroreRecupero && (
                       <p className={`mt-3 ${classiErrore}`}>{erroreRecupero}</p>
                     )}
@@ -121,68 +158,71 @@ export default function LoginPage() {
                 </>
               )}
             </>
-          ) : (
-            <>
-              {/* Form email + password */}
-              <form onSubmit={onSubmit}>
-                <label htmlFor="login-email">Email</label>
+          ) : fase === 'email' ? (
+            <form onSubmit={onSubmitEmail}>
+              <label htmlFor="login-email" className="sr-only">Email</label>
+              <div className="campo-con-icona">
+                <IconaEmail />
                 <input
                   id="login-email"
                   type="email"
                   autoComplete="username"
+                  placeholder="Email"
                   className={classiInput}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
+                  autoFocus
                 />
+              </div>
 
-                <label htmlFor="login-password">Password</label>
+              {errore && <p className={`mt-3 ${classiErrore}`}>{errore}</p>}
+
+              <button type="submit" className="btn btn-oro btn-riflesso btn-block mt-5" disabled={inCorso}>
+                {inCorso ? 'Verifica in corso…' : 'Entra in campo'}
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={onSubmitPassword}>
+              <div className="mb-4 flex items-center justify-between text-sm text-white/80">
+                <span className="truncate">{email}</span>
+                <button type="button" className="shrink-0 pl-3 text-[var(--g300)] underline underline-offset-2" onClick={cambiaEmail}>
+                  Cambia
+                </button>
+              </div>
+
+              <label htmlFor="login-password" className="sr-only">Password</label>
+              <div className="campo-con-icona">
+                <IconaLucchetto />
                 <input
                   id="login-password"
                   type="password"
                   autoComplete="current-password"
+                  placeholder="Password"
                   className={classiInput}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
+                  autoFocus
                 />
+              </div>
 
-                <div className="mt-4 text-right">
-                  <button
-                    type="button"
-                    className="text-xs text-ink-2 underline underline-offset-2 hover:text-verde-700"
-                    onClick={() => { setVistaRecupero(true); setEmailRecupero(email) }}
-                  >
-                    Password dimenticata?
-                  </button>
-                </div>
-
-                {errore && <p className={`mt-3 ${classiErrore}`}>{errore}</p>}
-
-                <button type="submit" className="btn btn-oro btn-riflesso btn-block mt-5" disabled={inCorso}>
-                  {inCorso ? 'Accesso in corso…' : 'Entra in campo'}
+              <div className="mt-4 text-right">
+                <button
+                  type="button"
+                  className="text-xs text-ink-2 underline underline-offset-2 hover:text-verde-700"
+                  onClick={() => { setVistaRecupero(true); setEmailRecupero(email) }}
+                >
+                  Password dimenticata?
                 </button>
-              </form>
+              </div>
 
-              {/* CTA registrazione in fondo */}
-              <div className="mt-7 border-t" style={{ borderColor: 'rgba(255, 255, 255, 0.18)' }} />
-              <Link
-                to="/registrati"
-                className="mt-4 flex items-center gap-4 rounded-2xl border border-white/25 bg-white/10 px-4 py-4 transition hover:bg-white/15"
-              >
-                <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-white/15 text-white shadow-sm">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <rect x="2" y="5" width="20" height="14" rx="2"/>
-                    <circle cx="8" cy="11" r="2"/>
-                    <path d="M13 9h4M13 13h4"/>
-                  </svg>
-                </span>
-                <span className="flex-1">
-                  <span className="block text-sm font-bold text-white">Non fai ancora parte del Club?</span>
-                  <span className="block text-sm text-[var(--g300)]">Registrati qui →</span>
-                </span>
-              </Link>
-            </>
+              {errore && <p className={`mt-3 ${classiErrore}`}>{errore}</p>}
+
+              <button type="submit" className="btn btn-oro btn-riflesso btn-block mt-5" disabled={inCorso}>
+                {inCorso ? 'Accesso in corso…' : 'Entra in campo'}
+              </button>
+            </form>
           )}
         </div>
       </div>

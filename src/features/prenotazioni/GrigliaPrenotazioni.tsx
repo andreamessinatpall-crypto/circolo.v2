@@ -5,6 +5,8 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/auth/useAuth'
 import { useBloccaScrollBody } from '@/hooks/useBloccaScrollBody'
+import { useMeteo, type PrevisioneGiorno } from '@/hooks/useMeteo'
+import { IconaMeteo } from '@/components/IconeMeteo'
 import { puoGestirePrenotazioni, prenotaSenzaLimite } from '@/auth/ruoli'
 import { messaggioErrore } from '@/lib/errori'
 import { useCampi, useImpostazioni, usePrenotazioniGiorno } from './datiPrenotazioni'
@@ -25,6 +27,7 @@ export default function GrigliaPrenotazioni({ sport }: { sport: Sport }) {
   const [annullaPending, setAnnullaPending] = useState<{ id: string; domanda: string } | null>(null)
   useBloccaScrollBody(!!scelta)
   const prenQuery = usePrenotazioniGiorno(giorno)
+  const meteoQuery = useMeteo()
   // ID amico da pre-aggiungere alla prenotazione (passato da AmiciProfilo via state).
   // Usato una volta sola: dopo la prima prenotazione lo azzerizziamo.
   const amicoIdRef = useRef<string | null>(
@@ -267,6 +270,7 @@ export default function GrigliaPrenotazioni({ sport }: { sport: Sport }) {
           isAdmin={!!profilo.is_admin}
           isStaff={staff}
           mioId={profilo.id}
+          previsione={campo.outdoor ? meteoQuery.data?.get(giorno) : undefined}
           onPrenota={(inizio, fine) => apriPrenota(campo, inizio, fine)}
           onAnnulla={chiediAnnulla}
         />
@@ -343,6 +347,7 @@ function CampoGriglia({
   isAdmin,
   isStaff,
   mioId,
+  previsione,
   onPrenota,
   onAnnulla,
 }: {
@@ -353,6 +358,7 @@ function CampoGriglia({
   isAdmin: boolean
   isStaff: boolean
   mioId: string
+  previsione?: PrevisioneGiorno
   onPrenota: (inizio: Date, fine: Date) => void
   onAnnulla: (p: PrenotazioneGiorno, campo: Campo, inizio: Date, diChi?: string) => void
 }) {
@@ -367,6 +373,12 @@ function CampoGriglia({
       <div className="campo-titolo">
         {campo.nome}
         {fuoriServizio && <span className="pill off">Fuori servizio</span>}
+        {previsione && (
+          <span className="meteo-badge" title={`Previsione: ${Math.round(previsione.tempMax)}°`}>
+            <IconaMeteo codice={previsione.weathercode} size={17} />
+            {Math.round(previsione.tempMax)}°
+          </span>
+        )}
       </div>
 
       {fuoriServizio ? (

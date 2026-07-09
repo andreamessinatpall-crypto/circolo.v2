@@ -6,13 +6,15 @@ import RigeneraPunti from './RigeneraPunti'
 import RigeneraCrediti from './RigeneraCrediti'
 import GestionePremi from './GestionePremi'
 import GestioneLivelli from './GestioneLivelli'
+import GestioneAnnunci from './GestioneAnnunci'
 
-type Scheda = 'campi' | 'punti' | 'premi'
+type Scheda = 'campi' | 'punti' | 'premi' | 'annunci'
 
 const SCHEDE: { id: Scheda; label: string }[] = [
   { id: 'campi', label: 'Campi e regole' },
   { id: 'punti', label: 'Punti e crediti' },
   { id: 'premi', label: 'Premi' },
+  { id: 'annunci', label: 'Annunci' },
 ]
 
 export default function ImpostazioniPage() {
@@ -44,6 +46,7 @@ export default function ImpostazioniPage() {
         </>
       )}
       {scheda === 'premi' && <GestionePremi />}
+      {scheda === 'annunci' && <GestioneAnnunci />}
     </div>
   )
 }

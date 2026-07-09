@@ -13,6 +13,7 @@ export interface SocioPubblico {
   punti: number
   sport_preferito: string | null
   data_iscrizione: string | null
+  account_privato?: boolean
 }
 
 export interface Amicizia {

@@ -22,4 +22,6 @@ export interface Socio {
   data_iscrizione: string | null
   mostra_in_classifica: boolean | null
   punti: number | null
+  foto_url: string | null
+  account_privato: boolean | null
 }

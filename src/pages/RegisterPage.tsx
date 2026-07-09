@@ -1,10 +1,11 @@
 import { useState, type ReactNode } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { supabase } from '@/lib/supabase'
 import { classiInput, classiErrore, classiOk } from '@/components/stili'
+import { IconaEmail, IconaLucchetto } from '@/components/IconeCampo'
 import AuthHero from './AuthHero'
 import FooterLegale from '@/components/legale/FooterLegale'
 import ModaleLegale from '@/components/legale/ModaleLegale'
@@ -33,6 +34,8 @@ type ModaleAperto = 'privacy' | 'termini' | null
 
 export default function RegisterPage() {
   const navigate = useNavigate()
+  const location = useLocation()
+  const emailPrecompilata = (location.state as { email?: string } | null)?.email
   const [erroreGenerale, setErroreGenerale] = useState('')
   const [successo, setSuccesso] = useState('')
   const [modaleAperto, setModaleAperto] = useState<ModaleAperto>(null)
@@ -44,7 +47,7 @@ export default function RegisterPage() {
     formState: { errors, isSubmitting },
   } = useForm<DatiRegistrazione>({
     resolver: zodResolver(schema),
-    defaultValues: { genere: 'M', sport_preferito: 'entrambi' },
+    defaultValues: { genere: 'M', sport_preferito: 'entrambi', email: emailPrecompilata ?? '' },
   })
 
   async function onSubmit(valori: DatiRegistrazione) {
@@ -107,8 +110,11 @@ export default function RegisterPage() {
           </Campo>
 
           <Campo errore={errors.email?.message} wide>
-            <label>Email <Obbligatorio /></label>
-            <input type="email" className={classiInput} {...register('email')} />
+            <label className="sr-only">Email</label>
+            <div className="campo-con-icona">
+              <IconaEmail />
+              <input type="email" placeholder="Email" className={classiInput} {...register('email')} />
+            </div>
           </Campo>
 
           <Campo>
@@ -138,13 +144,17 @@ export default function RegisterPage() {
           </Campo>
 
           <Campo errore={errors.password?.message} wide>
-            <label>Password <Obbligatorio /></label>
-            <input
-              type="password"
-              autoComplete="new-password"
-              className={classiInput}
-              {...register('password')}
-            />
+            <label className="sr-only">Password</label>
+            <div className="campo-con-icona">
+              <IconaLucchetto />
+              <input
+                type="password"
+                autoComplete="new-password"
+                placeholder="Password"
+                className={classiInput}
+                {...register('password')}
+              />
+            </div>
           </Campo>
         </div>
 
@@ -193,13 +203,6 @@ export default function RegisterPage() {
         <button type="submit" className="btn btn-oro btn-riflesso btn-block mt-5" disabled={isSubmitting}>
           {isSubmitting ? 'Invio in corso…' : 'Crea account'}
         </button>
-
-        <p className="mt-5 text-center text-sm text-ink-2">
-          Hai già un account?{' '}
-          <Link to="/login" className="font-semibold text-verde-600 hover:underline">
-            Accedi
-          </Link>
-        </p>
       </form>
       </div>
 
