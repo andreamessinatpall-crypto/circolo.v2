@@ -137,6 +137,24 @@ export function useAmici(profiloId: string) {
 
   const ricarica = () => qc.invalidateQueries({ queryKey: ['amicizie'] })
 
+  // Aggiornamenti ottimistici sulla cache ['amicizie']: senza, il bottone
+  // "Aggiungi"/"Accetta"/"Rimuovi" non cambiava subito dopo il click, perché
+  // l'invalidazione della mutation e quella del canale realtime (stessa
+  // tabella, stesso INSERT/UPDATE/DELETE) corrono in parallelo e React Query
+  // cancella la prima a favore della seconda (cancelRefetch di default):
+  // la mutation risultava "conclusa" prima che i dati freschi arrivassero
+  // davvero in cache. Aggiornando subito la cache in `onMutate` la UI cambia
+  // all'istante, e `onSettled` la riallinea comunque ai dati reali.
+  async function iniziaOttimistica(aggiorna: (precedenti: Amicizia[]) => Amicizia[]) {
+    await qc.cancelQueries({ queryKey: ['amicizie'] })
+    const precedenti = qc.getQueryData<Amicizia[]>(['amicizie']) ?? []
+    qc.setQueryData<Amicizia[]>(['amicizie'], aggiorna(precedenti))
+    return { precedenti }
+  }
+  function ripristina(contesto?: { precedenti: Amicizia[] }) {
+    if (contesto) qc.setQueryData(['amicizie'], contesto.precedenti)
+  }
+
   const invia = useMutation({
     mutationFn: async (destinatario: string) => {
       const { error } = await supabase
@@ -144,7 +162,13 @@ export function useAmici(profiloId: string) {
         .insert({ richiedente: profiloId, destinatario, stato: 'in_attesa' })
       if (error) throw error
     },
-    onSuccess: ricarica,
+    onMutate: (destinatario) =>
+      iniziaOttimistica((precedenti) => [
+        ...precedenti,
+        { id: `tmp-${destinatario}`, richiedente: profiloId, destinatario, stato: 'in_attesa' },
+      ]),
+    onError: (_e, _destinatario, contesto) => ripristina(contesto),
+    onSettled: ricarica,
   })
 
   const accetta = useMutation({
@@ -155,7 +179,12 @@ export function useAmici(profiloId: string) {
         .eq('id', rec.id)
       if (error) throw error
     },
-    onSuccess: ricarica,
+    onMutate: (rec) =>
+      iniziaOttimistica((precedenti) =>
+        precedenti.map((a) => (a.id === rec.id ? { ...a, stato: 'accettata' } : a)),
+      ),
+    onError: (_e, _rec, contesto) => ripristina(contesto),
+    onSettled: ricarica,
   })
 
   const rimuovi = useMutation({
@@ -163,7 +192,9 @@ export function useAmici(profiloId: string) {
       const { error } = await supabase.from('amicizie').delete().eq('id', rec.id)
       if (error) throw error
     },
-    onSuccess: ricarica,
+    onMutate: (rec) => iniziaOttimistica((precedenti) => precedenti.filter((a) => a.id !== rec.id)),
+    onError: (_e, _rec, contesto) => ripristina(contesto),
+    onSettled: ricarica,
   })
 
   return {

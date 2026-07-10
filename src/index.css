@@ -858,6 +858,41 @@
     border-color: var(--v700);
   }
 
+  /* Selettore sport nella pagina Prenota: rettangoli estesi (non capsule),
+     bianco + striscia blu sotto quando selezionato, trasparente quando no. */
+  .sport-selettore {
+    display: flex;
+    margin-top: 40px;
+    margin-bottom: 26px;
+  }
+  .sport-rett {
+    flex: 1 1 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 13px 10px;
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 700;
+    font-size: 0.88rem;
+    background: transparent;
+    color: var(--ink2);
+    border: none;
+    border-bottom: 3px solid var(--border2);
+    cursor: pointer;
+    transition: background 0.14s, color 0.14s, border-color 0.14s;
+  }
+  .sport-rett:hover {
+    color: var(--v700);
+  }
+  .sport-rett.attivo {
+    background: var(--surface);
+    color: var(--v700);
+    border-bottom-color: var(--v700);
+  }
+
   /* ════ Dashboard Statistiche ════ */
   .stat-page { padding-bottom: 48px; }
   .stat-ts {
@@ -5769,17 +5804,17 @@
   .menu-utente {
     position: relative;
   }
-  /* Trapezio invece del solito cerchio, e più grande — richiesto
-     esplicitamente per farlo risaltare di più nell'header. */
+  /* Quadrato con angoli arrotondati: la foto (o l'icona di riserva) riempie
+     tutto il contorno, senza margini trasparenti intorno. */
   .menu-utente-avatar {
-    width: 40px;
-    height: 36px;
+    width: 38px;
+    height: 38px;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
     background: var(--v050);
-    clip-path: polygon(18% 0%, 82% 0%, 100% 100%, 0% 100%);
+    border-radius: 10px;
     overflow: hidden;
   }
   .menu-utente-foto {

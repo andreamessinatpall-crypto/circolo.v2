@@ -27,15 +27,15 @@ export default function PrenotaPage() {
   return (
     <div>
       {sport.length > 1 && (
-        <nav className="mb-4 flex flex-wrap gap-1.5" aria-label="Scegli lo sport">
+        <nav className="sport-selettore" aria-label="Scegli lo sport">
           {sport.map((s) => (
             <button
               key={s}
               type="button"
-              className={'subtab-btn' + (s === attivo ? ' attivo' : '')}
+              className={'sport-rett' + (s === attivo ? ' attivo' : '')}
               onClick={() => setSel(s)}
             >
-              <SportIcona sport={s} />{ETICHETTA[s]}
+              <SportIcona sport={s} size={18} />{ETICHETTA[s]}
             </button>
           ))}
         </nav>
