@@ -177,7 +177,7 @@ export default function AttivitaInProgramma({ sport }: { sport?: Sport } = {}) {
               const mia = !!profilo && m.prenotante_id === profilo.id
               const tipo = m.allenamento ? 'allenamento' : m.torneo_nome ? 'torneo' : 'partita'
               return (
-              <div key={m.id} className="amichevole-riga">
+              <div key={m.id} className="amichevole-riga att-wow">
                 <div className="amichevole-cap">
                   <div>
                     <div className="orario orario-blu">

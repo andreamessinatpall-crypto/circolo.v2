@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
-import { titleCase } from '@/lib/formato'
+import { titleCase, inizialiDaEtichetta } from '@/lib/formato'
 import { classiInput } from '@/components/stili'
 import { LIVELLI_PUNTI_DEFAULT, livelloDaPunti } from '@/features/profilo/livelliPunti'
-import { MedagliaLv } from '@/features/profilo/MedagliaLv'
+import Avatar from '@/components/Avatar'
 import type { SocioPubblico } from '@/features/profilo/amici/useAmici'
 import { SportIcona } from '@/components/IconeSport'
 import { etichettaSport } from '@/lib/formato'
@@ -52,7 +52,7 @@ function RigaGiocatore({
   return (
     <div className="gioc-riga">
       <span className="gioc-rank">{rank}</span>
-      <MedagliaLv punti={socio.punti} size={40} />
+      <Avatar foto={socio.foto_url} iniziali={inizialiDaEtichetta(socio.etichetta)} titolo={titleCase(socio.etichetta)} size={40} />
       <div className="gioc-info">
         <div className="gioc-nome">{titleCase(socio.etichetta)}</div>
         <div className="gioc-sub">

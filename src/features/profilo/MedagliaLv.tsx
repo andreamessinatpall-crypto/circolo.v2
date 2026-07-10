@@ -1,5 +1,3 @@
-import { LIVELLI_PUNTI_DEFAULT, livelloDaPunti } from './livelliPunti'
-
 export function toRomano(n: number): string {
   if (n <= 0) return '?'
   const vals: [number, string][] = [
@@ -57,44 +55,3 @@ export function MedagliaLvDiretta({ lv, colore, size = 44 }: { lv: number; color
   )
 }
 
-export function MedagliaLv({ punti, size = 44 }: { punti: number; size?: number }) {
-  const lv = livelloDaPunti(punti, LIVELLI_PUNTI_DEFAULT)
-  const cfg = LIVELLI_PUNTI_DEFAULT[lv - 1]
-  const c = cfg.colore
-  const hi  = hexLighten(c, 0.36)
-  const mid = hexLighten(c, 0.08)
-  const sh1 = hexDarken(c, 0.20)
-  const sh2 = hexDarken(c, 0.42)
-  const ring = hexDarken(c, 0.10)
-  const fontSize = size >= 38 ? '1rem' : size >= 26 ? '0.7rem' : '0.6rem'
-  return (
-    <div
-      title={cfg.nome}
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        flexShrink: 0,
-        width: size,
-        height: size,
-        borderRadius: '50%',
-        background: `linear-gradient(145deg, ${hi} 0%, ${mid} 44%, ${sh1} 56%, ${sh2} 100%)`,
-        boxShadow: `0 0 0 1.5px ${ring}, inset 0 1px 0 rgba(255,255,255,0.15), 0 2px 5px rgba(0,0,0,0.28)`,
-      }}
-    >
-      <span
-        style={{
-          fontSize,
-          fontWeight: 900,
-          lineHeight: 1,
-          color: 'rgba(255,255,255,0.97)',
-          textShadow: '0 1px 2px rgba(0,0,0,0.5)',
-          letterSpacing: '-0.02em',
-          userSelect: 'none',
-        }}
-      >
-        {toRomano(lv)}
-      </span>
-    </div>
-  )
-}

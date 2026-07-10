@@ -2,12 +2,12 @@ import { useState } from 'react'
 import ModalConferma from '@/components/ModalConferma'
 import Sezione from '@/components/Sezione'
 import { messaggioErrore } from '@/lib/errori'
-import { titleCase, dataEstesa } from '@/lib/formato'
+import { titleCase, dataEstesa, inizialiDaEtichetta } from '@/lib/formato'
 import { oraLocale } from '@/features/prenotazioni/orari'
 import { formattaSet, incontroDisputato, setVinti } from '@/features/tornei/calendario'
 import { formatNomeAmericano } from '@/features/tornei/americano'
 import { useAmici } from '@/features/profilo/amici/useAmici'
-import { MedagliaLv } from '@/features/profilo/MedagliaLv'
+import Avatar from '@/components/Avatar'
 import { MedagliaPodio } from '@/components/MedagliaPodio'
 import { calcolaClassificaAmici } from './classificaAmici'
 import InvitaAltriAmiciModal from './InvitaAltriAmiciModal'
@@ -266,7 +266,7 @@ export default function DettaglioTorneoAmici({
   const incontri = d.incontri ?? []
   const prenotazioni = d.prenotazioni ?? []
   const nomiSoci = d.nomiSoci ?? new Map<string, string>()
-  const puntiSoci = d.puntiSoci ?? new Map<string, number>()
+  const fotoSoci = d.fotoSoci ?? new Map<string, string | null>()
 
   const sonoCreatore = torneo.creatore_id === profiloId
 
@@ -336,7 +336,7 @@ export default function DettaglioTorneoAmici({
             return (
               <div key={p.id} className="comp-riga">
                 <span className="torneo-amici-persona nome">
-                  <MedagliaLv punti={puntiSoci.get(p.socio_id) ?? 0} size={26} />
+                  <Avatar foto={fotoSoci.get(p.socio_id) ?? null} iniziali={inizialiDaEtichetta(nome)} titolo={nome} size={26} />
                   {nome}
                 </span>
               </div>

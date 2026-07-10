@@ -177,12 +177,14 @@ export function useDettaglioTorneoAmici(torneoId: string | undefined) {
       const idSoci = new Set((partecipanti ?? []).map((p) => p.socio_id))
       let nomiSoci = new Map<string, string>()
       let puntiSoci = new Map<string, number>()
+      let fotoSoci = new Map<string, string | null>()
       if (idSoci.size > 0) {
         const { data: soci, error: e6 } = await supabase.rpc('soci_pubblici')
         if (e6) throw e6
         const sociVisibili = (soci ?? []).filter((s: { id: string }) => idSoci.has(s.id))
         nomiSoci = new Map(sociVisibili.map((s: { id: string; etichetta: string }) => [s.id, s.etichetta]))
         puntiSoci = new Map(sociVisibili.map((s: { id: string; punti: number }) => [s.id, s.punti]))
+        fotoSoci = new Map(sociVisibili.map((s: { id: string; foto_url?: string | null }) => [s.id, s.foto_url ?? null]))
       }
 
       return {
@@ -193,6 +195,7 @@ export function useDettaglioTorneoAmici(torneoId: string | undefined) {
         prenotazioni,
         nomiSoci,
         puntiSoci,
+        fotoSoci,
       }
     },
   })

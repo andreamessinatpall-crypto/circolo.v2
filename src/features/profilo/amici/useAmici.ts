@@ -33,6 +33,7 @@ export interface VoceAmico {
   sport: string | null
   rec: Amicizia
   nPartite: number
+  foto_url: string | null
 }
 
 export interface VoceStaff {
@@ -41,6 +42,7 @@ export interface VoceStaff {
   ruolo: Ruolo
   punti: number
   sport: string | null
+  foto_url: string | null
 }
 
 function ruoloDa(s: SocioPubblico): Ruolo | null {
@@ -101,6 +103,7 @@ export function useAmici(profiloId: string) {
         ruolo: (s.is_allenatore ? 'collaboratore' : 'istruttore') as Ruolo,
         punti: s.punti,
         sport: s.sport_preferito ?? null,
+        foto_url: s.foto_url ?? null,
       }))
       .sort((a, b) => a.etichetta.localeCompare(b.etichetta, 'it'))
   }, [sociQuery.data, profiloId])
@@ -126,6 +129,7 @@ export function useAmici(profiloId: string) {
         sport: s.sport_preferito,
         rec: a,
         nPartite: partiteByAmico[altro] ?? 0,
+        foto_url: s.foto_url ?? null,
       }
       if (a.stato === 'accettata') amici.push(voce)
       else if (a.destinatario === profiloId) ricevute.push(voce)

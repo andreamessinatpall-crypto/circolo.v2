@@ -8,6 +8,24 @@ export function titleCase(str: string | null): string {
     .replace(/(^|[\s'’-])([a-zàèéìòùç])/g, (_m, sep, ch) => sep + ch.toUpperCase())
 }
 
+// Iniziali di nome+cognome, per l'avatar quando manca la foto profilo.
+export function iniziali(nome: string | null, cognome: string | null): string {
+  const n = (nome ?? '').trim().charAt(0)
+  const c = (cognome ?? '').trim().charAt(0)
+  return (n + c).toUpperCase() || '?'
+}
+
+// Come sopra, ma da un'etichetta unica in formato "Cognome Nome" (soci_pubblici/
+// soci_etichette): ordine nome poi cognome, per coerenza con `iniziali()`.
+export function inizialiDaEtichetta(etichetta: string | null): string {
+  const parti = (etichetta ?? '').trim().split(/\s+/).filter(Boolean)
+  if (parti.length === 0) return '?'
+  if (parti.length === 1) return parti[0].charAt(0).toUpperCase() || '?'
+  const cognome = parti[0]
+  const nome = parti[parti.length - 1]
+  return iniziali(nome, cognome)
+}
+
 export const ETICHETTE_GENERE: Record<string, string> = {
   M: 'Maschile',
   F: 'Femminile',

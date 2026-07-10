@@ -553,10 +553,10 @@
   .eyebrow {
     font-family: var(--font-display);
     text-transform: uppercase;
-    letter-spacing: 0.26em;
-    font-size: 0.74rem;
+    letter-spacing: 0.07em;
+    font-size: 0.98rem;
     font-weight: 700;
-    color: var(--ink2);
+    color: var(--v700);
     display: flex;
     align-items: center;
     gap: 12px;
@@ -2095,6 +2095,68 @@
     display: flex;
     flex-direction: column;
     height: 100%;
+  }
+  /* Scheda "wow" per le attività in programma (pagina Attività): stesso
+     sfondo blu-notte sfumato di .prossima-wow in Area Club, con tutti i
+     testi/pulsanti interni riadattati per restare leggibili sopra lo sfondo
+     scuro. Non tocca .amichevole-riga di base (condivisa con Concluse,
+     Lezioni, Squadre torneo) né le altre classi qui sotto altrove nell'app —
+     ogni override è scoped con .att-wow e reso abbastanza specifico da
+     battere le regole originali indipendentemente dall'ordine nel file. */
+  .amichevole-riga.att-wow {
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(140deg, var(--v600) 0%, var(--v800) 55%, var(--v900) 100%);
+    border-color: transparent;
+    color: #fff;
+  }
+  .amichevole-riga.att-wow::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(60% 70% at 100% 0%, rgba(200, 151, 46, 0.22), transparent 55%);
+  }
+  .att-wow > * {
+    position: relative;
+    z-index: 1;
+  }
+  .att-wow div.orario.orario-blu {
+    color: #fff;
+  }
+  .att-wow .att-sport,
+  .att-wow .att-campo {
+    color: #fff;
+  }
+  .att-wow .att-parti {
+    color: rgba(255, 255, 255, 0.85);
+  }
+  .att-wow .att-parti-sep {
+    color: rgba(255, 255, 255, 0.45);
+  }
+  .att-wow .amichevole-cap .dove {
+    color: rgba(255, 255, 255, 0.75);
+  }
+  .att-wow .part-vuoto {
+    color: rgba(255, 255, 255, 0.75);
+  }
+  .att-wow .chips-nessun-amico {
+    color: rgba(255, 255, 255, 0.75);
+  }
+  .att-wow .chips-nessun-amico a {
+    color: var(--g300);
+  }
+  .att-wow .btn-icona-amico {
+    background: rgba(255, 255, 255, 0.16);
+    border: 1.5px solid rgba(255, 255, 255, 0.4);
+  }
+  .att-wow .btn-pericolo {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffc4b4;
+    border-color: rgba(255, 255, 255, 0.35);
+  }
+  .att-wow .btn-pericolo:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.18);
   }
   /* Orari in blu scuro (non l'ambra di default) solo in Attività (scheda Area
      Club + pagina). Selettore con tipo elemento: specificità maggiore di
@@ -3836,12 +3898,14 @@
     flex-shrink: 0;
   }
   .club-sez-titolo {
-    font-size: 1rem;
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    font-size: 0.98rem;
     font-weight: 700;
-    color: var(--ink);
+    color: var(--v700);
     margin: 0;
     flex: 1;
-    letter-spacing: -0.015em;
   }
   .club-sez-badge {
     font-size: 0.72rem;
@@ -6426,6 +6490,92 @@
     flex: 1;
   }
 
+  /* ── Scheda dettaglio amico (click su una mini-card in Amici) ─── */
+  .amico-dett-modal {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 480px;
+    max-height: 86dvh;
+    overflow-y: auto;
+    background: var(--surface);
+    border-radius: 18px 18px 0 0;
+    padding: 20px 18px 18px;
+    box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.25);
+  }
+  @media (min-width: 640px) {
+    .amico-dett-modal {
+      border-radius: 18px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+  }
+  .amico-dett-chiudi {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 30px;
+    height: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    border: 1.5px solid var(--border2);
+    background: var(--surface);
+    color: var(--v700);
+    font-size: 1rem;
+    line-height: 1;
+    cursor: pointer;
+  }
+  .amico-dett-chiudi:hover {
+    background: var(--v050);
+    border-color: var(--g500);
+  }
+  .amico-dett-hero {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 0 18px;
+    text-align: center;
+  }
+  .amico-dett-nome {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1.15rem;
+    color: var(--ink);
+  }
+  .amico-dett-sub {
+    font-size: 0.85rem;
+    color: var(--ink2);
+  }
+  .amico-dett-azioni {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+  .amico-dett-azioni .btn,
+  .amico-dett-azioni .btn-secondario,
+  .amico-dett-azioni .btn-pericolo {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 10px 4px;
+    font-size: 0.72rem;
+    text-align: center;
+  }
+  .amico-dett-sez {
+    border-top: 1px solid var(--border);
+    padding-top: 14px;
+  }
+  .amico-dett-sez .club-sez-titolo {
+    display: block;
+    margin-bottom: 10px;
+  }
+
   /* ── Livello di gioco per sport (Fase 3bis) ──────────────────── */
   .livello-gioco-riga {
     display: flex;
@@ -6694,7 +6844,7 @@
   .club-tile-grid {
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 30px;
   }
   /* Riga con due schede affiancate (Attività + Cerca partita): sotto i
      560px torna in colonna, come il resto dell'app su mobile. */
@@ -6733,9 +6883,9 @@
     font-family: var(--font-display);
     text-transform: uppercase;
     letter-spacing: 0.07em;
-    font-weight: 800;
-    font-size: 0.94rem;
-    color: var(--ink2);
+    font-weight: 700;
+    font-size: 0.98rem;
+    color: var(--v700);
     margin: 0;
   }
   /* Titolo + azione ("Gestisci"/"Vedi tutti") sulla stessa riga, fuori dalla
@@ -6841,6 +6991,177 @@
   a.club-tile:hover {
     transform: translateY(-2px);
     box-shadow: 0 10px 26px rgba(10, 47, 77, 0.14);
+  }
+  /* Sfondo blu-notte sfumato con bagliore dorato, stesso linguaggio di
+     .riep-wow/.torneo-club-card.verde — base condivisa dalle card "wow" di
+     Area Club (prossima attività, cerca partita): effetto richiesto
+     esplicitamente per farle risaltare come contenuto in primo piano. */
+  .club-tile.club-tile-hero {
+    background: linear-gradient(140deg, var(--v600) 0%, var(--v800) 55%, var(--v900) 100%);
+    border-color: transparent;
+    color: #fff;
+  }
+  .club-tile.club-tile-hero::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(60% 70% at 100% 0%, rgba(200, 151, 46, 0.25), transparent 55%);
+  }
+  a.club-tile.club-tile-hero:hover {
+    box-shadow: 0 14px 34px rgba(5, 21, 38, 0.35);
+  }
+  .prossima-wow-fascia {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .prossima-wow-sport {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-size: 0.76rem;
+    font-weight: 700;
+    color: var(--g300);
+  }
+  .prossima-wow-meteo {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.88);
+  }
+  /* Data ben leggibile (non più un'etichetta minuscola: la partita può
+     essere domani come tra una settimana), ma l'orario resta il fulcro
+     visivo della scheda — un punto di mezzo tra le due versioni provate. */
+  .prossima-wow-giorno {
+    position: relative;
+    z-index: 1;
+    margin-top: 14px;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1.05rem;
+    letter-spacing: 0.01em;
+    text-transform: capitalize;
+    color: rgba(255, 255, 255, 0.82);
+  }
+  .prossima-wow-orario {
+    position: relative;
+    z-index: 1;
+    margin-top: 2px;
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 1.9rem;
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+    color: #fff;
+  }
+  .prossima-wow-trattino {
+    margin: 0 7px;
+    color: var(--g300);
+  }
+  .prossima-wow-campo {
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 6px;
+    font-size: 0.86rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.85);
+  }
+  .prossima-wow-avatars {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 16px;
+  }
+
+  /* ── Scheda "Cerca partita" (stessa base .club-tile-hero) ────────────── */
+  .cerca-wow-chi {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .cerca-wow-testi {
+    min-width: 0;
+  }
+  .cerca-wow-nome {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 1.15rem;
+    line-height: 1.2;
+    color: #fff;
+  }
+  .cerca-wow-sub {
+    margin-top: 2px;
+    font-size: 0.84rem;
+    font-weight: 600;
+    color: var(--g300);
+  }
+  .cerca-wow-quando {
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 14px;
+    font-size: 0.84rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.85);
+  }
+  .club-tile.cerca-wow-vuota {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 8px;
+    padding-top: 22px;
+    padding-bottom: 20px;
+  }
+  .cerca-wow-piu {
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: var(--g300);
+    color: var(--v900);
+    font-size: 1.4rem;
+    font-weight: 800;
+    line-height: 1;
+  }
+  .cerca-wow-vuota-testo {
+    position: relative;
+    z-index: 1;
+    margin: 0;
+    font-size: 0.88rem;
+    color: rgba(255, 255, 255, 0.8);
+  }
+  .cerca-wow-vuota-cta {
+    position: relative;
+    z-index: 1;
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: 700;
+    font-size: 0.82rem;
+    color: var(--g300);
   }
   /* Niente sfondo/bordo/ombra: la scheda "galleggia" sullo sfondo pagina.
      Selettore composto per battere in specificità .club-tile qui sopra,
@@ -6959,6 +7280,9 @@
     .club-tile-carosello .mini-persona {
       flex: 1 0 116px;
     }
+    .club-tile-carosello .mini-persona-wow {
+      flex: 1 0 156px;
+    }
     .club-tile-carosello .mini-torneo {
       flex: 1 0 116px;
     }
@@ -6982,6 +7306,105 @@
     border-radius: 14px;
     box-shadow: var(--ombra-card);
     scroll-snap-align: start;
+  }
+  /* Come .mini-persona ma usata come <button> (scheda "I tuoi amici" della
+     pagina Amici, non nel carosello di Area Club): niente stile browser di
+     default, griglia che va a capo invece dello scroll orizzontale. */
+  button.mini-persona {
+    cursor: pointer;
+    font: inherit;
+    text-align: center;
+  }
+  .amici-griglia {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  .mini-persona-puntino {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+  }
+  /* Versione grande "da vetrina" delle mini-card, per la pagina Amici a sé
+     stante (non il carosello compatto di anteprima in Area Club): più
+     spazio, ombra più profonda, anello dorato attorno alla foto, leggero
+     sollevamento al passaggio del mouse — richiesto esplicitamente per un
+     effetto "wow" professionale. */
+  .mini-persona-wow {
+    width: 156px;
+    padding: 22px 14px 18px;
+    gap: 12px;
+    border-radius: 20px;
+    border-color: var(--border2);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08), 0 1px 4px rgba(0, 0, 0, 0.05);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .mini-persona-wow:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 14px 30px rgba(0, 0, 0, 0.14), 0 3px 8px rgba(0, 0, 0, 0.07);
+      border-color: var(--g300);
+    }
+  }
+  /* Anello dorato-verde attorno alla foto/iniziali, un po' più spesso qui
+     visto quanto sono grandi queste mini-card rispetto al resto dell'app. */
+  .mini-persona-wow .avatar-anello {
+    padding: 3px;
+  }
+  .mini-persona-wow .avatar-anello .avatar-cerchio {
+    border-width: 2px;
+  }
+  .mini-persona-wow .mini-persona-nome {
+    font-size: 0.92rem;
+    font-weight: 700;
+    max-width: 140px;
+  }
+  .mini-persona-wow .mini-persona-tag {
+    font-size: 0.64rem;
+  }
+  .mini-persona-wow .mini-persona-foto {
+    width: 72px;
+    height: 72px;
+  }
+  .mini-persona-wow .mini-persona-foto-aggiungi svg {
+    width: 30px;
+    height: 30px;
+  }
+  .mini-persona-btn-pericolo {
+    background: var(--terra);
+  }
+  .mini-persona-btn-pericolo:hover:not(:disabled) {
+    background: var(--errore, #b91c1c);
+  }
+  /* Avatar condiviso (foto o iniziali) al posto delle vecchie medaglie livello/ruolo.
+     Sempre dentro un anello dorato-verde, dovunque compaia una foto profilo
+     — richiesto esplicitamente per dare uniformità e un tocco premium. */
+  .avatar-anello {
+    display: inline-flex;
+    flex-shrink: 0;
+    padding: 2px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--g300), var(--v600));
+  }
+  .avatar-anello .avatar-cerchio {
+    border: 1.5px solid var(--surface);
+  }
+  .avatar-cerchio {
+    border-radius: 50%;
+    object-fit: cover;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .avatar-cerchio-vuota {
+    background: linear-gradient(135deg, var(--v600), var(--v800));
+    font-family: var(--font-display);
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    color: var(--g300);
+    user-select: none;
   }
   .mini-persona-foto {
     width: 56px;
@@ -7208,9 +7631,13 @@
     background-color: rgba(14, 74, 120, 0.08);
   }
   /* Omino di default (senza foto profilo) e campanella notifiche: contorno
-     blu pieno, non solo al 60% come le altre icone dell'header. */
+     blu pieno, non solo al 60% come le altre icone dell'header. Figlio
+     diretto del bottone (non discendente generico): la campanella ha l'svg
+     come figlio diretto, ma così NON tocca la X di chiusura del menu
+     profilo, annidata più in profondità dentro lo stesso .menu-utente e
+     già bianca di suo su sfondo blu scuro. */
   .menu-utente-avatar svg,
-  .menu-utente button svg {
+  .menu-utente > button > svg {
     stroke: var(--v700);
   }
 

@@ -1,11 +1,10 @@
 import { useState } from 'react'
 import { useAuth } from '@/auth/useAuth'
-import { titleCase } from '@/lib/formato'
+import { titleCase, iniziali } from '@/lib/formato'
 import { classiInput } from '@/components/stili'
 import { useModalitaPremi } from '@/features/premi/datiPremi'
 import { LIVELLI_PUNTI_DEFAULT, livelloDaPunti } from '@/features/profilo/livelliPunti'
-import { MedagliaLv } from '@/features/profilo/MedagliaLv'
-import { MedagliaRuolo } from '@/features/profilo/ruoloBadge'
+import Avatar from '@/components/Avatar'
 import { useSoci, useAttivitaSoci, type SocioAdmin, type AttivitaSocio } from './datiSoci'
 import DettaglioGiocatore from './DettaglioGiocatore'
 import { SportIcona, IconaPadel, IconaCalcio } from '@/components/IconeSport'
@@ -417,15 +416,12 @@ function RigaSocio({
         (cancellato ? ' opacity-50' : '')
       }
     >
-      {cancellato
-        ? <MedagliaLv punti={0} size={40} />
-        : socio.is_admin
-          ? <MedagliaRuolo ruolo="admin" size={40} />
-          : socio.is_allenatore
-            ? <MedagliaRuolo ruolo="collaboratore" size={40} />
-            : socio.e_allenatore
-              ? <MedagliaRuolo ruolo="istruttore" size={40} />
-              : <MedagliaLv punti={socio.punti ?? 0} size={40} />}
+      <Avatar
+        foto={cancellato ? null : socio.foto_url}
+        iniziali={iniziali(socio.nome, socio.cognome)}
+        titolo={titleCase(socio.cognome) + ' ' + titleCase(socio.nome)}
+        size={40}
+      />
 
       <div className="gioc-adm-body">
         <div className="gioc-adm-nome">

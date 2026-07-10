@@ -210,7 +210,7 @@ function slotIniziali(partecipanti: PartecipantePartita[]): Slot[] {
 // Riga "Home – punteggio/vs – Away" con le icone casa/trasferta: usata sia
 // mentre si inserisce il punteggio (con "vs") sia nel cartellino finale
 // salvato (con il risultato), stesso stile in entrambi i casi.
-function RigaSquadre({
+export function RigaSquadre({
   nomiCasa,
   nomiOspite,
   risultato,

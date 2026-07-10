@@ -2,35 +2,29 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { messaggioErrore } from '@/lib/errori'
-import { titleCase } from '@/lib/formato'
+import { titleCase, inizialiDaEtichetta } from '@/lib/formato'
 import { LIVELLI_PUNTI_DEFAULT, livelloDaPunti } from './livelliPunti'
-import { MedagliaPodio } from '@/components/MedagliaPodio'
+import Avatar from '@/components/Avatar'
 
 interface RigaClassifica {
   posizione: number
   etichetta: string | null
   punti: number | null
   is_me: boolean
+  foto_url: string | null
 }
 
 const TOP = 10
 
 function RigaCl({ r }: { r: RigaClassifica }) {
-  const isPodio = r.posizione >= 1 && r.posizione <= 3
   const lv = livelloDaPunti(r.punti ?? 0, LIVELLI_PUNTI_DEFAULT)
   const cfg = LIVELLI_PUNTI_DEFAULT[lv - 1]
+  const nome = r.etichetta ? titleCase(String(r.etichetta)) : cfg.nome
   return (
     <div className={'classifica-riga' + (r.is_me ? ' io' : '')}>
-      {isPodio ? (
-        <span style={{ flexShrink: 0, width: 38, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <MedagliaPodio pos={r.posizione as 1 | 2 | 3} />
-        </span>
-      ) : (
-        <span className="cl-pos">{r.posizione}º</span>
-      )}
-      <span className="cl-nick">
-        {r.etichetta ? titleCase(String(r.etichetta)) : cfg.nome}
-      </span>
+      <span className="cl-pos">{r.posizione}º</span>
+      <Avatar foto={r.foto_url} iniziali={inizialiDaEtichetta(nome)} titolo={nome} size={32} />
+      <span className="cl-nick">{nome}</span>
       <span className="cl-punti">{r.punti ?? 0} pt</span>
     </div>
   )

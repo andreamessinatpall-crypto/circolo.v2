@@ -135,9 +135,6 @@ export default function PremiPage() {
 
       {/* Catalogo */}
       <div className="club-sez-header" style={{ marginTop: '0.5rem' }}>
-        <span className="club-sez-icona">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 12v10H4V12M2 7h20v5H2zM12 22V7M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>
-        </span>
         <h2 className="club-sez-titolo">Catalogo premi</h2>
       </div>
       {catalogoQuery.isLoading ? (
@@ -159,9 +156,6 @@ export default function PremiPage() {
 
       {/* Le mie richieste */}
       <div className="club-sez-header" style={{ marginTop: '2rem' }}>
-        <span className="club-sez-icona">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2M12 12h4M12 16h4M8 12h.01M8 16h.01"/></svg>
-        </span>
         <h2 className="club-sez-titolo">Le tue richieste</h2>
       </div>
       <div className="card">

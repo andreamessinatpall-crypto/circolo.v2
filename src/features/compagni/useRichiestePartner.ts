@@ -28,6 +28,7 @@ export interface CandidaturaPartner {
 interface SocioPubblico {
   id: string
   etichetta: string
+  foto_url?: string | null
 }
 
 // Bacheca "Cerco compagno" (Fase 3). Padel: richiesta con livello, rispondere
@@ -171,11 +172,13 @@ export function useRichiestePartner(profiloId: string | undefined) {
   })
 
   const sociById = new Map(sociQuery.data?.map((s) => [s.id, s.etichetta]))
+  const fotoById = new Map(sociQuery.data?.map((s) => [s.id, s.foto_url ?? null]))
 
   return {
     richieste: richiesteQuery.data ?? [],
     candidature: candidatureQuery.data ?? [],
     sociById,
+    fotoById,
     caricamento: richiesteQuery.isLoading || sociQuery.isLoading,
     errore: richiesteQuery.error,
     crea,

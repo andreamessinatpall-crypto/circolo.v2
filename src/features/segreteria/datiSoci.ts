@@ -24,6 +24,7 @@ export interface SocioAdmin {
   punti_bloccati: boolean | null
   crediti_bloccati: boolean | null
   richiesta_cancellazione: string | null
+  foto_url: string | null
 }
 
 // Tutti i soci (l'admin li legge grazie alle policy RLS).

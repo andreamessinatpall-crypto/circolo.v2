@@ -1,10 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/auth/useAuth'
-import { dataEstesa } from '@/lib/formato'
+import { dataEstesa, iniziali } from '@/lib/formato'
 import { LIVELLI_PUNTI_DEFAULT, livelloDaPunti, useLivelliPunti } from './livelliPunti'
-import { svgMedagliaColore } from './badge/medaglieSvg'
-import { MedagliaRuolo } from './ruoloBadge'
+import Avatar from '@/components/Avatar'
 
 // Cartellino "Nome Cognome" con livello/punti/crediti: nato in Bacheca
 // (RiepilogoProfilo), riusato anche in cima al menu account (MenuUtente) —
@@ -169,7 +168,7 @@ export default function BenvenutoHero() {
     return (
       <div className="riep-wow">
         <div className="riep-wow-top">
-          <MedagliaRuolo ruolo="istruttore" size={66} />
+          <Avatar foto={profilo.foto_url} iniziali={iniziali(profilo.nome, profilo.cognome)} size={66} />
           <div className="riep-wow-hi">
             <h1>{profilo.nome} {profilo.cognome}</h1>
             <p className="riep-liv-eyebrow">Istruttore</p>
@@ -212,17 +211,7 @@ export default function BenvenutoHero() {
   return (
     <div className="riep-wow">
       <div className="riep-wow-top">
-        {liv.img ? (
-          <span className="riep-liv-medal" style={{ borderColor: liv.colore }}>
-            <img src={liv.img} alt="" />
-          </span>
-        ) : (
-          <span
-            className="riep-liv-medal"
-            style={{ borderColor: liv.colore }}
-            dangerouslySetInnerHTML={{ __html: svgMedagliaColore(livN, liv.colore) }}
-          />
-        )}
+        <Avatar foto={profilo.foto_url} iniziali={iniziali(profilo.nome, profilo.cognome)} size={66} />
         <div className="riep-wow-hi">
           <h1>{profilo.nome} {profilo.cognome}</h1>
           <p className="riep-liv-eyebrow">

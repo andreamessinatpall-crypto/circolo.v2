@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useAuth } from '@/auth/useAuth'
 import { useAmici, type VoceStaff } from '../amici/useAmici'
-import { MedagliaRuolo } from '../ruoloBadge'
+import Avatar from '@/components/Avatar'
+import { inizialiDaEtichetta } from '@/lib/formato'
 import { SportIcona } from '@/components/IconeSport'
 import DisponibilitaIstruttoreModal from '@/features/lezioni/DisponibilitaIstruttoreModal'
 import { useConversazioni } from '@/features/chat/useChat'
@@ -46,7 +47,7 @@ function CardStaff({
       }
       title={cliccabile ? 'Vedi le sue disponibilità per lezioni' : undefined}
     >
-      <MedagliaRuolo ruolo={voce.ruolo} size={40} />
+      <Avatar foto={voce.foto_url} iniziali={inizialiDaEtichetta(voce.etichetta)} titolo={voce.etichetta} size={40} />
       <div className="amici-card-info">
         <div className="amici-card-nome">
           {voce.etichetta}
