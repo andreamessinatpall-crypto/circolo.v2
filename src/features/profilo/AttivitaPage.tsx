@@ -3,6 +3,7 @@ import { dataEstesa, etichettaSport } from '@/lib/formato'
 import { messaggioErrore } from '@/lib/errori'
 import { oraLocale } from '@/features/prenotazioni/orari'
 import { STATI_TORNEO } from '@/features/tornei/tipi'
+import StoricoMovimenti from './StoricoMovimenti'
 import {
   usePartiteGiocate,
   useLezioniStoriche,
@@ -98,6 +99,8 @@ export default function AttivitaPage() {
           </div>
         )}
       </div>
+
+      <StoricoMovimenti />
     </div>
   )
 }

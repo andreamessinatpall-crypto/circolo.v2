@@ -5,7 +5,6 @@ import { useAuth } from '@/auth/useAuth'
 import { puoGestirePrenotazioni } from '@/auth/ruoli'
 import type { Socio } from '@/auth/tipi'
 import { useRealtimeCircolo } from '@/hooks/useRealtimeCircolo'
-import FooterLegale from '@/components/legale/FooterLegale'
 import InstallaAppBanner from '@/components/InstallaAppBanner'
 import MenuUtente from '@/components/MenuUtente'
 import CampanellaNotifiche from '@/components/CampanellaNotifiche'
@@ -158,15 +157,15 @@ export default function AppShell() {
         </nav>
       </div>
 
-      <InstallaAppBanner />
+      <div className="flex flex-1 flex-col">
+        <InstallaAppBanner />
 
-      {/* Contenuto. pb-24 su mobile lascia spazio alla barra fissa in
-          fondo (rimossa da min-width:640px, dove torna pb-10). */}
-      <main className="mx-auto w-full max-w-[900px] flex-1 px-5 pb-24 pt-4 sm:pb-10">
-        <Outlet />
-      </main>
-
-      <FooterLegale />
+        {/* Contenuto. pb-24 su mobile lascia spazio alla barra fissa in
+            fondo (rimossa da min-width:640px, dove torna pb-10). */}
+        <main className="mx-auto w-full max-w-[900px] flex-1 px-5 pb-24 pt-4 sm:pb-10">
+          <Outlet />
+        </main>
+      </div>
     </div>
   )
 }

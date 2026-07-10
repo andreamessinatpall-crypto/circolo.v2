@@ -18,7 +18,7 @@ function IcoCompagni() {
 // Le richieste di lezione inviate a un istruttore (Fase 5): in attesa di
 // risposta, o appena rifiutate. Una volta accettate diventano una vera
 // prenotazione, già visibile in "Attività in programma".
-function RichiesteLezioneInviate() {
+export function RichiesteLezioneInviate() {
   const { profilo } = useAuth()
   const { data: richieste = [] } = useRichiesteInviate(profilo?.id)
   const daMostrare = richieste.filter((r) => r.stato === 'in_attesa' || r.stato === 'rifiutata')

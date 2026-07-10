@@ -6,7 +6,6 @@ import { etichettaGenere } from '@/lib/formato'
 import { messaggioErrore } from '@/lib/errori'
 import { logoDaFile } from '@/lib/immagini'
 import { classiErrore, classiOk } from '@/components/stili'
-import StoricoMovimenti from './StoricoMovimenti'
 import CambiaPasswordModal from './CambiaPasswordModal'
 import SezioneLivelloGioco from './livelloGioco/SezioneLivelloGioco'
 import SezionePreferenze from './preferenze/SezionePreferenze'
@@ -258,8 +257,6 @@ export default function DatiProfilo() {
       <SezionePreferenze socioId={profilo.id} sportPreferito={profilo.sport_preferito} />
 
       <SezioneLivelloGioco socioId={profilo.id} sportPreferito={profilo.sport_preferito} />
-
-      <StoricoMovimenti />
 
       {modalePassword && <CambiaPasswordModal onChiudi={() => setModalePassword(false)} />}
     </div>

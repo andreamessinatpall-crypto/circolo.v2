@@ -5,16 +5,15 @@ import { useModalitaPremi } from '@/features/premi/datiPremi'
 import RiepilogoProfilo from './RiepilogoProfilo'
 import ClubProfilo from './ClubProfilo'
 import DatiProfilo from './DatiProfilo'
-import AmiciProfilo from './amici/AmiciProfilo'
 import SociPage from '@/features/segreteria/SociPage'
 import VistaLezioni from '@/features/prenotazioni/VistaLezioni'
-import PremiPage from '@/features/premi/PremiPage'
 import GestionePremi from '@/features/segreteria/GestionePremi'
 import AttivitaPage from './AttivitaPage'
 import ImpostazioniAccountPage from './ImpostazioniAccountPage'
+import AreaClubSchede from './pagine/AreaClubSchede'
 
 type SottoScheda =
-  | 'riepilogo' | 'club' | 'dati' | 'amici' | 'giocatori' | 'lezioni' | 'premi'
+  | 'riepilogo' | 'club' | 'dati' | 'giocatori' | 'lezioni' | 'premi'
   | 'attivita' | 'impostazioni-account'
 
 export default function ProfiloPage() {
@@ -31,6 +30,14 @@ export default function ProfiloPage() {
   const collaboratore = !!profilo?.is_allenatore && !profilo?.is_admin
   const istruttore    = !!profilo?.e_allenatore && !profilo?.is_allenatore && !profilo?.is_admin
 
+  // Giocatore regolare: Area Club è una griglia di schede che aprono pagine
+  // vere e proprie (vedi src/features/profilo/pagine/), non più tab interne
+  // — richiesto esplicitamente. Collaboratore/istruttore restano sulle tab
+  // esistenti qui sotto, pensate per la gestione, non per l'uso da socio.
+  if (!collaboratore && !istruttore) {
+    return <AreaClubSchede modalitaPremi={!!modalitaPremi} />
+  }
+
   let schede: { id: SottoScheda; label: string }[]
   if (collaboratore) {
     schede = [
@@ -39,18 +46,11 @@ export default function ProfiloPage() {
       { id: 'club',      label: 'Club' },
       { id: 'premi',     label: 'Premi' },
     ]
-  } else if (istruttore) {
+  } else {
     schede = [
       { id: 'riepilogo', label: 'Bacheca' },
       { id: 'lezioni',   label: 'Lezioni' },
       { id: 'club',      label: 'Club' },
-    ]
-  } else {
-    schede = [
-      { id: 'riepilogo', label: 'Bacheca' },
-      { id: 'amici',     label: 'Amici' },
-      { id: 'club',      label: 'Club' },
-      ...(modalitaPremi ? [{ id: 'premi' as const, label: 'Premi' }] : []),
     ]
   }
 
@@ -72,10 +72,9 @@ export default function ProfiloPage() {
       {scheda === 'riepilogo'  && <RiepilogoProfilo />}
       {scheda === 'club'       && <ClubProfilo />}
       {scheda === 'dati'       && <DatiProfilo />}
-      {scheda === 'amici'      && <AmiciProfilo />}
       {scheda === 'giocatori'  && <SociPage />}
       {scheda === 'lezioni'    && <VistaLezioni />}
-      {scheda === 'premi'      && (collaboratore ? <GestionePremi /> : <PremiPage />)}
+      {scheda === 'premi'      && <GestionePremi />}
       {scheda === 'attivita'   && <AttivitaPage />}
       {scheda === 'impostazioni-account' && <ImpostazioniAccountPage />}
     </div>

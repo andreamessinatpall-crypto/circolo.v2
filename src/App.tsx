@@ -7,6 +7,14 @@ import ResetPasswordPage from '@/pages/ResetPasswordPage'
 import BloccoPage from '@/pages/BloccoPage'
 import AppShell from '@/pages/AppShell'
 import ProfiloPage from '@/features/profilo/ProfiloPage'
+import AttivitaProgrammaPagina from '@/features/profilo/pagine/AttivitaProgrammaPagina'
+import AmiciPagina from '@/features/profilo/pagine/AmiciPagina'
+import PremiPagina from '@/features/profilo/pagine/PremiPagina'
+import CercoGiocatoriPagina from '@/features/profilo/pagine/CercoGiocatoriPagina'
+import ClassificaPagina from '@/features/profilo/pagine/ClassificaPagina'
+import TorneiInCorsoPagina from '@/features/profilo/pagine/TorneiInCorsoPagina'
+import TorneiInProgrammaPagina from '@/features/profilo/pagine/TorneiInProgrammaPagina'
+import StaffClubPagina from '@/features/profilo/pagine/StaffClubPagina'
 import PrenotaPage from '@/features/prenotazioni/PrenotaPage'
 import TorneiPage from '@/features/tornei/TorneiPage'
 import PremiPage from '@/features/premi/PremiPage'
@@ -58,6 +66,14 @@ function App() {
     <Routes>
       <Route element={<AppShell />}>
         <Route path="/profilo" element={<ProfiloPage />} />
+        <Route path="/profilo/attivita-in-programma" element={<AttivitaProgrammaPagina />} />
+        <Route path="/profilo/amici" element={<AmiciPagina />} />
+        <Route path="/profilo/premi" element={<PremiPagina />} />
+        <Route path="/profilo/cerco-giocatori" element={<CercoGiocatoriPagina />} />
+        <Route path="/profilo/classifica" element={<ClassificaPagina />} />
+        <Route path="/profilo/tornei-in-corso" element={<TorneiInCorsoPagina />} />
+        <Route path="/profilo/tornei-in-programma" element={<TorneiInProgrammaPagina />} />
+        <Route path="/profilo/staff" element={<StaffClubPagina />} />
         <Route path="/prenota" element={<PrenotaPage />} />
         <Route path="/tornei" element={<TorneiPage />} />
         {profilo?.is_allenatore && !profilo?.is_admin && (

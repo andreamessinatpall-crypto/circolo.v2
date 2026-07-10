@@ -13,7 +13,9 @@ export interface SocioPubblico {
   punti: number
   sport_preferito: string | null
   data_iscrizione: string | null
+  genere?: string | null
   account_privato?: boolean
+  foto_url?: string | null
 }
 
 export interface Amicizia {
