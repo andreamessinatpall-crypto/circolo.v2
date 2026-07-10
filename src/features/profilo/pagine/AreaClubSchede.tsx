@@ -18,6 +18,13 @@ function IcoCalendario() {
     </svg>
   )
 }
+function IcoLista() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2M12 12h4M12 16h4M8 12h.01M8 16h.01"/>
+    </svg>
+  )
+}
 function IcoAmici() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -141,6 +148,19 @@ function CardAttivita() {
         <p className="club-tile-testo-anteprima">Nessuna attività in programma.</p>
       )}
       <VediTutti etichetta="Vedi tutte le attività" />
+    </Link>
+  )
+}
+
+// ── Le mie prenotazioni (gestione: annulla, partecipanti) ──────────────────
+function CardMiePrenotazioni() {
+  return (
+    <Link to="/profilo/mie-prenotazioni" className="club-tile club-tile--larga">
+      <Testata icona={<IcoLista />} titolo="Le mie prenotazioni" sub="Gestisci le tue partite prenotate" />
+      <p className="club-tile-testo-anteprima">
+        Annulla una prenotazione o indica gli altri giocatori della partita.
+      </p>
+      <VediTutti etichetta="Gestisci le prenotazioni" />
     </Link>
   )
 }
@@ -350,6 +370,7 @@ export default function AreaClubSchede({ modalitaPremi }: { modalitaPremi: boole
   return (
     <div className="club-tile-grid">
       <CardAttivita />
+      <CardMiePrenotazioni />
       <CardAmici />
       <CardCercoGiocatori />
       <CardTorneiCarosello

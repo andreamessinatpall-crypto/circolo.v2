@@ -32,6 +32,7 @@ export interface PatchCampo {
   in_servizio: boolean
   nota_servizio: string | null
   outdoor: boolean
+  durata_minuti: number
 }
 
 export async function salvaCampo(
@@ -43,7 +44,7 @@ export async function salvaCampo(
     return {
       ok: false,
       mancaPermesso: mancaPermesso(error),
-      mancaScript: mancaColonna(error, 'apertura', 'chiusura', 'in_servizio', 'nota_servizio', 'outdoor'),
+      mancaScript: mancaColonna(error, 'apertura', 'chiusura', 'in_servizio', 'nota_servizio', 'outdoor', 'durata_minuti'),
       messaggio: error.message,
     }
   }
@@ -66,12 +67,13 @@ export async function aggiungiCampo(
     in_servizio: true,
     nota_servizio: null,
     outdoor: false,
+    durata_minuti: 90,
   })
   if (error) {
     return {
       ok: false,
       mancaPermesso: mancaPermesso(error),
-      mancaScript: mancaColonna(error, 'apertura', 'chiusura', 'in_servizio', 'nota_servizio', 'outdoor'),
+      mancaScript: mancaColonna(error, 'apertura', 'chiusura', 'in_servizio', 'nota_servizio', 'outdoor', 'durata_minuti'),
       messaggio: error.message,
     }
   }

@@ -1,7 +1,9 @@
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/auth/useAuth'
+import { prenotaSenzaLimite, puoGestirePrenotazioni } from '@/auth/ruoli'
 import { dataDa } from './orari'
-import type { Campo, Impostazioni, PrenotazioneGiorno } from './tipi'
+import type { Campo, Impostazioni, PrenotazioneGiorno, Sport } from './tipi'
 
 // Regole di prenotazione (tollerante: se le colonne nuove mancano, usa i default).
 export function useImpostazioni() {
@@ -57,6 +59,99 @@ export function usePrenotazioniGiorno(giorno: string) {
       })
       if (error) throw error
       return (data ?? []) as PrenotazioneGiorno[]
+    },
+  })
+}
+
+// Prenota un campo: controlla il limite di prenotazioni attive del socio (0 =
+// nessun limite; staff esente), poi crea la riga in `prenotazioni` e, per le
+// partite (non allenamenti), aggiunge subito il prenotante ai partecipanti.
+// Condiviso da GrigliaPrenotazioni (vista staff) e PrenotaWizard (vista
+// giocatore) così il limite e la gestione errori restano in un solo posto.
+export function usePrenotaCampo(sport: Sport, campiSport: Campo[], imp: Impostazioni) {
+  const { profilo } = useAuth()
+  const qc = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      campo,
+      inizio,
+      fine,
+      allenamento,
+      amicoId,
+    }: {
+      campo: Campo
+      inizio: Date
+      fine: Date
+      allenamento: boolean
+      amicoId?: string | null
+    }) => {
+      if (!profilo) throw new Error('Profilo non disponibile')
+      const limite = sport === 'padel' ? imp.maxPadel : imp.maxCalcio
+      const senzaLimite = prenotaSenzaLimite(profilo)
+      if (limite > 0 && !senzaLimite) {
+        const idCampiSport = campiSport.map((c) => c.id)
+        const { count } = await supabase
+          .from('prenotazioni')
+          .select('id', { count: 'exact', head: true })
+          .eq('socio_id', profilo.id)
+          .eq('allenamento', false)
+          .in('campo_id', idCampiSport)
+          .gte('fine', new Date().toISOString())
+        if (count != null && count >= limite) throw new Error(`LIMITE:${count}:${limite}`)
+      }
+      const dati: Record<string, unknown> = {
+        campo_id: campo.id,
+        socio_id: profilo.id,
+        inizio: inizio.toISOString(),
+        fine: fine.toISOString(),
+      }
+      if (allenamento) {
+        dati.allenamento = true
+        // Chi è istruttore (o gestisce le prenotazioni) si auto-assegna come
+        // istruttore dell'allenamento, così gli compare nella vista Lezioni.
+        if (profilo.e_allenatore || puoGestirePrenotazioni(profilo)) dati.allenatore_id = profilo.id
+      }
+      const { data: creata, error } = await supabase
+        .from('prenotazioni')
+        .insert(dati)
+        .select('id')
+        .single()
+      if (error) throw error
+      // Nelle partite normali il prenotante è subito tra i giocatori.
+      if (!allenamento && creata) {
+        const righe: { prenotazione_id: number; socio_id: string; confermato: boolean }[] = [
+          { prenotazione_id: creata.id, socio_id: profilo.id, confermato: false },
+        ]
+        if (amicoId) {
+          righe.push({ prenotazione_id: creata.id, socio_id: amicoId, confermato: false })
+        }
+        await supabase
+          .from('partecipanti_amichevole')
+          .upsert(righe, { onConflict: 'prenotazione_id,socio_id', ignoreDuplicates: true })
+      }
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['prenotazioni'] })
+      qc.invalidateQueries({ queryKey: ['amichevoli'] })
+    },
+    onError: (e: unknown) => {
+      const err = e as { code?: string; message?: string }
+      if (err.message?.startsWith('LIMITE:')) {
+        const [, c, l] = err.message.split(':')
+        window.alert(
+          `Hai già ${c} prenotazioni ${sport} attive: il limite è ${l}. Annullane una per prenotare di nuovo.`,
+        )
+      } else if (err.code === '23505') {
+        window.alert('Qualcuno ha appena prenotato questo slot.')
+      } else if (err.code === '42501') {
+        window.alert(
+          `Prenotazione non consentita: si può prenotare solo entro ${imp.giorniAnticipo} giorni e per orari futuri.`,
+        )
+      } else {
+        window.alert('Prenotazione non riuscita: ' + (err.message ?? ''))
+      }
+      qc.invalidateQueries({ queryKey: ['prenotazioni'] })
     },
   })
 }

@@ -8,6 +8,7 @@ import BloccoPage from '@/pages/BloccoPage'
 import AppShell from '@/pages/AppShell'
 import ProfiloPage from '@/features/profilo/ProfiloPage'
 import AttivitaProgrammaPagina from '@/features/profilo/pagine/AttivitaProgrammaPagina'
+import MiePrenotazioniPagina from '@/features/profilo/pagine/MiePrenotazioniPagina'
 import AmiciPagina from '@/features/profilo/pagine/AmiciPagina'
 import PremiPagina from '@/features/profilo/pagine/PremiPagina'
 import CercoGiocatoriPagina from '@/features/profilo/pagine/CercoGiocatoriPagina'
@@ -67,6 +68,7 @@ function App() {
       <Route element={<AppShell />}>
         <Route path="/profilo" element={<ProfiloPage />} />
         <Route path="/profilo/attivita-in-programma" element={<AttivitaProgrammaPagina />} />
+        <Route path="/profilo/mie-prenotazioni" element={<MiePrenotazioniPagina />} />
         <Route path="/profilo/amici" element={<AmiciPagina />} />
         <Route path="/profilo/premi" element={<PremiPagina />} />
         <Route path="/profilo/cerco-giocatori" element={<CercoGiocatoriPagina />} />

@@ -1,29 +1,28 @@
 import { useMemo, useRef, useState } from 'react'
 import ModalConferma from '@/components/ModalConferma'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/auth/useAuth'
 import { useBloccaScrollBody } from '@/hooks/useBloccaScrollBody'
 import { useMeteo, type PrevisioneGiorno } from '@/hooks/useMeteo'
 import { IconaMeteo } from '@/components/IconeMeteo'
-import { puoGestirePrenotazioni, prenotaSenzaLimite } from '@/auth/ruoli'
+import { puoGestirePrenotazioni } from '@/auth/ruoli'
 import { messaggioErrore } from '@/lib/errori'
-import { useCampi, useImpostazioni, usePrenotazioniGiorno } from './datiPrenotazioni'
+import { useCampi, useImpostazioni, usePrenotazioniGiorno, usePrenotaCampo } from './datiPrenotazioni'
 import { oraLocale, ymd } from './orari'
 import { SLOT_DEF, costruisciSlots } from './slotGiornata'
+import CalendarioSettimana from './CalendarioSettimana'
 import type { Campo, PrenotazioneGiorno, Sport } from './tipi'
 
 export default function GrigliaPrenotazioni({ sport }: { sport: Sport }) {
   const { profilo } = useAuth()
   const qc = useQueryClient()
   const location = useLocation()
-  const navigate = useNavigate()
   const impQuery = useImpostazioni()
   const campiQuery = useCampi()
   const [giorno, setGiorno] = useState(() => ymd(new Date()))
   const [scelta, setScelta] = useState<{ campo: Campo; inizio: Date; fine: Date } | null>(null)
-  const [offset, setOffset] = useState(0)
   const [annullaPending, setAnnullaPending] = useState<{ id: string; domanda: string } | null>(null)
   useBloccaScrollBody(!!scelta)
   const prenQuery = usePrenotazioniGiorno(giorno)
@@ -44,95 +43,7 @@ export default function GrigliaPrenotazioni({ sport }: { sport: Sport }) {
     [campiQuery.data, sport],
   )
 
-  const prenota = useMutation({
-    mutationFn: async ({
-      campo,
-      inizio,
-      fine,
-      allenamento,
-      amicoId,
-    }: {
-      campo: Campo
-      inizio: Date
-      fine: Date
-      allenamento: boolean
-      amicoId?: string | null
-    }) => {
-      if (!profilo) throw new Error('Profilo non disponibile')
-      // Limite di prenotazioni attive per socio (0 = nessun limite; staff esente).
-      const limite = sport === 'padel' ? imp.maxPadel : imp.maxCalcio
-      const senzaLimite = prenotaSenzaLimite(profilo)
-      if (limite > 0 && !senzaLimite) {
-        const idCampiSport = campiSport.map((c) => c.id)
-        const { count } = await supabase
-          .from('prenotazioni')
-          .select('id', { count: 'exact', head: true })
-          .eq('socio_id', profilo.id)
-          .eq('allenamento', false)
-          .in('campo_id', idCampiSport)
-          .gte('fine', new Date().toISOString())
-        if (count != null && count >= limite) throw new Error(`LIMITE:${count}:${limite}`)
-      }
-      const dati: Record<string, unknown> = {
-        campo_id: campo.id,
-        socio_id: profilo.id,
-        inizio: inizio.toISOString(),
-        fine: fine.toISOString(),
-      }
-      if (allenamento) {
-        dati.allenamento = true
-        // Chi è istruttore (o gestisce le prenotazioni) si auto-assegna come
-        // istruttore dell'allenamento, così gli compare nella vista Lezioni.
-        if (profilo.e_allenatore || puoGestirePrenotazioni(profilo)) dati.allenatore_id = profilo.id
-      }
-      const { data: creata, error } = await supabase
-        .from('prenotazioni')
-        .insert(dati)
-        .select('id')
-        .single()
-      if (error) throw error
-      // Nelle partite normali il prenotante è subito tra i giocatori.
-      // Se è stata avviata da AmiciProfilo, aggiungiamo subito anche l'amico.
-      if (!allenamento && creata) {
-        const righe: { prenotazione_id: number; socio_id: string; confermato: boolean }[] = [
-          { prenotazione_id: creata.id, socio_id: profilo.id, confermato: false },
-        ]
-        if (amicoId) {
-          righe.push({ prenotazione_id: creata.id, socio_id: amicoId, confermato: false })
-        }
-        await supabase
-          .from('partecipanti_amichevole')
-          .upsert(righe, { onConflict: 'prenotazione_id,socio_id', ignoreDuplicates: true })
-      }
-    },
-    onSuccess: () => {
-      // Pulisce lo state di navigazione per non ripetere l'auto-aggiunta in booking successivi
-      if (amicoIdRef.current) {
-        amicoIdRef.current = null
-        navigate(location.pathname + location.search, { replace: true, state: {} })
-      }
-      qc.invalidateQueries({ queryKey: ['prenotazioni'] })
-      qc.invalidateQueries({ queryKey: ['amichevoli'] })
-    },
-    onError: (e: unknown) => {
-      const err = e as { code?: string; message?: string }
-      if (err.message?.startsWith('LIMITE:')) {
-        const [, c, l] = err.message.split(':')
-        window.alert(
-          `Hai già ${c} prenotazioni ${sport} attive: il limite è ${l}. Annullane una per prenotare di nuovo.`,
-        )
-      } else if (err.code === '23505') {
-        window.alert('Qualcuno ha appena prenotato questo slot.')
-      } else if (err.code === '42501') {
-        window.alert(
-          `Prenotazione non consentita: si può prenotare solo entro ${imp.giorniAnticipo} giorni e per orari futuri.`,
-        )
-      } else {
-        window.alert('Prenotazione non riuscita: ' + (err.message ?? ''))
-      }
-      qc.invalidateQueries({ queryKey: ['prenotazioni'] })
-    },
-  })
+  const prenota = usePrenotaCampo(sport, campiSport, imp)
 
   const annulla = useMutation({
     mutationFn: async (id: number | string) => {
@@ -179,74 +90,15 @@ export default function GrigliaPrenotazioni({ sport }: { sport: Sport }) {
   }
 
   const adesso = new Date()
-  const DOW_IT = ['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab']
-  const giorni = Array.from({ length: imp.giorniAnticipo + 1 }, (_, i) => {
-    const g = new Date(adesso.getFullYear(), adesso.getMonth(), adesso.getDate() + i)
-    return {
-      chiave: ymd(g),
-      dow: DOW_IT[g.getDay()],
-      num: g.getDate(),
-      isOggi: i === 0,
-    }
-  })
-
-  const WINDOW = 7
-  const visibili = giorni.slice(offset, offset + WINDOW)
-  const puoSx = offset > 0
-  const puoDx = offset + WINDOW < giorni.length
-
-  function navSx() { setOffset((o) => Math.max(0, o - WINDOW)) }
-  function navDx() { setOffset((o) => Math.min(giorni.length - WINDOW, o + WINDOW)) }
-  function tornaOggi() { setOffset(0); setGiorno(ymd(new Date())) }
-
-  const primoVis = new Date(visibili[0].chiave + 'T12:00:00')
-  const ultimoVis = new Date(visibili[visibili.length - 1].chiave + 'T12:00:00')
-  const meseLabel =
-    primoVis.getMonth() === ultimoVis.getMonth()
-      ? primoVis.toLocaleDateString('it-IT', { month: 'long', year: 'numeric' })
-      : `${primoVis.toLocaleDateString('it-IT', { month: 'short' })} – ${ultimoVis.toLocaleDateString('it-IT', { month: 'short', year: 'numeric' })}`
 
   return (
     <div>
-      <div className="cal-sett">
-        <div className="cal-sett-head">
-          <div className="cal-sett-mese">{meseLabel}</div>
-          <div className="cal-sett-nav">
-            <button
-              type="button"
-              className="btn btn-secondario btn-mini !mt-0"
-              onClick={navSx}
-              disabled={!puoSx}
-              aria-label="Settimana precedente"
-            >‹</button>
-            <button
-              type="button"
-              className="btn btn-secondario btn-mini !mt-0"
-              onClick={tornaOggi}
-            >Oggi</button>
-            <button
-              type="button"
-              className="btn btn-secondario btn-mini !mt-0"
-              onClick={navDx}
-              disabled={!puoDx}
-              aria-label="Settimana successiva"
-            >›</button>
-          </div>
-        </div>
-        <div className="cal-sett-griglia">
-          {visibili.map((g) => (
-            <button
-              key={g.chiave}
-              type="button"
-              className={'cal-giorno cal-giorno-compatto' + (g.isOggi ? ' oggi' : '') + (g.chiave === giorno ? ' sel' : '')}
-              onClick={() => setGiorno(g.chiave)}
-            >
-              <span className="cal-giorno-dow">{g.dow}</span>
-              <span className="cal-giorno-num">{g.num}</span>
-            </button>
-          ))}
-        </div>
-      </div>
+      <CalendarioSettimana
+        giorno={giorno}
+        onGiorno={setGiorno}
+        giorniAnticipo={imp.giorniAnticipo}
+        meteo={meteoQuery.data}
+      />
 
       {prenQuery.error && (
         <div className="card text-ink-2">
@@ -430,9 +282,9 @@ function CampoGriglia({
               classe += ' passato'
               chi = '—'
               disabilitato = true
-            } else if (s.disponibileMin < SLOT_DEF) {
+            } else if (s.disponibileMin < (campo.durata_minuti || SLOT_DEF)) {
               // Spazio residuo fra due prenotazioni troppo corto per uno slot
-              // standard da 1h30: lo mostriamo ma non è prenotabile.
+              // pieno di questo campo: lo mostriamo ma non è prenotabile.
               classe += ' libero corto'
               chi = 'Spazio ridotto'
               disabilitato = true

@@ -1002,9 +1002,9 @@ function CampoSlots({
                   ? 'Allenamento'
                   : cogIniz(etichette.get(p.socio_id) ?? 'Prenotato')
             } else {
-              // Blocco libero "corto" (< 1h30): buco fra prenotazioni, colore diverso.
+              // Blocco libero "corto" (< durata piena del campo): buco fra prenotazioni, colore diverso.
               classe += ' libero' + (passato ? ' libero-passato' : '')
-              if (s.disponibileMin < SLOT_DEF) classe += ' corto'
+              if (s.disponibileMin < (campo.durata_minuti || SLOT_DEF)) classe += ' corto'
               chi = 'Libero'
             }
 

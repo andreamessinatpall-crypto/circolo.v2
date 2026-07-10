@@ -19,6 +19,14 @@ const MSG_PERMESSO =
 const ORE = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'))
 const MINUTI = ['00', '15', '30', '45']
 
+// Durate di slot selezionabili per un campo, in minuti.
+const DURATE = [30, 45, 60, 75, 90, 105, 120, 150, 180]
+function durataLabel(min: number): string {
+  const h = Math.floor(min / 60)
+  const m = min % 60
+  return (h ? `${h}h` : '') + (m ? ` ${m}min` : '')
+}
+
 // (Fase 8c) Segreteria · campi e regole di prenotazione.
 export default function GestioneCampi() {
   const { data: campi, isLoading, error } = useCampi()
@@ -97,6 +105,7 @@ function RigaCampo({ campo }: { campo: Campo }) {
   const [inServizio, setInServizio] = useState(campo.in_servizio !== false)
   const [nota, setNota] = useState(campo.nota_servizio || '')
   const [outdoor, setOutdoor] = useState(campo.outdoor === true)
+  const [durata, setDurata] = useState(campo.durata_minuti || SLOT_MINUTI)
   const [msg, setMsg] = useState<Esito>(null)
 
   const minuti = (s: string) => Number(s.slice(0, 2)) * 60 + Number(s.slice(3, 5))
@@ -107,8 +116,8 @@ function RigaCampo({ campo }: { campo: Campo }) {
       if (!n) throw new Error('Il nome del campo non può essere vuoto.')
       if (chiusura <= apertura)
         throw new Error("La chiusura deve venire dopo l'apertura.")
-      if (minuti(chiusura) - minuti(apertura) < SLOT_MINUTI)
-        throw new Error('La fascia è più corta di uno slot (1h30): non verrebbe generato nessuno slot.')
+      if (minuti(chiusura) - minuti(apertura) < durata)
+        throw new Error(`La fascia è più corta di uno slot (${durataLabel(durata)}): non verrebbe generato nessuno slot.`)
 
       const esito = await salvaCampo(campo.id, {
         nome: n,
@@ -117,6 +126,7 @@ function RigaCampo({ campo }: { campo: Campo }) {
         in_servizio: inServizio,
         nota_servizio: inServizio ? null : nota.trim() || null,
         outdoor,
+        durata_minuti: durata,
       })
       if (!esito.ok)
         throw new Error(
@@ -133,7 +143,7 @@ function RigaCampo({ campo }: { campo: Campo }) {
         inServizio
           ? {
               tipo: 'ok',
-              testo: `Salvato: ${orariCampo({ apertura, chiusura }).length} slot al giorno (${apertura}–${chiusura}).`,
+              testo: `Salvato: ${orariCampo({ apertura, chiusura }, durata).length} slot da ${durataLabel(durata)} al giorno (${apertura}–${chiusura}).`,
             }
           : { tipo: 'ok', testo: 'Campo sospeso: non sarà prenotabile finché non lo riattivi.' },
       )
@@ -204,6 +214,22 @@ function RigaCampo({ campo }: { campo: Campo }) {
             <SelettoreOra valore={chiusura} onChange={setChiusura} />
           </label>
         </div>
+
+        {/* Durata di uno slot di prenotazione */}
+        <label className="mt-2.5 block">
+          <span className="etichetta !mb-1">Durata prenotazione</span>
+          <select
+            className="campo !mt-0 !w-auto"
+            value={durata}
+            onChange={(e) => setDurata(Number(e.target.value))}
+          >
+            {DURATE.map((d) => (
+              <option key={d} value={d}>
+                {durataLabel(d)}
+              </option>
+            ))}
+          </select>
+        </label>
 
         {/* Scoperto/coperto: decide se mostrare il badge meteo in griglia */}
         <button

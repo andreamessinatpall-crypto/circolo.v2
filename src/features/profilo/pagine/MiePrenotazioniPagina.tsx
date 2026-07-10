@@ -1,31 +1,26 @@
 import { useState } from 'react'
 import { useAuth } from '@/auth/useAuth'
-import { sportConsentiti, puoGestirePrenotazioni } from '@/auth/ruoli'
-import SportPage from './SportPage'
-import PrenotaWizard from './PrenotaWizard'
-import type { Sport } from './tipi'
+import { sportConsentiti } from '@/auth/ruoli'
 import { SportIcona } from '@/components/IconeSport'
+import MieAmichevoli from '@/features/prenotazioni/MieAmichevoli'
+import type { Sport } from '@/features/prenotazioni/tipi'
+import TornaAreaClub from './TornaAreaClub'
 
 const ETICHETTA: Record<Sport, string> = { padel: 'Padel', calcio: 'Calcio' }
 
-// Tab "Prenota": per admin/collaboratore/istruttore resta la griglia per-campo
-// (SportPage → GrigliaPrenotazioni, con la scelta "Prenotazione campo /
-// Allenamento"). Per il giocatore normale è il flusso guidato PrenotaWizard
-// (calendario → sport → orari liberi → campo → conferma).
-export default function PrenotaPage() {
+// Gestione delle proprie prenotazioni (partite/allenamenti, con possibilità di
+// annullare): prima era una sotto-tab della pagina Prenota, ora vive qui in
+// Area Club, separata dal flusso di prenotazione vero e proprio.
+export default function MiePrenotazioniPagina() {
   const { profilo } = useAuth()
   const sport: Sport[] = profilo ? sportConsentiti(profilo) : ['padel', 'calcio']
   const [sel, setSel] = useState<Sport>(sport[0] ?? 'padel')
-
-  // Se la preferenza cambia e lo sport selezionato non è più consentito,
-  // ripiega sul primo disponibile.
   const attivo = sport.includes(sel) ? sel : (sport[0] ?? 'padel')
-
-  const staff = !!(profilo && (puoGestirePrenotazioni(profilo) || profilo.e_allenatore))
-  if (!staff) return <PrenotaWizard sportOptions={sport} />
 
   return (
     <div>
+      <TornaAreaClub titolo="Le mie prenotazioni" />
+
       {sport.length > 1 && (
         <nav className="mb-4 flex flex-wrap gap-1.5" aria-label="Scegli lo sport">
           {sport.map((s) => (
@@ -41,7 +36,9 @@ export default function PrenotaPage() {
         </nav>
       )}
 
-      <SportPage sport={attivo} />
+      <div className="card">
+        <MieAmichevoli sport={attivo} />
+      </div>
     </div>
   )
 }

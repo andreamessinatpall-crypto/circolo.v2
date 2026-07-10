@@ -40,6 +40,7 @@ export function costruisciSlots<T extends { inizio: string; fine: string }>(
 ): SlotGiorno<T>[] {
   const ap = minOf(campo.apertura || '08:00')
   const ch = minOf(campo.chiusura || '22:00')
+  const durata = campo.durata_minuti || SLOT_DEF
 
   const bks = prenotazioni
     .map((p) => ({ p, i: minOfDate(new Date(p.inizio)), f: minOfDate(new Date(p.fine)) }))
@@ -70,19 +71,19 @@ export function costruisciSlots<T extends { inizio: string; fine: string }>(
     const boundary = next ? next.i : ch
     const gap = boundary - cursor
     if (gap <= 0) break
-    if (gap >= SLOT_DEF) {
-      // Slot pieno da 1h30.
+    if (gap >= durata) {
+      // Slot pieno, della durata configurata per il campo.
       out.push({
         inizio: dataMin(giorno, cursor),
-        fine: dataMin(giorno, cursor + SLOT_DEF),
+        fine: dataMin(giorno, cursor + durata),
         disponibileMin: gap,
         booking: null,
       })
-      cursor += SLOT_DEF
+      cursor += durata
     } else {
-      // Spazio residuo < 1h30: lo mostro solo se è un buco FRA prenotazioni
-      // (≥ 30 min). In coda alla giornata lo lascio cadere, così l'ultimo slot
-      // resta sempre da 1h30.
+      // Spazio residuo < durata dello slot: lo mostro solo se è un buco FRA
+      // prenotazioni (≥ 30 min). In coda alla giornata lo lascio cadere, così
+      // l'ultimo slot resta sempre della durata piena.
       if (next && gap >= MIN_RESIDUO) {
         out.push({
           inizio: dataMin(giorno, cursor),

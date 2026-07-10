@@ -10,6 +10,7 @@ export interface Campo {
   in_servizio: boolean | null
   nota_servizio: string | null
   outdoor: boolean | null
+  durata_minuti: number | null
 }
 
 // Riga restituita dalla RPC prenotazioni_giorno (include l'etichetta di chi prenota).
