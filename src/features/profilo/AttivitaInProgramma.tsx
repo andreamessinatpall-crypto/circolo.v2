@@ -1,54 +1,58 @@
 import { useMemo } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/auth/useAuth'
 import { mancaRpc, messaggioErrore } from '@/lib/errori'
 import { useSociEtichette } from '@/features/prenotazioni/datiAmichevoli'
-import { oraLocale } from '@/features/prenotazioni/orari'
+import { oraLocale, ymd } from '@/features/prenotazioni/orari'
 import { SportIcona } from '@/components/IconeSport'
 import { TipoAttivitaIcona } from '@/components/IconeAttivita'
+import { IconaMeteo } from '@/components/IconeMeteo'
+import { useMeteo } from '@/hooks/useMeteo'
+import { arricchisciTipoAttivita, cognomeIniziale, righeInMappa, type Attivita, type RigaAttivitaBase } from './attivitaComune'
+import type { Sport } from '@/features/prenotazioni/tipi'
 
 const SPORT_LABEL: Record<string, string> = { padel: 'Padel', calcio: 'Calcio' }
 
-const ICONA_GIORNO = (
+// Ripiego quando non c'è previsione per quel giorno (oltre i 16 giorni coperti
+// da Open-Meteo, vedi useMeteo.ts): un fiore/asterisco generico, non un'icona
+// meteo specifica.
+const ICONA_GIORNO_GENERICA = (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
     <circle cx="12" cy="12" r="4" />
     <path d="M12 2v2.5M12 19.5V22M4.22 4.22l1.77 1.77M18.01 18.01l1.77 1.77M2 12h2.5M19.5 12H22M4.22 19.78l1.77-1.77M18.01 5.99l1.77-1.77" />
   </svg>
 )
 
-interface RigaAttivita {
-  prenotazione_id: number | string
-  inizio: string
-  fine: string
-  campo_nome: string | null
-  sport: string
-  prenotante_id: string | null
-  // Nullo per una lezione dell'istruttore senza ancora nessun partecipante
-  // iscritto (LEFT JOIN lato RPC, vedi tappa52).
-  socio_id: string | null
-  confermato: boolean | null
-}
-
-interface Attivita {
-  id: number | string
-  inizio: string
-  fine: string
-  campo_nome: string | null
-  sport: string
-  prenotante_id: string | null
-  parti: { socio_id: string; confermato: boolean }[]
-  allenamento: boolean
-  allenatore_id: string | null
-  torneo_nome: string | null
-}
-
-export default function AttivitaInProgramma() {
+// Passando `sport` filtra la lista (usata da GestioneAttivitaPagina, che ha
+// lo switch padel/calcio in cima e un'unica lista sotto — niente doppia
+// sezione con "Le mie prenotazioni" che ripeteva le stesse partite). Le
+// attività prenotate dal giocatore stesso si annullano direttamente da qui
+// (unico posto dove si possono gestire) — per quelle prenotate da altri si
+// indica solo chi le gestisce, in sola lettura. Appena l'orario di inizio è
+// passato, la prenotazione sparisce da qui (RPC filtra su `inizio`) e
+// compare tra le "concluse" (AttivitaConcluse.tsx), non più annullabile.
+export default function AttivitaInProgramma({ sport }: { sport?: Sport } = {}) {
   const { profilo } = useAuth()
+  const qc = useQueryClient()
   // soci_etichette (non soci_pubblici): una prenotazione già registrata deve
   // restare leggibile col vero nome anche se il partecipante è nel frattempo
   // stato sospeso o ha cancellato l'account.
   const sociQuery = useSociEtichette()
+  const meteoQuery = useMeteo()
+
+  const annulla = useMutation({
+    mutationFn: async (id: number | string) => {
+      const { error } = await supabase.from('prenotazioni').delete().eq('id', id)
+      if (error) throw error
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['attivita-programma'] })
+      qc.invalidateQueries({ queryKey: ['prossima-attivita'] })
+      qc.invalidateQueries({ queryKey: ['prenotazioni'] })
+    },
+    onError: (e: unknown) => window.alert('Annullamento non riuscito: ' + messaggioErrore(e)),
+  })
 
   const query = useQuery({
     queryKey: ['attivita-programma', profilo?.id],
@@ -56,89 +60,11 @@ export default function AttivitaInProgramma() {
     queryFn: async () => {
       const { data, error } = await supabase.rpc('partite_in_programma')
       if (error) throw error
-      const rows = (data ?? []) as RigaAttivita[]
-
-      const map = new Map<string, Attivita>()
-      for (const r of rows) {
-        const k = String(r.prenotazione_id)
-        if (!map.has(k)) {
-          map.set(k, {
-            id: r.prenotazione_id,
-            inizio: r.inizio,
-            fine: r.fine,
-            campo_nome: r.campo_nome,
-            sport: r.sport,
-            prenotante_id: r.prenotante_id,
-            parti: [],
-            allenamento: false,
-            allenatore_id: null,
-            torneo_nome: null,
-          })
-        }
-        // r.socio_id è nullo per una lezione senza ancora partecipanti (LEFT JOIN): niente da aggiungere.
-        if (r.socio_id) map.get(k)!.parti.push({ socio_id: r.socio_id, confermato: !!r.confermato })
-      }
+      const map = righeInMappa((data ?? []) as RigaAttivitaBase[])
       const lista = [...map.values()].sort(
         (a, b) => new Date(a.inizio).getTime() - new Date(b.inizio).getTime(),
       )
-
-      // Segna allenamenti, istruttore e incontro_id.
-      const ids = [...map.keys()]
-      if (ids.length) {
-        const { data: tipi } = await supabase
-          .from('prenotazioni')
-          .select('id, allenamento, allenatore_id, incontro_id, torneo_id')
-          .in('id', ids)
-        const incontroIds: (number | string)[] = []
-        const torneoIds: string[] = []
-        const pren2 = (tipi ?? []) as Array<{
-          id: number | string
-          allenamento: boolean | null
-          allenatore_id: string | null
-          incontro_id: number | string | null
-          torneo_id: string | null
-        }>
-        for (const t of pren2) {
-          const a = map.get(String(t.id))
-          if (a) {
-            a.allenamento = !!t.allenamento
-            a.allenatore_id = t.allenatore_id ?? null
-          }
-          if (t.incontro_id) incontroIds.push(t.incontro_id)
-          else if (t.torneo_id) torneoIds.push(t.torneo_id)
-        }
-
-        // Risolve il nome del torneo per le prenotazioni di incontri.
-        if (incontroIds.length) {
-          const { data: inc } = await supabase
-            .from('incontri')
-            .select('id, torneo:tornei(nome)')
-            .in('id', incontroIds)
-          const nomePerIncontro = new Map<string, string>()
-          for (const r of (inc ?? []) as unknown as Array<{ id: number | string; torneo: { nome: string } | null }>) {
-            if (r.torneo?.nome) nomePerIncontro.set(String(r.id), r.torneo.nome)
-          }
-          for (const t of pren2) {
-            if (t.incontro_id) {
-              const a = map.get(String(t.id))
-              if (a) a.torneo_nome = nomePerIncontro.get(String(t.incontro_id)) ?? null
-            }
-          }
-        }
-
-        // Risolve il nome per le prenotazioni americano (torneo_id diretto).
-        if (torneoIds.length) {
-          const { data: torn } = await supabase.from('tornei').select('id, nome').in('id', torneoIds)
-          const nomePerTorneo = new Map<string, string>()
-          for (const t of (torn ?? []) as Array<{ id: string; nome: string }>) nomePerTorneo.set(String(t.id), t.nome)
-          for (const t of pren2) {
-            if (t.torneo_id && !t.incontro_id) {
-              const a = map.get(String(t.id))
-              if (a) a.torneo_nome = nomePerTorneo.get(String(t.torneo_id)) ?? null
-            }
-          }
-        }
-      }
+      await arricchisciTipoAttivita(map)
       return lista
     },
   })
@@ -161,7 +87,7 @@ export default function AttivitaInProgramma() {
     )
   }
 
-  const lista = query.data ?? []
+  const lista = (query.data ?? []).filter((m) => !sport || m.sport === sport)
   if (lista.length === 0) {
     return (
       <p className="sub">Non hai attività in programma. Prenota un campo.</p>
@@ -169,16 +95,6 @@ export default function AttivitaInProgramma() {
   }
 
   const label = (id: string) => etichette.get(id) ?? 'Giocatore'
-
-  // "Mario Rossi" → "Rossi M."
-  function fmtP(id: string): string {
-    const s = label(id).trim()
-    const i = s.indexOf(' ')
-    if (i < 0) return s
-    const nome = s.slice(0, i)
-    const cognome = s.slice(i + 1)
-    return `${cognome} ${nome[0].toUpperCase()}.`
-  }
 
   // Raggruppa per giorno.
   const gruppi: { giorno: string; etichetta: string; att: Attivita[] }[] = []
@@ -199,18 +115,23 @@ export default function AttivitaInProgramma() {
 
   return (
     <div>
-      {gruppi.map((g) => (
+      {gruppi.map((g) => {
+        const previsione = meteoQuery.data?.get(ymd(new Date(g.att[0].inizio)))
+        return (
         <div key={g.giorno} className="gruppo-giorno">
           <div className="giorno-partite">
-            {ICONA_GIORNO}
+            {previsione ? <IconaMeteo codice={previsione.weathercode} size={18} /> : ICONA_GIORNO_GENERICA}
             <span>{g.etichetta}</span>
           </div>
           <div className="flex flex-col gap-3">
-            {g.att.map((m) => (
+            {g.att.map((m) => {
+              const mia = !!profilo && m.prenotante_id === profilo.id
+              const tipo = m.allenamento ? 'allenamento' : m.torneo_nome ? 'torneo' : 'partita'
+              return (
               <div key={m.id} className="amichevole-riga">
                 <div className="amichevole-cap">
                   <div>
-                    <div className="orario">
+                    <div className="orario orario-blu">
                       {oraLocale(new Date(m.inizio))}–{oraLocale(new Date(m.fine))}
                     </div>
                     <div className="att-sport">
@@ -222,30 +143,53 @@ export default function AttivitaInProgramma() {
                     {m.allenamento && m.allenatore_id && (
                       <div className="dove">Istruttore: {label(m.allenatore_id)}</div>
                     )}
-                    {m.prenotante_id && (
-                      <div className="dove">Prenotato da {label(m.prenotante_id)}</div>
+                    {!mia && m.prenotante_id && (
+                      <div className="dove">Gestita da {label(m.prenotante_id)}</div>
                     )}
                   </div>
-                  <TipoAttivitaIcona
-                    tipo={m.allenamento ? 'allenamento' : m.torneo_nome ? 'torneo' : 'partita'}
-                    titolo={m.torneo_nome ?? undefined}
-                  />
+                  {tipo !== 'partita' && (
+                    <TipoAttivitaIcona tipo={tipo} titolo={m.torneo_nome ?? undefined} />
+                  )}
                 </div>
                 {m.parti.length > 0 && (
                   <div className="att-parti">
                     {m.parti.map((r, i) => (
                       <span key={r.socio_id}>
                         {i > 0 && <span className="att-parti-sep">·</span>}
-                        {fmtP(r.socio_id)}
+                        {cognomeIniziale(label(r.socio_id))}
                       </span>
                     ))}
                   </div>
                 )}
+                {mia && (
+                  <div className="mt-auto pt-3">
+                    <button
+                      type="button"
+                      className="btn btn-pericolo btn-mini w-full"
+                      disabled={annulla.isPending}
+                      onClick={() => {
+                        const quando =
+                          new Date(m.inizio).toLocaleDateString('it-IT', {
+                            weekday: 'long',
+                            day: 'numeric',
+                            month: 'long',
+                          }) +
+                          ' alle ' +
+                          oraLocale(new Date(m.inizio))
+                        if (window.confirm(`Annullare la tua prenotazione (${quando})?`)) annulla.mutate(m.id)
+                      }}
+                    >
+                      Annulla la prenotazione
+                    </button>
+                  </div>
+                )}
               </div>
-            ))}
+              )
+            })}
           </div>
         </div>
-      ))}
+        )
+      })}
     </div>
   )
 }

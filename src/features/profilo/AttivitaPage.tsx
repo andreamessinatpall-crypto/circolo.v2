@@ -19,6 +19,7 @@ function RigaPartita({ p }: { p: PartitaStorico }) {
         <span className="storico-riga-sub">
           {dataEstesa(p.inizio.slice(0, 10))} · {oraLocale(new Date(p.inizio))}–{oraLocale(new Date(p.fine))}
         </span>
+        {p.risultato && <span className="storico-riga-risultato">Risultato: {p.risultato}</span>}
       </div>
       {p.sport && <span className="storico-riga-pill">{etichettaSport(p.sport)}</span>}
     </div>

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import { useAuth } from '@/auth/useAuth'
 import { mancaTabella, messaggioErrore } from '@/lib/errori'
 import { titleCase, dataEstesa } from '@/lib/formato'
@@ -19,9 +20,13 @@ export default function SezioneCompagni() {
   const { profilo } = useAuth()
   const { richieste, candidature, sociById, caricamento, errore, crea, aggiorna, elimina, candidati, rispondiCandidatura } =
     useRichiestePartner(profilo?.id)
+  const location = useLocation()
   const [sport, setSport] = useState<Sport>('padel')
   // null = chiuso, 'nuovo' = crea, altrimenti l'annuncio da modificare.
-  const [modaleAnnuncio, setModaleAnnuncio] = useState<'nuovo' | RichiestaPartner | null>(null)
+  // Si apre subito se si arriva da "Crea una partita" in Area Club.
+  const [modaleAnnuncio, setModaleAnnuncio] = useState<'nuovo' | RichiestaPartner | null>(
+    () => ((location.state as { apriNuovo?: boolean } | null)?.apriNuovo ? 'nuovo' : null),
+  )
   const [chatCon, setChatCon] = useState<{ id: string; etichetta: string } | null>(null)
 
   if (!profilo) return null
@@ -59,7 +64,7 @@ export default function SezioneCompagni() {
       </div>
 
       <button type="button" className="btn btn-verde-scuro btn-block mb-3" onClick={() => setModaleAnnuncio('nuovo')}>
-        + Nuovo annuncio
+        + Crea partita
       </button>
 
       {caricamento ? (

@@ -62,7 +62,7 @@ export default function NuovaRichiestaModal({ crea, aggiorna, onChiudi, modifica
     <>
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onChiudi}>
       <form onSubmit={onSubmit} className="card w-full max-w-md form-verde" onClick={(e) => e.stopPropagation()}>
-        <h2 className="mb-3">{modifica ? 'Modifica annuncio' : 'Nuovo annuncio'}</h2>
+        <h2 className="mb-3">{modifica ? 'Modifica annuncio' : 'Crea partita'}</h2>
 
         <span className="etichetta">Sport</span>
         <div className="seg-group">

@@ -2096,6 +2096,43 @@
     flex-direction: column;
     height: 100%;
   }
+  /* Orari in blu scuro (non l'ambra di default) solo in Attività (scheda Area
+     Club + pagina). Selettore con tipo elemento: specificità maggiore di
+     .amichevole-cap .orario, vince indipendentemente dall'ordine nel file. */
+  div.orario.orario-blu {
+    color: var(--v700);
+  }
+  /* Attività conclusa (AttivitaConcluse.tsx): sfondo leggermente diverso,
+     per distinguerla a colpo d'occhio da quelle ancora in programma. */
+  .amichevole-riga.conclusa {
+    background: var(--v050);
+  }
+  .risultato-riga {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .risultato-etichetta {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    font-weight: 700;
+    color: var(--ink3);
+  }
+  .risultato-valore {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--v700);
+  }
+  .freccia-espandi {
+    display: inline-flex;
+    margin-left: 4px;
+    transition: transform 0.15s;
+  }
+  .freccia-espandi.aperta {
+    transform: rotate(180deg);
+  }
   .amichevole-cap {
     display: flex;
     align-items: flex-start;
@@ -6460,6 +6497,11 @@
     font-size: 0.76rem;
     color: rgba(255, 255, 255, 0.6);
   }
+  .storico-riga-risultato {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--g300);
+  }
   .storico-riga-pill {
     flex: 0 0 auto;
     font-size: 0.66rem;
@@ -6552,6 +6594,135 @@
     flex-direction: column;
     gap: 14px;
   }
+  /* Riga con due schede affiancate (Attività + Cerca partita): sotto i
+     560px torna in colonna, come il resto dell'app su mobile. */
+  .club-riga {
+    display: grid;
+    gap: 14px;
+  }
+  .club-riga-2 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  @media (max-width: 560px) {
+    .club-riga-2 {
+      grid-template-columns: 1fr;
+    }
+  }
+  /* Riga di scorciatoie a icona (Contatti/Classifica/Tornei/Premi — 3 o 4 a
+     seconda che i premi siano attivi): flex, non grid, così si adatta al
+     numero di elementi senza bisogno di varianti. Resta SEMPRE affiancata
+     anche su mobile — sono minischede-pulsante, non vanno in colonna. */
+  .club-riga-scorciatoie {
+    display: flex;
+    gap: 10px;
+  }
+  .club-riga-scorciatoie .club-tile-scorciatoia {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+  /* Titolo + scheda: il nome della sezione sta sempre fuori dalla scheda
+     bianca, senza icona. */
+  .club-col {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .club-col-titolo {
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    font-weight: 800;
+    font-size: 0.94rem;
+    color: var(--ink2);
+    margin: 0;
+  }
+  /* Titolo + azione ("Gestisci"/"Vedi tutti") sulla stessa riga, fuori dalla
+     scheda — stesso schema per tutte le card. Zero inset orizzontale: così
+     si allinea esattamente al bordo delle schede/minischede sotto. */
+  .club-col-testata {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    margin: 0 0 8px;
+  }
+  .club-col-azione {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    flex-shrink: 0;
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: 700;
+    font-size: 0.8rem;
+    color: var(--v700);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .club-col-azione:hover {
+    color: var(--v800);
+    text-decoration: underline;
+  }
+  /* Scorciatoie a icona (Contatti/Classifica/Premi): sfondo blu pieno,
+     icona grande sopra il nome, niente titolo esterno. */
+  .club-tile-scorciatoia {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 22px 10px;
+    text-align: center;
+  }
+  /* Selettore composto (più specifico di .club-tile da solo): vince sempre
+     sullo sfondo bianco della card base, indipendentemente dall'ordine nel
+     file. */
+  .club-tile.club-tile-scorciatoia {
+    background: linear-gradient(160deg, var(--v600), var(--v900));
+    border-color: transparent;
+  }
+  .club-tile-scorciatoia-ico {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--g300);
+  }
+  .club-tile-scorciatoia-ico svg {
+    width: 42px;
+    height: 42px;
+  }
+  .club-tile-scorciatoia-nome {
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    font-weight: 800;
+    font-size: 0.86rem;
+    line-height: 1.15;
+    color: #fff;
+  }
+  @media (max-width: 400px) {
+    .club-tile-scorciatoia {
+      padding: 16px 6px;
+      gap: 7px;
+    }
+    .club-tile-scorciatoia-ico svg {
+      width: 32px;
+      height: 32px;
+    }
+    .club-tile-scorciatoia-nome {
+      font-size: 0.74rem;
+    }
+  }
+  /* Una comunicazione del club, vista sola-lettura del socio (AnnunciPagina). */
+  .annuncio-riga {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px;
+  }
+  .annuncio-riga + .annuncio-riga {
+    margin-top: 10px;
+  }
   .club-tile {
     position: relative;
     overflow: hidden;
@@ -6621,8 +6792,8 @@
     margin-top: 2px;
   }
   .club-tile-testo-anteprima {
-    margin: 12px 0 0;
-    font-size: 0.84rem;
+    margin: 0;
+    font-size: 0.92rem;
     line-height: 1.5;
     color: var(--ink);
   }
@@ -6643,13 +6814,15 @@
     text-decoration: underline;
   }
 
-  /* Carosello orizzontale di mini-card (amici/staff/tornei/premi) */
+  /* Carosello orizzontale di mini-card (amici/tornei), senza scheda dietro:
+     zero inset orizzontale, così la prima/ultima minischeda si allinea
+     esattamente al bordo delle schede che la delimitano sopra/sotto. */
   .club-tile-carosello {
     display: flex;
     gap: 10px;
     overflow-x: auto;
-    margin: 12px -2px 0;
-    padding: 2px 2px 4px;
+    margin: 0;
+    padding: 0 0 4px;
     scroll-snap-type: x proximity;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
@@ -6685,7 +6858,7 @@
       flex: 1 0 116px;
     }
     .club-tile-carosello .mini-torneo {
-      flex: 1 0 180px;
+      flex: 1 0 116px;
     }
     .club-tile-carosello .mini-premio {
       flex: 1 0 160px;
@@ -6726,7 +6899,7 @@
     color: var(--g300);
   }
   .mini-persona-nome {
-    font-size: 0.7rem;
+    font-size: 0.76rem;
     font-weight: 600;
     text-align: center;
     line-height: 1.2;
@@ -6738,9 +6911,10 @@
   }
   .mini-persona-tag {
     font-size: 0.6rem;
+    font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.03em;
-    color: var(--ink3);
+    color: var(--g600);
   }
   /* Prima mini-card del carosello Amici: porta alla pagina completa,
      bordo tratteggiato per distinguerla dai contatti veri. */
@@ -6783,24 +6957,31 @@
     opacity: 0.5;
     cursor: default;
   }
+  /* Stesse dimensioni e stesso stile a scheda bianca di .mini-persona
+     (nessuno sfondo tinto dietro), come richiesto esplicitamente. */
   .mini-torneo {
     flex: 0 0 auto;
-    width: 180px;
-    background: var(--v050);
+    width: 116px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 3px;
+    background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 14px;
-    padding: 14px 16px;
+    padding: 14px 10px;
+    box-shadow: var(--ombra-card);
     scroll-snap-align: start;
   }
   .mini-torneo-nome {
     font-weight: 700;
-    font-size: 0.9rem;
+    font-size: 0.82rem;
     color: var(--ink);
-    line-height: 1.3;
-    margin-bottom: 5px;
+    line-height: 1.25;
   }
   .mini-torneo-info {
-    font-size: 0.74rem;
+    font-size: 0.72rem;
     color: var(--ink2);
   }
   .mini-premio {

@@ -3,67 +3,44 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '@/auth/useAuth'
 import { dataEstesa, titleCase } from '@/lib/formato'
 import { oraLocale } from '@/features/prenotazioni/orari'
+import { SportIcona } from '@/components/IconeSport'
 import { useAmici } from '../amici/useAmici'
 import { useRichiestePartner } from '@/features/compagni/useRichiestePartner'
-import { useTornei } from '@/features/tornei/datiTornei'
-import { usePremiCatalogo, useSaldoCrediti } from '@/features/premi/datiPremi'
-import { useProssimaAttivita, useTop3Classifica } from './useAnteprimeAreaClub'
+import { useProssimaAttivita } from './useAnteprimeAreaClub'
 
 const SPORT_LABEL: Record<string, string> = { padel: 'Padel', calcio: 'Calcio' }
 
-function IcoCalendario() {
+// Scatola regalo con fiocco: per "Rewards" (premi da riscattare).
+function IcoRewards() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+      <rect x="3" y="9" width="18" height="4" rx="1" />
+      <rect x="4.5" y="13" width="15" height="8" rx="1" />
+      <line x1="12" y1="9" x2="12" y2="21" />
+      <path d="M12 9c-1.2-3-4-4.5-5.5-3S6 9 8 9z" />
+      <path d="M12 9c1.2-3 4-4.5 5.5-3S18 9 16 9z" />
     </svg>
   )
 }
-function IcoLista() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2M12 12h4M12 16h4M8 12h.01M8 16h.01"/>
-    </svg>
-  )
-}
-function IcoAmici() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <circle cx="9" cy="7" r="4"/><path d="M1 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><circle cx="17" cy="7" r="3"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-    </svg>
-  )
-}
-function IcoPremi() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18M4 22h16M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22M18 2H6v7a6 6 0 0 0 12 0V2z"/>
-    </svg>
-  )
-}
-function IcoCompagni() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/>
-    </svg>
-  )
-}
+// Podio a tre gradini: più leggibile di un trofeo per "classifica" a colpo d'occhio.
 function IcoTrofeoClassifica() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+      <rect x="2.5" y="13" width="5.5" height="8" rx="1" />
+      <rect x="9.25" y="8" width="5.5" height="13" rx="1" />
+      <rect x="16" y="15.5" width="5.5" height="5.5" rx="1" />
     </svg>
   )
 }
-function IcoZap() {
+// Bacheca/giornale: per "Annunci" (comunicazioni del club + tornei in programma).
+function IcoMegafono() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
-    </svg>
-  )
-}
-function IcoOrologio() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+      <path d="M4 4h13a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z" />
+      <path d="M19 8h1a1 1 0 0 1 1 1v9a2 2 0 0 1-2 2" />
+      <line x1="7" y1="8" x2="13" y2="8" />
+      <line x1="7" y1="12" x2="16" y2="12" />
+      <line x1="7" y1="15.5" x2="16" y2="15.5" />
     </svg>
   )
 }
@@ -89,88 +66,104 @@ function IcoAggiungiPersona() {
   )
 }
 
-function Testata({ icona, titolo, sub }: { icona: ReactNode; titolo: string; sub?: string }) {
-  return (
-    <div className="club-tile-testata">
-      <span className="club-tile-testata-ico">{icona}</span>
-      <span className="club-tile-testata-testi">
-        <span className="club-tile-titolo">{titolo}</span>
-        {sub && <span className="club-tile-sub">{sub}</span>}
-      </span>
-    </div>
-  )
-}
-
-function VediTutti({ etichetta = 'Vedi tutti' }: { etichetta?: string }) {
-  return (
-    <span className="club-tile-vedi-tutti">
-      {etichetta} <IcoFreccia />
-    </span>
-  )
-}
-
 // "Cognome Nome" (formato di etichetta) → solo il nome di battesimo.
 function primoNome(etichetta: string): string {
   const parti = titleCase(etichetta).trim().split(/\s+/)
   return parti[parti.length - 1] ?? etichetta
 }
 
-function MiniPersona({ foto, nome, tag }: { foto?: string | null; nome: string; tag?: string }) {
-  const iniziale = nome.trim().charAt(0).toUpperCase() || '?'
+// Titolo della sezione + azione ("Gestisci"/"Vedi tutti") sulla stessa riga,
+// sempre fuori dalla scheda — stesso schema per tutte le card. Niente icona
+// (eccetto le tre scorciatoie Contatti/Classifica/Premi, icona+nome dentro).
+function TestataSezione({ titolo, to, azione = 'Vedi tutti' }: { titolo: string; to: string; azione?: string }) {
   return (
-    <div className="mini-persona">
-      {foto ? (
-        <img src={foto} alt="" className="mini-persona-foto" />
-      ) : (
-        <span className="mini-persona-foto mini-persona-foto-vuota">{iniziale}</span>
-      )}
-      <span className="mini-persona-nome">{nome}</span>
-      {tag && <span className="mini-persona-tag">{tag}</span>}
+    <div className="club-col-testata">
+      <div className="club-col-titolo">{titolo}</div>
+      <Link to={to} className="club-col-azione">
+        {azione} <IcoFreccia />
+      </Link>
     </div>
   )
 }
 
-// ── Attività in programma (card in evidenza, tutta cliccabile) ────────────
+// ── Attività (Le mie prenotazioni + Attività in programma unite) ───────────
 function CardAttivita() {
   const { data: prossima, isLoading } = useProssimaAttivita()
   return (
-    <Link to="/profilo/attivita-in-programma" className="club-tile club-tile--grande club-tile--blu">
-      <Testata icona={<IcoCalendario />} titolo="Attività in programma" sub="Le tue prossime partite e lezioni" />
-      {isLoading ? (
-        <p className="club-tile-testo-anteprima">Caricamento…</p>
-      ) : prossima ? (
-        <p className="club-tile-testo-anteprima">
-          <strong>{dataEstesa(prossima.inizio.slice(0, 10))}</strong>, {oraLocale(new Date(prossima.inizio))}–{oraLocale(new Date(prossima.fine))}
-          <br />
-          {SPORT_LABEL[prossima.sport] ?? prossima.sport} · {prossima.campo_nome ?? 'Campo'}
-        </p>
-      ) : (
-        <p className="club-tile-testo-anteprima">Nessuna attività in programma.</p>
-      )}
-      <VediTutti etichetta="Vedi tutte le attività" />
-    </Link>
+    <div className="club-col">
+      <TestataSezione titolo="La tua prossima attività" to="/profilo/mie-prenotazioni" azione="Gestisci" />
+      <Link to="/profilo/mie-prenotazioni" className="club-tile">
+        {isLoading ? (
+          <p className="club-tile-testo-anteprima">Caricamento…</p>
+        ) : prossima ? (
+          <div className="amichevole-cap">
+            <div>
+              <div className="orario orario-blu">
+                {oraLocale(new Date(prossima.inizio))}–{oraLocale(new Date(prossima.fine))}
+              </div>
+              <div className="att-sport">
+                <span className="att-sport-ic"><SportIcona sport={prossima.sport} /></span>
+                {SPORT_LABEL[prossima.sport] ?? prossima.sport}
+                <span className="att-parti-sep">·</span>
+                <span className="att-campo">{prossima.campo_nome ?? 'Campo'}</span>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <p className="club-tile-testo-anteprima">Nessuna attività in programma.</p>
+        )}
+      </Link>
+    </div>
   )
 }
 
-// ── Le mie prenotazioni (gestione: annulla, partecipanti) ──────────────────
-function CardMiePrenotazioni() {
+// ── Cerca partita (ultimo annuncio, tutta cliccabile) ───────────────────────
+function CardCercaPartita() {
+  const { profilo } = useAuth()
+  const { richieste, sociById } = useRichiestePartner(profilo?.id)
+  const ultima = richieste[0]
+
   return (
-    <Link to="/profilo/mie-prenotazioni" className="club-tile club-tile--larga">
-      <Testata icona={<IcoLista />} titolo="Le mie prenotazioni" sub="Gestisci le tue partite prenotate" />
-      <p className="club-tile-testo-anteprima">
-        Annulla una prenotazione o indica gli altri giocatori della partita.
-      </p>
-      <VediTutti etichetta="Gestisci le prenotazioni" />
+    <div className="club-col">
+      <TestataSezione titolo="Cerca partita" to="/profilo/cerco-giocatori" />
+      {ultima ? (
+        <Link to="/profilo/cerco-giocatori" className="club-tile">
+          <p className="club-tile-testo-anteprima">
+            <strong>{titleCase(sociById.get(ultima.socio_id) ?? 'Un socio')}</strong> cerca giocatori di {SPORT_LABEL[ultima.sport] ?? ultima.sport}
+            <br />
+            {dataEstesa(ultima.giorno?.slice(0, 10))} · {ultima.ora_inizio?.slice(0, 5)}
+          </p>
+        </Link>
+      ) : (
+        <div className="club-tile">
+          <p className="club-tile-testo-anteprima">Nessun annuncio al momento.</p>
+          <Link to="/profilo/cerco-giocatori" state={{ apriNuovo: true }} className="club-col-azione mt-3">
+            + Crea una partita
+          </Link>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Scorciatoie a icona: Contatti / Classifica / Premi ──────────────────────
+function TileScorciatoia({ titolo, icona, to }: { titolo: string; icona: ReactNode; to: string }) {
+  return (
+    <Link to={to} className="club-tile club-tile-scorciatoia">
+      <span className="club-tile-scorciatoia-ico">{icona}</span>
+      <span className="club-tile-scorciatoia-nome">{titolo}</span>
     </Link>
   )
 }
 
 // ── Amici (prima card "Aggiungi nuovo amico", poi fino a 5 contatti tra
-// amici già collegati e giocatori suggeriti — per questi ultimi un
-// pulsante "Aggiungi" invia la richiesta senza uscire dalla card. Non
-// cliccabile su tutta la superficie per via dello scroll orizzontale
-// interno: solo la prima mini-card e "Vedi tutti" portano alla pagina
-// completa. ────────────────────────────────────────────────────────────
+// amici già collegati, richieste inviate ancora in attesa e giocatori
+// suggeriti — per questi ultimi un pulsante "Aggiungi" invia la richiesta
+// senza uscire dalla card. Niente scheda bianca dietro al carosello: le
+// minischede "galleggiano" sulla pagina, allineate alle schede che le
+// delimitano sopra/sotto. ───────────────────────────────────────────────
+type StatoContatto = 'amico' | 'in_attesa' | 'suggerito'
+
 function CardAmici() {
   const { profilo } = useAuth()
   const amici = useAmici(profilo?.id ?? '')
@@ -183,14 +176,15 @@ function CardAmici() {
   ])
   const suggeriti = amici.sociPubblici.filter((s) => !collegati.has(s.id) && !s.account_privato)
 
-  const contatti = [
-    ...amici.amici.map((a) => ({ id: a.id, nome: primoNome(a.etichetta), foto: null as string | null, amico: true })),
-    ...suggeriti.map((s) => ({ id: s.id, nome: primoNome(s.etichetta), foto: s.foto_url ?? null, amico: false })),
+  const contatti: { id: string; nome: string; foto: string | null; stato: StatoContatto }[] = [
+    ...amici.amici.map((a) => ({ id: a.id, nome: primoNome(a.etichetta), foto: null, stato: 'amico' as const })),
+    ...amici.inviate.map((a) => ({ id: a.id, nome: primoNome(a.etichetta), foto: null, stato: 'in_attesa' as const })),
+    ...suggeriti.map((s) => ({ id: s.id, nome: primoNome(s.etichetta), foto: s.foto_url ?? null, stato: 'suggerito' as const })),
   ].slice(0, 5)
 
   return (
-    <div className="club-tile club-tile--larga club-tile--fluttua">
-      <Testata icona={<IcoAmici />} titolo="Amici" />
+    <div className="club-col">
+      <TestataSezione titolo="Amici" to="/profilo/amici" />
       <div className="club-tile-carosello">
         <Link to="/profilo/amici" className="mini-persona mini-persona-aggiungi">
           <span className="mini-persona-foto mini-persona-foto-aggiungi"><IcoAggiungiPersona /></span>
@@ -204,7 +198,8 @@ function CardAmici() {
               <span className="mini-persona-foto mini-persona-foto-vuota">{c.nome.charAt(0).toUpperCase() || '?'}</span>
             )}
             <span className="mini-persona-nome">{c.nome}</span>
-            {!c.amico && (
+            {c.stato === 'in_attesa' && <span className="mini-persona-tag">In attesa</span>}
+            {c.stato === 'suggerito' && (
               <button
                 type="button"
                 className="mini-persona-btn"
@@ -217,181 +212,29 @@ function CardAmici() {
           </div>
         ))}
       </div>
-      <Link to="/profilo/amici" className="club-tile-vedi-tutti">Vedi tutti gli amici <IcoFreccia /></Link>
     </div>
   )
 }
 
-// ── Cerco giocatori (ultimo annuncio, tutta cliccabile) ─────────────────────
-function CardCercoGiocatori() {
-  const { profilo } = useAuth()
-  const { richieste, sociById } = useRichiestePartner(profilo?.id)
-  const ultima = richieste[0]
-
-  return (
-    <Link to="/profilo/cerco-giocatori" className="club-tile club-tile--larga">
-      <Testata icona={<IcoCompagni />} titolo="Cerco giocatori" sub="Annunci per trovare un compagno" />
-      {ultima ? (
-        <p className="club-tile-testo-anteprima">
-          <strong>{titleCase(sociById.get(ultima.socio_id) ?? 'Un socio')}</strong> cerca giocatori di {SPORT_LABEL[ultima.sport] ?? ultima.sport}
-          <br />
-          {dataEstesa(ultima.giorno?.slice(0, 10))} · {ultima.ora_inizio?.slice(0, 5)}
-        </p>
-      ) : (
-        <p className="club-tile-testo-anteprima">Nessun annuncio al momento.</p>
-      )}
-      <VediTutti etichetta="Cerca dei giocatori per una partita" />
-    </Link>
-  )
-}
-
-// ── Tornei in corso / in programma (caroselli) ─────────────────────────────
-function CardTorneiCarosello({
-  to,
-  titolo,
-  sub,
-  icona,
-  tema,
-  stato,
-}: {
-  to: string
-  titolo: string
-  sub: string
-  icona: ReactNode
-  tema: string
-  stato: 'in_corso' | 'in_programma'
-}) {
-  const { data } = useTornei()
-  const lista = (data?.tornei ?? []).filter((t) => t.stato === stato)
-
-  return (
-    <div className={`club-tile club-tile--larga club-tile--${tema}`}>
-      <Testata icona={icona} titolo={titolo} sub={sub} />
-      {lista.length === 0 ? (
-        <p className="club-tile-testo-anteprima">Nessun torneo al momento.</p>
-      ) : (
-        <div className="club-tile-carosello">
-          {lista.map((t) => (
-            <div key={t.id} className="mini-torneo">
-              <div className="mini-torneo-nome">{t.nome}</div>
-              <div className="mini-torneo-info">
-                {SPORT_LABEL[t.sport] ?? t.sport}
-                {t.data_inizio && <> · {dataEstesa(t.data_inizio.slice(0, 10))}</>}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-      <Link to={to} className="club-tile-vedi-tutti">Vedi tutti i tornei <IcoFreccia /></Link>
-    </div>
-  )
-}
-
-// ── Staff del club (carosello) ──────────────────────────────────────────────
-function CardStaff() {
-  const { profilo } = useAuth()
-  const { staff } = useAmici(profilo?.id ?? '')
-
-  return (
-    <div className="club-tile club-tile--larga club-tile--slate">
-      <Testata icona={<IcoBadge />} titolo="Staff del club" sub="Maestri e collaboratori" />
-      {staff.length === 0 ? (
-        <p className="club-tile-testo-anteprima">Nessun membro dello staff al momento.</p>
-      ) : (
-        <div className="club-tile-carosello">
-          {staff.map((s) => (
-            <MiniPersona key={s.id} nome={titleCase(s.etichetta)} tag={s.ruolo ?? undefined} />
-          ))}
-        </div>
-      )}
-      <Link to="/profilo/staff" className="club-tile-vedi-tutti">Vedi tutto lo staff <IcoFreccia /></Link>
-    </div>
-  )
-}
-
-// ── Classifica (top 3, tutta cliccabile) ────────────────────────────────────
-function CardClassifica() {
-  const { data } = useTop3Classifica()
-  return (
-    <Link to="/profilo/classifica" className="club-tile club-tile--larga club-tile--notte">
-      <Testata icona={<IcoTrofeoClassifica />} titolo="Classifica" sub="La tua posizione nel club" />
-      {data && data.length > 0 ? (
-        <div className="club-tile-classifica-top3">
-          {data.map((r) => (
-            <div key={r.posizione} className={'club-tile-classifica-riga' + (r.is_me ? ' io' : '')}>
-              <span className="club-tile-classifica-pos">{r.posizione}º</span>
-              <span className="club-tile-classifica-nome">{r.etichetta ? titleCase(r.etichetta) : '—'}</span>
-              <span className="club-tile-classifica-punti">{r.punti ?? 0} pt</span>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <p className="club-tile-testo-anteprima">Nessun dato in classifica.</p>
-      )}
-      <VediTutti etichetta="Classifica completa" />
-    </Link>
-  )
-}
-
-// ── Premi (mini-card + crediti disponibili, tutta cliccabile) ──────────────
-function CardPremi() {
-  const { profilo } = useAuth()
-  const { data: premi } = usePremiCatalogo()
-  const { data: crediti } = useSaldoCrediti(profilo?.id)
-
-  return (
-    <Link to="/profilo/premi" className="club-tile club-tile--larga club-tile--bronzo">
-      <Testata icona={<IcoPremi />} titolo="Premi" sub={`Hai ${crediti ?? 0} crediti disponibili`} />
-      {premi && premi.length > 0 ? (
-        <div className="club-tile-carosello">
-          {premi.slice(0, 8).map((p) => (
-            <div key={p.id} className="mini-premio">
-              <div className="mini-premio-nome">{p.nome}</div>
-              <div className="mini-premio-costo">{p.costo ?? 0} crediti</div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <p className="club-tile-testo-anteprima">Nessun premio disponibile al momento.</p>
-      )}
-      <VediTutti etichetta="Riscatta i tuoi punti" />
-    </Link>
-  )
-}
-
-// Area Club (Fase anteprime): ogni card mostra un'anteprima reale del suo
-// contenuto (prossima attività, amici/staff con foto, ultimo annuncio,
-// tornei, top 3 classifica, premi disponibili) invece di una semplice
-// icona — richiesto esplicitamente. Le card con un carosello interno non
-// sono link cliccabili su tutta la superficie (per non confliggere con lo
-// scroll orizzontale): solo la testata/riga finale "Vedi tutti" porta alla
-// pagina completa. Solo per il giocatore regolare — vedi ProfiloPage.tsx.
+// Area Club: i nomi delle sezioni stanno sempre fuori dalle schede, senza
+// icona (eccetto le scorciatoie Contatti/Classifica/Annunci/Rewards, che
+// hanno icona+nome dentro la scheda per essere riconoscibili a colpo
+// d'occhio).
+// Solo per il giocatore regolare — vedi ProfiloPage.tsx.
 export default function AreaClubSchede({ modalitaPremi }: { modalitaPremi: boolean }) {
   return (
     <div className="club-tile-grid">
       <CardAttivita />
-      <CardMiePrenotazioni />
+      <CardCercaPartita />
+
+      <div className="club-riga-scorciatoie">
+        <TileScorciatoia titolo="Contatti" icona={<IcoBadge />} to="/profilo/staff" />
+        <TileScorciatoia titolo="Classifica" icona={<IcoTrofeoClassifica />} to="/profilo/classifica" />
+        <TileScorciatoia titolo="Annunci" icona={<IcoMegafono />} to="/profilo/annunci" />
+        {modalitaPremi && <TileScorciatoia titolo="Rewards" icona={<IcoRewards />} to="/profilo/premi" />}
+      </div>
+
       <CardAmici />
-      <CardCercoGiocatori />
-      <CardTorneiCarosello
-        to="/profilo/tornei-in-corso"
-        titolo="Tornei in corso"
-        sub="Segui le partite live"
-        icona={<IcoZap />}
-        tema="terra"
-        stato="in_corso"
-      />
-      <CardTorneiCarosello
-        to="/profilo/tornei-in-programma"
-        titolo="Tornei in programma"
-        sub="Iscriviti al prossimo torneo"
-        icona={<IcoOrologio />}
-        tema="ciano"
-        stato="in_programma"
-      />
-      <CardStaff />
-      <CardClassifica />
-      {modalitaPremi && <CardPremi />}
     </div>
   )
 }

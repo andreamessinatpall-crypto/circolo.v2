@@ -79,7 +79,7 @@ export default function StaffClubPagina() {
 
   return (
     <div>
-      <TornaAreaClub titolo="Staff del club" />
+      <TornaAreaClub titolo="Contatti" />
 
       {staff.length === 0 ? (
         <p className="sub">Nessun membro dello staff al momento.</p>

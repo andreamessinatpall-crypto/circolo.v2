@@ -7,6 +7,7 @@ export interface PartitaStorico {
   fine: string
   sport: 'padel' | 'calcio' | null
   campoNome: string | null
+  risultato?: string | null
 }
 
 export interface TorneoStorico {
@@ -35,6 +36,9 @@ async function arricchisciConCampo<T extends { campo_id: number | string }>(
 
 // Partite amichevoli giocate (Fase D): esclude lezioni e incontri di torneo,
 // solo prenotazioni già concluse a cui il socio ha partecipato da confermato.
+// Solo quelle iniziate da più di 7 giorni: quelle più recenti si vedono già
+// nella pagina Attività → "Concluse questa settimana" (AttivitaConcluse.tsx),
+// niente doppioni tra le due liste.
 export function usePartiteGiocate(socioId: string | undefined) {
   return useQuery({
     queryKey: ['storico-partite', socioId],
@@ -49,19 +53,27 @@ export function usePartiteGiocate(socioId: string | undefined) {
       const prenIds = [...new Set((parts ?? []).map((p) => p.prenotazione_id))]
       if (prenIds.length === 0) return []
 
+      const settimanaFa = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
       const { data: pren, error: errPren } = await supabase
         .from('prenotazioni')
-        .select('id, inizio, fine, campo_id, allenamento, torneo_id, incontro_id')
+        .select('id, inizio, fine, campo_id, allenamento, torneo_id, incontro_id, risultato')
         .in('id', prenIds)
         .eq('allenamento', false)
         .is('torneo_id', null)
         .is('incontro_id', null)
-        .lt('fine', new Date().toISOString())
+        .lt('inizio', settimanaFa)
         .order('inizio', { ascending: false })
       if (errPren) throw errPren
 
       const righe = await arricchisciConCampo(pren ?? [])
-      return righe.map((r) => ({ id: r.id, inizio: r.inizio, fine: r.fine, sport: r.sport, campoNome: r.campoNome }))
+      return righe.map((r) => ({
+        id: r.id,
+        inizio: r.inizio,
+        fine: r.fine,
+        sport: r.sport,
+        campoNome: r.campoNome,
+        risultato: r.risultato ?? null,
+      }))
     },
   })
 }

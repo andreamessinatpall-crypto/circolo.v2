@@ -8,7 +8,7 @@ const ICO_CAMPO = (
 )
 
 // Vista staff (admin/collaboratore/istruttore): griglia per-campo. "Le mie
-// prenotazioni" è stata spostata in Area Club (MiePrenotazioniPagina.tsx).
+// prenotazioni" è stata spostata in Area Club (GestioneAttivitaPagina.tsx).
 export default function SportPage({ sport }: { sport: Sport }) {
   const label = sport === 'padel' ? 'Padel' : 'Calcio'
 
