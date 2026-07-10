@@ -633,7 +633,7 @@ function Selettore({
 // tendina di sistema con la spunta di selezione sopra i nomi. Con un menu
 // tutto nostro (stessa lista già usata per "Cerca amico" nel profilo) il
 // risultato è identico su ogni dispositivo.
-function MenuAmici({
+export function MenuAmici({
   opzioni,
   onScegli,
   onOspite,

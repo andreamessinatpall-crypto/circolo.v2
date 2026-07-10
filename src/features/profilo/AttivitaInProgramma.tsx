@@ -1,14 +1,17 @@
 import { useMemo } from 'react'
+import { Link } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/auth/useAuth'
-import { mancaRpc, messaggioErrore } from '@/lib/errori'
+import { mancaTabella, messaggioErrore, mancaRpc } from '@/lib/errori'
 import { useSociEtichette } from '@/features/prenotazioni/datiAmichevoli'
 import { oraLocale, ymd } from '@/features/prenotazioni/orari'
 import { SportIcona } from '@/components/IconeSport'
 import { TipoAttivitaIcona } from '@/components/IconeAttivita'
 import { IconaMeteo } from '@/components/IconeMeteo'
 import { useMeteo } from '@/hooks/useMeteo'
+import { useAmici } from './amici/useAmici'
+import { MenuAmici } from '@/features/prenotazioni/MieAmichevoli'
 import { arricchisciTipoAttivita, cognomeIniziale, righeInMappa, type Attivita, type RigaAttivitaBase } from './attivitaComune'
 import type { Sport } from '@/features/prenotazioni/tipi'
 
@@ -40,6 +43,12 @@ export default function AttivitaInProgramma({ sport }: { sport?: Sport } = {}) {
   // stato sospeso o ha cancellato l'account.
   const sociQuery = useSociEtichette()
   const meteoQuery = useMeteo()
+  const amiciData = useAmici(profilo?.id ?? '')
+
+  const invalidaAttivita = () => {
+    qc.invalidateQueries({ queryKey: ['attivita-programma'] })
+    qc.invalidateQueries({ queryKey: ['amichevoli'] })
+  }
 
   const annulla = useMutation({
     mutationFn: async (id: number | string) => {
@@ -47,11 +56,51 @@ export default function AttivitaInProgramma({ sport }: { sport?: Sport } = {}) {
       if (error) throw error
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['attivita-programma'] })
+      invalidaAttivita()
       qc.invalidateQueries({ queryKey: ['prossima-attivita'] })
       qc.invalidateQueries({ queryKey: ['prenotazioni'] })
     },
     onError: (e: unknown) => window.alert('Annullamento non riuscito: ' + messaggioErrore(e)),
+  })
+
+  // Aggiungere/togliere un amico dalla propria partita: era in MieAmichevoli.tsx
+  // (ora rimpiazzato da questa lista unica), mutations identiche.
+  const aggiungiAmico = useMutation({
+    mutationFn: async ({ prenId, socioId }: { prenId: number | string; socioId: string }) => {
+      const { error } = await supabase
+        .from('partecipanti_amichevole')
+        .upsert(
+          [{ prenotazione_id: prenId, socio_id: socioId, confermato: false }],
+          { onConflict: 'prenotazione_id,socio_id', ignoreDuplicates: true },
+        )
+      if (error) throw error
+    },
+    onSuccess: invalidaAttivita,
+    onError: (e: unknown) => {
+      const err = e as { code?: string }
+      if (err.code === '42501') {
+        window.alert('Puoi aggiungere solo i tuoi amici (e te stesso) alle tue prenotazioni.')
+      } else if (mancaTabella(e, 'partecipanti_amichevole')) {
+        window.alert('Funzione non ancora attiva: esegui lo script tappa3a-amichevoli.sql su Supabase.')
+      } else {
+        window.alert('Aggiunta non riuscita: ' + messaggioErrore(e))
+      }
+    },
+  })
+
+  // Nessun id di riga disponibile dalla RPC (restituisce solo socio_id): la
+  // coppia prenotazione+socio identifica comunque in modo univoco la riga.
+  const rimuoviAmico = useMutation({
+    mutationFn: async ({ prenId, socioId }: { prenId: number | string; socioId: string }) => {
+      const { error } = await supabase
+        .from('partecipanti_amichevole')
+        .delete()
+        .eq('prenotazione_id', prenId)
+        .eq('socio_id', socioId)
+      if (error) throw error
+    },
+    onSuccess: invalidaAttivita,
+    onError: (e: unknown) => window.alert('Rimozione non riuscita: ' + messaggioErrore(e)),
   })
 
   const query = useQuery({
@@ -151,15 +200,27 @@ export default function AttivitaInProgramma({ sport }: { sport?: Sport } = {}) {
                     <TipoAttivitaIcona tipo={tipo} titolo={m.torneo_nome ?? undefined} />
                   )}
                 </div>
-                {m.parti.length > 0 && (
-                  <div className="att-parti">
-                    {m.parti.map((r, i) => (
-                      <span key={r.socio_id}>
-                        {i > 0 && <span className="att-parti-sep">·</span>}
-                        {cognomeIniziale(label(r.socio_id))}
-                      </span>
-                    ))}
-                  </div>
+                {mia && tipo === 'partita' ? (
+                  <PartecipantiPropria
+                    sport={m.sport}
+                    parti={m.parti}
+                    label={label}
+                    mioId={profilo!.id}
+                    amiciData={amiciData}
+                    onAggiungi={(socioId) => aggiungiAmico.mutate({ prenId: m.id, socioId })}
+                    onRimuovi={(socioId) => rimuoviAmico.mutate({ prenId: m.id, socioId })}
+                  />
+                ) : (
+                  m.parti.length > 0 && (
+                    <div className="att-parti">
+                      {m.parti.map((r, i) => (
+                        <span key={r.socio_id}>
+                          {i > 0 && <span className="att-parti-sep">·</span>}
+                          {cognomeIniziale(label(r.socio_id))}
+                        </span>
+                      ))}
+                    </div>
+                  )
                 )}
                 {mia && (
                   <div className="mt-auto pt-3">
@@ -190,6 +251,77 @@ export default function AttivitaInProgramma({ sport }: { sport?: Sport } = {}) {
         </div>
         )
       })}
+    </div>
+  )
+}
+
+// Partecipanti di una partita propria (non allenamento/torneo): a differenza
+// della lista di sola lettura usata per le partite altrui, qui si possono
+// aggiungere/togliere amici — stesso comportamento che aveva MieAmichevoli.tsx.
+function PartecipantiPropria({
+  sport,
+  parti,
+  label,
+  mioId,
+  amiciData,
+  onAggiungi,
+  onRimuovi,
+}: {
+  sport: string
+  parti: { socio_id: string; confermato: boolean }[]
+  label: (id: string) => string
+  mioId: string
+  amiciData: ReturnType<typeof useAmici>
+  onAggiungi: (socioId: string) => void
+  onRimuovi: (socioId: string) => void
+}) {
+  const giaIds = new Set(parti.map((p) => p.socio_id))
+  const selezionabili = amiciData.amici.filter((a) => !giaIds.has(a.id))
+  const cap4 = sport === 'padel' && parti.length >= 4
+  const amiciVuoti = amiciData.amici.length === 0
+  const nienteDaAggiungere = !amiciVuoti && selezionabili.length === 0
+
+  const menuAggiungi = !cap4 && (
+    amiciVuoti ? (
+      <span className="chips-nessun-amico">
+        Non hai ancora amici. <Link to="/profilo/amici">Aggiungi amici</Link>
+      </span>
+    ) : !nienteDaAggiungere ? (
+      <MenuAmici opzioni={selezionabili} onScegli={onAggiungi} />
+    ) : null
+  )
+
+  if (parti.length === 0) {
+    return (
+      <>
+        <div className="part-vuoto">Indica gli altri giocatori di questa partita.</div>
+        {menuAggiungi}
+      </>
+    )
+  }
+
+  return (
+    <div className="chips">
+      {parti.map((r) => (
+        <span key={r.socio_id} className="chip">
+          {cognomeIniziale(label(r.socio_id))}
+          {r.socio_id !== mioId && (
+            <button
+              type="button"
+              className="x"
+              title="Togli"
+              onClick={() => {
+                if (window.confirm(`Rimuovere ${cognomeIniziale(label(r.socio_id))} da questa partita?`)) {
+                  onRimuovi(r.socio_id)
+                }
+              }}
+            >
+              ×
+            </button>
+          )}
+        </span>
+      ))}
+      {menuAggiungi}
     </div>
   )
 }

@@ -1,9 +1,12 @@
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/auth/useAuth'
+import { useMemo } from 'react'
 import { dataEstesa, titleCase } from '@/lib/formato'
 import { oraLocale } from '@/features/prenotazioni/orari'
 import { SportIcona } from '@/components/IconeSport'
+import { useSociEtichette } from '@/features/prenotazioni/datiAmichevoli'
+import { cognomeIniziale } from '../attivitaComune'
 import { useAmici } from '../amici/useAmici'
 import { useRichiestePartner } from '@/features/compagni/useRichiestePartner'
 import { useProssimaAttivita } from './useAnteprimeAreaClub'
@@ -88,7 +91,17 @@ function TestataSezione({ titolo, to, azione = 'Vedi tutti' }: { titolo: string;
 
 // ── Attività (Le mie prenotazioni + Attività in programma unite) ───────────
 function CardAttivita() {
+  const { profilo } = useAuth()
   const { data: prossima, isLoading } = useProssimaAttivita()
+  const sociQuery = useSociEtichette()
+  const etichette = useMemo(() => {
+    const m = new Map<string, string>()
+    for (const s of sociQuery.data ?? []) m.set(s.id, s.etichetta)
+    if (profilo) m.set(profilo.id, `${profilo.nome} ${profilo.cognome}`)
+    return m
+  }, [sociQuery.data, profilo])
+  const label = (id: string) => etichette.get(id) ?? 'Giocatore'
+
   return (
     <div className="club-col">
       <TestataSezione titolo="La tua prossima attività" to="/profilo/mie-prenotazioni" azione="Gestisci" />
@@ -98,6 +111,7 @@ function CardAttivita() {
         ) : prossima ? (
           <div className="amichevole-cap">
             <div>
+              <div className="giorno-prossima">{dataEstesa(prossima.inizio.slice(0, 10))}</div>
               <div className="orario orario-blu">
                 {oraLocale(new Date(prossima.inizio))}–{oraLocale(new Date(prossima.fine))}
               </div>
@@ -107,6 +121,16 @@ function CardAttivita() {
                 <span className="att-parti-sep">·</span>
                 <span className="att-campo">{prossima.campo_nome ?? 'Campo'}</span>
               </div>
+              {prossima.partecipanti.length > 0 && (
+                <div className="att-parti">
+                  {prossima.partecipanti.map((id, i) => (
+                    <span key={id}>
+                      {i > 0 && <span className="att-parti-sep">·</span>}
+                      {cognomeIniziale(label(id))}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         ) : (
