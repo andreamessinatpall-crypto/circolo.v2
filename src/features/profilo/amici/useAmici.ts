@@ -207,6 +207,10 @@ export function useAmici(profiloId: string) {
     staffIds,
     caricamento: amicizieQuery.isLoading || sociQuery.isLoading,
     erroreAmicizie: amicizieQuery.error,
+    // Tutte le amicizie accettate (non solo quelle di profiloId): serve per
+    // contare gli amici di UN ALTRO socio nella scheda dettaglio (Fase
+    // "scheda giocatore"), senza una query dedicata.
+    amicizieTutte: amicizieQuery.data ?? [],
     ...gruppi,
     invia,
     accetta,

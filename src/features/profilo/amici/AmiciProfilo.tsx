@@ -308,6 +308,13 @@ export default function AmiciProfilo() {
         <DettaglioAmicoModal
           key={dettaglioAmico.id}
           voce={dettaglioAmico}
+          amiciCount={
+            amici.amicizieTutte.filter(
+              (a) =>
+                a.stato === 'accettata' &&
+                (a.richiedente === dettaglioAmico.id || a.destinatario === dettaglioAmico.id),
+            ).length
+          }
           onChat={() => { setChatAmico(dettaglioAmico); setDettaglioAmico(null) }}
           onRimuovi={() => {
             rimuoviConConferma(dettaglioAmico, amici.rimuovi.mutate)

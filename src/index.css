@@ -2105,7 +2105,6 @@
      battere le regole originali indipendentemente dall'ordine nel file. */
   .amichevole-riga.att-wow {
     position: relative;
-    overflow: hidden;
     background: linear-gradient(140deg, var(--v600) 0%, var(--v800) 55%, var(--v900) 100%);
     border-color: transparent;
     color: #fff;
@@ -2114,12 +2113,23 @@
     content: '';
     position: absolute;
     inset: 0;
+    border-radius: inherit;
     pointer-events: none;
     background: radial-gradient(60% 70% at 100% 0%, rgba(200, 151, 46, 0.22), transparent 55%);
   }
   .att-wow > * {
     position: relative;
     z-index: 1;
+  }
+  /* Il menu "+ amico" (.aggiungi-part-icona, dentro .chips oppure diretto
+     figlio quando la partita non ha ancora partecipanti) deve restare sopra
+     il pulsante "Annulla la prenotazione" sottostante: stessa z-index:1 dei
+     fratelli sopra, quindi senza questa regola vince l'ordine nel DOM e il
+     tasto Annulla (che viene dopo) copre la tendina, rendendola inutilizzabile
+     su mobile dove le due zone si accavallano. */
+  .att-wow > .chips,
+  .att-wow > .aggiungi-part-icona {
+    z-index: 3;
   }
   .att-wow div.orario.orario-blu {
     color: #fff;
@@ -6574,6 +6584,165 @@
   .amico-dett-sez .club-sez-titolo {
     display: block;
     margin-bottom: 10px;
+  }
+  /* Tabella riepilogo "Attività · Amici · Punti" sotto il nome: tre celle
+     centrate su sfondo tenue, separate da un puntino verticale (stesso
+     segno di .att-parti-sep, qui tra celle invece che tra nomi). */
+  .amico-dett-stats {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    background: var(--fondo);
+    border-radius: 12px;
+    padding: 12px 10px;
+    margin-bottom: 18px;
+  }
+  .amico-dett-stats-cella {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    min-width: 0;
+  }
+  .amico-dett-stats-n {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1.15rem;
+    color: var(--v700);
+  }
+  .amico-dett-stats-lbl {
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--ink3);
+  }
+  .amico-dett-stats-sep {
+    color: var(--border2);
+    font-weight: 700;
+  }
+  /* Scheda sport (Padel/Calcio) dentro DettaglioAmicoModal: contiene la riga
+     livello (segnaposto ELO), le preferenze e gli ultimi risultati. Un solo
+     selettore .sport-selettore/.sport-rett sopra decide quale mostrare. */
+  .amico-dett-modal .sport-selettore {
+    margin-top: 4px;
+    margin-bottom: 14px;
+  }
+  .amico-dett-sport-card {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .amico-dett-sotto {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  /* Ultimi 5 risultati di un giocatore: minicard scorrevoli in orizzontale
+     (riusa .match come contenitore, con dentro .ris-card). */
+  .risultati-scroll {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    padding-bottom: 2px;
+    margin: 0 -2px;
+  }
+  .risultati-scroll .match {
+    flex: 0 0 auto;
+    width: 258px;
+    margin-bottom: 0;
+    scroll-snap-align: start;
+  }
+
+  /* Cartellino partita "marcatore": intestazione data/ora+campo separata da
+     una riga sottile, poi le due squadre su due righe divise da un'altra
+     riga sottile — come un vero tabellone (niente HOME/AWAY, niente avatar).
+     Chi vince è in nero pieno, chi perde si smorza in grigio; il risultato
+     finale è in grassetto (oro solo per chi ha vinto). Senza risultato
+     inserito, nome e punteggio restano trattini invece di sparire. Usato sia
+     per gli "Ultimi risultati" per sport sia per le "Ultime partite giocate
+     insieme" in DettaglioAmicoModal. */
+  .ris-card-quando {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 0.72rem;
+    color: var(--ink3);
+    padding-bottom: 8px;
+    margin-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+  .ris-card-quando strong {
+    font-weight: 600;
+    color: var(--ink2);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .ris-card-corpo {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    align-items: center;
+    column-gap: 12px;
+  }
+  .ris-card-riga {
+    display: contents;
+  }
+  .ris-card-divider {
+    grid-column: 1 / -1;
+    height: 1px;
+    background: var(--border);
+    margin: 3px 0;
+  }
+  .ris-card-nome {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    padding: 6px 0;
+    font-size: 0.86rem;
+    font-weight: 600;
+    color: var(--ink3);
+  }
+  .ris-card-riga.vince .ris-card-nome {
+    color: var(--ink);
+    font-weight: 700;
+  }
+  .ris-card-set {
+    display: flex;
+    gap: 10px;
+    padding-right: 14px;
+    border-right: 1px solid var(--border2);
+    font-variant-numeric: tabular-nums;
+    font-size: 0.8rem;
+    color: var(--ink3);
+  }
+  .ris-card-set span {
+    width: 14px;
+    text-align: center;
+  }
+  .ris-card-riga.vince .ris-card-set {
+    color: var(--ink2);
+    font-weight: 600;
+  }
+  .ris-card-finale {
+    min-width: 20px;
+    text-align: center;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink3);
+  }
+  .ris-card-riga.vince .ris-card-finale {
+    color: var(--g500);
+  }
+  .ris-card-vuoto {
+    color: var(--ink3);
+    font-weight: 600;
   }
 
   /* ── Livello di gioco per sport (Fase 3bis) ──────────────────── */
