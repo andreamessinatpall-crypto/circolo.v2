@@ -10,9 +10,10 @@ import { SportIcona } from '@/components/IconeSport'
 import { TipoAttivitaIcona } from '@/components/IconeAttivita'
 import { IconaMeteo } from '@/components/IconeMeteo'
 import { useMeteo } from '@/hooks/useMeteo'
+import Avatar from '@/components/Avatar'
 import { useAmici } from './amici/useAmici'
 import { MenuAmici } from '@/features/prenotazioni/MieAmichevoli'
-import { arricchisciTipoAttivita, cognomeIniziale, righeInMappa, type Attivita, type RigaAttivitaBase } from './attivitaComune'
+import { arricchisciTipoAttivita, etichettaGiocatore, inizialiCoppia, nomeCompletoGiocatore, righeInMappa, type RigaAttivitaBase } from './attivitaComune'
 import type { Sport } from '@/features/prenotazioni/tipi'
 
 const SPORT_LABEL: Record<string, string> = { padel: 'Padel', calcio: 'Calcio' }
@@ -103,6 +104,41 @@ export default function AttivitaInProgramma({ sport }: { sport?: Sport } = {}) {
     onError: (e: unknown) => window.alert('Rimozione non riuscita: ' + messaggioErrore(e)),
   })
 
+  // Ospite non registrato: chiunque gestisce la propria partita può
+  // aggiungerne uno (RLS "aggiungi ospite alla propria prenotazione",
+  // tappa85-ospite-attivita.sql) — a differenza di MieAmichevoli.tsx, dove è
+  // riservato allo staff.
+  const aggiungiOspite = useMutation({
+    mutationFn: async ({ prenId, nome }: { prenId: number | string; nome: string }) => {
+      const { error } = await supabase.from('partecipanti_amichevole').insert({
+        prenotazione_id: prenId,
+        socio_id: null,
+        nome_manuale: nome,
+        confermato: false,
+      })
+      if (error) throw error
+    },
+    onSuccess: invalidaAttivita,
+    onError: (e: unknown) => window.alert('Aggiunta non riuscita: ' + messaggioErrore(e)),
+  })
+
+  // Un ospite non ha un socio_id per identificarlo: qui si toglie per la
+  // coppia prenotazione+nome (nessun id di riga disponibile, stesso limite
+  // di rimuoviAmico sopra).
+  const rimuoviOspite = useMutation({
+    mutationFn: async ({ prenId, nome }: { prenId: number | string; nome: string }) => {
+      const { error } = await supabase
+        .from('partecipanti_amichevole')
+        .delete()
+        .eq('prenotazione_id', prenId)
+        .is('socio_id', null)
+        .eq('nome_manuale', nome)
+      if (error) throw error
+    },
+    onSuccess: invalidaAttivita,
+    onError: (e: unknown) => window.alert('Rimozione non riuscita: ' + messaggioErrore(e)),
+  })
+
   const query = useQuery({
     queryKey: ['attivita-programma', profilo?.id],
     enabled: !!profilo,
@@ -145,110 +181,109 @@ export default function AttivitaInProgramma({ sport }: { sport?: Sport } = {}) {
 
   const label = (id: string) => etichette.get(id) ?? 'Giocatore'
 
-  // Raggruppa per giorno.
-  const gruppi: { giorno: string; etichetta: string; att: Attivita[] }[] = []
-  for (const m of lista) {
-    const d = new Date(m.inizio)
-    const chiave = d.toDateString()
-    let g = gruppi.find((x) => x.giorno === chiave)
-    if (!g) {
-      g = {
-        giorno: chiave,
-        etichetta: d.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' }),
-        att: [],
-      }
-      gruppi.push(g)
-    }
-    g.att.push(m)
-  }
+  // Foto profilo dei partecipanti alle proprie partite: sempre amici (unico
+  // modo per finire in una prenotazione propria è il menu "+ amico", che
+  // pesca da amiciData.amici) più se stessi.
+  const fotoPerId = new Map<string, string | null>()
+  for (const a of amiciData.amici) fotoPerId.set(a.id, a.foto_url)
+  if (profilo) fotoPerId.set(profilo.id, profilo.foto_url)
 
   return (
-    <div>
-      {gruppi.map((g) => {
-        const previsione = meteoQuery.data?.get(ymd(new Date(g.att[0].inizio)))
+    <div className="flex flex-col gap-3">
+      {lista.map((m) => {
+        const mia = !!profilo && m.prenotante_id === profilo.id
+        const tipo = m.allenamento ? 'allenamento' : m.torneo_nome ? 'torneo' : 'partita'
+        const giornoData = new Date(m.inizio)
+        const giornoLabel = giornoData.toLocaleDateString('it-IT', {
+          weekday: 'long',
+          day: 'numeric',
+          month: 'long',
+        })
+        const previsione = meteoQuery.data?.get(ymd(giornoData))
         return (
-        <div key={g.giorno} className="gruppo-giorno">
-          <div className="giorno-partite">
-            {previsione ? <IconaMeteo codice={previsione.weathercode} size={18} /> : ICONA_GIORNO_GENERICA}
-            <span>{g.etichetta}</span>
-          </div>
-          <div className="flex flex-col gap-3">
-            {g.att.map((m) => {
-              const mia = !!profilo && m.prenotante_id === profilo.id
-              const tipo = m.allenamento ? 'allenamento' : m.torneo_nome ? 'torneo' : 'partita'
-              return (
-              <div key={m.id} className="amichevole-riga att-wow">
-                <div className="amichevole-cap">
-                  <div>
-                    <div className="orario orario-blu">
-                      {oraLocale(new Date(m.inizio))}–{oraLocale(new Date(m.fine))}
-                    </div>
-                    <div className="att-sport">
-                      <span className="att-sport-ic"><SportIcona sport={m.sport} /></span>
-                      {SPORT_LABEL[m.sport] ?? m.sport}
-                      <span className="att-parti-sep">·</span>
-                      <span className="att-campo">{m.campo_nome ?? 'Campo'}</span>
-                    </div>
-                    {m.allenamento && m.allenatore_id && (
-                      <div className="dove">Istruttore: {label(m.allenatore_id)}</div>
-                    )}
-                    {!mia && m.prenotante_id && (
-                      <div className="dove">Gestita da {label(m.prenotante_id)}</div>
-                    )}
-                  </div>
-                  {tipo !== 'partita' && (
-                    <TipoAttivitaIcona tipo={tipo} titolo={m.torneo_nome ?? undefined} />
-                  )}
-                </div>
-                {mia && tipo === 'partita' ? (
-                  <PartecipantiPropria
-                    sport={m.sport}
-                    parti={m.parti}
-                    label={label}
-                    mioId={profilo!.id}
-                    amiciData={amiciData}
-                    onAggiungi={(socioId) => aggiungiAmico.mutate({ prenId: m.id, socioId })}
-                    onRimuovi={(socioId) => rimuoviAmico.mutate({ prenId: m.id, socioId })}
-                  />
+          <div key={m.id} className="amichevole-riga att-wow">
+            <div className="att-wow-giorno">
+              <span>{giornoLabel}</span>
+              <span className="att-wow-meteo">
+                {previsione ? (
+                  <>
+                    <IconaMeteo codice={previsione.weathercode} size={16} />
+                    {Math.round(previsione.tempMax)}°
+                  </>
                 ) : (
-                  m.parti.length > 0 && (
-                    <div className="att-parti">
-                      {m.parti.map((r, i) => (
-                        <span key={r.socio_id}>
-                          {i > 0 && <span className="att-parti-sep">·</span>}
-                          {cognomeIniziale(label(r.socio_id))}
-                        </span>
-                      ))}
-                    </div>
-                  )
+                  ICONA_GIORNO_GENERICA
                 )}
-                {mia && (
-                  <div className="mt-auto pt-3">
-                    <button
-                      type="button"
-                      className="btn btn-pericolo btn-mini w-full"
-                      disabled={annulla.isPending}
-                      onClick={() => {
-                        const quando =
-                          new Date(m.inizio).toLocaleDateString('it-IT', {
-                            weekday: 'long',
-                            day: 'numeric',
-                            month: 'long',
-                          }) +
-                          ' alle ' +
-                          oraLocale(new Date(m.inizio))
-                        if (window.confirm(`Annullare la tua prenotazione (${quando})?`)) annulla.mutate(m.id)
-                      }}
-                    >
-                      Annulla la prenotazione
-                    </button>
-                  </div>
+              </span>
+            </div>
+
+            <div className="amichevole-cap">
+              <div>
+                <div className="orario orario-blu">
+                  {oraLocale(new Date(m.inizio))}–{oraLocale(new Date(m.fine))}
+                </div>
+                <div className="att-sport">
+                  <span className="att-sport-ic"><SportIcona sport={m.sport} /></span>
+                  {SPORT_LABEL[m.sport] ?? m.sport}
+                  <span className="att-parti-sep">·</span>
+                  <span className="att-campo">{m.campo_nome ?? 'Campo'}</span>
+                </div>
+                {m.allenamento && m.allenatore_id && (
+                  <div className="dove">Istruttore: {label(m.allenatore_id)}</div>
+                )}
+                {!mia && m.prenotante_id && (
+                  <div className="dove">Gestita da {label(m.prenotante_id)}</div>
                 )}
               </div>
+              {tipo !== 'partita' && (
+                <TipoAttivitaIcona tipo={tipo} titolo={m.torneo_nome ?? undefined} />
+              )}
+            </div>
+
+            <div className="att-wow-hr" />
+
+            {mia && tipo === 'partita' ? (
+              <PartecipantiPropria
+                sport={m.sport}
+                parti={m.parti}
+                label={label}
+                foto={fotoPerId}
+                mioId={profilo!.id}
+                amiciData={amiciData}
+                onAggiungi={(socioId) => aggiungiAmico.mutate({ prenId: m.id, socioId })}
+                onRimuovi={(socioId) => rimuoviAmico.mutate({ prenId: m.id, socioId })}
+                onAggiungiOspite={(nome) => aggiungiOspite.mutate({ prenId: m.id, nome })}
+                onRimuoviOspite={(nome) => rimuoviOspite.mutate({ prenId: m.id, nome })}
+              />
+            ) : (
+              m.parti.length > 0 && (
+                <div className="att-parti">
+                  {m.parti.map((r, i) => (
+                    <span key={r.socio_id ?? `ospite-${i}`}>
+                      {i > 0 && <span className="att-parti-sep">·</span>}
+                      {etichettaGiocatore(r, label)}
+                    </span>
+                  ))}
+                </div>
               )
-            })}
+            )}
+
+            {mia && (
+              <div className="mt-auto">
+                <div className="att-wow-hr" />
+                <button
+                  type="button"
+                  className="btn btn-pericolo btn-mini w-full"
+                  disabled={annulla.isPending}
+                  onClick={() => {
+                    const quando = giornoLabel + ' alle ' + oraLocale(new Date(m.inizio))
+                    if (window.confirm(`Annullare la tua prenotazione (${quando})?`)) annulla.mutate(m.id)
+                  }}
+                >
+                  Annulla la prenotazione
+                </button>
+              </div>
+            )}
           </div>
-        </div>
         )
       })}
     </div>
@@ -257,38 +292,49 @@ export default function AttivitaInProgramma({ sport }: { sport?: Sport } = {}) {
 
 // Partecipanti di una partita propria (non allenamento/torneo): a differenza
 // della lista di sola lettura usata per le partite altrui, qui si possono
-// aggiungere/togliere amici — stesso comportamento che aveva MieAmichevoli.tsx.
+// aggiungere/togliere amici e ospiti non registrati — stesso comportamento
+// che aveva MieAmichevoli.tsx, più l'ospite (qui sempre disponibile, non
+// solo per lo staff).
 function PartecipantiPropria({
   sport,
   parti,
   label,
+  foto,
   mioId,
   amiciData,
   onAggiungi,
   onRimuovi,
+  onAggiungiOspite,
+  onRimuoviOspite,
 }: {
   sport: string
-  parti: { socio_id: string; confermato: boolean }[]
+  parti: { socio_id: string | null; nome_manuale: string | null; confermato: boolean }[]
   label: (id: string) => string
+  foto: Map<string, string | null>
   mioId: string
   amiciData: ReturnType<typeof useAmici>
   onAggiungi: (socioId: string) => void
   onRimuovi: (socioId: string) => void
+  onAggiungiOspite: (nome: string) => void
+  onRimuoviOspite: (nome: string) => void
 }) {
-  const giaIds = new Set(parti.map((p) => p.socio_id))
+  const giaIds = new Set(parti.map((p) => p.socio_id).filter((id): id is string => !!id))
   const selezionabili = amiciData.amici.filter((a) => !giaIds.has(a.id))
   const cap4 = sport === 'padel' && parti.length >= 4
   const amiciVuoti = amiciData.amici.length === 0
-  const nienteDaAggiungere = !amiciVuoti && selezionabili.length === 0
 
+  // L'ospite non richiede amici: il menu resta sempre disponibile (a meno
+  // del tetto 4 giocatori nel padel), anche con selezionabili vuoto — mostra
+  // in quel caso solo la voce "Ospite".
   const menuAggiungi = !cap4 && (
-    amiciVuoti ? (
-      <span className="chips-nessun-amico">
-        Non hai ancora amici. <Link to="/profilo/amici">Aggiungi amici</Link>
-      </span>
-    ) : !nienteDaAggiungere ? (
-      <MenuAmici opzioni={selezionabili} onScegli={onAggiungi} />
-    ) : null
+    <>
+      <MenuAmici opzioni={selezionabili} onScegli={onAggiungi} onOspite={onAggiungiOspite} />
+      {amiciVuoti && (
+        <span className="chips-nessun-amico">
+          Non hai ancora amici. <Link to="/profilo/amici">Aggiungi amici</Link>
+        </span>
+      )}
+    </>
   )
 
   if (parti.length === 0) {
@@ -302,25 +348,33 @@ function PartecipantiPropria({
 
   return (
     <div className="chips">
-      {parti.map((r) => (
-        <span key={r.socio_id} className="chip">
-          {cognomeIniziale(label(r.socio_id))}
-          {r.socio_id !== mioId && (
-            <button
-              type="button"
-              className="x"
-              title="Togli"
-              onClick={() => {
-                if (window.confirm(`Rimuovere ${cognomeIniziale(label(r.socio_id))} da questa partita?`)) {
-                  onRimuovi(r.socio_id)
-                }
-              }}
-            >
-              ×
-            </button>
-          )}
-        </span>
-      ))}
+      {parti.map((r, i) => {
+        const nome = etichettaGiocatore(r, label)
+        return (
+          <span key={r.socio_id ?? `ospite-${i}`} className="chip">
+            <Avatar
+              foto={r.socio_id ? foto.get(r.socio_id) ?? null : null}
+              iniziali={inizialiCoppia(nomeCompletoGiocatore(r, label))}
+              size={20}
+            />
+            {nome}
+            {r.socio_id !== mioId && (
+              <button
+                type="button"
+                className="x"
+                title="Togli"
+                onClick={() => {
+                  if (!window.confirm(`Rimuovere ${nome} da questa partita?`)) return
+                  if (r.socio_id) onRimuovi(r.socio_id)
+                  else onRimuoviOspite(r.nome_manuale!)
+                }}
+              >
+                ×
+              </button>
+            )}
+          </span>
+        )
+      })}
       {menuAggiungi}
     </div>
   )

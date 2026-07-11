@@ -8,6 +8,8 @@ import { useAmici } from '@/features/profilo/amici/useAmici'
 import { useValoriPunti } from '@/features/segreteria/datiPunti'
 import { useIntervalliCrediti } from '@/features/segreteria/datiIntervalli'
 import { useModalitaPremi } from '@/features/premi/datiPremi'
+import { classiInput } from '@/components/stili'
+import { inizialiCoppia } from '@/features/profilo/attivitaComune'
 import { useCampi } from './datiPrenotazioni'
 import { mancaColonnaManuale, useMieAmichevoli, useSociEtichette, useSociPubblici } from './datiAmichevoli'
 import { assegnaPuntiPresenza, annullaPuntiPresenza } from './puntiPresenze'
@@ -627,12 +629,26 @@ function Selettore({
   )
 }
 
+// Un candidato resta visibile se la query è contenuta nell'etichetta oppure
+// corrisponde all'inizio delle sue iniziali ("mr" o "mario" trovano entrambi
+// "Mario Rossi") — utile quando la lista amici è lunga.
+function filtraOpzioni(opzioni: { id: string; etichetta: string }[], query: string) {
+  const q = query.trim().toLowerCase()
+  if (!q) return opzioni
+  return opzioni.filter((o) => {
+    const etichetta = o.etichetta.toLowerCase()
+    return etichetta.includes(q) || inizialiCoppia(o.etichetta).toLowerCase().startsWith(q)
+  })
+}
+
 // Bottone tondo "+ amico" con menu a comparsa personalizzato (soci normali).
 // Sostituisce il vecchio trucco del <select> nativo reso invisibile e
 // sovrapposto al bottone: su iPhone, Safari disegnava comunque la sua
 // tendina di sistema con la spunta di selezione sopra i nomi. Con un menu
 // tutto nostro (stessa lista già usata per "Cerca amico" nel profilo) il
-// risultato è identico su ogni dispositivo.
+// risultato è identico su ogni dispositivo. Include un campo di ricerca
+// (utile con tanti amici) e la scheda per aggiungere un ospite non
+// registrato al posto del vecchio window.prompt.
 export function MenuAmici({
   opzioni,
   onScegli,
@@ -643,7 +659,10 @@ export function MenuAmici({
   onOspite?: (nome: string) => void
 }) {
   const [aperto, setAperto] = useState(false)
+  const [query, setQuery] = useState('')
+  const [modaleOspite, setModaleOspite] = useState(false)
   const wrapRef = useRef<HTMLDivElement>(null)
+  const ricercaRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (!aperto) return
@@ -654,16 +673,17 @@ export function MenuAmici({
     return () => document.removeEventListener('mousedown', handleClick)
   }, [aperto])
 
+  useEffect(() => {
+    if (aperto) ricercaRef.current?.focus()
+    else setQuery('')
+  }, [aperto])
+
   function scegli(id: string) {
     setAperto(false)
     onScegli(id)
   }
 
-  function scegliOspite() {
-    setAperto(false)
-    const nome = window.prompt('Nome dell’ospite (giocatore non registrato):')
-    if (nome && nome.trim()) onOspite?.(nome.trim())
-  }
+  const filtrate = useMemo(() => filtraOpzioni(opzioni, query), [opzioni, query])
 
   return (
     <div ref={wrapRef} className="aggiungi-part-icona">
@@ -679,20 +699,110 @@ export function MenuAmici({
       </button>
       {aperto && (
         <div className="cerca-lista">
+          {opzioni.length > 3 && (
+            <div className="cerca-lista-ricerca">
+              <input
+                ref={ricercaRef}
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Cerca per nome o iniziali…"
+                autoComplete="off"
+              />
+            </div>
+          )}
           {onOspite && (
-            <button type="button" className="cerca-riga" onClick={scegliOspite}>
+            <button
+              type="button"
+              className="cerca-riga"
+              onClick={() => {
+                setAperto(false)
+                setModaleOspite(true)
+              }}
+            >
               <span className="cerca-riga-nome">Ospite (non registrato)</span>
               <span className="cerca-riga-ico" aria-hidden="true">+</span>
             </button>
           )}
-          {opzioni.map((o) => (
+          {filtrate.map((o) => (
             <button key={o.id} type="button" className="cerca-riga" onClick={() => scegli(o.id)}>
               <span className="cerca-riga-nome">{o.etichetta}</span>
               <span className="cerca-riga-ico" aria-hidden="true">+</span>
             </button>
           ))}
+          {opzioni.length > 0 && filtrate.length === 0 && (
+            <p className="cerca-lista-vuota">Nessun amico trovato.</p>
+          )}
         </div>
       )}
+      {modaleOspite && onOspite && (
+        <ModaleOspite
+          onChiudi={() => setModaleOspite(false)}
+          onConferma={(nome) => {
+            setModaleOspite(false)
+            onOspite(nome)
+          }}
+        />
+      )}
+    </div>
+  )
+}
+
+// Scheda per il nominativo di un giocatore non registrato, al posto del
+// vecchio window.prompt: stesso overlay a comparsa di DettaglioAmicoModal.
+function ModaleOspite({
+  onChiudi,
+  onConferma,
+}: {
+  onChiudi: () => void
+  onConferma: (nome: string) => void
+}) {
+  const [nome, setNome] = useState('')
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    inputRef.current?.focus()
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onChiudi()
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [onChiudi])
+
+  function conferma() {
+    const pulito = nome.trim()
+    if (pulito) onConferma(pulito)
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center sm:p-4"
+      onClick={onChiudi}
+    >
+      <div className="ospite-modal" onClick={(e) => e.stopPropagation()}>
+        <h3 className="ospite-modal-titolo">Aggiungi un ospite</h3>
+        <p className="ospite-modal-sotto">Nome di un giocatore non registrato al circolo.</p>
+        <input
+          ref={inputRef}
+          type="text"
+          className={classiInput}
+          value={nome}
+          onChange={(e) => setNome(e.target.value)}
+          placeholder="Nome e cognome"
+          autoComplete="off"
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') conferma()
+          }}
+        />
+        <div className="ospite-modal-azioni">
+          <button type="button" className="btn btn-secondario" onClick={onChiudi}>
+            Annulla
+          </button>
+          <button type="button" className="btn" disabled={!nome.trim()} onClick={conferma}>
+            Aggiungi
+          </button>
+        </div>
+      </div>
     </div>
   )
 }

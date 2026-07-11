@@ -2131,6 +2131,46 @@
   .att-wow > .aggiungi-part-icona {
     z-index: 3;
   }
+  /* Data a sinistra + meteo (icona e gradi) a destra, in cima a ogni scheda
+     (non più raggruppate sopra la lista per giorno, vedi
+     AttivitaInProgramma.tsx): oro tenue, stessa dimensione dell'orario sotto
+     (coerenza tra le due righe principali della scheda). */
+  .att-wow-giorno {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: 700;
+    font-size: 1.05rem;
+    color: var(--g300);
+    margin-bottom: 10px;
+  }
+  .att-wow-meteo {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+    font-variant-numeric: tabular-nums;
+  }
+  .att-wow-giorno svg {
+    width: 18px;
+    height: 18px;
+  }
+  /* Righe sottili che scandiscono la scheda (intestazione / partecipanti /
+     bottone Annulla), stesso principio delle card partita (.ris-card-divider). */
+  .att-wow-hr {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.16);
+    margin: 14px 0 12px;
+  }
+  /* Anello dorato-verde dell'Avatar condiviso: a questa dimensione (nella
+     lista partecipanti) basta un anello più sottile del default. */
+  .att-wow .chip .avatar-anello {
+    padding: 1px;
+  }
   .att-wow div.orario.orario-blu {
     color: #fff;
   }
@@ -2156,17 +2196,26 @@
   .att-wow .chips-nessun-amico a {
     color: var(--g300);
   }
+  /* Slot vuoto tratteggiato invece del cerchio pieno: si legge come "posto
+     libero da riempire", non come un bottone qualsiasi. */
   .att-wow .btn-icona-amico {
-    background: rgba(255, 255, 255, 0.16);
-    border: 1.5px solid rgba(255, 255, 255, 0.4);
+    background: transparent;
+    border: 1.5px dashed rgba(255, 255, 255, 0.45);
+    color: var(--g300);
   }
+  .att-wow .btn-icona-amico:hover {
+    background: rgba(232, 200, 120, 0.12);
+    border-color: var(--g300);
+  }
+  /* Contorno invece che pieno: meno peso visivo di un'azione distruttiva
+     secondaria, coerente col taglio "biglietto" della scheda. */
   .att-wow .btn-pericolo {
-    background: rgba(255, 255, 255, 0.1);
+    background: transparent;
     color: #ffc4b4;
-    border-color: rgba(255, 255, 255, 0.35);
+    border-color: rgba(255, 196, 180, 0.4);
   }
   .att-wow .btn-pericolo:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.18);
+    background: rgba(255, 196, 180, 0.12);
   }
   /* Orari in blu scuro (non l'ambra di default) solo in Attività (scheda Area
      Club + pagina). Selettore con tipo elemento: specificità maggiore di
@@ -2197,60 +2246,51 @@
     font-size: 0.95rem;
     color: var(--v700);
   }
-  /* Tabella "chi ha giocato contro chi" (AttivitaConcluse.tsx): due colonne,
-     una per squadra, i nomi si scambiano toccandone due di fila. */
-  .tabella-squadre {
-    width: 100%;
-    border-collapse: collapse;
-  }
-  .tabella-squadre th {
-    font-family: var(--font-display);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    font-size: 0.68rem;
-    font-weight: 700;
-    color: var(--ink3);
-    padding: 2px 6px 7px;
-    text-align: center;
-    border-bottom: 1px solid var(--border);
-  }
-  .tabella-squadre th:first-child {
-    border-right: 1px solid var(--border);
-  }
-  .tabella-squadre td {
-    padding: 0;
-    border-bottom: 1px solid var(--border);
-  }
-  .tabella-squadre tr:last-child td {
-    border-bottom: none;
-  }
-  .tabella-squadre td:first-child {
-    border-right: 1px solid var(--border);
-  }
-  .slot-giocatore {
-    width: 100%;
+  /* Squadre "chi ha giocato contro chi" (AttivitaConcluse.tsx), in
+     orizzontale: una riga di pillole per squadra (niente colonne Home/Away),
+     i nomi si scambiano di squadra toccandone due di fila. */
+  .squadre-orizzontale {
     display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .squadra-riga {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
     align-items: center;
     justify-content: center;
-    gap: 5px;
-    padding: 8px 6px;
-    background: transparent;
-    border: none;
+  }
+  .squadre-riga-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 0 auto;
+    width: 90%;
+  }
+  .slot-giocatore {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    background: var(--surface);
+    border: 1.5px solid var(--border2);
+    border-radius: 999px;
     font-family: var(--font-sans);
     font-size: 0.84rem;
     font-weight: 600;
     color: var(--ink);
     cursor: pointer;
-    transition: color 0.14s;
+    transition: color 0.14s, border-color 0.14s, background 0.14s;
   }
   .slot-giocatore:hover {
+    border-color: var(--v600);
     color: var(--v700);
   }
   .slot-giocatore.selezionato {
+    background: var(--v050);
+    border-color: var(--v700);
     color: var(--v700);
     font-weight: 800;
-    text-decoration: underline;
-    text-underline-offset: 3px;
   }
   .slot-giocatore-x {
     display: inline-flex;
@@ -2268,10 +2308,12 @@
     opacity: 1;
   }
   .slot-vuoto {
-    display: block;
-    padding: 8px 6px;
-    text-align: center;
-    font-size: 0.8rem;
+    display: inline-flex;
+    align-items: center;
+    padding: 7px 14px;
+    border: 1.5px dashed var(--border2);
+    border-radius: 999px;
+    font-size: 0.84rem;
     color: var(--ink3);
   }
   .freccia-espandi {
@@ -3055,10 +3097,18 @@
   .btn-icona-amico.disabilitato {
     opacity: 0.45;
   }
+  /* Ancorata a sinistra (si apre verso destra) invece che a destra: il
+     bottone "+" può trovarsi ovunque nella riga di chip che va a capo, e se
+     fosse vicino al bordo sinistro dello schermo una tendina ancorata a
+     destra cresceva verso sinistra uscendo dallo schermo — il nome, che sta
+     a sinistra di ogni riga, spariva. Aprendo verso destra il nome resta
+     sempre visibile; il max-width evita che la tendina stessa sfori lo
+     schermo quando il bottone è vicino al bordo destro. */
   .aggiungi-part-icona .cerca-lista {
     min-width: 200px;
-    right: 0;
-    left: auto;
+    max-width: calc(100vw - 32px);
+    left: 0;
+    right: auto;
   }
 
   /* Riga di un componente (giocatore) dentro una coppia/squadra del torneo */
@@ -5624,6 +5674,70 @@
     font-weight: 700;
     color: var(--v500);
     line-height: 1;
+  }
+  /* Campo di ricerca in cima a .cerca-lista (MenuAmici, con tanti amici):
+     sticky così resta visibile mentre si scorrono i risultati sotto. */
+  .cerca-lista-ricerca {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: var(--surface);
+    padding: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .cerca-lista-ricerca input {
+    width: 100%;
+    padding: 7px 10px;
+    font-size: 0.86rem;
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    background: var(--v050);
+  }
+  .cerca-lista-ricerca input:focus {
+    outline: none;
+    border-color: var(--v600);
+  }
+  .cerca-lista-vuota {
+    padding: 12px 14px;
+    font-size: 0.82rem;
+    color: var(--ink3);
+    text-align: center;
+  }
+
+  /* Scheda "Aggiungi un ospite" (MenuAmici), stesso overlay a comparsa di
+     .amico-dett-modal ma più piccola: solo titolo, campo nome, due azioni. */
+  .ospite-modal {
+    position: relative;
+    width: 100%;
+    max-width: 360px;
+    background: var(--surface);
+    border-radius: 18px 18px 0 0;
+    padding: 20px 18px 18px;
+    box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.25);
+  }
+  @media (min-width: 640px) {
+    .ospite-modal {
+      border-radius: 18px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+  }
+  .ospite-modal-titolo {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: var(--ink);
+    margin: 0 0 4px;
+  }
+  .ospite-modal-sotto {
+    font-size: 0.82rem;
+    color: var(--ink2);
+    margin: 0 0 14px;
+  }
+  .ospite-modal-azioni {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 14px;
   }
 
   .round-chip.attivo {

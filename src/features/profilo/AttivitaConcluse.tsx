@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/auth/useAuth'
-import { dataEstesa } from '@/lib/formato'
 import { mancaRpc, messaggioErrore } from '@/lib/errori'
 import { useSociEtichette } from '@/features/prenotazioni/datiAmichevoli'
 import { oraLocale } from '@/features/prenotazioni/orari'
@@ -10,8 +9,9 @@ import { SportIcona } from '@/components/IconeSport'
 import { TipoAttivitaIcona } from '@/components/IconeAttivita'
 import { formattaSet, setVinti } from '@/features/tornei/calendario'
 import type { SetPunteggio } from '@/features/tornei/tipi'
+import CardPartita from './CardPartita'
 import { useImpostaRisultato, type DettaglioRisultato } from './datiRisultato'
-import { arricchisciTipoAttivita, cognomeIniziale, righeInMappa, type Attivita, type RigaAttivitaBase } from './attivitaComune'
+import { arricchisciTipoAttivita, etichettaGiocatore, righeInMappa, type Attivita, type RigaAttivitaBase } from './attivitaComune'
 import type { Sport } from '@/features/prenotazioni/tipi'
 
 const SPORT_LABEL: Record<string, string> = { padel: 'Padel', calcio: 'Calcio' }
@@ -118,7 +118,9 @@ export default function AttivitaConcluse({ sport }: { sport?: Sport } = {}) {
                 risultato={m.risultato}
                 dettaglio={m.risultato_dettaglio}
                 puoInserire={puoInserire}
-                partecipanti={m.parti.map((p) => ({ socioId: p.socio_id, nome: cognomeIniziale(label(p.socio_id)) }))}
+                partecipanti={m.parti
+                  .filter((p): p is typeof p & { socio_id: string } => !!p.socio_id)
+                  .map((p) => ({ socioId: p.socio_id, nome: etichettaGiocatore(p, label) }))}
               />
             )
           }
@@ -147,9 +149,9 @@ export default function AttivitaConcluse({ sport }: { sport?: Sport } = {}) {
               {!(tipo === 'partita' && (puoInserire || m.risultato)) && m.parti.length > 0 && (
                 <div className="att-parti">
                   {m.parti.map((r, i) => (
-                    <span key={r.socio_id}>
+                    <span key={r.socio_id ?? `ospite-${i}`}>
                       {i > 0 && <span className="att-parti-sep">·</span>}
-                      {cognomeIniziale(label(r.socio_id))}
+                      {etichettaGiocatore(r, label)}
                     </span>
                   ))}
                 </div>
@@ -164,7 +166,9 @@ export default function AttivitaConcluse({ sport }: { sport?: Sport } = {}) {
                   risultato={m.risultato}
                   dettaglio={m.risultato_dettaglio}
                   puoInserire={puoInserire}
-                  partecipanti={m.parti.map((p) => ({ socioId: p.socio_id, nome: cognomeIniziale(label(p.socio_id)) }))}
+                  partecipanti={m.parti
+                  .filter((p): p is typeof p & { socio_id: string } => !!p.socio_id)
+                  .map((p) => ({ socioId: p.socio_id, nome: etichettaGiocatore(p, label) }))}
                 />
               )}
             </div>
@@ -283,25 +287,13 @@ function RisultatoPartita({
 
   if (!puoInserire && !risultato) return null
 
-  const metaOrarioCampo = (
-    <div className="match-meta">
-      <span className="chip-data">
-        {dataEstesa(inizio.slice(0, 10))}, {oraLocale(new Date(inizio))}–{oraLocale(new Date(fine))}, {campoNome ?? 'Campo'}
-      </span>
-    </div>
-  )
-
-  // Risultato già salvato: cartellino unico "da sito sportivo" — squadre,
-  // punteggio, orario/sport/campo, tutto in una sola scheda.
+  // Risultato già salvato: stesso cartellino "marcatore" della scheda
+  // giocatore (CardPartita) — squadre, punteggio, orario/campo, tutto in
+  // un'unica scheda.
   if (risultato && dettaglio && !modifica) {
     return (
       <div className="match giocata">
-        <RigaSquadre
-          nomiCasa={dettaglio.squadraCasa}
-          nomiOspite={dettaglio.squadraOspite}
-          risultato={{ punti: [dettaglio.puntiCasa, dettaglio.puntiOspite], set: dettaglio.set ?? undefined }}
-        />
-        {metaOrarioCampo}
+        <CardPartita inizio={inizio} fine={fine} campoNome={campoNome} dettaglio={dettaglio} />
         {puoInserire && (
           <div className="flex justify-center mt-2">
             <button
@@ -350,7 +342,6 @@ function RisultatoPartita({
   const squadraB = slots.filter((s) => s.squadra === 'B')
   const mostraAggiungiOspite = isPadel && slots.length < 4
   const completo = isPadel ? slots.length === 4 : squadraA.length > 0 && squadraB.length > 0
-  const righeTabella = Math.max(squadraA.length, squadraB.length, isPadel ? 2 : 1)
   const nomiCasa = squadraA.map((p) => p.nome)
   const nomiOspite = squadraB.map((p) => p.nome)
 
@@ -383,51 +374,47 @@ function RisultatoPartita({
     if (selezionato === id) setSelezionato(null)
   }
 
+  // Una squadra come riga orizzontale di "pillole" (niente colonne Home/Away):
+  // tocca due nomi per scambiarli di squadra, come nella tabella prima.
+  function rigaSquadra(membri: Slot[], vuoti: number, chiave: string) {
+    return (
+      <div className="squadra-riga">
+        {membri.map((p) => (
+          <button
+            key={p.id}
+            type="button"
+            className={'slot-giocatore' + (selezionato === p.id ? ' selezionato' : '')}
+            onClick={() => clicNome(p.id)}
+          >
+            {p.nome}
+            {!idsRegistrati.has(p.id) && (
+              <span
+                className="slot-giocatore-x"
+                title="Togli"
+                onClick={(e) => { e.stopPropagation(); rimuoviOspite(p.id) }}
+              >
+                ×
+              </span>
+            )}
+          </button>
+        ))}
+        {Array.from({ length: vuoti }).map((_, i) => (
+          <span key={`${chiave}-${i}`} className="slot-vuoto">—</span>
+        ))}
+      </div>
+    )
+  }
+
   if (fase === 'squadre') {
+    const vuotiA = isPadel ? Math.max(0, 2 - squadraA.length) : squadraA.length === 0 ? 1 : 0
+    const vuotiB = isPadel ? Math.max(0, 2 - squadraB.length) : squadraB.length === 0 ? 1 : 0
     return (
       <div className="mt-auto pt-3 flex flex-col gap-2">
-        <table className="tabella-squadre">
-          <thead>
-            <tr>
-              <th>Home</th>
-              <th>Away</th>
-            </tr>
-          </thead>
-          <tbody>
-            {Array.from({ length: righeTabella }).map((_, riga) => {
-              const pa = squadraA[riga]
-              const pb = squadraB[riga]
-              return (
-                <tr key={riga}>
-                  {[pa, pb].map((p, col) => (
-                    <td key={col}>
-                      {p ? (
-                        <button
-                          type="button"
-                          className={'slot-giocatore' + (selezionato === p.id ? ' selezionato' : '')}
-                          onClick={() => clicNome(p.id)}
-                        >
-                          {p.nome}
-                          {!idsRegistrati.has(p.id) && (
-                            <span
-                              className="slot-giocatore-x"
-                              title="Togli"
-                              onClick={(e) => { e.stopPropagation(); rimuoviOspite(p.id) }}
-                            >
-                              ×
-                            </span>
-                          )}
-                        </button>
-                      ) : (
-                        <span className="slot-vuoto">—</span>
-                      )}
-                    </td>
-                  ))}
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
+        <div className="squadre-orizzontale">
+          {rigaSquadra(squadraA, vuotiA, 'vuoto-a')}
+          <div className="squadre-riga-divider" />
+          {rigaSquadra(squadraB, vuotiB, 'vuoto-b')}
+        </div>
         <p className="sub" style={{ fontSize: '0.76rem', margin: 0 }}>
           Tocca due nomi per scambiarli di squadra.
         </p>
@@ -437,7 +424,7 @@ function RisultatoPartita({
             <input
               type="text"
               className="!mt-0 flex-1"
-              placeholder="Nome di chi manca (non registrato)"
+              placeholder="Inserisci nominativo"
               maxLength={40}
               value={nomeOspite}
               onChange={(e) => setNomeOspite(e.target.value)}

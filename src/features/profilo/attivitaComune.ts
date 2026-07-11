@@ -10,7 +10,7 @@ export interface Attivita {
   campo_nome: string | null
   sport: string
   prenotante_id: string | null
-  parti: { socio_id: string; confermato: boolean }[]
+  parti: { socio_id: string | null; nome_manuale: string | null; confermato: boolean }[]
   allenamento: boolean
   allenatore_id: string | null
   torneo_nome: string | null
@@ -25,6 +25,7 @@ export interface RigaAttivitaBase {
   prenotante_id: string | null
   socio_id: string | null
   confermato: boolean | null
+  nome_manuale?: string | null
 }
 
 export function righeInMappa<T extends RigaAttivitaBase>(rows: T[]): Map<string, Attivita> {
@@ -45,8 +46,16 @@ export function righeInMappa<T extends RigaAttivitaBase>(rows: T[]): Map<string,
         torneo_nome: null,
       })
     }
-    // socio_id è nullo per una lezione senza ancora partecipanti (LEFT JOIN lato RPC): niente da aggiungere.
-    if (r.socio_id) map.get(k)!.parti.push({ socio_id: r.socio_id, confermato: !!r.confermato })
+    // socio_id e nome_manuale entrambi nulli: artefatto del LEFT JOIN quando
+    // la prenotazione non ha ancora partecipanti, niente da aggiungere. Un
+    // ospite ha invece socio_id null ma nome_manuale valorizzato.
+    if (r.socio_id || r.nome_manuale) {
+      map.get(k)!.parti.push({
+        socio_id: r.socio_id,
+        nome_manuale: r.nome_manuale ?? null,
+        confermato: !!r.confermato,
+      })
+    }
   }
   return map
 }
@@ -118,4 +127,34 @@ export function cognomeIniziale(etichetta: string): string {
   const nome = s.slice(0, i)
   const cognome = s.slice(i + 1)
   return `${cognome} ${nome[0].toUpperCase()}.`
+}
+
+// "Mario Rossi" → "MR", per l'avatar tondo nella scheda "wow". Attenzione:
+// convenzione locale "Nome Cognome" (come cognomeIniziale sopra), diversa da
+// inizialiDaEtichetta in lib/formato.ts che si aspetta "Cognome Nome".
+export function inizialiCoppia(etichetta: string): string {
+  const parti = etichetta.trim().split(/\s+/).filter(Boolean)
+  if (parti.length === 0) return '?'
+  if (parti.length === 1) return parti[0].charAt(0).toUpperCase() || '?'
+  return (parti[0].charAt(0) + parti[parti.length - 1].charAt(0)).toUpperCase()
+}
+
+// Nome completo per una riga di .parti: un socio vero passa da label(),
+// un ospite (socio_id null, aggiunto dal menu "+ amico") usa il
+// nome_manuale così com'è stato scritto. Serve come base sia per
+// l'etichetta "Cognome N." sia per le iniziali dell'avatar.
+export function nomeCompletoGiocatore(
+  r: { socio_id: string | null; nome_manuale: string | null },
+  label: (id: string) => string,
+): string {
+  return r.socio_id ? label(r.socio_id) : (r.nome_manuale ?? 'Ospite')
+}
+
+// Etichetta "Cognome N." da mostrare per una riga di .parti — stesso
+// trattamento per soci e ospiti, così le chip sono coerenti tra loro.
+export function etichettaGiocatore(
+  r: { socio_id: string | null; nome_manuale: string | null },
+  label: (id: string) => string,
+): string {
+  return cognomeIniziale(nomeCompletoGiocatore(r, label))
 }
