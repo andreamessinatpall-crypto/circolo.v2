@@ -125,7 +125,7 @@ function CercaAmico({
         type="text"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        placeholder="Chi vuoi aggiungere?"
+        placeholder="Inserisci Nome"
         className={`${classiInput} pr-9`}
         disabled={isPending}
         autoComplete="off"

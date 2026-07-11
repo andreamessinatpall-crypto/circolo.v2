@@ -91,6 +91,18 @@
     cursor: default;
     user-select: none;
   }
+  /* Sfondo a macchie sfumate colorate dietro l'intera pagina, solo nelle
+     sezioni con schede "vetro" (Prenota, Area Club, Tornei — vedi
+     AppShell.tsx): stesse tre macchie di .att-wow/.club-tile-hero, fisse
+     rispetto al viewport così restano ferme mentre la pagina scorre. */
+  .pagina-arcobaleno {
+    background:
+      radial-gradient(circle at 12% 8%, rgba(255, 210, 138, 0.5) 0%, transparent 38%),
+      radial-gradient(circle at 88% 6%, rgba(138, 198, 255, 0.45) 0%, transparent 38%),
+      radial-gradient(circle at 55% 92%, rgba(255, 138, 198, 0.35) 0%, transparent 42%),
+      var(--bg);
+    background-attachment: fixed;
+  }
 
   input, textarea, select, [contenteditable] {
     cursor: text;
@@ -445,6 +457,12 @@
     padding: 24px;
     margin-bottom: 16px;
     box-shadow: var(--ombra-card);
+  }
+  /* Variante senza riempimento: bordo/padding/ombra restano quelli di
+     .card, ma lo sfondo di pagina (es. .pagina-arcobaleno) resta visibile
+     dentro la cornice invece del bianco pieno. */
+  .card-trasparente {
+    background: transparent;
   }
 
   /* ---- Segreteria · scheda di un singolo campo ----
@@ -1932,10 +1950,16 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+  /* Vetro chiaro, come le altre schede di Prenota/Area Club/Tornei: bianco
+     traslucido invece di trasparente puro, così sopra lo sfondo arcobaleno
+     di pagina (.pagina-arcobaleno) si vede la sfocatura invece di un
+     bottone "vuoto". */
   .slot.libero {
-    background: transparent;
+    background: rgba(255, 255, 255, 0.5);
+    backdrop-filter: blur(8px) saturate(150%);
+    -webkit-backdrop-filter: blur(8px) saturate(150%);
     color: var(--v700);
-    border: 1.5px solid rgba(14, 74, 120, 0.28);
+    border: 1.5px solid rgba(255, 255, 255, 0.6);
   }
   .slot.libero:hover {
     background: var(--v700);
@@ -2096,18 +2120,36 @@
     flex-direction: column;
     height: 100%;
   }
-  /* Scheda "wow" per le attività in programma (pagina Attività): stesso
-     sfondo blu-notte sfumato di .prossima-wow in Area Club, con tutti i
-     testi/pulsanti interni riadattati per restare leggibili sopra lo sfondo
-     scuro. Non tocca .amichevole-riga di base (condivisa con Concluse,
-     Lezioni, Squadre torneo) né le altre classi qui sotto altrove nell'app —
-     ogni override è scoped con .att-wow e reso abbastanza specifico da
-     battere le regole originali indipendentemente dall'ordine nel file. */
+  /* Scheda "wow" per le attività in programma (pagina Attività): vetro
+     smerigliato CHIARO (non più il navy pieno) — una lastra bianca
+     traslucida con backdrop-filter, filo oro→blu in cima, testo scuro. Non
+     tocca .amichevole-riga di base (condivisa con Concluse, Lezioni,
+     Squadre torneo) né le altre classi qui sotto altrove nell'app — ogni
+     override è scoped con .att-wow e reso abbastanza specifico da battere
+     le regole originali indipendentemente dall'ordine nel file. */
   .amichevole-riga.att-wow {
     position: relative;
-    background: linear-gradient(140deg, var(--v600) 0%, var(--v800) 55%, var(--v900) 100%);
-    border-color: transparent;
-    color: #fff;
+    /* Angoli superiori squadrati (non i 12px di .amichevole-riga base):
+       la strisciolina oro→blu sopra è rettangolare, con gli angoli in alto
+       arrotondati come il resto della scheda risultava sfalsata rispetto
+       al bordo — qui coincidono esattamente. */
+    border-radius: 0 0 12px 12px;
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    box-shadow: 0 10px 30px rgba(14, 74, 120, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    color: var(--v900);
+  }
+  .amichevole-riga.att-wow::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    border-radius: inherit;
+    background: linear-gradient(90deg, var(--v700), var(--g500));
   }
   .amichevole-riga.att-wow::after {
     content: '';
@@ -2115,7 +2157,7 @@
     inset: 0;
     border-radius: inherit;
     pointer-events: none;
-    background: radial-gradient(60% 70% at 100% 0%, rgba(200, 151, 46, 0.22), transparent 55%);
+    background: radial-gradient(60% 70% at 100% 0%, rgba(200, 151, 46, 0.1), transparent 55%);
   }
   .att-wow > * {
     position: relative;
@@ -2145,7 +2187,7 @@
     letter-spacing: 0.04em;
     font-weight: 700;
     font-size: 1.05rem;
-    color: var(--g300);
+    color: var(--v700);
     margin-bottom: 10px;
   }
   .att-wow-meteo {
@@ -2163,7 +2205,7 @@
      bottone Annulla), stesso principio delle card partita (.ris-card-divider). */
   .att-wow-hr {
     height: 1px;
-    background: rgba(255, 255, 255, 0.16);
+    background: rgba(14, 74, 120, 0.14);
     margin: 14px 0 12px;
   }
   /* Anello dorato-verde dell'Avatar condiviso: a questa dimensione (nella
@@ -2172,50 +2214,50 @@
     padding: 1px;
   }
   .att-wow div.orario.orario-blu {
-    color: #fff;
+    color: var(--v800);
   }
   .att-wow .att-sport,
   .att-wow .att-campo {
-    color: #fff;
+    color: var(--v900);
   }
   .att-wow .att-parti {
-    color: rgba(255, 255, 255, 0.85);
+    color: var(--ink2);
   }
   .att-wow .att-parti-sep {
-    color: rgba(255, 255, 255, 0.45);
+    color: var(--ink3);
   }
   .att-wow .amichevole-cap .dove {
-    color: rgba(255, 255, 255, 0.75);
+    color: var(--ink2);
   }
   .att-wow .part-vuoto {
-    color: rgba(255, 255, 255, 0.75);
+    color: var(--ink2);
   }
   .att-wow .chips-nessun-amico {
-    color: rgba(255, 255, 255, 0.75);
+    color: var(--ink2);
   }
   .att-wow .chips-nessun-amico a {
-    color: var(--g300);
+    color: var(--v700);
   }
   /* Slot vuoto tratteggiato invece del cerchio pieno: si legge come "posto
      libero da riempire", non come un bottone qualsiasi. */
   .att-wow .btn-icona-amico {
-    background: transparent;
-    border: 1.5px dashed rgba(255, 255, 255, 0.45);
-    color: var(--g300);
+    background: rgba(255, 255, 255, 0.5);
+    border: 1.5px dashed rgba(14, 74, 120, 0.35);
+    color: var(--v600);
   }
   .att-wow .btn-icona-amico:hover {
-    background: rgba(232, 200, 120, 0.12);
-    border-color: var(--g300);
+    background: rgba(255, 255, 255, 0.8);
+    border-color: var(--v600);
   }
   /* Contorno invece che pieno: meno peso visivo di un'azione distruttiva
      secondaria, coerente col taglio "biglietto" della scheda. */
   .att-wow .btn-pericolo {
-    background: transparent;
-    color: #ffc4b4;
-    border-color: rgba(255, 196, 180, 0.4);
+    background: rgba(255, 255, 255, 0.4);
+    color: #b23c3c;
+    border-color: rgba(178, 60, 60, 0.35);
   }
   .att-wow .btn-pericolo:hover:not(:disabled) {
-    background: rgba(255, 196, 180, 0.12);
+    background: rgba(255, 255, 255, 0.7);
   }
   /* Orari in blu scuro (non l'ambra di default) solo in Attività (scheda Area
      Club + pagina). Selettore con tipo elemento: specificità maggiore di
@@ -7275,24 +7317,42 @@
     transform: translateY(-2px);
     box-shadow: 0 10px 26px rgba(10, 47, 77, 0.14);
   }
-  /* Sfondo blu-notte sfumato con bagliore dorato, stesso linguaggio di
-     .riep-wow/.torneo-club-card.verde — base condivisa dalle card "wow" di
-     Area Club (prossima attività, cerca partita): effetto richiesto
-     esplicitamente per farle risaltare come contenuto in primo piano. */
+  /* Vetro chiaro (non più il navy pieno), stesso linguaggio delle schede
+     "in programma" di Attività (.att-wow): lastra bianca traslucida con
+     backdrop-filter e filo oro→blu in cima — base condivisa dalle card
+     "wow" di Area Club (prossima attività, cerca partita), pensata per
+     risaltare come contenuto in primo piano senza il peso di un blocco
+     scuro pieno. */
   .club-tile.club-tile-hero {
-    background: linear-gradient(140deg, var(--v600) 0%, var(--v800) 55%, var(--v900) 100%);
-    border-color: transparent;
-    color: #fff;
+    /* Vetro semplice, senza macchie dipinte qui sopra: le macchie colorate
+       ora sono sullo sfondo di pagina (.pagina-arcobaleno in AppShell.tsx),
+       il backdrop-filter le sfoca da dietro. */
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    box-shadow: 0 10px 30px rgba(14, 74, 120, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    color: var(--v900);
+  }
+  .club-tile.club-tile-hero::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    border-radius: inherit;
+    background: linear-gradient(90deg, var(--v700), var(--g500));
   }
   .club-tile.club-tile-hero::after {
     content: '';
     position: absolute;
     inset: 0;
     pointer-events: none;
-    background: radial-gradient(60% 70% at 100% 0%, rgba(200, 151, 46, 0.25), transparent 55%);
+    background: radial-gradient(60% 70% at 100% 0%, rgba(200, 151, 46, 0.1), transparent 55%);
   }
   a.club-tile.club-tile-hero:hover {
-    box-shadow: 0 14px 34px rgba(5, 21, 38, 0.35);
+    box-shadow: 0 14px 34px rgba(14, 74, 120, 0.22);
   }
   .prossima-wow-fascia {
     position: relative;
@@ -7311,7 +7371,7 @@
     letter-spacing: 0.06em;
     font-size: 0.76rem;
     font-weight: 700;
-    color: var(--g300);
+    color: var(--v700);
   }
   .prossima-wow-meteo {
     display: inline-flex;
@@ -7319,7 +7379,7 @@
     gap: 4px;
     font-size: 0.82rem;
     font-weight: 700;
-    color: rgba(255, 255, 255, 0.88);
+    color: var(--v800);
   }
   /* Data ben leggibile (non più un'etichetta minuscola: la partita può
      essere domani come tra una settimana), ma l'orario resta il fulcro
@@ -7333,7 +7393,7 @@
     font-size: 1.05rem;
     letter-spacing: 0.01em;
     text-transform: capitalize;
-    color: rgba(255, 255, 255, 0.82);
+    color: var(--ink2);
   }
   .prossima-wow-orario {
     position: relative;
@@ -7344,11 +7404,11 @@
     font-size: 1.9rem;
     line-height: 1.15;
     letter-spacing: -0.01em;
-    color: #fff;
+    color: var(--v900);
   }
   .prossima-wow-trattino {
     margin: 0 7px;
-    color: var(--g300);
+    color: var(--g600);
   }
   .prossima-wow-campo {
     position: relative;
@@ -7359,7 +7419,7 @@
     margin-top: 6px;
     font-size: 0.86rem;
     font-weight: 600;
-    color: rgba(255, 255, 255, 0.85);
+    color: var(--ink2);
   }
   .prossima-wow-avatars {
     position: relative;
@@ -7386,13 +7446,13 @@
     font-weight: 800;
     font-size: 1.15rem;
     line-height: 1.2;
-    color: #fff;
+    color: var(--v900);
   }
   .cerca-wow-sub {
     margin-top: 2px;
     font-size: 0.84rem;
     font-weight: 600;
-    color: var(--g300);
+    color: var(--g600);
   }
   .cerca-wow-quando {
     position: relative;
@@ -7403,7 +7463,7 @@
     margin-top: 14px;
     font-size: 0.84rem;
     font-weight: 600;
-    color: rgba(255, 255, 255, 0.85);
+    color: var(--ink2);
   }
   .club-tile.cerca-wow-vuota {
     display: flex;
@@ -7423,8 +7483,8 @@
     width: 38px;
     height: 38px;
     border-radius: 50%;
-    background: var(--g300);
-    color: var(--v900);
+    background: var(--v700);
+    color: #fff;
     font-size: 1.4rem;
     font-weight: 800;
     line-height: 1;
@@ -7434,7 +7494,7 @@
     z-index: 1;
     margin: 0;
     font-size: 0.88rem;
-    color: rgba(255, 255, 255, 0.8);
+    color: var(--ink2);
   }
   .cerca-wow-vuota-cta {
     position: relative;
@@ -7444,7 +7504,7 @@
     letter-spacing: 0.04em;
     font-weight: 700;
     font-size: 0.82rem;
-    color: var(--g300);
+    color: var(--g600);
   }
   /* Niente sfondo/bordo/ombra: la scheda "galleggia" sullo sfondo pagina.
      Selettore composto per battere in specificità .club-tile qui sopra,

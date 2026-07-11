@@ -44,12 +44,10 @@ export default function GestioneAttivitaPagina() {
       )}
 
       <div className="eyebrow" style={{ marginTop: 0 }}>In programma</div>
-      <div className="card">
-        <AttivitaInProgramma sport={attivo} />
-      </div>
+      <AttivitaInProgramma sport={attivo} />
 
       <div className="eyebrow">Concluse questa settimana</div>
-      <div className="card">
+      <div className="card card-trasparente">
         <AttivitaConcluse sport={attivo} />
       </div>
     </div>

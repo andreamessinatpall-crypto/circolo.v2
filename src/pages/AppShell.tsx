@@ -92,6 +92,14 @@ export default function AppShell() {
 
   const voci = vociMenu(profilo)
 
+  // Sfondo a macchie sfumate colorate dietro le schede "vetro" (Attività,
+  // prossima attività, cerca partita): solo nelle tre sezioni che le usano,
+  // non ovunque (Segreteria/admin restano sullo sfondo piatto di sempre).
+  const sezioniArcobaleno = ['/prenota', '/profilo', '/tornei']
+  const sfondoArcobaleno = sezioniArcobaleno.some(
+    (p) => pathname === p || pathname.startsWith(p + '/'),
+  )
+
   return (
     <div className="flex min-h-[100svh] flex-col">
       {/* Barra superiore: marchio e utente */}
@@ -157,7 +165,11 @@ export default function AppShell() {
         </nav>
       </div>
 
-      <div className="flex flex-1 flex-col">
+      {/* Lo sfondo arcobaleno va su questo contenitore a piena larghezza
+          (non su .main sotto, che è centrato con max-w-[900px]: la tinta
+          si vedrebbe solo nella colonna centrale, grigio ai lati su schermi
+          larghi). */}
+      <div className={'flex flex-1 flex-col' + (sfondoArcobaleno ? ' pagina-arcobaleno' : '')}>
         <InstallaAppBanner />
 
         {/* Contenuto. pb-24 su mobile lascia spazio alla barra fissa in

@@ -59,9 +59,7 @@ export default function RiepilogoProfilo() {
         </span>
         <h2 className="club-sez-titolo">Attività in programma</h2>
       </div>
-      <div className="card">
-        <AttivitaInProgramma />
-      </div>
+      <AttivitaInProgramma />
 
       <div className="club-sez-header" style={{ marginTop: '2rem' }}>
         <span className="club-sez-icona"><IcoCompagni /></span>
