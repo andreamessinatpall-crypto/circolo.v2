@@ -45,7 +45,7 @@ export interface VoceStaff {
   foto_url: string | null
 }
 
-function ruoloDa(s: SocioPubblico): Ruolo | null {
+export function ruoloDa(s: SocioPubblico): Ruolo | null {
   if (s.is_admin) return 'admin'
   if (s.is_allenatore && !s.is_admin) return 'collaboratore'
   if (s.e_allenatore && !s.is_allenatore && !s.is_admin) return 'istruttore'

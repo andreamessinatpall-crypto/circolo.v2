@@ -34,7 +34,12 @@
   --color-ink-3: #8a9c88;
 
   /* Superfici */
-  --color-fondo: #eef2f6;
+  /* Tela neutra + filo brand (standard "prodotto serio": Stripe/Linear/
+     Notion) al posto del celeste pieno provato prima — vedi confronto
+     in artifact, opzione C scelta esplicitamente. Sfondo quasi bianco,
+     schede bianco puro: il blu del circolo resta sul bordo (--border) e
+     sugli accenti, non riempie le superfici. */
+  --color-fondo: #f7f8fa;
   --color-superficie: #ffffff;
   --color-terra: #be5436;
 
@@ -75,11 +80,16 @@
 @layer base {
   html {
     overflow-x: clip;
-    overscroll-behavior-x: none; /* blocca il bounce elastico orizzontale su iOS/Android */
+    /* Blocca il bounce elastico (anche verticale, non solo orizzontale):
+       su iOS il rimbalzo a fine scroll sposta temporaneamente anche gli
+       elementi "fixed" (come la barra Prenota/Area Club/Tornei in fondo su
+       mobile), lasciando intravedere lo sfondo grigio della pagina sotto
+       di essa. */
+    overscroll-behavior: none;
   }
   body {
     overflow-x: clip;
-    overscroll-behavior-x: none;
+    overscroll-behavior: none;
     margin: 0;
     background: var(--bg);
     color: var(--ink);
@@ -94,11 +104,14 @@
   /* Sfondo a macchie sfumate colorate dietro l'intera pagina, solo nelle
      sezioni con schede "vetro" (Prenota, Area Club, Tornei — vedi
      AppShell.tsx): stesse tre macchie di .att-wow/.club-tile-hero, fisse
-     rispetto al viewport così restano ferme mentre la pagina scorre. */
+     rispetto al viewport così restano ferme mentre la pagina scorre.
+     Molto più tenui di prima (0.5/0.35 → 0.12/0.08): con la tela neutra
+     scelta per sfondo/schede (vedi --color-fondo/--color-superficie) un
+     "celeste sfocato" pieno stonava, qui restano solo un accenno. */
   .pagina-arcobaleno {
     background:
-      radial-gradient(circle at 88% 6%, rgba(138, 198, 255, 0.5) 0%, transparent 42%),
-      radial-gradient(circle at 15% 85%, rgba(138, 198, 255, 0.35) 0%, transparent 46%),
+      radial-gradient(circle at 88% 6%, rgba(138, 198, 255, 0.12) 0%, transparent 42%),
+      radial-gradient(circle at 15% 85%, rgba(138, 198, 255, 0.08) 0%, transparent 46%),
       var(--bg);
     background-attachment: fixed;
   }
@@ -1158,10 +1171,12 @@
 
   /* Barra bianca con icone/testo blu (era un gradiente blu scuro con testo
      bianco — richiesto esplicitamente il ritorno al bianco fisso, niente
-     più dipendenza dal tema chiaro/scuro). */
+     più dipendenza dal tema chiaro/scuro). Bianco vero (non var(--surface),
+     ora celeste per le schede): l'header/subnav non sono "schede" e restano
+     fissi bianchi indipendentemente da quel token. */
   .app-header,
   .app-subnav {
-    background: var(--surface);
+    background: #fff;
     color: var(--v700);
   }
 
@@ -1312,7 +1327,7 @@
       box-shadow: none;
     }
     .app-subnav .header-tabs {
-      background: var(--surface);
+      background: #fff;
       border: 1px solid var(--border);
       border-radius: 999px;
       padding: 5px;
@@ -1328,7 +1343,6 @@
       letter-spacing: 0.06em;
       padding: 10px 16px;
       border-radius: 999px;
-      border-bottom: none;
     }
     .app-subnav .header-tab svg {
       width: 16px;
@@ -1361,6 +1375,8 @@
     z-index: 1;
     display: flex;
     flex-wrap: nowrap;
+    gap: 4px;
+    padding: 6px;
     overflow-x: auto;
     scrollbar-width: none;
     -webkit-overflow-scrolling: touch;
@@ -1369,9 +1385,12 @@
     display: none;
   }
 
-  /* Mobile: icona sopra, etichetta piccola sotto (come le app native).
-     Da 640px in su torna orizzontale con l'indicatore a barra — vedi
-     media query più sotto. */
+  /* Mobile: icona sopra, etichetta piccola sotto (come le app native), con
+     la scheda attiva evidenziata da una capsula piena (stesso linguaggio
+     della barra "alla Revolut" del browser, non più solo un sottile
+     bordo inferiore — richiesto esplicitamente: sennò le tab sembrano
+     sparire nel contesto). Da 640px in su torna orizzontale — vedi media
+     query più sopra. */
   .header-tab {
     flex: 1 0 0;
     min-width: 56px;
@@ -1388,20 +1407,21 @@
     letter-spacing: 0.04em;
     font-weight: 700;
     font-size: 0.6rem;
-    padding: 7px 4px 6px;
+    padding: 8px 4px 7px;
+    border-radius: 14px;
     color: var(--ink3);
-    border-bottom: 3px solid transparent;
-    transition: color 0.15s, border-color 0.15s;
+    transition: background 0.15s, color 0.15s;
   }
   .header-tab svg {
     width: 20px;
     height: 20px;
   }
   .header-tab:hover {
-    color: var(--v700);
+    background: var(--v050);
   }
   .header-tab.attivo {
-    color: var(--v700);
+    background: var(--v700);
+    color: #fff;
   }
 
   .header-utente {
@@ -3299,9 +3319,9 @@
     border-radius: 6px;
     margin-bottom: 10px;
     padding: 18px 22px;
-    background: linear-gradient(150deg, var(--v600) 0%, var(--v800) 55%, var(--v900) 100%);
-    box-shadow: 0 12px 30px rgba(8, 36, 20, 0.3);
-    border: 1px solid rgba(232, 200, 120, 0.3);
+    background: var(--surface);
+    box-shadow: 0 4px 16px rgba(14, 74, 120, 0.1);
+    border: 1.5px solid var(--v700);
   }
   /* Trama moderna e discreta: una sola luce soffusa in alto a sinistra (per
      dare profondità al verde, non per "brillare") e un filo di righe
@@ -3352,34 +3372,22 @@
     position: relative;
     z-index: 1;
   }
+  /* Corsivo "a mano" (font Caveat) su sfondo bianco con contorno blu,
+     stesso linguaggio della citazione nel login (.auth-claim) e del nome
+     giocatore (.riep-wow-hi h1) — non più maiuscolo pieno bianco con
+     rilievo 3D, quello era pensato per lo sfondo blu scuro di prima. */
   .torneo-hero-nome {
-    font-family: var(--font-display);
-    font-size: 1.5rem;
+    font-family: 'Caveat', cursive;
+    font-size: 2.1rem;
     line-height: 1.15;
-    letter-spacing: 0.02em;
+    letter-spacing: 0.01em;
     font-weight: 700;
-    color: #fff;
-    /* Stesso rilievo/luce radente del logo (vedi .auth-crest-logo): luce
-       bianca in alto a sinistra, ombre scure crescenti in basso a destra. */
-    text-shadow:
-      -1px -1px 0.5px rgba(255, 255, 255, 0.55),
-      1px 1.5px 1px rgba(0, 0, 0, 0.35),
-      2px 4px 3px rgba(0, 0, 0, 0.45),
-      0 6px 10px rgba(0, 0, 0, 0.4);
+    color: var(--v800);
     white-space: normal;
     word-break: break-word;
     text-align: center;
     position: relative;
     z-index: 1;
-  }
-  /* Puntini decorativi ai lati del nome: stretti al testo (non ai bordi
-     del riquadro), come una targa celebrativa. */
-  .torneo-hero-puntino {
-    color: #e8c878;
-    font-size: 0.9rem;
-    padding: 0 10px;
-    opacity: 0.85;
-    vertical-align: middle;
   }
   /* Pill stato per i soci: nella riga sopra, su fondo bianco card */
   .torneo-hero-pill:not(.off) {
@@ -4183,30 +4191,20 @@
     border-top: 1px solid var(--border);
   }
 
-  /* Variante verde delle card (elenco tornei in TorneiPage/SezioneTorneiAmici):
-     stesso sfondo del titolo del torneo, testo bianco e dorato. Non tocca
-     .torneo-club-card di base, usata anche nella scheda Club read-only. */
+  /* Variante "in evidenza" delle card (elenco tornei in TorneiPage/
+     SezioneTorneiAmici): prima un gradiente blu scuro pieno con testo
+     bianco/dorato, ora tinta celeste tenue + bordo blu, in linea con la
+     tela neutra scelta per tutte le altre schede (vedi
+     --color-fondo/--color-superficie) — i colori del testo tornano quelli
+     di base di .torneo-club-card (niente più override bianco/dorato,
+     inutili su sfondo chiaro). Non tocca .torneo-club-card di base, usata
+     anche nella scheda Club read-only. */
   .torneo-club-card.verde {
-    background: linear-gradient(140deg, var(--v600) 0%, var(--v800) 55%, var(--v900) 100%);
-    border-color: rgba(200, 151, 46, 0.35);
+    background: var(--surface);
+    border-color: var(--border2);
   }
   .torneo-club-card.verde .torneo-club-header:hover {
-    background: rgba(255, 255, 255, 0.07);
-  }
-  .torneo-club-card.verde .tcl-nome {
-    color: #fff;
-  }
-  .torneo-club-card.verde .tcl-info-sport,
-  .torneo-club-card.verde .tcl-chevron,
-  .torneo-club-card.verde .tcl-progress-label {
-    color: rgba(232, 200, 120, 0.85);
-  }
-  /* Data e coppie iscritte: sempre in bianco, ben leggibili accanto al nome. */
-  .torneo-club-card.verde .tcl-info-dettagli {
-    color: rgba(255, 255, 255, 0.92);
-  }
-  .torneo-club-card.verde .tcl-progress-track {
-    background: rgba(255, 255, 255, 0.18);
+    background: var(--v050);
   }
 
   /* Variante "concluso": sfondo bianco, contorno e testo verde scuro, per
@@ -6877,6 +6875,19 @@
     margin-top: 4px;
     margin-bottom: 14px;
   }
+  /* "Livello (ELO)" deve leggersi come lo stesso tipo di titolo di sezione
+     di "Preferenze"/"Ultimi risultati"/"Ultime partite giocate insieme"
+     qui sotto (stessa dimensione .club-sez-titolo, 0.98rem non 1.15rem) e
+     allinearsi al loro stesso margine sinistro — .livello-gioco-riga ha di
+     suo un padding orizzontale (pensato per la riga-chip nel profilo
+     proprio), qui lo togliamo per far combaciare i bordi sinistri. */
+  .amico-dett-sport-card .livello-gioco-riga {
+    padding: 10px 0;
+  }
+  .amico-dett-sport-card .livello-gioco-sport {
+    font-size: 0.98rem;
+    letter-spacing: 0.07em;
+  }
   .amico-dett-sport-card {
     display: flex;
     flex-direction: column;
@@ -7277,16 +7288,19 @@
       grid-template-columns: 1fr;
     }
   }
-  /* Riga di scorciatoie a icona (Contatti/Classifica/Tornei/Premi — 3 o 4 a
-     seconda che i premi siano attivi): flex, non grid, così si adatta al
-     numero di elementi senza bisogno di varianti. Resta SEMPRE affiancata
-     anche su mobile — sono minischede-pulsante, non vanno in colonna. */
+  /* Riga di scorciatoie a icona (Contatti/Classifica/Annunci/Rewards, più
+     Statistiche/Giocatori per chi gestisce il circolo — fino a 6): flex con
+     wrap, non grid, così si adatta al numero di elementi senza bisogno di
+     varianti. Restano minischede-pulsante affiancate (mai una colonna
+     impilata a piena larghezza), ma vanno a capo a gruppi quando sono
+     troppe per stare comode su una riga sola. */
   .club-riga-scorciatoie {
     display: flex;
+    flex-wrap: wrap;
     gap: 10px;
   }
   .club-riga-scorciatoie .club-tile-scorciatoia {
-    flex: 1 1 0;
+    flex: 1 1 90px;
     min-width: 0;
   }
   /* Titolo + scheda: il nome della sezione sta sempre fuori dalla scheda
@@ -7418,11 +7432,16 @@
   .club-tile.club-tile-hero {
     /* Vetro semplice, senza macchie dipinte qui sopra: le macchie colorate
        ora sono sullo sfondo di pagina (.pagina-arcobaleno in AppShell.tsx),
-       il backdrop-filter le sfoca da dietro. */
-    background: rgba(255, 255, 255, 0.6);
+       il backdrop-filter le sfoca da dietro. Angoli superiori squadrati
+       (non più arrotondati come il resto della scheda): la striscia
+       oro→blu di ::before eredita il border-radius del genitore, e con
+       gli angoli tondi risultava tagliata/incompleta ai due estremi
+       invece di essere un rettangolo pieno da bordo a bordo. */
+    background: rgba(255, 255, 255, 0.7);
     backdrop-filter: blur(20px) saturate(160%);
     -webkit-backdrop-filter: blur(20px) saturate(160%);
     border: 1px solid rgba(255, 255, 255, 0.7);
+    border-radius: 0 0 20px 20px;
     box-shadow: 0 10px 30px rgba(14, 74, 120, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.8);
     color: var(--v900);
   }
@@ -7522,6 +7541,101 @@
     margin-top: 16px;
   }
 
+  /* Anteprima Statistiche in Area Club (solo admin): 3 numeri chiave invece
+     di un invito generico — stesso principio della card "prossima attività"
+     che mostra un vero assaggio dei dati. */
+  .stat-anteprima-riga {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    gap: 10px;
+    margin-top: 14px;
+  }
+  .stat-anteprima-cella {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 12px 6px;
+    border-radius: 12px;
+    background: var(--v050);
+  }
+  .stat-anteprima-n {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 1.5rem;
+    color: var(--v800);
+    line-height: 1;
+  }
+  .stat-anteprima-lbl {
+    font-size: 0.64rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: var(--ink3);
+    text-align: center;
+    line-height: 1.2;
+  }
+
+  /* ── Stato vuoto di una scheda "wow" (stessa base .club-tile-hero): usato
+     sia da "Cerca partita" che da "La tua prossima attività" quando non
+     c'è nulla da mostrare — un unico invito cliccabile invece di testo e
+     link separati. ──────────────────────────────────────────────────── */
+  .club-tile.club-tile-vuota {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 8px;
+    padding-top: 22px;
+    padding-bottom: 20px;
+  }
+  .club-tile-vuota-testo {
+    position: relative;
+    z-index: 1;
+    margin: 0;
+    font-size: 0.88rem;
+    color: var(--ink2);
+  }
+  /* "+" e testo uniti in un solo tasto pillola (non più due righe separate,
+     un cerchio "+" per conto suo sopra e il testo sotto) — più compatto e
+     riconoscibile come un vero pulsante da premere. */
+  .club-tile-vuota-cta {
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 16px 7px 7px;
+    border-radius: 999px;
+    background: var(--v700);
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: 700;
+    font-size: 0.8rem;
+    color: #fff;
+  }
+  .club-tile-vuota-piu {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.24);
+    color: #fff;
+    font-size: 0.95rem;
+    font-weight: 800;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+  .club-tile-vuota-piu svg {
+    width: 13px;
+    height: 13px;
+  }
+
   /* ── Scheda "Cerca partita" (stessa base .club-tile-hero) ────────────── */
   .cerca-wow-chi {
     position: relative;
@@ -7556,47 +7670,6 @@
     font-size: 0.84rem;
     font-weight: 600;
     color: var(--ink2);
-  }
-  .club-tile.cerca-wow-vuota {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    gap: 8px;
-    padding-top: 22px;
-    padding-bottom: 20px;
-  }
-  .cerca-wow-piu {
-    position: relative;
-    z-index: 1;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 38px;
-    height: 38px;
-    border-radius: 50%;
-    background: var(--v700);
-    color: #fff;
-    font-size: 1.4rem;
-    font-weight: 800;
-    line-height: 1;
-  }
-  .cerca-wow-vuota-testo {
-    position: relative;
-    z-index: 1;
-    margin: 0;
-    font-size: 0.88rem;
-    color: var(--ink2);
-  }
-  .cerca-wow-vuota-cta {
-    position: relative;
-    z-index: 1;
-    font-family: var(--font-display);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    font-weight: 700;
-    font-size: 0.82rem;
-    color: var(--g600);
   }
   /* Niente sfondo/bordo/ombra: la scheda "galleggia" sullo sfondo pagina.
      Selettore composto per battere in specificità .club-tile qui sopra,
@@ -7688,26 +7761,12 @@
   .club-tile-carosello::-webkit-scrollbar {
     display: none;
   }
-  /* Su desktop (mouse, non touch) non c'è modo di trascinare il
-     carosello: senza una scrollbar visibile diventa inutilizzabile con
-     la sola rotellina verticale. Mostriamo una scrollbar sottile solo
-     lì; su mobile lo scroll touch funziona già e resta nascosta. */
+  /* Su desktop (mouse, non touch) non c'è modo di trascinare il carosello
+     con lo scroll touch: al posto di una scrollbar da trascinare (scomoda
+     col mouse, richiesto esplicitamente di toglierla) ci sono le frecce
+     di .carosello-frecce qui sotto; su mobile lo scroll touch funziona già
+     di suo, la scrollbar resta nascosta in entrambi i casi. */
   @media (hover: hover) and (pointer: fine) {
-    .club-tile-carosello {
-      scrollbar-width: thin;
-      padding-bottom: 8px;
-    }
-    .club-tile-carosello::-webkit-scrollbar {
-      display: block;
-      height: 6px;
-    }
-    .club-tile-carosello::-webkit-scrollbar-thumb {
-      background: var(--border2);
-      border-radius: 999px;
-    }
-    .club-tile-carosello::-webkit-scrollbar-track {
-      background: transparent;
-    }
     /* Su schermi larghi le mini-card si allargano per riempire tutta la
        riga invece di lasciare spazio vuoto a destra — restano però alla
        larghezza minima (flex-shrink 0) quando sono troppe, così lo
@@ -7723,6 +7782,48 @@
     }
     .club-tile-carosello .mini-premio {
       flex: 1 0 160px;
+    }
+  }
+  /* Frecce prev/next a metà altezza del carosello, solo su dispositivi
+     con mouse (stesso gate hover:hover di sopra) — su touch restano
+     nascoste, lo scroll col dito basta. */
+  .carosello-frecce {
+    position: relative;
+  }
+  .carosello-freccia {
+    display: none;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .carosello-freccia {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      box-shadow: 0 4px 14px rgba(14, 74, 120, 0.16);
+      color: var(--v700);
+      cursor: pointer;
+      z-index: 2;
+      transition: opacity 0.15s, background 0.15s;
+    }
+    .carosello-freccia:hover:not(:disabled) {
+      background: var(--v050);
+    }
+    .carosello-freccia:disabled {
+      opacity: 0;
+      pointer-events: none;
+    }
+    .carosello-freccia-sx {
+      left: -14px;
+    }
+    .carosello-freccia-dx {
+      right: -14px;
     }
   }
   /* Mini-card rettangolari (non più il vecchio avatar tondo isolato):
@@ -7805,10 +7906,14 @@
     width: 30px;
     height: 30px;
   }
-  .mini-persona-btn-pericolo {
+  /* Selettore composto (non solo ".mini-persona-btn-pericolo") per battere
+     in specificità ".mini-persona-btn" dichiarata più sotto nel file —
+     altrimenti a parità di specificità vincerebbe quella, lasciando
+     "Annulla" blu invece che rosso/terra. */
+  .mini-persona-btn.mini-persona-btn-pericolo {
     background: var(--terra);
   }
-  .mini-persona-btn-pericolo:hover:not(:disabled) {
+  .mini-persona-btn.mini-persona-btn-pericolo:hover:not(:disabled) {
     background: var(--errore, #b91c1c);
   }
   /* Avatar condiviso (foto o iniziali) al posto delle vecchie medaglie livello/ruolo.
@@ -7916,6 +8021,19 @@
   .mini-persona-btn:disabled {
     opacity: 0.5;
     cursor: default;
+  }
+  /* "Visualizza" (amico già collegato, azione di sola lettura) va
+     distinto da "Aggiungi" (azione positiva, invita ad agire): pieno
+     blu solo per Aggiungi, qui solo contorno. Selettore composto per
+     battere in specificità .mini-persona-btn qui sopra. */
+  .mini-persona-btn.mini-persona-btn-secondario {
+    background: transparent;
+    color: var(--v700);
+    border: 1.5px solid var(--border2);
+  }
+  .mini-persona-btn.mini-persona-btn-secondario:hover:not(:disabled) {
+    background: var(--v050);
+    border-color: var(--v700);
   }
   /* Stesse dimensioni e stesso stile a scheda bianca di .mini-persona
      (nessuno sfondo tinto dietro), come richiesto esplicitamente. */

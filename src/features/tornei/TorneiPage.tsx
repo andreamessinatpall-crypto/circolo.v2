@@ -1354,11 +1354,7 @@ function DettaglioTorneo({
 
       {/* Blocco nome: solo il nome, senza interferenze */}
       <div className={'torneo-hero torneo-hero-' + torneo.sport}>
-        <div className="torneo-hero-nome">
-          <span className="torneo-hero-puntino" aria-hidden>•</span>
-          {torneo.nome}
-          <span className="torneo-hero-puntino" aria-hidden>•</span>
-        </div>
+        <div className="torneo-hero-nome">{torneo.nome}</div>
       </div>
       {/* Formato + periodo: fuori dal riquadro verde, sotto al titolo. */}
       <div className="torneo-hero-sub">

@@ -2,7 +2,6 @@ import { useEffect } from 'react'
 import type { ComponentType } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '@/auth/useAuth'
-import { puoGestirePrenotazioni } from '@/auth/ruoli'
 import type { Socio } from '@/auth/tipi'
 import { useRealtimeCircolo } from '@/hooks/useRealtimeCircolo'
 import InstallaAppBanner from '@/components/InstallaAppBanner'
@@ -10,7 +9,6 @@ import MenuUtente from '@/components/MenuUtente'
 import CampanellaNotifiche from '@/components/CampanellaNotifiche'
 import {
   IconaPrenota,
-  IconaStatistiche,
   IconaGiocatori,
   IconaTornei,
   IconaAreaClub,
@@ -25,11 +23,13 @@ interface Voce {
 // "Premi" non è più una voce di primo livello: vive come sotto-scheda
 // dentro Area Club (ProfiloPage.tsx), accanto a Bacheca/Amici/Club.
 function vociMenu(p: Socio): Voce[] {
+  // Statistiche e Giocatori non sono più tab di primo livello per l'admin:
+  // si raggiungono dalle schede dentro Area Club (vedi AreaClubSchede.tsx),
+  // così restano solo qui invece che sparse anche nell'header/subnav.
   if (p.is_admin) {
     return [
       { path: '/prenotazioni', label: 'Prenotazioni', Icona: IconaPrenota },
-      { path: '/statistiche', label: 'Statistiche', Icona: IconaStatistiche },
-      { path: '/soci', label: 'Giocatori', Icona: IconaGiocatori },
+      { path: '/profilo', label: 'Area Club', Icona: IconaAreaClub },
       { path: '/tornei', label: 'Tornei', Icona: IconaTornei },
     ]
   }
@@ -40,8 +40,8 @@ function vociMenu(p: Socio): Voce[] {
   if (collaboratore) {
     return [
       { path: '/prenotazioni', label: 'Prenotazioni', Icona: IconaPrenota },
-      { path: '/tornei', label: 'Tornei', Icona: IconaTornei },
       { path: '/profilo', label: 'Area Club', Icona: IconaAreaClub },
+      { path: '/tornei', label: 'Tornei', Icona: IconaTornei },
     ]
   }
 
@@ -49,8 +49,8 @@ function vociMenu(p: Socio): Voce[] {
     return [
       { path: '/prenota', label: 'Prenota', Icona: IconaPrenota },
       { path: '/soci', label: 'Giocatori', Icona: IconaGiocatori },
-      { path: '/tornei', label: 'Tornei', Icona: IconaTornei },
       { path: '/profilo', label: 'Area Club', Icona: IconaAreaClub },
+      { path: '/tornei', label: 'Tornei', Icona: IconaTornei },
     ]
   }
 
@@ -110,23 +110,6 @@ export default function AppShell() {
         </div>
 
         <div className="header-utente flex items-center gap-1.5 text-sm">
-          {puoGestirePrenotazioni(profilo) && !profilo.is_admin && (
-            <NavLink
-              to="/statistiche"
-              title="Statistiche"
-              className={({ isActive }) =>
-                'flex items-center rounded-lg p-1.5 text-white/60 transition hover:bg-white/10 hover:text-white' +
-                (isActive ? ' bg-white/10 text-white' : '')
-              }
-            >
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <line x1="18" y1="20" x2="18" y2="10" />
-                <line x1="12" y1="20" x2="12" y2="4" />
-                <line x1="6" y1="20" x2="6" y2="14" />
-                <line x1="2" y1="20" x2="22" y2="20" />
-              </svg>
-            </NavLink>
-          )}
           {profilo.is_admin && (
             <NavLink
               to="/impostazioni"

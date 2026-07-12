@@ -1,7 +1,7 @@
-import type { ReactNode } from 'react'
+import type { ReactNode, WheelEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/auth/useAuth'
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { dataEstesa, titleCase, inizialiDaEtichetta } from '@/lib/formato'
 import { oraLocale, ymd } from '@/features/prenotazioni/orari'
 import { SportIcona } from '@/components/IconeSport'
@@ -9,9 +9,12 @@ import { IconaMeteo } from '@/components/IconeMeteo'
 import { useMeteo } from '@/hooks/useMeteo'
 import Avatar from '@/components/Avatar'
 import { useSociEtichette } from '@/features/prenotazioni/datiAmichevoli'
-import { useAmici } from '../amici/useAmici'
+import { useAmici, ruoloDa, type VoceAmico, type SocioPubblico } from '../amici/useAmici'
+import DettaglioAmicoModal from '../amici/DettaglioAmicoModal'
+import ChatModal from '@/features/chat/ChatModal'
 import { useRichiestePartner } from '@/features/compagni/useRichiestePartner'
 import { useProssimaAttivita } from './useAnteprimeAreaClub'
+import { useStatGioc } from '@/features/segreteria/StatistichePage'
 
 const SPORT_LABEL: Record<string, string> = { padel: 'Padel', calcio: 'Calcio' }
 
@@ -56,11 +59,102 @@ function IcoBadge() {
     </svg>
   )
 }
+// Statistiche: non più una scorciatoia in fondo con l'iconcina blu, ma una
+// vera scheda in cima ad Area Club per l'admin (vedi CardStatistiche sotto).
+function IcoStatistiche() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" /><line x1="2" y1="20" x2="22" y2="20" />
+    </svg>
+  )
+}
 function IcoFreccia() {
   return (
     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <polyline points="9 18 15 12 9 6" />
     </svg>
+  )
+}
+
+function IcoFrecciaCarosello({ sinistra }: { sinistra?: boolean }) {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <polyline points={sinistra ? '15 18 9 12 15 6' : '9 18 15 12 9 6'} />
+    </svg>
+  )
+}
+
+// Carosello orizzontale con frecce prev/next a metà altezza invece della
+// scrollbar da trascinare col mouse (richiesto esplicitamente per il
+// browser: la scrollbar era scomoda da usare). Le frecce si nascondono da
+// sole ai due estremi e restano visibili solo su dispositivi con mouse
+// (vedi media query hover:hover in index.css) — su touch lo scroll
+// orizzontale funziona già col dito.
+function CaroselloFrecce({ children }: { children: ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [puoSx, setPuoSx] = useState(false)
+  const [puoDx, setPuoDx] = useState(false)
+
+  function aggiornaFrecce() {
+    const el = ref.current
+    if (!el) return
+    setPuoSx(el.scrollLeft > 4)
+    setPuoDx(el.scrollLeft < el.scrollWidth - el.clientWidth - 4)
+  }
+
+  // Al primo render il carosello potrebbe non avere ancora tutte le
+  // minischede (i dati arrivano async): ricontrolliamo quando cambiano i
+  // children e al resize, non solo sullo scroll manuale.
+  useEffect(() => {
+    aggiornaFrecce()
+    window.addEventListener('resize', aggiornaFrecce)
+    return () => window.removeEventListener('resize', aggiornaFrecce)
+  }, [children])
+
+  function scorri(verso: 1 | -1) {
+    ref.current?.scrollBy({ left: verso * 280, behavior: 'smooth' })
+  }
+
+  // Rotellina del mouse (verticale) tradotta in scroll orizzontale: senza
+  // questo, sul browser passare il mouse sul carosello e scorrere la
+  // rotellina non muoveva nulla (il div non ha overflow verticale da
+  // scrollare). Se non c'è più margine in quella direzione lasciamo che
+  // l'evento risalga normalmente, così la pagina scorre come al solito.
+  function onWheel(e: WheelEvent<HTMLDivElement>) {
+    const el = ref.current
+    if (!el || e.deltaY === 0) return
+    const puoScorrere = e.deltaY > 0
+      ? el.scrollLeft < el.scrollWidth - el.clientWidth - 1
+      : el.scrollLeft > 1
+    if (!puoScorrere) return
+    e.preventDefault()
+    el.scrollLeft += e.deltaY
+  }
+
+  return (
+    <div className="carosello-frecce">
+      <div className="club-tile-carosello" ref={ref} onScroll={aggiornaFrecce} onWheel={onWheel}>
+        {children}
+      </div>
+      <button
+        type="button"
+        className="carosello-freccia carosello-freccia-sx"
+        onClick={() => scorri(-1)}
+        disabled={!puoSx}
+        aria-label="Scorri a sinistra"
+      >
+        <IcoFrecciaCarosello sinistra />
+      </button>
+      <button
+        type="button"
+        className="carosello-freccia carosello-freccia-dx"
+        onClick={() => scorri(1)}
+        disabled={!puoDx}
+        aria-label="Scorri a destra"
+      >
+        <IcoFrecciaCarosello />
+      </button>
+    </div>
   )
 }
 function IcoAggiungiPersona() {
@@ -137,8 +231,8 @@ function CardAttivita() {
     <div className="club-col">
       <TestataSezione titolo="La tua prossima attività" to="/profilo/mie-prenotazioni" azione="Gestisci" />
       <Link
-        to="/profilo/mie-prenotazioni"
-        className={'club-tile' + (prossima ? ' club-tile-hero' : '')}
+        to={prossima || isLoading ? '/profilo/mie-prenotazioni' : '/prenota'}
+        className={'club-tile' + (prossima ? ' club-tile-hero' : isLoading ? '' : ' club-tile-hero club-tile-vuota')}
       >
         {isLoading ? (
           <p className="club-tile-testo-anteprima">Caricamento…</p>
@@ -180,7 +274,13 @@ function CardAttivita() {
             )}
           </>
         ) : (
-          <p className="club-tile-testo-anteprima">Nessuna attività in programma.</p>
+          <>
+            <p className="club-tile-vuota-testo">Nessuna attività in programma.</p>
+            <span className="club-tile-vuota-cta">
+              <span className="club-tile-vuota-piu" aria-hidden="true">+</span>
+              Prenota un campo
+            </span>
+          </>
         )}
       </Link>
     </div>
@@ -223,21 +323,147 @@ function CardCercaPartita() {
         <Link
           to="/profilo/cerco-giocatori"
           state={{ apriNuovo: true }}
-          className="club-tile club-tile-hero cerca-wow-vuota"
+          className="club-tile club-tile-hero club-tile-vuota"
         >
-          <span className="cerca-wow-piu" aria-hidden="true">+</span>
-          <p className="cerca-wow-vuota-testo">Nessuna partita al momento.</p>
-          <span className="cerca-wow-vuota-cta">Crea una partita</span>
+          <p className="club-tile-vuota-testo">Nessuna partita al momento.</p>
+          <span className="club-tile-vuota-cta">
+            <span className="club-tile-vuota-piu" aria-hidden="true">+</span>
+            Crea una partita
+          </span>
         </Link>
       )}
     </div>
   )
 }
 
-// ── Scorciatoie a icona: Contatti / Classifica / Premi ──────────────────────
-function TileScorciatoia({ titolo, icona, to }: { titolo: string; icona: ReactNode; to: string }) {
+// ── Statistiche (solo admin, al posto di "La tua prossima attività"):
+// non più un generico invito, ma un'anteprima con i numeri più rilevanti
+// (iscritti totali, nuovi questo mese, attivi ultimi 7 giorni) — stesso
+// principio delle altre schede "wow" che mostrano un vero assaggio dei
+// dati invece di un testo di circostanza. Usa solo useStatGioc() (una RPC
+// leggera): useStatPren() resta nella pagina dedicata, è pesante (scarica
+// tutte le prenotazioni dell'anno) e appesantirebbe ogni apertura di Area
+// Club per niente. ──────────────────────────────────────────────────────
+function CardStatistiche() {
+  const { data: stat, isLoading } = useStatGioc()
+
   return (
-    <Link to={to} className="club-tile club-tile-scorciatoia">
+    <div className="club-col">
+      <TestataSezione titolo="Statistiche" to="/statistiche" azione="Apri" />
+      <Link to="/statistiche" className="club-tile club-tile-hero">
+        <div className="prossima-wow-fascia">
+          <span className="prossima-wow-sport">
+            <IcoStatistiche /> Giocatori
+          </span>
+        </div>
+        {isLoading || !stat ? (
+          <p className="club-tile-testo-anteprima">Caricamento…</p>
+        ) : (
+          <div className="stat-anteprima-riga">
+            <div className="stat-anteprima-cella">
+              <span className="stat-anteprima-n">{stat.totale}</span>
+              <span className="stat-anteprima-lbl">Iscritti</span>
+            </div>
+            <div className="stat-anteprima-cella">
+              <span className="stat-anteprima-n">{stat.nuoviMese}</span>
+              <span className="stat-anteprima-lbl">Nuovi questo mese</span>
+            </div>
+            <div className="stat-anteprima-cella">
+              <span className="stat-anteprima-n">{stat.attiviUltimi7}</span>
+              <span className="stat-anteprima-lbl">Attivi ultimi 7gg</span>
+            </div>
+          </div>
+        )}
+      </Link>
+    </div>
+  )
+}
+
+// ── Giocatori (minicard di tutti i soci, non solo amici): per l'admin
+// sostituisce "Cerca partita", per i collaboratori sostituisce "Amici" —
+// come staff sono già "connessi" a chiunque, non serve il giro
+// richiesta/accetta. Mostra gli ultimi iscritti (ordinati per
+// data_iscrizione), "Visualizza" apre la stessa scheda dettaglio (di sola
+// lettura, niente "Rimuovi") usata per gli amici veri. ─────────────────────
+function CardGiocatori() {
+  const { profilo } = useAuth()
+  const amici = useAmici(profilo?.id ?? '')
+  const [visualizzato, setVisualizzato] = useState<SocioPubblico | null>(null)
+  const [chatCon, setChatCon] = useState<{ id: string; etichetta: string } | null>(null)
+
+  const ultimiIscritti = useMemo(() => {
+    return amici.sociPubblici
+      .filter((s) => s.id !== profilo?.id)
+      .slice()
+      .sort((a, b) => (b.data_iscrizione ?? '').localeCompare(a.data_iscrizione ?? ''))
+      .slice(0, 12)
+  }, [amici.sociPubblici, profilo?.id])
+
+  return (
+    <div className="club-col">
+      <TestataSezione titolo="Giocatori" to="/soci" />
+      <CaroselloFrecce>
+        {ultimiIscritti.map((s) => (
+          <div key={s.id} className="mini-persona mini-persona-wow">
+            <Avatar foto={s.foto_url ?? null} iniziali={inizialiDaEtichetta(s.etichetta)} titolo={s.etichetta} size={72} />
+            <span className="mini-persona-nome">{primoNome(s.etichetta)}</span>
+            <button
+              type="button"
+              className="mini-persona-btn mini-persona-btn-secondario"
+              onClick={() => setVisualizzato(s)}
+            >
+              Visualizza
+            </button>
+          </div>
+        ))}
+      </CaroselloFrecce>
+
+      {visualizzato && (
+        <DettaglioAmicoModal
+          key={visualizzato.id}
+          voce={{
+            id: visualizzato.id,
+            etichetta: visualizzato.etichetta,
+            ruolo: ruoloDa(visualizzato),
+            punti: visualizzato.punti,
+            sport: visualizzato.sport_preferito,
+            foto_url: visualizzato.foto_url ?? null,
+          }}
+          amiciCount={
+            amici.amicizieTutte.filter(
+              (a) =>
+                a.stato === 'accettata' &&
+                (a.richiedente === visualizzato.id || a.destinatario === visualizzato.id),
+            ).length
+          }
+          onChat={() => {
+            setChatCon({ id: visualizzato.id, etichetta: titleCase(visualizzato.etichetta) })
+            setVisualizzato(null)
+          }}
+          onChiudi={() => setVisualizzato(null)}
+        />
+      )}
+      {chatCon && profilo && (
+        <ChatModal profiloId={profilo.id} amico={chatCon} onChiudi={() => setChatCon(null)} />
+      )}
+    </div>
+  )
+}
+
+// ── Scorciatoie a icona: Contatti / Classifica / Premi ──────────────────────
+function TileScorciatoia({
+  titolo,
+  icona,
+  to,
+  state,
+}: {
+  titolo: string
+  icona: ReactNode
+  to: string
+  state?: Record<string, unknown>
+}) {
+  return (
+    <Link to={to} state={state} className="club-tile club-tile-scorciatoia">
       <span className="club-tile-scorciatoia-ico">{icona}</span>
       <span className="club-tile-scorciatoia-nome">{titolo}</span>
     </Link>
@@ -246,15 +472,28 @@ function TileScorciatoia({ titolo, icona, to }: { titolo: string; icona: ReactNo
 
 // ── Amici (prima card "Aggiungi nuovo amico", poi fino a 5 contatti tra
 // amici già collegati, richieste inviate ancora in attesa e giocatori
-// suggeriti — per questi ultimi un pulsante "Aggiungi" invia la richiesta
-// senza uscire dalla card. Niente scheda bianca dietro al carosello: le
-// minischede "galleggiano" sulla pagina, allineate alle schede che le
-// delimitano sopra/sotto. ───────────────────────────────────────────────
+// suggeriti). Amici → "Visualizza" apre la scheda dettaglio (stessa di
+// AmiciProfilo.tsx); richieste in attesa → "Annulla" ritira la richiesta
+// (niente più etichetta "In attesa": il pulsante stesso rende chiaro lo
+// stato); suggeriti → "Aggiungi" invia la richiesta senza uscire dalla
+// card. Niente scheda bianca dietro al carosello: le minischede
+// "galleggiano" sulla pagina, allineate alle schede che le delimitano
+// sopra/sotto. ────────────────────────────────────────────────────────
 type StatoContatto = 'amico' | 'in_attesa' | 'suggerito'
+interface Contatto {
+  id: string
+  nome: string
+  etichetta: string
+  foto: string | null
+  stato: StatoContatto
+  voce?: VoceAmico
+}
 
 function CardAmici() {
   const { profilo } = useAuth()
   const amici = useAmici(profilo?.id ?? '')
+  const [dettaglioAmico, setDettaglioAmico] = useState<VoceAmico | null>(null)
+  const [chatAmico, setChatAmico] = useState<VoceAmico | null>(null)
   const collegati = new Set<string>([
     profilo?.id ?? '',
     ...amici.staffIds,
@@ -264,16 +503,16 @@ function CardAmici() {
   ])
   const suggeriti = amici.sociPubblici.filter((s) => !collegati.has(s.id) && !s.account_privato)
 
-  const contatti: { id: string; nome: string; etichetta: string; foto: string | null; stato: StatoContatto }[] = [
-    ...amici.amici.map((a) => ({ id: a.id, nome: primoNome(a.etichetta), etichetta: a.etichetta, foto: a.foto_url, stato: 'amico' as const })),
-    ...amici.inviate.map((a) => ({ id: a.id, nome: primoNome(a.etichetta), etichetta: a.etichetta, foto: a.foto_url, stato: 'in_attesa' as const })),
+  const contatti: Contatto[] = [
+    ...amici.amici.map((a) => ({ id: a.id, nome: primoNome(a.etichetta), etichetta: a.etichetta, foto: a.foto_url, stato: 'amico' as const, voce: a })),
+    ...amici.inviate.map((a) => ({ id: a.id, nome: primoNome(a.etichetta), etichetta: a.etichetta, foto: a.foto_url, stato: 'in_attesa' as const, voce: a })),
     ...suggeriti.map((s) => ({ id: s.id, nome: primoNome(s.etichetta), etichetta: s.etichetta, foto: s.foto_url ?? null, stato: 'suggerito' as const })),
   ].slice(0, 5)
 
   return (
     <div className="club-col">
       <TestataSezione titolo="Amici" to="/profilo/amici" />
-      <div className="club-tile-carosello">
+      <CaroselloFrecce>
         <Link to="/profilo/amici" className="mini-persona mini-persona-wow mini-persona-aggiungi">
           <span className="mini-persona-foto mini-persona-foto-aggiungi"><IcoAggiungiPersona /></span>
           <span className="mini-persona-nome">Aggiungi</span>
@@ -282,7 +521,21 @@ function CardAmici() {
           <div key={c.id} className="mini-persona mini-persona-wow">
             <Avatar foto={c.foto} iniziali={inizialiDaEtichetta(c.etichetta)} titolo={c.etichetta} size={72} />
             <span className="mini-persona-nome">{c.nome}</span>
-            {c.stato === 'in_attesa' && <span className="mini-persona-tag">In attesa</span>}
+            {c.stato === 'amico' && (
+              <button type="button" className="mini-persona-btn mini-persona-btn-secondario" onClick={() => setDettaglioAmico(c.voce!)}>
+                Visualizza
+              </button>
+            )}
+            {c.stato === 'in_attesa' && (
+              <button
+                type="button"
+                className="mini-persona-btn mini-persona-btn-pericolo"
+                disabled={amici.rimuovi.isPending}
+                onClick={() => amici.rimuovi.mutate(c.voce!.rec)}
+              >
+                Annulla
+              </button>
+            )}
             {c.stato === 'suggerito' && (
               <button
                 type="button"
@@ -295,7 +548,32 @@ function CardAmici() {
             )}
           </div>
         ))}
-      </div>
+      </CaroselloFrecce>
+
+      {dettaglioAmico && (
+        <DettaglioAmicoModal
+          key={dettaglioAmico.id}
+          voce={dettaglioAmico}
+          amiciCount={
+            amici.amicizieTutte.filter(
+              (a) =>
+                a.stato === 'accettata' &&
+                (a.richiedente === dettaglioAmico.id || a.destinatario === dettaglioAmico.id),
+            ).length
+          }
+          onChat={() => { setChatAmico(dettaglioAmico); setDettaglioAmico(null) }}
+          onRimuovi={() => {
+            if (window.confirm(`Rimuovere ${dettaglioAmico.etichetta} dai tuoi amici?`)) {
+              amici.rimuovi.mutate(dettaglioAmico.rec)
+            }
+            setDettaglioAmico(null)
+          }}
+          onChiudi={() => setDettaglioAmico(null)}
+        />
+      )}
+      {chatAmico && profilo && (
+        <ChatModal profiloId={profilo.id} amico={chatAmico} onChiudi={() => setChatAmico(null)} />
+      )}
     </div>
   )
 }
@@ -304,18 +582,47 @@ function CardAmici() {
 // icona (eccetto le scorciatoie Contatti/Classifica/Annunci/Rewards, che
 // hanno icona+nome dentro la scheda per essere riconoscibili a colpo
 // d'occhio).
-// Solo per il giocatore regolare — vedi ProfiloPage.tsx.
+// Stessa griglia per socio/collaboratore/admin (vedi ProfiloPage.tsx: solo
+// l'istruttore non arriva qui), con le prime schede diverse a seconda del
+// ruolo — vedi composizione qui sotto.
 export default function AreaClubSchede({ modalitaPremi }: { modalitaPremi: boolean }) {
+  const { profilo } = useAuth()
+  const isAdmin = !!profilo?.is_admin
+  const isCollaboratore = !!profilo?.is_allenatore && !profilo?.is_admin
+
   return (
     <div className="club-tile-grid">
-      <CardAttivita />
-      <CardCercaPartita />
-      <CardAmici />
+      {isAdmin && (
+        <>
+          <CardStatistiche />
+          <CardCercaPartita />
+          <CardGiocatori />
+        </>
+      )}
+      {isCollaboratore && (
+        <>
+          <CardAttivita />
+          <CardCercaPartita />
+          <CardGiocatori />
+        </>
+      )}
+      {!isAdmin && !isCollaboratore && (
+        <>
+          <CardAttivita />
+          <CardCercaPartita />
+          <CardAmici />
+        </>
+      )}
 
       <div className="club-riga-scorciatoie">
         <TileScorciatoia titolo="Contatti" icona={<IcoBadge />} to="/profilo/staff" />
         <TileScorciatoia titolo="Classifica" icona={<IcoTrofeoClassifica />} to="/profilo/classifica" />
-        <TileScorciatoia titolo="Annunci" icona={<IcoMegafono />} to="/profilo/annunci" />
+        <TileScorciatoia
+          titolo="Annunci"
+          icona={<IcoMegafono />}
+          to="/profilo"
+          state={{ apriNotificheAnnunci: true }}
+        />
         {modalitaPremi && <TileScorciatoia titolo="Rewards" icona={<IcoRewards />} to="/profilo/premi" />}
       </div>
     </div>

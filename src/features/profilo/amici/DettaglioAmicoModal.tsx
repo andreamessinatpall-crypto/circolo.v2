@@ -132,6 +132,10 @@ function CardSport({ socioId, sport }: { socioId: string; sport: Sport }) {
   )
 }
 
+// `rec`/`onRimuovi` omessi: usato anche per un giocatore qualsiasi che non
+// è un amico vero e proprio (vedi CardGiocatori in AreaClubSchede.tsx, per
+// staff che "vede" tutti i soci senza una vera amicizia) — lì non c'è
+// un'amicizia da rimuovere, quindi il bottone "Rimuovi" va nascosto.
 export default function DettaglioAmicoModal({
   voce,
   amiciCount,
@@ -139,10 +143,10 @@ export default function DettaglioAmicoModal({
   onRimuovi,
   onChiudi,
 }: {
-  voce: VoceAmico
+  voce: Omit<VoceAmico, 'rec' | 'nPartite'>
   amiciCount: number
   onChat: () => void
-  onRimuovi: () => void
+  onRimuovi?: () => void
   onChiudi: () => void
 }) {
   useEffect(() => {
@@ -184,9 +188,11 @@ export default function DettaglioAmicoModal({
           <Link to="/prenota" state={{ amicoId: voce.id }} className="btn">
             <IcoCalendario /> Prenota insieme
           </Link>
-          <button type="button" className="btn btn-pericolo" onClick={onRimuovi}>
-            <IcoBidone /> Rimuovi
-          </button>
+          {onRimuovi && (
+            <button type="button" className="btn btn-pericolo" onClick={onRimuovi}>
+              <IcoBidone /> Rimuovi
+            </button>
+          )}
         </div>
 
         <div className="amico-dett-sez">

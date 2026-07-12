@@ -85,7 +85,7 @@ function App() {
         {!profilo?.is_allenatore && !profilo?.e_allenatore && !profilo?.is_admin && (
           <Route path="/premi" element={<PremiPage />} />
         )}
-        {profilo?.is_admin && <Route path="/soci" element={<SociPage />} />}
+        {(profilo?.is_admin || profilo?.is_allenatore) && <Route path="/soci" element={<SociPage />} />}
         {profilo?.e_allenatore && !profilo?.is_allenatore && !profilo?.is_admin && (
           <Route path="/soci" element={<GiocatoriReadOnly />} />
         )}

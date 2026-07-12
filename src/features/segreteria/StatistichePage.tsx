@@ -213,7 +213,7 @@ function useStatPren() {
   })
 }
 
-function useStatGioc() {
+export function useStatGioc() {
   return useQuery({
     queryKey: ['stat-gioc'],
     queryFn: async () => {

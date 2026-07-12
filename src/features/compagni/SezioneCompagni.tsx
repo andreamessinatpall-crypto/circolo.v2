@@ -64,7 +64,7 @@ export default function SezioneCompagni() {
       </div>
 
       <button type="button" className="btn btn-verde-scuro btn-block mb-3" onClick={() => setModaleAnnuncio('nuovo')}>
-        + Crea partita
+        Cerca giocatori
       </button>
 
       {caricamento ? (

@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '@/auth/useAuth'
 import { useNotifiche, type Notifica } from '@/features/notifiche/useNotifiche'
@@ -32,9 +32,23 @@ function IcoChiudi() {
 export default function CampanellaNotifiche() {
   const { profilo } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
   const [aperto, setAperto] = useState(false)
   const [scheda, setScheda] = useState<Scheda>('notifiche')
   const [chatCon, setChatCon] = useState<{ id: string; etichetta: string } | null>(null)
+
+  // La minicard "Annunci" di Area Club non porta più a una pagina a sé,
+  // ma apre direttamente questa scheda sulla tab Annunci (segnale passato
+  // via location.state, stesso pattern di "apriNuovo" in SezioneCompagni).
+  // Puliamo subito lo state dopo averlo consumato, altrimenti riaprirebbe
+  // la scheda a ogni ri-render/back sulla stessa route.
+  useEffect(() => {
+    if ((location.state as { apriNotificheAnnunci?: boolean } | null)?.apriNotificheAnnunci) {
+      setAperto(true)
+      setScheda('annunci')
+      navigate(location.pathname, { replace: true, state: null })
+    }
+  }, [location, navigate])
 
   const { notifiche, nonLette, errore, segnaLetta, segnaTutteLette, elimina } = useNotifiche(profilo?.id)
   const { conversazioni, totaleNonLetti, errore: erroreChat } = useConversazioni(

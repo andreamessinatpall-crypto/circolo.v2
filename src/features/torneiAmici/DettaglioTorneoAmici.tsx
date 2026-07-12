@@ -315,11 +315,7 @@ export default function DettaglioTorneoAmici({
 
       {/* Blocco nome: intestazione colorata, coerente con i tornei del club */}
       <div className={'torneo-hero torneo-hero-' + torneo.sport}>
-        <div className="torneo-hero-nome">
-          <span className="torneo-hero-puntino" aria-hidden>•</span>
-          {torneo.nome}
-          <span className="torneo-hero-puntino" aria-hidden>•</span>
-        </div>
+        <div className="torneo-hero-nome">{torneo.nome}</div>
       </div>
       <div className="torneo-hero-sub">
         {ETICHETTE_SPORT[torneo.sport]} · {ETICHETTE_FORMATO[torneo.formato]}

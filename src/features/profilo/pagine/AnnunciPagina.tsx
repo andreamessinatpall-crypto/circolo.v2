@@ -18,7 +18,12 @@ export default function AnnunciPagina({ embedded = false }: { embedded?: boolean
     <div>
       {!embedded && <TornaAreaClub titolo="Annunci" />}
 
-      <div className="eyebrow" style={{ marginTop: 0 }}>Comunicazioni del club</div>
+      <div className="eyebrow" style={{ marginTop: 0 }}>Tornei in programma</div>
+      <div className="card">
+        <TorneiInProgramma />
+      </div>
+
+      <div className="eyebrow">Comunicazioni del club</div>
       <div className="card">
         {isLoading ? (
           <p className="sub">Caricamento…</p>
@@ -35,11 +40,6 @@ export default function AnnunciPagina({ embedded = false }: { embedded?: boolean
             </div>
           ))
         )}
-      </div>
-
-      <div className="eyebrow">Tornei in programma</div>
-      <div className="card">
-        <TorneiInProgramma />
       </div>
     </div>
   )
