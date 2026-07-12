@@ -6,14 +6,17 @@ import TornaAreaClub from './TornaAreaClub'
 
 // Unisce le comunicazioni del club (sola lettura: la gestione resta in
 // Segreteria, vedi GestioneAnnunci.tsx) e i tornei in programma in un'unica
-// pagina, raggiunta dalla scorciatoia "Annunci" di Area Club.
-export default function AnnunciPagina() {
+// pagina, raggiunta dalla scorciatoia "Annunci" di Area Club. `embedded`
+// nasconde l'intestazione con freccia indietro quando il componente è
+// incorporato altrove (scheda Annunci nella campanella notifiche) invece di
+// essere una vera pagina/route.
+export default function AnnunciPagina({ embedded = false }: { embedded?: boolean }) {
   const { data, isLoading, error } = useAnnunci()
   const lista = data ?? []
 
   return (
     <div>
-      <TornaAreaClub titolo="Annunci" />
+      {!embedded && <TornaAreaClub titolo="Annunci" />}
 
       <div className="eyebrow" style={{ marginTop: 0 }}>Comunicazioni del club</div>
       <div className="card">

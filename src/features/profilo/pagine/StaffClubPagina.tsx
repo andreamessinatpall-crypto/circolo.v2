@@ -13,7 +13,6 @@ import TornaAreaClub from './TornaAreaClub'
 // Recapiti e indirizzo del circolo: valori fissi (non ci sono ancora
 // impostazioni editabili per queste info) — se in futuro servirà cambiarli
 // da pannello admin, andranno spostati in una tabella "impostazioni".
-const TELEFONO = '+39 333 1234567'
 const TELEFONO_HREF = 'tel:+393331234567'
 const WHATSAPP_HREF = 'https://wa.me/393331234567'
 const INDIRIZZO = 'Via Cristoforo Colombo 111, 98066 Patti (ME)'
@@ -97,7 +96,6 @@ function ContattiClub() {
           <IcoWhatsApp /> WhatsApp
         </a>
       </div>
-      <p className="sub text-center" style={{ margin: 0 }}>{TELEFONO}</p>
 
       <div className="eyebrow" style={{ margin: '0.5rem 0 0' }}>Orari di apertura</div>
       <div className="card flex items-center gap-2.5" style={{ padding: '14px 16px' }}>

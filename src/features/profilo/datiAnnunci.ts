@@ -12,7 +12,7 @@ export interface Annuncio {
   creato_il: string
 }
 
-export function useAnnunci() {
+export function useAnnunci(enabled = true) {
   return useQuery({
     queryKey: ['annunci'],
     queryFn: async (): Promise<Annuncio[]> => {
@@ -23,6 +23,7 @@ export function useAnnunci() {
       if (error) throw error
       return (data ?? []) as Annuncio[]
     },
+    enabled,
   })
 }
 

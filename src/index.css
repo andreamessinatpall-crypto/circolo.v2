@@ -1192,7 +1192,13 @@
     bottom: 0;
     z-index: 19;
     border-top: 1px solid var(--border);
-    box-shadow: 0 -2px 10px rgba(10, 47, 77, 0.08);
+    /* La seconda ombra (offset 40px, blur 0) è un "prolungamento" pieno
+       dello stesso bianco della barra: su alcuni browser mobile la barra
+       degli strumenti del browser si ridimensiona durante lo scroll e per
+       un istante "bottom: 0" non combacia col vero bordo dello schermo,
+       lasciando intravedere lo sfondo (più visibile ora che è colorato).
+       Questo prolungamento copre quel margine invece di lasciarlo scoperto. */
+    box-shadow: 0 -2px 10px rgba(10, 47, 77, 0.08), 0 40px 0 0 var(--surface);
     padding-bottom: env(safe-area-inset-bottom, 0px);
     display: flex;
     justify-content: center;
@@ -1284,10 +1290,15 @@
     }
   }
 
-  /* Da 640px in su (tablet/desktop): la subnav torna il sotto-header
-     sticky orizzontale di sempre, non più la barra fissa in fondo —
-     su schermi larghi non c'è il vantaggio "pollice" del mobile, e una
-     barra fissa in fondo sarebbe fuori posto accanto a un mouse. */
+  /* Da 640px in su (tablet/desktop): la subnav diventa una capsula
+     flottante centrata, larga quanto le schede sotto (900px, come
+     .main) — non più la barra dritta a tutta larghezza con
+     sottolineatura, e non più la barra fissa in fondo del mobile
+     (su schermi larghi non c'è il vantaggio "pollice" del mobile, e
+     una barra fissa in fondo sarebbe fuori posto accanto a un mouse).
+     Selettori con ".app-subnav" davanti per battere in specificità le
+     regole base di .header-tabs/.header-tab dichiarate più sotto nel
+     file (a parità di specificità vincerebbe l'ultima dichiarata). */
   @media (min-width: 640px) {
     .app-subnav {
       position: sticky;
@@ -1295,23 +1306,40 @@
       bottom: auto;
       left: auto;
       right: auto;
-      padding-bottom: 0;
-      border-top: 1px solid var(--border);
-      box-shadow: 0 2px 10px rgba(10, 47, 77, 0.08);
+      padding: 14px 20px;
+      background: transparent;
+      border-top: none;
+      box-shadow: none;
     }
-    .header-tab {
+    .app-subnav .header-tabs {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 5px;
+      gap: 2px;
+      box-shadow: 0 6px 20px rgba(10, 47, 77, 0.12);
+    }
+    .app-subnav .header-tab {
+      flex: 1 1 0;
+      max-width: none;
       flex-direction: row;
       gap: 6px;
-      font-size: 0.7rem;
-      letter-spacing: 0.07em;
-      padding: 11px 10px 8px;
+      font-size: 0.72rem;
+      letter-spacing: 0.06em;
+      padding: 10px 16px;
+      border-radius: 999px;
+      border-bottom: none;
     }
-    .header-tab svg {
+    .app-subnav .header-tab svg {
       width: 16px;
       height: 16px;
     }
-    .header-tab.attivo {
-      border-bottom-color: var(--v700);
+    .app-subnav .header-tab:hover {
+      background: var(--v050);
+    }
+    .app-subnav .header-tab.attivo {
+      background: var(--v700);
+      color: #fff;
     }
   }
 
@@ -6206,26 +6234,38 @@
     line-height: 15px;
     text-align: center;
   }
-  .campanella-overlay {
-    position: fixed;
-    inset: 0;
-    z-index: 30;
+  /* Scheda notifiche/chat/annunci: stesso linguaggio a schermo intero della
+     scheda account (.account-schermo), non più un pannello a comparsa —
+     ma su sfondo chiaro come Area Club (richiesto esplicitamente), non lo
+     sfondo blu scuro della scheda account. */
+  .account-schermo.campanella-schermo {
+    background: var(--bg);
+    color: var(--ink);
   }
-  /* Pannello traslucido blu scuro, coerente con l'header da cui si apre. */
-  .campanella-panel {
-    position: absolute;
-    top: calc(100% + 8px);
-    right: 0;
-    z-index: 31;
-    width: min(340px, 88vw);
-    max-height: 420px;
-    overflow-y: auto;
-    background: rgba(8, 32, 53, 0.94);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    border: 1px solid rgba(255, 255, 255, 0.14);
-    border-radius: 14px;
-    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.35);
+  .campanella-schermo .account-schermo-chiudi {
+    background: var(--surface);
+    border-color: var(--border);
+    color: var(--v700);
+    box-shadow: 0 2px 8px rgba(10, 47, 77, 0.12);
+  }
+  /* Larga come il contenuto delle pagine vere (.main max-w-900px in
+     AppShell.tsx), non la larghezza-menu stretta di .account-schermo-corpo
+     (richiesto esplicitamente, non è più solo un menu ma una scheda con
+     liste di contenuto). */
+  .account-schermo-corpo.campanella-schermo-corpo {
+    max-width: 900px;
+    padding-top: calc(env(safe-area-inset-top, 0px) + 64px);
+  }
+  .campanella-schermo-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 0 4px 4px;
+  }
+  .account-panel-titolo.campanella-schermo-titolo {
+    padding: 0;
+    color: var(--v700);
   }
   /* Scheda account (MenuUtente): non un pannello a comparsa ma una vera
      finestra a schermo intero (richiesto esplicitamente), con un'icona
@@ -6400,20 +6440,6 @@
     background: rgba(255, 180, 163, 0.1);
     border-color: rgba(255, 180, 163, 0.28);
   }
-  .campanella-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    padding: 12px 14px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.14);
-    font-family: var(--font-display);
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    font-size: 0.78rem;
-    color: #fff;
-  }
   .campanella-segna-tutte {
     background: none;
     border: none;
@@ -6422,18 +6448,17 @@
     text-transform: none;
     letter-spacing: normal;
     font-weight: 600;
-    font-size: 0.72rem;
-    color: var(--g300);
+    font-size: 0.8rem;
+    color: var(--v700);
     cursor: pointer;
   }
   .campanella-segna-tutte:hover {
-    color: var(--g300);
     text-decoration: underline;
   }
   .campanella-vuoto {
-    padding: 20px 14px;
-    font-size: 0.85rem;
-    color: rgba(255, 255, 255, 0.6);
+    padding: 24px 14px;
+    font-size: 0.92rem;
+    color: var(--ink3);
     text-align: center;
   }
   .campanella-lista {
@@ -6445,39 +6470,39 @@
     display: flex;
     align-items: flex-start;
     gap: 4px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid var(--border);
   }
   .campanella-item:last-child {
     border-bottom: none;
   }
   .campanella-item.non-letta {
-    background: rgba(212, 165, 44, 0.14);
+    background: var(--v050);
   }
   .campanella-item-btn {
     flex: 1;
     min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 3px;
     text-align: left;
     background: none;
     border: none;
-    padding: 11px 6px 11px 14px;
+    padding: 14px 8px 14px 14px;
     cursor: pointer;
   }
   .campanella-item-titolo {
-    font-size: 0.85rem;
+    font-size: 0.94rem;
     font-weight: 700;
-    color: #fff;
+    color: var(--ink);
   }
   .campanella-item-corpo {
-    font-size: 0.8rem;
-    color: rgba(255, 255, 255, 0.75);
+    font-size: 0.86rem;
+    color: var(--ink2);
     line-height: 1.4;
   }
   .campanella-item-tempo {
-    font-size: 0.68rem;
-    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.76rem;
+    color: var(--ink3);
     margin-top: 2px;
   }
   .campanella-item-x {
@@ -6485,13 +6510,81 @@
     background: none;
     border: none;
     padding: 8px 10px;
-    color: rgba(255, 255, 255, 0.5);
+    color: var(--ink3);
     cursor: pointer;
-    font-size: 0.8rem;
+    font-size: 0.9rem;
     align-self: center;
   }
   .campanella-item-x:hover {
+    color: var(--ink);
+  }
+  .campanella-tabs {
+    display: flex;
+    gap: 4px;
+    padding: 8px 10px;
+    margin-bottom: 18px;
+    border-bottom: 1px solid var(--border);
+  }
+  .campanella-tab {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 10px 8px;
+    border-radius: 999px;
+    border: none;
+    background: transparent;
+    color: var(--ink3);
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 700;
+    font-size: 0.76rem;
+    cursor: pointer;
+    transition: background 0.14s, color 0.14s;
+  }
+  .campanella-tab:hover {
+    color: var(--v700);
+  }
+  .campanella-tab.attiva {
+    background: var(--v700);
     color: #fff;
+  }
+  .campanella-tab-n {
+    min-width: 17px;
+    height: 17px;
+    padding: 0 4px;
+    border-radius: 999px;
+    background: var(--terra);
+    color: #fff;
+    font-size: 0.66rem;
+    font-weight: 800;
+    line-height: 17px;
+    text-align: center;
+  }
+  .campanella-chat-btn {
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+  }
+  .campanella-chat-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .campanella-chat-anteprima {
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .campanella-chat-tempo {
+    flex: 0 0 auto;
+    align-self: flex-start;
+    margin-top: 2px;
   }
 
   /* Menu principale (vista "menu" di MenuUtente): veri pulsanti grandi,

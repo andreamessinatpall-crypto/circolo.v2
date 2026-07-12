@@ -9,7 +9,7 @@ import BenvenutoHero from '@/features/profilo/BenvenutoHero'
 
 function IcoAvatar() {
   return (
-    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <circle cx="12" cy="8" r="4" />
       <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
     </svg>
@@ -125,13 +125,15 @@ export default function MenuUtente() {
         type="button"
         onClick={() => setAperto((v) => !v)}
         title="Il mio account"
-        className="flex items-center rounded-lg p-1.5 text-white/60 transition hover:bg-white/10 hover:text-white"
+        className="flex items-center rounded-lg p-1 text-white/60 transition hover:bg-white/10 hover:text-white"
       >
-        {profilo?.foto_url ? (
-          <img src={profilo.foto_url} alt="" className="menu-utente-foto" />
-        ) : (
-          <IcoAvatar />
-        )}
+        <span className="menu-utente-avatar">
+          {profilo?.foto_url ? (
+            <img src={profilo.foto_url} alt="" className="menu-utente-foto" />
+          ) : (
+            <IcoAvatar />
+          )}
+        </span>
       </button>
 
       {aperto && (
