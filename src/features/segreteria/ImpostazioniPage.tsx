@@ -3,7 +3,6 @@ import GestioneCampi from './GestioneCampi'
 import ValoriPunti from './ValoriPunti'
 import IntervalliCrediti from './IntervalliCrediti'
 import RigeneraPunti from './RigeneraPunti'
-import RigeneraCrediti from './RigeneraCrediti'
 import GestionePremi from './GestionePremi'
 import GestioneLivelli from './GestioneLivelli'
 
@@ -42,7 +41,6 @@ export default function ImpostazioniPage() {
           <GestioneLivelli />
           <RigeneraPunti />
           <IntervalliCrediti />
-          <RigeneraCrediti />
         </>
       )}
       {scheda === 'premi' && <GestionePremi />}

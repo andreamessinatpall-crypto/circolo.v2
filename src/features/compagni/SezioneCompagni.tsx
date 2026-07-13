@@ -18,8 +18,19 @@ function orario(t: string): string {
 // indipendentemente dal ruolo (socio, collaboratore o istruttore).
 export default function SezioneCompagni() {
   const { profilo } = useAuth()
-  const { richieste, candidature, sociById, caricamento, errore, crea, aggiorna, elimina, candidati, rispondiCandidatura } =
-    useRichiestePartner(profilo?.id)
+  const {
+    richieste,
+    candidature,
+    sociById,
+    caricamento,
+    errore,
+    crea,
+    aggiorna,
+    elimina,
+    candidati,
+    rispondiCandidatura,
+    notificaRisposta,
+  } = useRichiestePartner(profilo?.id)
   const location = useLocation()
   const [sport, setSport] = useState<Sport>('padel')
   // null = chiuso, 'nuovo' = crea, altrimenti l'annuncio da modificare.
@@ -30,6 +41,8 @@ export default function SezioneCompagni() {
   const [chatCon, setChatCon] = useState<{ id: string; etichetta: string } | null>(null)
 
   if (!profilo) return null
+
+  const mioNome = titleCase(`${profilo.nome ?? ''} ${profilo.cognome ?? ''}`.trim()) || 'Un socio'
 
   if (errore) {
     return (
@@ -158,7 +171,10 @@ export default function SezioneCompagni() {
                   <button
                     type="button"
                     className="btn btn-bianco btn-sm mt-2"
-                    onClick={() => setChatCon({ id: r.socio_id, etichetta: nome })}
+                    onClick={() => {
+                      notificaRisposta.mutate({ richiesta: r, nomeRisponditore: mioNome })
+                      setChatCon({ id: r.socio_id, etichetta: nome })
+                    }}
                   >
                     Rispondi
                   </button>
@@ -174,7 +190,7 @@ export default function SezioneCompagni() {
                   <button
                     type="button"
                     className="btn btn-sm mt-2"
-                    onClick={() => candidati.mutate(r)}
+                    onClick={() => candidati.mutate({ richiesta: r, nomeCandidato: mioNome })}
                     disabled={candidati.isPending}
                   >
                     Candidati

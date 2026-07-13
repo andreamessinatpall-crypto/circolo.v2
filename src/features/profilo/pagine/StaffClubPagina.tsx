@@ -191,7 +191,11 @@ function CardStaff({
   )
 }
 
-export default function StaffClubPagina() {
+// `embedded` nasconde l'intestazione con freccia indietro quando il
+// componente è incorporato altrove (scheda "Contatti" nel menu profilo,
+// vedi MenuUtente.tsx) invece di essere una vera pagina/route — stesso
+// pattern di AnnunciPagina.tsx.
+export default function StaffClubPagina({ embedded = false }: { embedded?: boolean }) {
   const [istruttoreAperto, setIstruttoreAperto] = useState<VoceStaff | null>(null)
   const [chatCon, setChatCon] = useState<VoceStaff | null>(null)
   const { profilo } = useAuth()
@@ -201,7 +205,7 @@ export default function StaffClubPagina() {
 
   return (
     <div>
-      <TornaAreaClub titolo="Contatti" />
+      {!embedded && <TornaAreaClub titolo="Contatti" />}
 
       <ContattiClub />
 

@@ -37,9 +37,9 @@ export const POSIZIONI: Record<Sport, { id: string; label: string }[]> = {
 }
 
 export const ORARI: { id: Orario; label: string }[] = [
-  { id: 'mattina', label: 'Mattina' },
-  { id: 'pomeriggio', label: 'Pomeriggio' },
-  { id: 'sera', label: 'Sera' },
+  { id: 'mattina', label: '8-12' },
+  { id: 'pomeriggio', label: '13-17' },
+  { id: 'sera', label: '18-22' },
   { id: 'qualsiasi', label: 'Qualsiasi' },
 ]
 

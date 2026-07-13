@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { classiErrore, classiOk } from '@/components/stili'
+import RigeneraCrediti from './RigeneraCrediti'
 import {
   normalizzaIntervalli,
   salvaIntervalli,
@@ -13,14 +14,15 @@ type Esito = { tipo: 'ok' | 'errore'; testo: string } | null
 const MSG_PERMESSO =
   'Permesso negato dal database: serve la policy admin sulle impostazioni (script tappa13-campi-rls.sql).'
 
-// (Fase 8d · blocco 3) Segreteria · editor degli intervalli crediti. Carica gli
-// intervalli salvati e li lascia modificare in righe Dal/Al.
+// (Fase 8d · blocco 3) Segreteria · editor degli intervalli crediti + pulsante
+// di rigenerazione (RigeneraCrediti), unificati in un'unica scheda "GESTIONE
+// CREDITI" invece di due schede separate.
 export default function IntervalliCrediti() {
   const { data, isLoading, error } = useIntervalliCrediti()
 
   return (
     <div>
-      <div className="eyebrow">Intervalli per l'accumulo dei crediti</div>
+      <div className="eyebrow">GESTIONE CREDITI</div>
       <div className="card">
         <p className="sub m-0 mb-3">
           I <strong>crediti</strong> contano solo per gli eventi dentro un intervallo. Nessun
@@ -34,6 +36,7 @@ export default function IntervalliCrediti() {
           // key sui dati: re-inizializza il form quando arrivano/cambiano i dati.
           <EditorIntervalli key={(data ?? []).map((i) => i.da + i.a).join('|')} iniziali={data ?? []} />
         )}
+        <RigeneraCrediti />
       </div>
     </div>
   )
@@ -89,7 +92,7 @@ function EditorIntervalli({ iniziali }: { iniziali: Intervallo[] }) {
       setMsg({
         tipo: 'ok',
         testo: puliti.length
-          ? `Intervalli salvati (${puliti.length}). Usa “Rigenera punti” qui sotto per applicarli ai crediti già assegnati.`
+          ? `Intervalli salvati (${puliti.length}). Usa “Rigenera crediti” qui sotto per applicarli ai crediti già assegnati.`
           : "Nessun intervallo: i crediti non hanno limiti di data (vale solo la modalità premi).",
       })
     },

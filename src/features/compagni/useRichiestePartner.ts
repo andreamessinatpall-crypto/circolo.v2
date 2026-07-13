@@ -1,6 +1,17 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import type { Livello } from '@/features/profilo/livelloGioco/domande'
+import { dataDa } from '@/features/prenotazioni/orari'
+
+const SPORT_LABEL: Record<Sport, string> = { padel: 'Padel', calcio: 'Calcio' }
+
+// L'annuncio smette di valere mezz'ora prima dell'inizio della partita
+// proposta, non più a un tempo fisso dalla pubblicazione (il default a 48h
+// in tappa50-richieste-partner.sql resta solo come fallback lato DB).
+function scadeIlDa(giorno: string, oraInizio: string): string {
+  const inizio = dataDa(giorno, oraInizio)
+  return new Date(inizio.getTime() - 30 * 60 * 1000).toISOString()
+}
 
 export type Sport = 'padel' | 'calcio'
 export type StatoCandidatura = 'in_attesa' | 'accettato' | 'rifiutato'
@@ -87,7 +98,11 @@ export function useRichiestePartner(profiloId: string | undefined) {
       ora_inizio: string
     }) => {
       if (!profiloId) throw new Error('Utente non autenticato')
-      const { error } = await supabase.from('richieste_partner').insert({ socio_id: profiloId, ...dati })
+      const { error } = await supabase.from('richieste_partner').insert({
+        socio_id: profiloId,
+        ...dati,
+        scade_il: scadeIlDa(dati.giorno, dati.ora_inizio),
+      })
       if (error) throw error
     },
     onSuccess: ricarica,
@@ -107,7 +122,10 @@ export function useRichiestePartner(profiloId: string | undefined) {
         ora_inizio: string
       }
     }) => {
-      const { error } = await supabase.from('richieste_partner').update(dati).eq('id', id)
+      const { error } = await supabase
+        .from('richieste_partner')
+        .update({ ...dati, scade_il: scadeIlDa(dati.giorno, dati.ora_inizio) })
+        .eq('id', id)
       if (error) throw error
     },
     onSuccess: ricarica,
@@ -122,7 +140,7 @@ export function useRichiestePartner(profiloId: string | undefined) {
   })
 
   const candidati = useMutation({
-    mutationFn: async (richiesta: RichiestaPartner) => {
+    mutationFn: async ({ richiesta, nomeCandidato }: { richiesta: RichiestaPartner; nomeCandidato: string }) => {
       if (!profiloId) throw new Error('Utente non autenticato')
       const { error } = await supabase
         .from('candidature_partner')
@@ -133,14 +151,32 @@ export function useRichiestePartner(profiloId: string | undefined) {
         .invoke('invia-push', {
           body: {
             socio_id: richiesta.socio_id,
-            titolo: 'Nuovo candidato',
-            corpo: 'Qualcuno si è candidato per la tua ricerca giocatori di calcio.',
-            url: '/profilo?sezione=club',
+            titolo: 'Hanno risposto alla tua richiesta',
+            corpo: `${nomeCandidato} ha risposto alla tua richiesta di ${SPORT_LABEL[richiesta.sport]}.`,
+            url: '/profilo/cerco-giocatori',
           },
         })
         .catch(() => {})
     },
     onSuccess: ricarica,
+  })
+
+  // Padel: "Rispondi" apre subito la chat (nessuna candidatura da tracciare,
+  // vedi commento in tappa50-richieste-partner.sql), ma chi ha pubblicato la
+  // richiesta deve comunque essere avvisato che qualcuno ha risposto.
+  const notificaRisposta = useMutation({
+    mutationFn: async ({ richiesta, nomeRisponditore }: { richiesta: RichiestaPartner; nomeRisponditore: string }) => {
+      await supabase.functions
+        .invoke('invia-push', {
+          body: {
+            socio_id: richiesta.socio_id,
+            titolo: 'Hanno risposto alla tua richiesta',
+            corpo: `${nomeRisponditore} ha risposto alla tua richiesta di ${SPORT_LABEL[richiesta.sport]}.`,
+            url: '/profilo/cerco-giocatori',
+          },
+        })
+        .catch(() => {})
+    },
   })
 
   const rispondiCandidatura = useMutation({
@@ -186,5 +222,6 @@ export function useRichiestePartner(profiloId: string | undefined) {
     elimina,
     candidati,
     rispondiCandidatura,
+    notificaRisposta,
   }
 }

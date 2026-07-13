@@ -58,7 +58,7 @@ export default function RigeneraPunti() {
 
   return (
     <div>
-      <div className="eyebrow">Rigenera punti</div>
+      <div className="eyebrow">GESTIONE PUNTI</div>
       <div className="card">
         <p className="sub m-0 mb-3">
           Ricostruisce i <strong>punti</strong> di tutti i soci da tornei e presenze con i valori

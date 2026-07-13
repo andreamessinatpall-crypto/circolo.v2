@@ -153,3 +153,12 @@ export interface AmericanoPartita {
 }
 
 export const SPORT_LABEL: Record<string, string> = { padel: 'Padel', calcio: 'Calcio' }
+
+// Un torneo "in programma" smette di comparire nelle anteprime/liste una
+// volta superata la data di inizio (anche se lo stato non è ancora stato
+// aggiornato manualmente a "in_corso"/"concluso"). Senza data_inizio resta
+// sempre visibile. `oggi` è "YYYY-MM-DD" locale (stesso formato di
+// data_inizio), confrontabile lessicograficamente.
+export function torneoInProgrammaAttivo(t: Torneo, oggi: string): boolean {
+  return t.stato === 'in_programma' && (!t.data_inizio || t.data_inizio >= oggi)
+}

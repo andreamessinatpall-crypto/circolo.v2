@@ -228,8 +228,8 @@ export default function TorneiPage() {
     <div>
       {toggleVista}
       {gestore && (
-        <button type="button" className="btn btn-oro btn-riflesso btn-block mb-3" onClick={() => setCreando(true)}>
-          + Nuovo torneo del club
+        <button type="button" className="btn btn-aggiungi btn-block mb-3" onClick={() => setCreando(true)}>
+          Aggiungi nuovo torneo del club
         </button>
       )}
 

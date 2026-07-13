@@ -10,7 +10,12 @@ import { LIVELLI_PUNTI_DEFAULT, livelloDaPunti } from '@/features/profilo/livell
 import Avatar from '@/components/Avatar'
 import { useSoci, useAttivitaSoci, fetchStoricoSocio, type SocioAdmin, type AttivitaSocio } from './datiSoci'
 import DettaglioGiocatore from './DettaglioGiocatore'
+import NuovoSocio from './NuovoSocio'
 import { SportIcona, IconaPadel, IconaCalcio } from '@/components/IconeSport'
+import { useAmici } from '@/features/profilo/amici/useAmici'
+import DettaglioAmicoModal from '@/features/profilo/amici/DettaglioAmicoModal'
+import ChatModal from '@/features/chat/ChatModal'
+import TornaAreaClub from '@/features/profilo/pagine/TornaAreaClub'
 
 type Ordine = 'ultima_desc' | 'ultima_asc' | 'cognome'
 
@@ -92,14 +97,32 @@ function fmtData(iso: string | null): string {
   return new Intl.DateTimeFormat('it-IT', { day: 'numeric', month: 'short' }).format(new Date(iso))
 }
 
-export default function GestioneGiocatori() {
+// Ruolo di un socio (usato per il "menu giocatore" condiviso con Area
+// Club, vedi DettaglioAmicoModal): non si può riusare ruoloDa() di
+// useAmici.ts perché lavora su SocioPubblico, con i booleani non
+// annullabili — qui SocioAdmin li ha come boolean | null.
+function ruoloDi(s: SocioAdmin): 'admin' | 'collaboratore' | 'istruttore' | null {
+  if (s.is_admin) return 'admin'
+  if (s.is_allenatore) return 'collaboratore'
+  if (s.e_allenatore) return 'istruttore'
+  return null
+}
+
+// `embedded`: nasconde la freccia indietro quando incorporato nella vista
+// "Giocatori del club" del menu profilo (che ha già la sua, verso il menu
+// account) — mostrata invece nella pagina /soci raggiunta da Area Club.
+export default function GestioneGiocatori({ embedded = false }: { embedded?: boolean }) {
   const { profilo } = useAuth()
   const { data: soci, isLoading, error } = useSoci()
   const { data: attivita } = useAttivitaSoci()
   const { data: modalitaPremi } = useModalitaPremi()
+  const amici = useAmici(profilo?.id ?? '')
   const [cerca, setCerca] = useState('')
   const [ordine, setOrdine] = useState<Ordine>('ultima_desc')
-  const [selezionatoId, setSelezionatoId] = useState<string | null>(null)
+  const [menuId, setMenuId] = useState<string | null>(null)
+  const [gestisciId, setGestisciId] = useState<string | null>(null)
+  const [chatCon, setChatCon] = useState<{ id: string; etichetta: string } | null>(null)
+  const [mostraNuovo, setMostraNuovo] = useState(false)
   const [espandiSospesi, setEspandiSospesi] = useState(false)
   const [espandiCancellati, setEspandiCancellati] = useState(false)
   const [msgStoricoTutti, setMsgStoricoTutti] = useState<{ tipo: 'ok' | 'errore'; testo: string } | null>(null)
@@ -157,10 +180,12 @@ export default function GestioneGiocatori() {
   const gruppoAttivi     = tutti.filter((s) => s.attivo && !s.sospeso && !isCancellato(s) && !isStaff(s) && match(s)).sort(cmp)
   const gruppoCancellati = tutti.filter((s) => isCancellato(s) && match(s)).sort(perCognome)
 
-  const selezionato = tutti.find((s) => s.id === selezionatoId) ?? null
+  const menuSocio = tutti.find((s) => s.id === menuId) ?? null
+  const gestisciSocio = tutti.find((s) => s.id === gestisciId) ?? null
 
   return (
     <div>
+      {!embedded && <TornaAreaClub titolo="Giocatori" />}
       <div className="eyebrow">Giocatori e punti</div>
 
       <div className="gioc-stats-strip">
@@ -170,6 +195,22 @@ export default function GestioneGiocatori() {
 {nDaEliminare > 0 && <StatItem num={nDaEliminare} label="Richieste" colore="#b91c1c" />}
         <StatItem num={nPadel}  label={<><IconaPadel size={12} /> Padel</>} />
         <StatItem num={nCalcio} label={<><IconaCalcio size={12} /> Calcio</>} />
+      </div>
+
+      {/* ── Nuovo giocatore (riga con pulsante, prima della ricerca) ────── */}
+      <div style={{ marginBottom: '0.75rem' }}>
+        <button
+          type="button"
+          className={'btn btn-block' + (mostraNuovo ? ' btn-secondario' : ' btn-aggiungi')}
+          onClick={() => setMostraNuovo((v) => !v)}
+        >
+          {mostraNuovo ? 'Annulla' : 'Aggiungi nuovo giocatore'}
+        </button>
+        {mostraNuovo && (
+          <div className="mt-3">
+            <NuovoSocio />
+          </div>
+        )}
       </div>
 
       {/* ── Cerca + ordina ─────────────────────────────── */}
@@ -231,20 +272,21 @@ export default function GestioneGiocatori() {
               Apri la scheda → "Attiva"
             </span>
           </div>
-          <div style={{
-            border: '1px solid #fed7aa', borderTop: 'none',
-            borderRadius: '0 0 0.75rem 0.75rem',
-            overflow: 'hidden',
-            display: 'flex', flexDirection: 'column', gap: '1px',
-            background: '#fed7aa',
-          }}>
+          <div
+            className="gioc-minicard-grid"
+            style={{
+              border: '1px solid #fed7aa', borderTop: 'none',
+              borderRadius: '0 0 0.75rem 0.75rem',
+              padding: '0.75rem',
+            }}
+          >
             {gruppoInAttesa.map((s) => (
               <RigaSocio
                 key={s.id}
                 socio={s}
                 modalitaPremi={!!modalitaPremi}
                 attivita={attivita?.get(s.id) ?? null}
-                onApri={() => setSelezionatoId(s.id)}
+                onApri={() => setMenuId(s.id)}
               />
             ))}
           </div>
@@ -278,14 +320,14 @@ export default function GestioneGiocatori() {
         )}
 
         {gruppoAttivi.length > 0 && (
-          <div className="flex flex-col gap-1.5">
+          <div className="gioc-minicard-grid">
             {gruppoAttivi.map((s) => (
               <RigaSocio
                 key={s.id}
                 socio={s}
                 modalitaPremi={!!modalitaPremi}
                 attivita={attivita?.get(s.id) ?? null}
-                onApri={() => setSelezionatoId(s.id)}
+                onApri={() => setMenuId(s.id)}
                 soloLivelloSport
               />
             ))}
@@ -323,14 +365,14 @@ export default function GestioneGiocatori() {
             </button>
 
             {espandiSospesi && (
-              <div className="flex flex-col gap-1.5 mt-2">
+              <div className="gioc-minicard-grid mt-2">
                 {gruppoSospesi.map((s) => (
                   <RigaSocio
                     key={s.id}
                     socio={s}
                     modalitaPremi={!!modalitaPremi}
                     attivita={attivita?.get(s.id) ?? null}
-                    onApri={() => setSelezionatoId(s.id)}
+                    onApri={() => setMenuId(s.id)}
                   />
                 ))}
               </div>
@@ -369,14 +411,14 @@ export default function GestioneGiocatori() {
             </button>
 
             {espandiCancellati && (
-              <div className="flex flex-col gap-1.5 mt-2">
+              <div className="gioc-minicard-grid mt-2">
                 {gruppoCancellati.map((s) => (
                   <RigaSocio
                     key={s.id}
                     socio={s}
                     modalitaPremi={!!modalitaPremi}
                     attivita={attivita?.get(s.id) ?? null}
-                    onApri={() => setSelezionatoId(s.id)}
+                    onApri={() => setMenuId(s.id)}
                   />
                 ))}
               </div>
@@ -397,27 +439,62 @@ export default function GestioneGiocatori() {
               ({gruppoStaff.length})
             </span>
           </SezHeader>
-          <div className="flex flex-col gap-1.5">
+          <div className="gioc-minicard-grid">
             {gruppoStaff.map((s) => (
               <RigaSocio
                 key={s.id}
                 socio={s}
                 modalitaPremi={!!modalitaPremi}
                 attivita={attivita?.get(s.id) ?? null}
-                onApri={() => setSelezionatoId(s.id)}
+                onApri={() => setMenuId(s.id)}
               />
             ))}
           </div>
         </div>
       )}
 
-      {selezionato && (
+      {menuSocio && (
+        <DettaglioAmicoModal
+          key={menuSocio.id}
+          voce={{
+            id: menuSocio.id,
+            etichetta: titleCase(menuSocio.cognome) + ' ' + titleCase(menuSocio.nome),
+            ruolo: ruoloDi(menuSocio),
+            punti: menuSocio.punti ?? 0,
+            sport: menuSocio.sport_preferito,
+            foto_url: menuSocio.foto_url,
+          }}
+          amiciCount={
+            amici.amicizieTutte.filter(
+              (a) =>
+                a.stato === 'accettata' &&
+                (a.richiedente === menuSocio.id || a.destinatario === menuSocio.id),
+            ).length
+          }
+          onChat={() => {
+            setChatCon({ id: menuSocio.id, etichetta: titleCase(menuSocio.cognome) + ' ' + titleCase(menuSocio.nome) })
+            setMenuId(null)
+          }}
+          onGestisci={() => {
+            setGestisciId(menuSocio.id)
+            setMenuId(null)
+          }}
+          nascondiPrenotaInsieme={!!profilo?.is_admin}
+          onChiudi={() => setMenuId(null)}
+        />
+      )}
+
+      {gestisciSocio && (
         <DettaglioGiocatore
-          socio={selezionato}
+          socio={gestisciSocio}
           modalitaPremi={!!modalitaPremi}
           meId={profilo?.id}
-          onChiudi={() => setSelezionatoId(null)}
+          onChiudi={() => setGestisciId(null)}
         />
+      )}
+
+      {chatCon && profilo && (
+        <ChatModal profiloId={profilo.id} amico={chatCon} onChiudi={() => setChatCon(null)} />
       )}
     </div>
   )
@@ -459,11 +536,18 @@ function RigaSocio({
         : null
 
   return (
-    <button
-      type="button"
+    <div
+      role="button"
+      tabIndex={0}
       onClick={onApri}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          onApri()
+        }
+      }}
       className={
-        'gioc-adm-card' +
+        'gioc-minicard' +
         (!socio.attivo && !cancellato ? ' in-attesa' : '') +
         (haCancellazione ? ' cancellazione-richiesta' : '') +
         (cancellato ? ' opacity-50' : '')
@@ -473,70 +557,59 @@ function RigaSocio({
         foto={cancellato ? null : socio.foto_url}
         iniziali={iniziali(socio.nome, socio.cognome)}
         titolo={titleCase(socio.cognome) + ' ' + titleCase(socio.nome)}
-        size={40}
+        size={56}
       />
 
-      <div className="gioc-adm-body">
-        <div className="gioc-adm-nome">
-          {titleCase(socio.cognome)} {titleCase(socio.nome)}
-          {!cancellato && !socio.attivo && !socio.sospeso && (
-            <span className="gioc-att-badge">In attesa</span>
-          )}
-          {!cancellato && socio.sospeso && (
-            <span className="gioc-att-badge" style={{ background: 'rgba(234,88,12,0.1)', color: '#c2410c', borderColor: 'rgba(234,88,12,0.3)' }}>Sospeso</span>
-          )}
-          {cancellato && (
-            <span className="pill bg-ink-1/10 text-ink-3">Cancellato</span>
-          )}
-        </div>
-
-        {!cancellato && (
-          <div className="gioc-adm-row2">
-            <span style={{ color: ruoloColore ?? cfg.colore }}>{ruoloNome ?? cfg.nome}</span>
-            {!soloLivelloSport && !socio.punti_bloccati && (
-              <>
-                <span className="gioc-adm-sep">·</span>
-                <span>{socio.punti ?? 0} pt</span>
-              </>
-            )}
-            {!soloLivelloSport && modalitaPremi && !socio.crediti_bloccati && (
-              <>
-                <span className="gioc-adm-sep">·</span>
-                <span>{socio.crediti ?? 0} cr</span>
-              </>
-            )}
-            {hasSport && (
-              <>
-                <span className="gioc-adm-sep">·</span>
-                <SportIcona sport={socio.sport_preferito} />
-              </>
-            )}
-          </div>
-        )}
-
-        {!cancellato && (
-          <div className="gioc-adm-row3">
-            <span
-              className="gioc-att-dot"
-              style={{ background: coloreAttivita(attivita?.ultima ?? null) }}
-              title={tooltipAttivita(attivita?.ultima ?? null)}
-            />
-            <span>Ultima: {fmtData(attivita?.ultima ?? null)}</span>
-            {attivita?.prossima && (
-              <>
-                <span className="gioc-adm-sep">·</span>
-                <span>Prossima: {fmtData(attivita.prossima)}</span>
-              </>
-            )}
-          </div>
-        )}
-
-        {cancellato && (
-          <div className="gioc-adm-row3">Account anonimizzato</div>
-        )}
+      <div className="gioc-minicard-nome">
+        {titleCase(socio.cognome)} {titleCase(socio.nome)}
       </div>
 
-      <span className="gioc-adm-chevron">›</span>
-    </button>
+      {!cancellato && !socio.attivo && !socio.sospeso && (
+        <span className="gioc-att-badge">In attesa</span>
+      )}
+      {!cancellato && socio.sospeso && (
+        <span className="gioc-att-badge" style={{ background: 'rgba(234,88,12,0.1)', color: '#c2410c', borderColor: 'rgba(234,88,12,0.3)' }}>Sospeso</span>
+      )}
+      {cancellato && (
+        <span className="pill bg-ink-1/10 text-ink-3">Cancellato</span>
+      )}
+
+      {!cancellato && (
+        <div className="gioc-minicard-info">
+          <span style={{ color: ruoloColore ?? cfg.colore }}>{ruoloNome ?? cfg.nome}</span>
+          {!soloLivelloSport && !socio.punti_bloccati && (
+            <>
+              <span className="gioc-adm-sep">·</span>
+              <span>{socio.punti ?? 0} pt</span>
+            </>
+          )}
+          {!soloLivelloSport && modalitaPremi && !socio.crediti_bloccati && (
+            <>
+              <span className="gioc-adm-sep">·</span>
+              <span>{socio.crediti ?? 0} cr</span>
+            </>
+          )}
+          {hasSport && (
+            <>
+              <span className="gioc-adm-sep">·</span>
+              <SportIcona sport={socio.sport_preferito} />
+            </>
+          )}
+        </div>
+      )}
+
+      {!cancellato ? (
+        <div className="gioc-minicard-attivita">
+          <span
+            className="gioc-att-dot"
+            style={{ background: coloreAttivita(attivita?.ultima ?? null) }}
+            title={tooltipAttivita(attivita?.ultima ?? null)}
+          />
+          <span>{fmtData(attivita?.ultima ?? null)}</span>
+        </div>
+      ) : (
+        <div className="gioc-minicard-attivita">Account anonimizzato</div>
+      )}
+    </div>
   )
 }

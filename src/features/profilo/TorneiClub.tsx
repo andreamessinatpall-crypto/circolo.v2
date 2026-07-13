@@ -9,8 +9,9 @@ import TabelloneEliminazione from '@/features/tornei/TabelloneEliminazione'
 import Sezione from '@/components/Sezione'
 import { incontroDisputato } from '@/features/tornei/calendario'
 import { numGironi, unitaTorneo } from '@/features/tornei/gironi'
-import { FORMATI_TORNEO, SPORT_LABEL } from '@/features/tornei/tipi'
+import { FORMATI_TORNEO, SPORT_LABEL, torneoInProgrammaAttivo } from '@/features/tornei/tipi'
 import type { Torneo } from '@/features/tornei/tipi'
+import { ymd } from '@/features/prenotazioni/orari'
 import { mancaTabella, messaggioErrore } from '@/lib/errori'
 import { useAuth } from '@/auth/useAuth'
 import { useSociPubblici } from '@/features/prenotazioni/datiAmichevoli'
@@ -435,9 +436,10 @@ export function TorneiInProgramma() {
 
   const d = torneiQuery.data!
   const sport = profilo?.sport_preferito ?? 'entrambi'
+  const oggi = ymd(new Date())
 
   const inProgramma = d.tornei.filter((t) => {
-    if (t.stato !== 'in_programma') return false
+    if (!torneoInProgrammaAttivo(t, oggi)) return false
     if (sport === 'entrambi') return true
     return t.sport === sport
   })

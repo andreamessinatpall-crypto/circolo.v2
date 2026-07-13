@@ -58,6 +58,7 @@ export async function creaPremio(p: {
   descrizione: string | null
   costo: number
   stock: number | null
+  immagine?: string | null
 }): Promise<void> {
   const { error } = await supabase.from('premi').insert(p)
   if (error) throw error
@@ -65,7 +66,7 @@ export async function creaPremio(p: {
 
 export async function salvaPremio(
   id: string,
-  patch: { costo: number; stock: number | null },
+  patch: { nome: string; descrizione: string | null; costo: number; stock: number | null; immagine: string | null },
 ): Promise<void> {
   const { error } = await supabase.from('premi').update(patch).eq('id', id)
   if (error) throw error

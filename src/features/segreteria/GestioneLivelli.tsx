@@ -1,7 +1,6 @@
 import { useRef, useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { classiErrore, classiOk } from '@/components/stili'
-import { logoDaFile } from '@/lib/immagini'
 import {
   applicaLivelliPunti,
   PALETTE,
@@ -9,76 +8,11 @@ import {
   useLivelliPunti,
   type LivelloPunti,
 } from '@/features/profilo/livelliPunti'
-import { MedagliaLvDiretta } from '@/features/profilo/MedagliaLv'
 
 type Esito = { tipo: 'ok' | 'errore'; testo: string } | null
 
 const MSG_PERMESSO =
   'Permesso negato dal database: serve la policy admin sulle impostazioni (script tappa13-campi-rls.sql).'
-
-const ICO_CARICA = (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5" aria-hidden="true">
-    <path d="M12 15V4M8 8l4-4 4 4" /><path d="M5 20h14" />
-  </svg>
-)
-const ICO_X = (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="h-3.5 w-3.5" aria-hidden="true">
-    <path d="M6 6l12 12M18 6L6 18" />
-  </svg>
-)
-
-function BadgeSlot({
-  lv,
-  colore,
-  img,
-  onCarica,
-  onRimuovi,
-}: {
-  lv: number
-  colore: string
-  img: string | null
-  onCarica: (e: React.ChangeEvent<HTMLInputElement>) => void
-  onRimuovi: () => void
-}) {
-  const fileRef = useRef<HTMLInputElement>(null)
-  return (
-    <div>
-      <span className="etichetta !mb-1 block whitespace-nowrap">Medaglia</span>
-      <div className="flex items-center gap-1.5">
-        {img ? (
-          <span className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border border-black/10">
-            <img src={img} alt="" className="h-full w-full object-cover" />
-          </span>
-        ) : (
-          <MedagliaLvDiretta lv={lv} colore={colore} size={44} />
-        )}
-        <div className="flex flex-col gap-1">
-          <button
-            type="button"
-            title={img ? 'Cambia immagine' : 'Carica immagine personalizzata'}
-            onClick={() => fileRef.current?.click()}
-            className="flex h-5 w-5 cursor-pointer items-center justify-center rounded border border-verde-100 bg-verde-50 text-verde-800"
-          >
-            {ICO_CARICA}
-          </button>
-          <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onCarica} />
-          {img && (
-            <button
-              type="button"
-              onClick={onRimuovi}
-              title="Ripristina medaglia automatica"
-              aria-label="Ripristina medaglia automatica"
-              className="flex h-5 w-5 items-center justify-center rounded border border-black/10"
-              style={{ color: 'var(--errore)' }}
-            >
-              {ICO_X}
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
-  )
-}
 
 // (Fase 8e) Segreteria · livelli a punti configurabili.
 export default function GestioneLivelli() {
@@ -90,8 +24,7 @@ export default function GestioneLivelli() {
       <div className="card">
         <p className="sub m-0 mb-3">
           I livelli si raggiungono in base ai <strong>punti</strong> raccolti. Il primo livello parte
-          sempre da 0. La medaglia mostrata è quella automatica; puoi sovrascriverla caricando
-          un'<strong>immagine</strong> personalizzata.
+          sempre da 0.
         </p>
         {isLoading ? (
           <p className="text-ink-2">Caricamento…</p>
@@ -134,20 +67,6 @@ function EditorLivelli({ iniziali }: { iniziali: LivelloPunti[] }) {
   const togli = (id: number) => setRighe((r) => r.filter((x) => x.id !== id))
   const cambia = (id: number, campo: 'nome' | 'soglia', val: string) =>
     setRighe((r) => r.map((x) => (x.id === id ? { ...x, [campo]: val } : x)))
-  const setImg = (id: number, val: string | null) =>
-    setRighe((r) => r.map((x) => (x.id === id ? { ...x, img: val } : x)))
-
-  async function caricaImg(id: number, e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    e.target.value = ''
-    if (!file) return
-    setMsg(null)
-    try {
-      setImg(id, await logoDaFile(file))
-    } catch (err) {
-      setMsg({ tipo: 'errore', testo: err instanceof Error ? err.message : 'Immagine non valida.' })
-    }
-  }
 
   const salva = useMutation({
     mutationFn: async () => {
@@ -181,16 +100,6 @@ function EditorLivelli({ iniziali }: { iniziali: LivelloPunti[] }) {
       <div className="flex flex-col gap-4">
         {righe.map((r, i) => (
           <div key={r.id} className="flex flex-wrap items-end gap-3">
-            <BadgeSlot
-              lv={i + 1}
-              colore={PALETTE[i % PALETTE.length]}
-              img={r.img}
-              onCarica={(e) => caricaImg(r.id, e)}
-              onRimuovi={() => {
-                setImg(r.id, null)
-                setMsg(null)
-              }}
-            />
             <label className="block !my-0 min-w-[8rem] flex-1">
               <span className="etichetta !mb-1 whitespace-nowrap">Nome</span>
               <input

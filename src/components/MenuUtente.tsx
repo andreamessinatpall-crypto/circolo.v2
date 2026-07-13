@@ -11,11 +11,11 @@ import ValoriPunti from '@/features/segreteria/ValoriPunti'
 import GestioneLivelli from '@/features/segreteria/GestioneLivelli'
 import RigeneraPunti from '@/features/segreteria/RigeneraPunti'
 import IntervalliCrediti from '@/features/segreteria/IntervalliCrediti'
-import RigeneraCrediti from '@/features/segreteria/RigeneraCrediti'
 import GestionePremi from '@/features/segreteria/GestionePremi'
 import GestioneAnnunci from '@/features/segreteria/GestioneAnnunci'
 import StoricoPrenotazioni from '@/features/segreteria/StoricoPrenotazioni'
 import GestioneGiocatori from '@/features/segreteria/GestioneGiocatori'
+import StaffClubPagina from '@/features/profilo/pagine/StaffClubPagina'
 
 function IcoAvatar() {
   return (
@@ -121,6 +121,14 @@ function IcoStoricoPren() {
   )
 }
 
+function IcoContatti() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="4" y="4" width="16" height="16" rx="3" /><circle cx="12" cy="10" r="2.2" /><path d="M8 16.5a4 4 0 0 1 8 0" />
+    </svg>
+  )
+}
+
 function IcoGiocatoriClub() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -168,7 +176,7 @@ function IcoFreccia() {
 }
 
 type Vista =
-  | 'menu' | 'dati' | 'attivita' | 'impostazioni'
+  | 'menu' | 'dati' | 'attivita' | 'impostazioni' | 'supporto-contatti'
   | 'club-campi' | 'club-punti' | 'club-premi' | 'club-annunci'
   | 'club-storico-prenotazioni' | 'club-giocatori'
 type Legale = 'privacy' | 'termini' | null
@@ -177,6 +185,7 @@ const TITOLI_VISTA: Record<Exclude<Vista, 'menu'>, string> = {
   dati: 'Modifica profilo',
   attivita: 'Storico attività',
   impostazioni: 'Impostazioni',
+  'supporto-contatti': 'Contatti',
   'club-campi': 'Campi e regole',
   'club-punti': 'Punti e crediti',
   'club-premi': 'Premi',
@@ -246,6 +255,15 @@ export default function MenuUtente() {
                   <button type="button" className="account-menu-voce" onClick={() => setVista('impostazioni')}>
                     <span className="account-menu-voce-ico"><IcoImpostazioni /></span>
                     <span className="account-menu-voce-testo">Impostazioni</span>
+                    <IcoFreccia />
+                  </button>
+                </div>
+
+                <div className="account-panel-sezione">
+                  <div className="account-panel-titolo">Supporto</div>
+                  <button type="button" className="account-menu-voce" onClick={() => setVista('supporto-contatti')}>
+                    <span className="account-menu-voce-ico"><IcoContatti /></span>
+                    <span className="account-menu-voce-testo">Contatti</span>
                     <IcoFreccia />
                   </button>
                 </div>
@@ -330,6 +348,7 @@ export default function MenuUtente() {
                 {vista === 'dati' && <DatiProfilo />}
                 {vista === 'attivita' && <AttivitaPage />}
                 {vista === 'impostazioni' && <ImpostazioniAccountPage />}
+                {vista === 'supporto-contatti' && <StaffClubPagina embedded />}
                 {vista === 'club-campi' && <GestioneCampi />}
                 {vista === 'club-punti' && (
                   <>
@@ -337,13 +356,12 @@ export default function MenuUtente() {
                     <GestioneLivelli />
                     <RigeneraPunti />
                     <IntervalliCrediti />
-                    <RigeneraCrediti />
                   </>
                 )}
                 {vista === 'club-premi' && <GestionePremi />}
                 {vista === 'club-annunci' && <GestioneAnnunci />}
                 {vista === 'club-storico-prenotazioni' && <StoricoPrenotazioni />}
-                {vista === 'club-giocatori' && <GestioneGiocatori />}
+                {vista === 'club-giocatori' && <GestioneGiocatori embedded />}
               </div>
             </div>
           )}

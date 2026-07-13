@@ -5,6 +5,7 @@ import { mancaRpc, messaggioErrore } from '@/lib/errori'
 import Avatar from '@/components/Avatar'
 import { SportIcona } from '@/components/IconeSport'
 import CardPartita from '@/features/profilo/CardPartita'
+import { CaroselloFrecce } from '@/components/Carosello'
 import {
   ETICHETTA_ARTO,
   ETICHETTE_SPORT,
@@ -48,6 +49,16 @@ function IcoBidone() {
   )
 }
 
+// Chiave inglese: per "Gestisci" (admin/collaboratore), apre la scheda di
+// gestione completa (punti, crediti, sospensione…) — vedi DettaglioGiocatore.
+function IcoGestisci() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M14.7 6.3a4 4 0 0 1-5.4 5.4L4 17l-1 3 3-1 5.3-5.3a4 4 0 0 1 5.4-5.4l-2.8 2.8-2-2z" />
+    </svg>
+  )
+}
+
 // Riga "Attività · Amici · Punti": tabella riepilogo sotto il nome, sfondo
 // tenue e puntino centrale come separatore (stesso segno di .att-parti-sep,
 // qui usato tra celle invece che tra nomi).
@@ -80,9 +91,12 @@ function CardSport({ socioId, sport }: { socioId: string; sport: Sport }) {
   const risultatiQuery = useUltimiRisultatiSocio(socioId, sport)
   const pref = preferenzeQuery.data?.[sport] ?? null
   const impostate = preferenzeImpostate(pref)
-  const giornoLabel = (id: string) => GIORNI.find((g) => g.id === id)?.label ?? id
   const orarioLabel = ORARI.find((o) => o.id === pref?.orario_preferito)?.label
   const posizioneLabel = POSIZIONI[sport].find((p) => p.id === pref?.posizione)?.label
+  // I giorni sono salvati nell'ordine in cui l'utente li ha selezionati (vedi
+  // alternaGiorno in QuestionarioPreferenze.tsx), qui vanno mostrati da
+  // lunedì a domenica: riordino secondo GIORNI, che è già in quell'ordine.
+  const giorniOrdinati = GIORNI.filter((g) => pref?.giorni_preferiti.includes(g.id))
 
   return (
     <div className="amico-dett-sport-card">
@@ -96,16 +110,30 @@ function CardSport({ socioId, sport }: { socioId: string; sport: Sport }) {
       {!preferenzeQuery.isLoading && impostate && pref && (
         <div className="amico-dett-sotto">
           <span className="club-sez-titolo">Preferenze</span>
-          <div className="chips">
+          <div className="pref-lista">
             {pref.mano_piede_preferito && (
-              <span className="chip">
-                {ETICHETTA_ARTO[sport]}: {pref.mano_piede_preferito === 'destra' ? 'Destra' : 'Sinistra'}
-              </span>
+              <div className="pref-riga">
+                <span className="pref-etichetta">{ETICHETTA_ARTO[sport]}</span>
+                <span className="pref-valore">{pref.mano_piede_preferito === 'destra' ? 'Destra' : 'Sinistra'}</span>
+              </div>
             )}
-            {posizioneLabel && <span className="chip">{posizioneLabel}</span>}
-            {orarioLabel && <span className="chip">{orarioLabel}</span>}
-            {pref.giorni_preferiti.length > 0 && (
-              <span className="chip">{pref.giorni_preferiti.map(giornoLabel).join(' · ')}</span>
+            {posizioneLabel && (
+              <div className="pref-riga">
+                <span className="pref-etichetta">Posizione preferita</span>
+                <span className="pref-valore">{posizioneLabel}</span>
+              </div>
+            )}
+            {orarioLabel && (
+              <div className="pref-riga">
+                <span className="pref-etichetta">Orario preferito</span>
+                <span className="pref-valore">{orarioLabel}</span>
+              </div>
+            )}
+            {giorniOrdinati.length > 0 && (
+              <div className="pref-riga">
+                <span className="pref-etichetta">Giorni preferiti</span>
+                <span className="pref-valore">{giorniOrdinati.map((g) => g.label).join(' · ')}</span>
+              </div>
             )}
           </div>
         </div>
@@ -114,7 +142,7 @@ function CardSport({ socioId, sport }: { socioId: string; sport: Sport }) {
       {!risultatiQuery.isLoading && (risultatiQuery.data ?? []).length > 0 && (
         <div className="amico-dett-sotto">
           <span className="club-sez-titolo">Ultimi risultati</span>
-          <div className="risultati-scroll">
+          <CaroselloFrecce className="risultati-scroll">
             {(risultatiQuery.data ?? []).map((m) => (
               <div key={m.prenotazione_id} className={'match match-mini' + (m.risultato_dettaglio ? ' giocata' : '')}>
                 <CardPartita
@@ -125,7 +153,7 @@ function CardSport({ socioId, sport }: { socioId: string; sport: Sport }) {
                 />
               </div>
             ))}
-          </div>
+          </CaroselloFrecce>
         </div>
       )}
     </div>
@@ -140,12 +168,20 @@ export default function DettaglioAmicoModal({
   voce,
   amiciCount,
   onChat,
+  onGestisci,
+  nascondiPrenotaInsieme,
   onRimuovi,
   onChiudi,
 }: {
   voce: Omit<VoceAmico, 'rec' | 'nPartite'>
   amiciCount: number
   onChat: () => void
+  // Admin/collaboratore: apre la scheda di gestione (punti/crediti/ecc.),
+  // vedi DettaglioGiocatore.tsx in segreteria.
+  onGestisci?: () => void
+  // L'admin non prenota per sé stesso: qui non ha senso invitare un altro
+  // socio a giocare insieme (vedi GestioneGiocatori.tsx).
+  nascondiPrenotaInsieme?: boolean
   onRimuovi?: () => void
   onChiudi: () => void
 }) {
@@ -185,9 +221,16 @@ export default function DettaglioAmicoModal({
           <button type="button" className="btn btn-secondario" onClick={onChat}>
             <IcoChat /> Chat
           </button>
-          <Link to="/prenota" state={{ amicoId: voce.id }} className="btn">
-            <IcoCalendario /> Prenota insieme
-          </Link>
+          {onGestisci && (
+            <button type="button" className="btn btn-secondario" onClick={onGestisci}>
+              <IcoGestisci /> Gestisci
+            </button>
+          )}
+          {!nascondiPrenotaInsieme && (
+            <Link to="/prenota" state={{ amicoId: voce.id }} className="btn">
+              <IcoCalendario /> Prenota insieme
+            </Link>
+          )}
           {onRimuovi && (
             <button type="button" className="btn btn-pericolo" onClick={onRimuovi}>
               <IcoBidone /> Rimuovi
@@ -224,7 +267,7 @@ export default function DettaglioAmicoModal({
           ) : partiteSport.length === 0 ? (
             <p className="sub">Non avete ancora giocato a {ETICHETTE_SPORT[sportAttivo].toLowerCase()} insieme.</p>
           ) : (
-            <div className="risultati-scroll">
+            <CaroselloFrecce className="risultati-scroll">
               {partiteSport.map((m) => (
                 <div key={m.prenotazione_id} className={'match match-mini' + (m.risultato_dettaglio ? ' giocata' : '')}>
                   <CardPartita
@@ -235,7 +278,7 @@ export default function DettaglioAmicoModal({
                   />
                 </div>
               ))}
-            </div>
+            </CaroselloFrecce>
           )}
         </div>
       </div>

@@ -11,6 +11,8 @@ export interface Premio {
   stock: number | null
   nascosto: boolean
   ordine: number | null
+  // Immagine del premio (data URL, vedi src/lib/immagini.ts), stile catalogo.
+  immagine: string | null
 }
 
 export interface Richiesta {

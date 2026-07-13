@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { classiErrore, classiOk } from '@/components/stili'
 import { messaggioErrore } from '@/lib/errori'
+import CampoImmagine from '@/components/CampoImmagine'
 import {
   SCRIPT_PREMI,
   mancaPremi,
@@ -32,6 +33,57 @@ function erroreTesto(e: unknown): string {
 
 function dataIt(iso: string): string {
   return new Date(iso).toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' })
+}
+
+// Numero con pulsanti +/− ai bordi (stesso pattern di CampoNumero in
+// GestioneCampi.tsx, versione compatta), scrivibile anche a mano. `max`
+// facoltativo (illimitato di default, utile per costo/stock).
+function CampoNumeroStepper({
+  value,
+  onChange,
+  min = 0,
+  max = Infinity,
+  placeholder,
+}: {
+  value: string
+  onChange: (v: string) => void
+  min?: number
+  max?: number
+  placeholder?: string
+}) {
+  const n = parseInt(value, 10)
+  const attuale = Number.isFinite(n) ? n : min
+  return (
+    <div className="stepper-numero stepper-numero-compatta">
+      <button
+        type="button"
+        className="stepper-btn"
+        aria-label="Diminuisci"
+        disabled={value !== '' && attuale <= min}
+        onClick={() => onChange(String(Math.max(min, attuale - 1)))}
+      >
+        −
+      </button>
+      <input
+        type="number"
+        min={min}
+        max={Number.isFinite(max) ? max : undefined}
+        inputMode="numeric"
+        placeholder={placeholder}
+        className="stepper-input"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      />
+      <button
+        type="button"
+        className="stepper-btn"
+        aria-label="Aumenta"
+        onClick={() => onChange(String(Math.min(max, attuale + 1)))}
+      >
+        +
+      </button>
+    </div>
+  )
 }
 
 // (Fase 8f) Segreteria · premi: interruttore modalità, catalogo, richieste.
@@ -122,7 +174,9 @@ function Catalogo() {
           ) : (data ?? []).length === 0 ? (
             <p className="text-ink-2">Catalogo vuoto. Aggiungi il primo premio qui sopra.</p>
           ) : (
-            (data ?? []).map((p) => <CardPremio key={p.id} premio={p} />)
+            <div className="premi-griglia">
+              {(data ?? []).map((p) => <CardPremio key={p.id} premio={p} />)}
+            </div>
           )}
         </div>
       </div>
@@ -132,10 +186,12 @@ function Catalogo() {
 
 function FormNuovoPremio() {
   const qc = useQueryClient()
+  const [aperto, setAperto] = useState(false)
   const [nome, setNome] = useState('')
   const [descrizione, setDescrizione] = useState('')
   const [costo, setCosto] = useState('')
   const [stock, setStock] = useState('')
+  const [immagine, setImmagine] = useState<string | null>(null)
   const [msg, setMsg] = useState<Esito>(null)
 
   const crea = useMutation({
@@ -151,7 +207,7 @@ function FormNuovoPremio() {
         if (!Number.isInteger(s) || s < 0)
           throw new Error('Lo stock dev’essere un numero ≥ 0 (oppure lascialo vuoto = illimitato).')
       }
-      await creaPremio({ nome: n, descrizione: descrizione.trim() || null, costo: c, stock: s })
+      await creaPremio({ nome: n, descrizione: descrizione.trim() || null, costo: c, stock: s, immagine })
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['premi-admin'] })
@@ -160,10 +216,19 @@ function FormNuovoPremio() {
       setDescrizione('')
       setCosto('')
       setStock('')
+      setImmagine(null)
+      setAperto(false)
       setMsg({ tipo: 'ok', testo: 'Premio aggiunto al catalogo.' })
     },
     onError: (e: unknown) => setMsg({ tipo: 'errore', testo: erroreTesto(e) }),
   })
+
+  if (!aperto)
+    return (
+      <button type="button" className="btn btn-secondario" onClick={() => setAperto(true)}>
+        ＋ Aggiungi nuovo premio
+      </button>
+    )
 
   return (
     <form
@@ -174,8 +239,7 @@ function FormNuovoPremio() {
         crea.mutate()
       }}
     >
-      <div className="text-sm font-semibold text-verde-800">Nuovo premio</div>
-      <label className="mt-2 block">
+      <label className="block">
         <span className="etichetta !mb-1">Nome</span>
         <input
           type="text"
@@ -185,7 +249,10 @@ function FormNuovoPremio() {
           onChange={(e) => setNome(e.target.value)}
         />
       </label>
-      <label className="mt-2 block">
+      <div className="mt-4 max-w-xs">
+        <CampoImmagine img={immagine} onCambia={setImmagine} aspetto="4/3" etichetta="Immagine (facoltativa)" />
+      </div>
+      <label className="mt-4 block">
         <span className="etichetta !mb-1">Descrizione (facoltativa)</span>
         <textarea
           maxLength={300}
@@ -198,29 +265,20 @@ function FormNuovoPremio() {
       <div className="mt-2 flex flex-wrap items-end gap-4">
         <label className="block">
           <span className="etichetta !mb-1">Costo (crediti)</span>
-          <input
-            type="number"
-            min={0}
-            inputMode="numeric"
-            className="casella-num !mt-0 w-24"
-            value={costo}
-            onChange={(e) => setCosto(e.target.value)}
-          />
+          <CampoNumeroStepper value={costo} onChange={setCosto} />
         </label>
         <label className="block">
           <span className="etichetta !mb-1">Stock (vuoto = ∞)</span>
-          <input
-            type="number"
-            min={0}
-            inputMode="numeric"
-            placeholder="∞"
-            className="casella-num !mt-0 w-24"
-            value={stock}
-            onChange={(e) => setStock(e.target.value)}
-          />
+          <CampoNumeroStepper value={stock} onChange={setStock} placeholder="∞" />
         </label>
-        <div className="block">
-          <span className="etichetta !mb-1 invisible select-none" aria-hidden="true">_</span>
+        <div className="ml-auto flex items-center gap-2">
+          <button
+            type="button"
+            className="btn btn-secondario !mt-0"
+            onClick={() => { setAperto(false); setMsg(null) }}
+          >
+            Annulla
+          </button>
           <button type="submit" className="btn !mt-0" disabled={crea.isPending}>
             Aggiungi
           </button>
@@ -232,9 +290,60 @@ function FormNuovoPremio() {
 }
 
 function CardPremio({ premio }: { premio: Premio }) {
+  const [modificaAperta, setModificaAperta] = useState(false)
+
+  return (
+    <>
+      <div className={'premio-card premio-card-admin premio-minicard' + (premio.nascosto ? ' spento' : '')}>
+        <div className="premio-v1-top">
+          <div className="min-w-0">
+            <div className="premio-nome">{premio.nome}</div>
+            {premio.nascosto && <span className="stato-pill consegnato mt-1 inline-block">Nascosto</span>}
+          </div>
+          <div className="premio-v1-prezzo">
+            <div className="num">{premio.costo ?? 0}</div>
+            <div className="et">Crediti</div>
+          </div>
+        </div>
+        <div className="premio-v1-stock">
+          {premio.stock != null ? `${premio.stock} disponibili` : 'Illimitato'}
+        </div>
+        {premio.descrizione && <div className="premio-descr mt-2">{premio.descrizione}</div>}
+        {premio.immagine && (
+          <div className="premio-v1-img">
+            <img src={premio.immagine} alt="" />
+          </div>
+        )}
+        <button
+          type="button"
+          className="premio-modifica-btn premio-modifica-btn-assoluta"
+          title="Modifica premio"
+          aria-label="Modifica premio"
+          onClick={() => setModificaAperta(true)}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+            <path d="m15 5 4 4" />
+          </svg>
+        </button>
+      </div>
+      {modificaAperta && (
+        <ModaleModificaPremio premio={premio} onChiudi={() => setModificaAperta(false)} />
+      )}
+    </>
+  )
+}
+
+// Modale di modifica: unico punto dove si cambiano titolo/descrizione/costo/
+// stock/immagine, si nasconde o si elimina il premio — la card del catalogo è
+// ormai di sola lettura (vedi CardPremio sopra).
+function ModaleModificaPremio({ premio, onChiudi }: { premio: Premio; onChiudi: () => void }) {
   const qc = useQueryClient()
+  const [nome, setNome] = useState(premio.nome)
+  const [descrizione, setDescrizione] = useState(premio.descrizione ?? '')
   const [costo, setCosto] = useState(String(premio.costo ?? 0))
   const [stock, setStock] = useState(premio.stock != null ? String(premio.stock) : '')
+  const [immagine, setImmagine] = useState<string | null>(premio.immagine)
   const [msg, setMsg] = useState<Esito>(null)
 
   const invalida = () => {
@@ -244,6 +353,8 @@ function CardPremio({ premio }: { premio: Premio }) {
 
   const salva = useMutation({
     mutationFn: async () => {
+      const n = nome.trim()
+      if (!n) throw new Error('Il nome non può essere vuoto.')
       const c = parseInt(costo, 10)
       if (!Number.isInteger(c) || c < 0) throw new Error('Costo non valido.')
       let s: number | null = null
@@ -252,11 +363,11 @@ function CardPremio({ premio }: { premio: Premio }) {
         s = parseInt(sr, 10)
         if (!Number.isInteger(s) || s < 0) throw new Error('Stock non valido.')
       }
-      await salvaPremio(premio.id, { costo: c, stock: s })
+      await salvaPremio(premio.id, { nome: n, descrizione: descrizione.trim() || null, costo: c, stock: s, immagine })
     },
     onSuccess: () => {
       invalida()
-      setMsg({ tipo: 'ok', testo: 'Salvato.' })
+      onChiudi()
     },
     onError: (e: unknown) => setMsg({ tipo: 'errore', testo: erroreTesto(e) }),
   })
@@ -269,91 +380,87 @@ function CardPremio({ premio }: { premio: Premio }) {
 
   const elimina = useMutation({
     mutationFn: () => eliminaPremio(premio.id),
-    onSuccess: invalida,
+    onSuccess: () => { invalida(); onChiudi() },
     onError: (e: unknown) => setMsg({ tipo: 'errore', testo: erroreTesto(e) }),
   })
 
   return (
-    <div className={'premio-card' + (premio.nascosto ? ' spento' : '')}>
-      <div className="premio-top">
-        <div className="premio-nome">{premio.nome}</div>
-        {premio.nascosto && <span className="stato-pill consegnato">Nascosto</span>}
-      </div>
-      {premio.descrizione && <div className="premio-descr">{premio.descrizione}</div>}
-      <div className="azioni">
-        <label className="flex items-center gap-1.5 text-sm text-ink-2">
-          Costo
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onChiudi}>
+      <div className="card modale-leggibile w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+        <h2 className="mb-3 text-lg">Modifica premio</h2>
+        <label className="block">
+          <span className="etichetta !mb-1">Nome</span>
           <input
-            type="number"
-            min={0}
-            inputMode="numeric"
-            className="casella-num !mt-0 w-20"
-            value={costo}
-            onChange={(e) => setCosto(e.target.value)}
+            type="text"
+            maxLength={60}
+            className="w-full !mt-0"
+            value={nome}
+            onChange={(e) => setNome(e.target.value)}
           />
         </label>
-        <label className="flex items-center gap-1.5 text-sm text-ink-2">
-          Stock
-          <input
-            type="number"
-            min={0}
-            inputMode="numeric"
-            placeholder="∞"
-            className="casella-num !mt-0 w-20"
-            value={stock}
-            onChange={(e) => setStock(e.target.value)}
+        <div className="mt-4 max-w-[10rem]">
+          <CampoImmagine img={immagine} onCambia={setImmagine} aspetto="1/1" etichetta="Immagine (facoltativa)" />
+        </div>
+        <label className="mt-4 block">
+          <span className="etichetta !mb-1">Descrizione (facoltativa)</span>
+          <textarea
+            maxLength={300}
+            rows={2}
+            className="w-full !mt-0"
+            value={descrizione}
+            onChange={(e) => setDescrizione(e.target.value)}
           />
         </label>
-        <button
-          type="button"
-          title="Salva"
-          className="btn-icona-premio text-verde-700 hover:bg-verde-50 disabled:opacity-40 disabled:cursor-not-allowed"
-          disabled={salva.isPending}
-          onClick={() => { setMsg(null); salva.mutate() }}
-        >
-          <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
-            <polyline points="17 21 17 13 7 13 7 21"/>
-            <polyline points="7 3 7 8 15 8"/>
-          </svg>
-        </button>
-        <button
-          type="button"
-          title={premio.nascosto ? 'Mostra' : 'Nascondi'}
-          className="btn-icona-premio text-ink-2 hover:bg-black/5 disabled:opacity-40 disabled:cursor-not-allowed"
-          disabled={nascondi.isPending}
-          onClick={() => { setMsg(null); nascondi.mutate() }}
-        >
-          {premio.nascosto ? (
-            <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-              <circle cx="12" cy="12" r="3"/>
-            </svg>
-          ) : (
-            <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/>
-              <line x1="1" y1="1" x2="23" y2="23"/>
-            </svg>
-          )}
-        </button>
-        <button
-          type="button"
-          title="Elimina"
-          className="btn-icona-premio text-terra hover:bg-terra/10 disabled:opacity-40 disabled:cursor-not-allowed"
-          disabled={elimina.isPending}
-          onClick={() => {
-            setMsg(null)
-            if (window.confirm(`Eliminare "${premio.nome}" dal catalogo? Le richieste gia fatte restano nello storico.`))
-              elimina.mutate()
-          }}
-        >
-          <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="3 6 5 6 21 6"/>
-            <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/>
-          </svg>
-        </button>
+        <div className="mt-2 flex flex-wrap items-end gap-4">
+          <label className="block">
+            <span className="etichetta !mb-1">Costo (crediti)</span>
+            <CampoNumeroStepper value={costo} onChange={setCosto} />
+          </label>
+          <label className="block">
+            <span className="etichetta !mb-1">Stock (vuoto = ∞)</span>
+            <CampoNumeroStepper value={stock} onChange={setStock} placeholder="∞" />
+          </label>
+        </div>
+
+        <div className="mt-3 flex items-center justify-between gap-2 border-t border-[var(--border2)] pt-3">
+          <button
+            type="button"
+            className="btn btn-secondario btn-mini !mt-0"
+            disabled={nascondi.isPending}
+            onClick={() => { setMsg(null); nascondi.mutate() }}
+          >
+            {premio.nascosto ? 'Mostra' : 'Nascondi'}
+          </button>
+          <button
+            type="button"
+            className="btn btn-pericolo btn-mini !mt-0"
+            disabled={elimina.isPending}
+            onClick={() => {
+              setMsg(null)
+              if (window.confirm(`Eliminare "${premio.nome}" dal catalogo? Le richieste già fatte restano nello storico.`))
+                elimina.mutate()
+            }}
+          >
+            Elimina
+          </button>
+        </div>
+
+        {msg && <p className={`mt-3 ${classiErrore}`}>{msg.testo}</p>}
+
+        <div className="mt-4 flex gap-2">
+          <button
+            type="button"
+            className="btn flex-1 !mt-0"
+            disabled={salva.isPending}
+            onClick={() => { setMsg(null); salva.mutate() }}
+          >
+            Salva modifiche
+          </button>
+          <button type="button" className="btn btn-secondario flex-1 !mt-0" onClick={onChiudi}>
+            Annulla
+          </button>
+        </div>
       </div>
-      {msg && <p className={`m-0 ${msg.tipo === 'ok' ? classiOk : classiErrore}`}>{msg.testo}</p>}
     </div>
   )
 }
@@ -494,11 +601,11 @@ function RigaRichiesta({ richiesta: r }: { richiesta: RichiestaConNome }) {
         </div>
       </div>
       <div className="flex flex-wrap items-center gap-2">
-        {pillStato(r.stato)}
+        {r.stato !== 'in_attesa' && pillStato(r.stato)}
         {r.stato === 'in_attesa' && (
           <button
             type="button"
-            className="btn btn-secondario btn-mini !mt-0"
+            className="btn btn-bianco btn-mini !mt-0"
             disabled={inCorso}
             onClick={() => stato.mutate('approvato')}
           >
@@ -518,7 +625,7 @@ function RigaRichiesta({ richiesta: r }: { richiesta: RichiestaConNome }) {
         {r.stato !== 'consegnato' && (
           <button
             type="button"
-            className="btn btn-pericolo btn-mini !mt-0"
+            className="btn btn-bianco-rosso btn-mini !mt-0"
             disabled={inCorso}
             onClick={() => {
               if (window.confirm('Eliminare la richiesta? I crediti tornano al socio.'))

@@ -92,6 +92,22 @@ export default function AppShell() {
 
   const voci = vociMenu(profilo)
 
+  // "Area Club" deve restare selezionata anche nelle pagine raggiunte dalle
+  // sue schede che non vivono sotto /profilo (Giocatori → /soci, Statistiche
+  // → /statistiche), altrimenti la tab tornava bianca entrandoci — NavLink
+  // di suo la marca attiva solo per /profilo e le sue sotto-rotte. Esclusa
+  // /soci per l'istruttore, che ha una tab "Giocatori" propria su quel
+  // percorso: lì non devono accendersi insieme.
+  const haSociTab = voci.some((v) => v.path === '/soci')
+  const extraAreaClub = haSociTab ? ['/statistiche'] : ['/soci', '/statistiche']
+  function eAttiva(percorso: string): boolean {
+    if (pathname === percorso || pathname.startsWith(percorso + '/')) return true
+    if (percorso === '/profilo') {
+      return extraAreaClub.some((p) => pathname === p || pathname.startsWith(p + '/'))
+    }
+    return false
+  }
+
   // Sfondo a macchie sfumate colorate dietro le schede "vetro" (Attività,
   // prossima attività, cerca partita): solo nelle tre sezioni che le usano,
   // non ovunque (Segreteria/admin restano sullo sfondo piatto di sempre).
@@ -139,7 +155,7 @@ export default function AppShell() {
             <NavLink
               key={v.path}
               to={v.path}
-              className={({ isActive }) => 'header-tab' + (isActive ? ' attivo' : '')}
+              className={'header-tab' + (eAttiva(v.path) ? ' attivo' : '')}
             >
               <v.Icona />
               <span>{v.label}</span>

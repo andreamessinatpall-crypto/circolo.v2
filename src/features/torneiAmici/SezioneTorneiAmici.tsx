@@ -107,8 +107,8 @@ export default function SezioneTorneiAmici() {
 
   return (
     <div>
-      <button type="button" className="btn btn-oro btn-riflesso btn-block mb-3" onClick={() => setCreando(true)}>
-        + Nuovo torneo tra amici
+      <button type="button" className="btn btn-aggiungi btn-block mb-3" onClick={() => setCreando(true)}>
+        Aggiungi torneo tra amici
       </button>
 
       {caricamento ? (

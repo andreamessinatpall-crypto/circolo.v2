@@ -55,7 +55,7 @@ function BloccoSport({ tipo, children }: { tipo: 'padel' | 'calcio'; children: R
         <span className="text-[0.72rem] font-bold uppercase tracking-[0.1em] text-white">
           {cfg.label}
         </span>
-        <span className="ml-auto flex items-center gap-2 text-[11px] font-medium text-white/70">
+        <span className="ml-auto flex items-center gap-2 text-[11px] font-bold text-white">
           <span className="w-14 text-center">Punti</span>
           <span className="w-14 text-center">Crediti</span>
         </span>

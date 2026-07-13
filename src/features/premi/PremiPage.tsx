@@ -142,16 +142,18 @@ export default function PremiPage() {
       ) : premi.length === 0 ? (
         <p className="sub">Nessun premio disponibile al momento.</p>
       ) : (
-        premi.map((p) => (
-          <CardPremio
-            key={p.id}
-            premio={p}
-            crediti={crediti}
-            popolare={(popolaritaQuery.data?.get(p.nome.toLowerCase()) ?? 0) >= SOGLIA_POPOLARE}
-            inCorso={riscatta.isPending}
-            onRiscatta={() => setRiscattaPending(p)}
-          />
-        ))
+        <div className="premi-griglia">
+          {premi.map((p) => (
+            <CardPremio
+              key={p.id}
+              premio={p}
+              crediti={crediti}
+              popolare={(popolaritaQuery.data?.get(p.nome.toLowerCase()) ?? 0) >= SOGLIA_POPOLARE}
+              inCorso={riscatta.isPending}
+              onRiscatta={() => setRiscattaPending(p)}
+            />
+          ))}
+        </div>
       )}
 
       {/* Le mie richieste */}
@@ -229,33 +231,43 @@ function CardPremio({
   const insuff = crediti < costo
 
   return (
-    <div className={'premio-card' + (esaurito ? ' spento' : '')}>
+    <div className={'premio-card premio-minicard' + (esaurito ? ' spento' : '')}>
       {popolare && (
-        <span className="badge-popolare" title="Premio molto richiesto">
+        <span className="mini-badge-popolare" title="Premio molto richiesto">
           🔥 Popolare
         </span>
       )}
-      <div className={'premio-top' + (popolare ? ' pr-pop' : '')}>
-        <div className="premio-nome">{premio.nome}</div>
+      <div className="premio-v1-top">
+        <div className="min-w-0">
+          <div className="premio-nome">{premio.nome}</div>
+        </div>
+        <div className="premio-v1-prezzo">
+          <div className="num">{costo}</div>
+          <div className="et">Crediti</div>
+        </div>
       </div>
-      {premio.descrizione && <div className="premio-descr">{premio.descrizione}</div>}
-      <div className="premio-stock">
-        📦{' '}
+      <div className="premio-v1-stock">
         {premio.stock != null
           ? esaurito
             ? 'Esaurito'
             : `${premio.stock} disponibili`
           : 'Illimitato'}
       </div>
-      <div className="azioni mt-1">
+      {premio.descrizione && <div className="premio-descr mt-2">{premio.descrizione}</div>}
+      {premio.immagine && (
+        <div className="premio-v1-img">
+          <img src={premio.immagine} alt="" />
+        </div>
+      )}
+      <div className="premio-v1-azione">
         {esaurito ? (
-          <span className="btn-bloccato">Esaurito</span>
+          <span className="btn-bloccato w-full justify-center">Esaurito</span>
         ) : insuff ? (
-          <span className="btn-bloccato" title={`Ti servono ${costo} crediti`}>
+          <span className="btn-bloccato w-full justify-center" title={`Ti servono ${costo} crediti`}>
             {LUCCHETTO} {costo} crediti
           </span>
         ) : (
-          <button type="button" className="btn-riscatta" disabled={inCorso} onClick={onRiscatta}>
+          <button type="button" className="btn-riscatta w-full justify-center" disabled={inCorso} onClick={onRiscatta}>
             Riscatta · {costo} CR
           </button>
         )}

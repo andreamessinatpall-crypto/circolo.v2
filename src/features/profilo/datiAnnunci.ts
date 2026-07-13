@@ -10,6 +10,17 @@ export interface Annuncio {
   testo: string
   autore_id: string
   creato_il: string
+  // Se assente l'annuncio resta visibile per sempre (vedi annuncioAttivo sotto).
+  scadenza: string | null
+  // Banner facoltativo (data URL, vedi src/lib/immagini.ts). Se presente, il
+  // titolo viene mostrato sovrapposto sull'immagine invece che come testo.
+  immagine: string | null
+}
+
+// Un annuncio senza scadenza è fisso per sempre; altrimenti smette di
+// comparire ai soci una volta superata la data/ora di scadenza.
+export function annuncioAttivo(a: Annuncio, ora: Date = new Date()): boolean {
+  return !a.scadenza || new Date(a.scadenza) >= ora
 }
 
 export function useAnnunci(enabled = true) {
@@ -40,7 +51,7 @@ async function eseguiABlocchi<T>(elementi: T[], azione: (el: T) => Promise<unkno
   }
 }
 
-export async function creaAnnuncio(p: { titolo: string; testo: string; autore_id: string }): Promise<void> {
+export async function creaAnnuncio(p: { titolo: string; testo: string; autore_id: string; scadenza?: string | null; immagine?: string | null }): Promise<void> {
   const { error } = await supabase.from('annunci').insert(p)
   if (error) throw error
 
@@ -50,12 +61,13 @@ export async function creaAnnuncio(p: { titolo: string; testo: string; autore_id
   try {
     const { data: soci } = await supabase.rpc('soci_pubblici')
     const destinatari = ((soci ?? []) as { id: string }[]).map((s) => s.id)
+    const corpo = p.testo ? (p.testo.length > 120 ? p.testo.slice(0, 117) + '…' : p.testo) : p.titolo
     await eseguiABlocchi(destinatari, (socioId) =>
       supabase.functions.invoke('invia-push', {
         body: {
           socio_id: socioId,
           titolo: p.titolo,
-          corpo: p.testo.length > 120 ? p.testo.slice(0, 117) + '…' : p.testo,
+          corpo,
           url: '/profilo',
         },
       }).catch(() => {}),
@@ -65,7 +77,7 @@ export async function creaAnnuncio(p: { titolo: string; testo: string; autore_id
   }
 }
 
-export async function salvaAnnuncio(id: string, patch: { titolo: string; testo: string }): Promise<void> {
+export async function salvaAnnuncio(id: string, patch: { titolo: string; testo: string; scadenza?: string | null; immagine?: string | null }): Promise<void> {
   const { error } = await supabase.from('annunci').update(patch).eq('id', id)
   if (error) throw error
 }

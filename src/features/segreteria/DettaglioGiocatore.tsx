@@ -139,7 +139,7 @@ export default function DettaglioGiocatore({
       className="fixed inset-0 z-40 flex justify-center overflow-y-auto overscroll-contain bg-black/40 p-4"
       onClick={onChiudi}
     >
-      <div className="card my-auto w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+      <div className="card modale-leggibile my-auto w-full max-w-md" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-start justify-between">
           <div>
             <h2 className="m-0 text-xl">{nomeCompleto}</h2>
