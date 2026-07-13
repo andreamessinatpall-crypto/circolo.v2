@@ -86,7 +86,13 @@ export default function PrenotaWizard({ sportOptions }: { sportOptions: Sport[] 
   const prenQuery = usePrenotazioniGiorno(giorno)
   const meteoQuery = useMeteo()
 
-  const imp = impQuery.data ?? { giorniAnticipo: 6, maxPadel: 0, maxCalcio: 0 }
+  const imp = impQuery.data ?? {
+    giorniAnticipo: 6,
+    maxPadel: 0,
+    maxCalcio: 0,
+    maxPadelGiorno: 0,
+    maxCalcioGiorno: 0,
+  }
   const attivo = sportOptions.includes(sport) ? sport : (sportOptions[0] ?? 'padel')
 
   function setGiorno(g: string) {

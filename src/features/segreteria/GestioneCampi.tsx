@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { classiErrore, classiOk } from '@/components/stili'
 import { IconaCalcio, IconaPadel } from '@/components/IconeSport'
-import { IconaCoperto, IconaScoperto } from '@/components/IconeMeteo'
 import { etichettaSport } from '@/lib/formato'
 import { useCampi, useImpostazioni } from '@/features/prenotazioni/datiPrenotazioni'
 import { orariCampo, SLOT_MINUTI } from '@/features/prenotazioni/orari'
@@ -15,16 +14,10 @@ type Esito = { tipo: 'ok' | 'errore'; testo: string } | null
 const MSG_PERMESSO =
   'Permesso negato dal database: esegui lo script tappa13-campi-rls.sql su Supabase per abilitare l’admin a gestire i campi.'
 
-// Orari selezionabili: minuti SOLO a 00/15/30/45 (slot da 1h30 della v1).
-const ORE = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'))
-const MINUTI = ['00', '15', '30', '45']
-
 // Durate di slot selezionabili per un campo, in minuti.
-const DURATE = [30, 45, 60, 75, 90, 105, 120, 150, 180]
+const DURATE = [30, 60, 90, 120]
 function durataLabel(min: number): string {
-  const h = Math.floor(min / 60)
-  const m = min % 60
-  return (h ? `${h}h` : '') + (m ? ` ${m}min` : '')
+  return `${min} minuti`
 }
 
 // (Fase 8c) Segreteria · campi e regole di prenotazione.
@@ -36,7 +29,6 @@ export default function GestioneCampi() {
     <div>
       <div className="eyebrow">Campi e orari</div>
       <div className="card">
-        <p className="sub m-0 mb-3">Nome, fascia oraria e stato di ogni campo.</p>
         {isLoading ? (
           <p className="text-ink-2">Caricamento campi…</p>
         ) : error ? (
@@ -64,34 +56,68 @@ export default function GestioneCampi() {
   )
 }
 
-// Due tendine HH : MM (i minuti restano vincolati a 00/15/30/45).
+// Picker orario nativo (clock/spinner del sistema): più professionale della
+// vecchia coppia di tendine con l'elenco di tutte le ore. step=900 (15 min)
+// mantiene i minuti vincolati a 00/15/30/45 come nella v1.
 function SelettoreOra({ valore, onChange }: { valore: string; onChange: (v: string) => void }) {
-  const [h, m] = valore.split(':')
   return (
-    <div className="inline-flex items-center gap-1">
-      <select
-        className="campo ora-select !mt-0 !w-auto"
-        value={h}
-        onChange={(e) => onChange(`${e.target.value}:${m}`)}
+    <input
+      type="time"
+      step={900}
+      className="campo ora-select !mt-0 !w-auto"
+      value={valore}
+      onChange={(e) => e.target.value && onChange(e.target.value)}
+    />
+  )
+}
+
+// Numero con pulsanti +/− invece delle frecce scure native del browser.
+function CampoNumero({
+  id,
+  value,
+  onChange,
+  min,
+  max,
+}: {
+  id?: string
+  value: string
+  onChange: (v: string) => void
+  min: number
+  max: number
+}) {
+  const n = parseInt(value, 10)
+  const attuale = Number.isFinite(n) ? n : min
+  return (
+    <div className="stepper-numero">
+      <button
+        type="button"
+        className="stepper-btn"
+        aria-label="Diminuisci"
+        disabled={attuale <= min}
+        onClick={() => onChange(String(Math.max(min, attuale - 1)))}
       >
-        {ORE.map((o) => (
-          <option key={o} value={o}>
-            {o}
-          </option>
-        ))}
-      </select>
-      <span className="text-ink-3">:</span>
-      <select
-        className="campo ora-select !mt-0 !w-auto"
-        value={m}
-        onChange={(e) => onChange(`${h}:${e.target.value}`)}
+        −
+      </button>
+      <input
+        id={id}
+        type="number"
+        min={min}
+        max={max}
+        inputMode="numeric"
+        required
+        className="stepper-input"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      />
+      <button
+        type="button"
+        className="stepper-btn"
+        aria-label="Aumenta"
+        disabled={attuale >= max}
+        onClick={() => onChange(String(Math.min(max, attuale + 1)))}
       >
-        {MINUTI.map((o) => (
-          <option key={o} value={o}>
-            {o}
-          </option>
-        ))}
-      </select>
+        +
+      </button>
     </div>
   )
 }
@@ -191,20 +217,36 @@ function RigaCampo({ campo }: { campo: Campo }) {
       </div>
 
       <div className="campo-body">
-        {/* Nome (in evidenza) */}
-        <label className="block">
-          <span className="etichetta !mb-1">Nome del campo</span>
-          <input
-            type="text"
-            maxLength={40}
-            className="campo !mt-0 w-full text-[1.05rem] font-semibold"
-            value={nome}
-            onChange={(e) => setNome(e.target.value)}
-          />
-        </label>
+        {/* Nome e tipologia (coperto/scoperto, per il badge meteo in griglia), sulla stessa riga */}
+        <div className="flex items-end gap-3">
+          <label className="block flex-1">
+            <span className="etichetta !mb-1">Nome del campo</span>
+            <input
+              type="text"
+              maxLength={20}
+              className="campo !mt-0 w-full text-[1.05rem] font-semibold"
+              value={nome}
+              onChange={(e) => setNome(e.target.value)}
+            />
+          </label>
+          <label className="block">
+            <span className="etichetta !mb-1">Tipologia</span>
+            <select
+              className="campo !mt-0 !w-auto"
+              value={outdoor ? 'scoperto' : 'coperto'}
+              onChange={(e) => {
+                setOutdoor(e.target.value === 'scoperto')
+                setMsg(null)
+              }}
+            >
+              <option value="coperto">Coperto</option>
+              <option value="scoperto">Scoperto</option>
+            </select>
+          </label>
+        </div>
 
-        {/* Orari, sulla stessa riga */}
-        <div className="mt-2.5 flex items-end gap-3">
+        {/* Orari e durata, sulla stessa riga */}
+        <div className="mt-2 flex flex-wrap items-end gap-3">
           <label className="block">
             <span className="etichetta !mb-1">Apertura</span>
             <SelettoreOra valore={apertura} onChange={setApertura} />
@@ -213,42 +255,25 @@ function RigaCampo({ campo }: { campo: Campo }) {
             <span className="etichetta !mb-1">Chiusura</span>
             <SelettoreOra valore={chiusura} onChange={setChiusura} />
           </label>
+          <label className="block">
+            <span className="etichetta !mb-1">Durata prenotazione</span>
+            <select
+              className="campo !mt-0 !w-auto"
+              value={durata}
+              onChange={(e) => setDurata(Number(e.target.value))}
+            >
+              {DURATE.map((d) => (
+                <option key={d} value={d}>
+                  {durataLabel(d)}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
-
-        {/* Durata di uno slot di prenotazione */}
-        <label className="mt-2.5 block">
-          <span className="etichetta !mb-1">Durata prenotazione</span>
-          <select
-            className="campo !mt-0 !w-auto"
-            value={durata}
-            onChange={(e) => setDurata(Number(e.target.value))}
-          >
-            {DURATE.map((d) => (
-              <option key={d} value={d}>
-                {durataLabel(d)}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        {/* Scoperto/coperto: decide se mostrare il badge meteo in griglia */}
-        <button
-          type="button"
-          className="campo-outdoor-toggle"
-          aria-pressed={outdoor}
-          title={outdoor ? 'Campo scoperto · clicca se è coperto' : 'Campo coperto · clicca se è scoperto'}
-          onClick={() => {
-            setOutdoor((v) => !v)
-            setMsg(null)
-          }}
-        >
-          {outdoor ? <IconaScoperto size={15} /> : <IconaCoperto size={15} />}
-          {outdoor ? 'Scoperto (outdoor)' : 'Coperto'}
-        </button>
 
         {/* Motivo, solo quando il campo è sospeso */}
         {!inServizio && (
-          <label className="mt-2.5 block">
+          <label className="mt-2 block">
             <span className="etichetta !mb-1">Motivo della sospensione</span>
             <input
               type="text"
@@ -262,7 +287,7 @@ function RigaCampo({ campo }: { campo: Campo }) {
         )}
 
         {/* Azioni */}
-        <div className="mt-3 flex items-center gap-2">
+        <div className="mt-2.5 flex items-center gap-2">
           <button
             type="button"
             className="btn !mt-0"
@@ -348,7 +373,7 @@ function AggiungiCampo({ campi }: { campi: Campo[] }) {
         </select>
         <input
           type="text"
-          maxLength={40}
+          maxLength={20}
           placeholder="Nome del campo"
           className="campo !mt-0 min-w-0 flex-1"
           value={nome}
@@ -385,12 +410,20 @@ function AggiungiCampo({ campi }: { campi: Campo[] }) {
 function FormRegole({
   impostazioni,
 }: {
-  impostazioni: { giorniAnticipo: number; maxPadel: number; maxCalcio: number }
+  impostazioni: {
+    giorniAnticipo: number
+    maxPadel: number
+    maxCalcio: number
+    maxPadelGiorno: number
+    maxCalcioGiorno: number
+  }
 }) {
   const qc = useQueryClient()
   const [giorni, setGiorni] = useState(String(impostazioni.giorniAnticipo))
   const [maxPadel, setMaxPadel] = useState(String(impostazioni.maxPadel))
   const [maxCalcio, setMaxCalcio] = useState(String(impostazioni.maxCalcio))
+  const [maxPadelGiorno, setMaxPadelGiorno] = useState(String(impostazioni.maxPadelGiorno))
+  const [maxCalcioGiorno, setMaxCalcioGiorno] = useState(String(impostazioni.maxCalcioGiorno))
   const [msg, setMsg] = useState<Esito>(null)
 
   const salva = useMutation({
@@ -401,22 +434,26 @@ function FormRegole({
       const mp = parseInt(maxPadel, 10)
       const mc = parseInt(maxCalcio, 10)
       if (!Number.isInteger(mp) || mp < 0 || mp > 50 || !Number.isInteger(mc) || mc < 0 || mc > 50)
-        throw new Error("Il numero massimo di prenotazioni dev'essere tra 0 e 50 (0 = nessun limite).")
+        throw new Error("Il numero massimo di prenotazioni attive dev'essere tra 0 e 50 (0 = nessun limite).")
+      const mpg = parseInt(maxPadelGiorno, 10)
+      const mcg = parseInt(maxCalcioGiorno, 10)
+      if (!Number.isInteger(mpg) || mpg < 0 || mpg > 20 || !Number.isInteger(mcg) || mcg < 0 || mcg > 20)
+        throw new Error("Il numero massimo di prenotazioni al giorno dev'essere tra 0 e 20 (0 = nessun limite).")
 
-      const esito = await salvaRegole(g, mp, mc)
+      const esito = await salvaRegole(g, mp, mc, mpg, mcg)
       if (!esito.ok)
         throw new Error(
           esito.mancaScript
             ? 'Tabella o colonne impostazioni mancanti: esegui gli script regole-prenotazione.sql e max-prenotazioni.sql su Supabase.'
             : 'Salvataggio non riuscito: ' + (esito.messaggio ?? ''),
         )
-      return { g, mp, mc }
+      return { g, mp, mc, mpg, mcg }
     },
-    onSuccess: ({ g, mp, mc }) => {
+    onSuccess: ({ g, mp, mc, mpg, mcg }) => {
       qc.invalidateQueries({ queryKey: ['impostazioni'] })
       setMsg({
         tipo: 'ok',
-        testo: `Regole aggiornate: prenotazione fino a ${g} ${g === 1 ? 'giorno' : 'giorni'} di anticipo; max prenotazioni attive — padel ${mp === 0 ? 'illimitate' : mp}, calcio ${mc === 0 ? 'illimitate' : mc}.`,
+        testo: `Regole aggiornate: prenotazione fino a ${g} ${g === 1 ? 'giorno' : 'giorni'} di anticipo; max attive — padel ${mp === 0 ? 'illimitate' : mp}, calcio ${mc === 0 ? 'illimitate' : mc}; max al giorno — padel ${mpg === 0 ? 'illimitate' : mpg}, calcio ${mcg === 0 ? 'illimitate' : mcg}.`,
       })
     },
     onError: (e: Error) => setMsg({ tipo: 'errore', testo: e.message }),
@@ -433,44 +470,43 @@ function FormRegole({
       <label className="etichetta" htmlFor="rg-giorni">
         Finestra di prenotazione: quanti giorni di anticipo (1–30)
       </label>
-      <input
-        id="rg-giorni"
-        type="number"
-        min={1}
-        max={30}
-        inputMode="numeric"
-        required
-        value={giorni}
-        onChange={(e) => setGiorni(e.target.value)}
-      />
+      <CampoNumero id="rg-giorni" min={1} max={30} value={giorni} onChange={setGiorni} />
 
-      <label className="etichetta mt-3 block" htmlFor="rg-max-padel">
-        Padel · prenotazioni attive max (0 = nessun limite)
-      </label>
-      <input
-        id="rg-max-padel"
-        type="number"
-        min={0}
-        max={50}
-        inputMode="numeric"
-        required
-        value={maxPadel}
-        onChange={(e) => setMaxPadel(e.target.value)}
-      />
+      <span className="etichetta mt-3 block">Padel</span>
+      <div className="flex items-end gap-3">
+        <label className="block flex-1">
+          <span className="etichetta !mb-1">Prenotazioni attive max (0 = nessun limite)</span>
+          <CampoNumero id="rg-max-padel" min={0} max={50} value={maxPadel} onChange={setMaxPadel} />
+        </label>
+        <label className="block flex-1">
+          <span className="etichetta !mb-1">Prenotazioni al giorno max (0 = nessun limite)</span>
+          <CampoNumero
+            id="rg-max-padel-giorno"
+            min={0}
+            max={20}
+            value={maxPadelGiorno}
+            onChange={setMaxPadelGiorno}
+          />
+        </label>
+      </div>
 
-      <label className="etichetta mt-3 block" htmlFor="rg-max-calcio">
-        Calcio · prenotazioni attive max (0 = nessun limite)
-      </label>
-      <input
-        id="rg-max-calcio"
-        type="number"
-        min={0}
-        max={50}
-        inputMode="numeric"
-        required
-        value={maxCalcio}
-        onChange={(e) => setMaxCalcio(e.target.value)}
-      />
+      <span className="etichetta mt-3 block">Calcio</span>
+      <div className="flex items-end gap-3">
+        <label className="block flex-1">
+          <span className="etichetta !mb-1">Prenotazioni attive max (0 = nessun limite)</span>
+          <CampoNumero id="rg-max-calcio" min={0} max={50} value={maxCalcio} onChange={setMaxCalcio} />
+        </label>
+        <label className="block flex-1">
+          <span className="etichetta !mb-1">Prenotazioni al giorno max (0 = nessun limite)</span>
+          <CampoNumero
+            id="rg-max-calcio-giorno"
+            min={0}
+            max={20}
+            value={maxCalcioGiorno}
+            onChange={setMaxCalcioGiorno}
+          />
+        </label>
+      </div>
 
       <button type="submit" className="btn mt-6" disabled={salva.isPending}>
         Salva regole

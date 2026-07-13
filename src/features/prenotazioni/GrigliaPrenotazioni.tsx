@@ -33,7 +33,13 @@ export default function GrigliaPrenotazioni({ sport }: { sport: Sport }) {
     (location.state as { amicoId?: string } | null)?.amicoId ?? null,
   )
 
-  const imp = impQuery.data ?? { giorniAnticipo: 6, maxPadel: 0, maxCalcio: 0 }
+  const imp = impQuery.data ?? {
+    giorniAnticipo: 6,
+    maxPadel: 0,
+    maxCalcio: 0,
+    maxPadelGiorno: 0,
+    maxCalcioGiorno: 0,
+  }
 
   const campiSport = useMemo(
     () =>

@@ -6,6 +6,16 @@ import DatiProfilo from '@/features/profilo/DatiProfilo'
 import AttivitaPage from '@/features/profilo/AttivitaPage'
 import ImpostazioniAccountPage from '@/features/profilo/ImpostazioniAccountPage'
 import BenvenutoHero from '@/features/profilo/BenvenutoHero'
+import GestioneCampi from '@/features/segreteria/GestioneCampi'
+import ValoriPunti from '@/features/segreteria/ValoriPunti'
+import GestioneLivelli from '@/features/segreteria/GestioneLivelli'
+import RigeneraPunti from '@/features/segreteria/RigeneraPunti'
+import IntervalliCrediti from '@/features/segreteria/IntervalliCrediti'
+import RigeneraCrediti from '@/features/segreteria/RigeneraCrediti'
+import GestionePremi from '@/features/segreteria/GestionePremi'
+import GestioneAnnunci from '@/features/segreteria/GestioneAnnunci'
+import StoricoPrenotazioni from '@/features/segreteria/StoricoPrenotazioni'
+import GestioneGiocatori from '@/features/segreteria/GestioneGiocatori'
 
 function IcoAvatar() {
   return (
@@ -59,6 +69,69 @@ function IcoScudo() {
   )
 }
 
+function IcoCampo() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <line x1="12" y1="4" x2="12" y2="20" />
+      <path d="M3 12h4M17 12h4" />
+    </svg>
+  )
+}
+
+function IcoPunti() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M9.5 15.5 12 8l2.5 7.5M10.2 13h3.6" />
+    </svg>
+  )
+}
+
+function IcoRegalo() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="3" y="9" width="18" height="4" rx="1" />
+      <rect x="4.5" y="13" width="15" height="8" rx="1" />
+      <line x1="12" y1="9" x2="12" y2="21" />
+      <path d="M12 9c-1.2-3-4-4.5-5.5-3S6 9 8 9z" />
+      <path d="M12 9c1.2-3 4-4.5 5.5-3S18 9 16 9z" />
+    </svg>
+  )
+}
+
+function IcoMegafonoClub() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M4 4h13a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z" />
+      <path d="M19 8h1a1 1 0 0 1 1 1v9a2 2 0 0 1-2 2" />
+      <line x1="7" y1="8" x2="13" y2="8" />
+      <line x1="7" y1="12" x2="16" y2="12" />
+    </svg>
+  )
+}
+
+function IcoStoricoPren() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="12" cy="13" r="8" />
+      <path d="M12 9v4l3 2" />
+      <path d="M9 2h6" />
+    </svg>
+  )
+}
+
+function IcoGiocatoriClub() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </svg>
+  )
+}
+
 function IcoEsci() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -94,20 +167,31 @@ function IcoFreccia() {
   )
 }
 
-type Vista = 'menu' | 'dati' | 'attivita' | 'impostazioni'
+type Vista =
+  | 'menu' | 'dati' | 'attivita' | 'impostazioni'
+  | 'club-campi' | 'club-punti' | 'club-premi' | 'club-annunci'
+  | 'club-storico-prenotazioni' | 'club-giocatori'
 type Legale = 'privacy' | 'termini' | null
 
 const TITOLI_VISTA: Record<Exclude<Vista, 'menu'>, string> = {
   dati: 'Modifica profilo',
   attivita: 'Storico attività',
   impostazioni: 'Impostazioni',
+  'club-campi': 'Campi e regole',
+  'club-punti': 'Punti e crediti',
+  'club-premi': 'Premi',
+  'club-annunci': 'Annunci',
+  'club-storico-prenotazioni': 'Storico prenotazioni',
+  'club-giocatori': 'Giocatori del club',
 }
 
 // Un bottone "omino" (solo icona/foto profilo, niente nome — richiesto
 // esplicitamente) apre a schermo intero (non un pannello a comparsa) la
 // scheda account: Il tuo account (Modifica profilo/Storico attività/
-// Impostazioni), Informazioni legali, Esci. La campanella notifiche è
-// un'icona a parte (vedi CampanellaNotifiche.tsx).
+// Impostazioni), Il tuo club (solo admin: gestione campi/punti/premi/
+// annunci/prenotazioni/giocatori, tutta in un unico posto invece che sparsa
+// tra header e pagina Prenotazioni), Informazioni legali, Esci. La
+// campanella notifiche è un'icona a parte (vedi CampanellaNotifiche.tsx).
 export default function MenuUtente() {
   const { esci, profilo } = useAuth()
   const [aperto, setAperto] = useState(false)
@@ -166,6 +250,42 @@ export default function MenuUtente() {
                   </button>
                 </div>
 
+                {profilo?.is_admin && (
+                  <div className="account-panel-sezione">
+                    <div className="account-panel-titolo">Il tuo club</div>
+                    <button type="button" className="account-menu-voce" onClick={() => setVista('club-campi')}>
+                      <span className="account-menu-voce-ico"><IcoCampo /></span>
+                      <span className="account-menu-voce-testo">Campi e regole</span>
+                      <IcoFreccia />
+                    </button>
+                    <button type="button" className="account-menu-voce" onClick={() => setVista('club-punti')}>
+                      <span className="account-menu-voce-ico"><IcoPunti /></span>
+                      <span className="account-menu-voce-testo">Punti e crediti</span>
+                      <IcoFreccia />
+                    </button>
+                    <button type="button" className="account-menu-voce" onClick={() => setVista('club-premi')}>
+                      <span className="account-menu-voce-ico"><IcoRegalo /></span>
+                      <span className="account-menu-voce-testo">Premi</span>
+                      <IcoFreccia />
+                    </button>
+                    <button type="button" className="account-menu-voce" onClick={() => setVista('club-annunci')}>
+                      <span className="account-menu-voce-ico"><IcoMegafonoClub /></span>
+                      <span className="account-menu-voce-testo">Annunci</span>
+                      <IcoFreccia />
+                    </button>
+                    <button type="button" className="account-menu-voce" onClick={() => setVista('club-storico-prenotazioni')}>
+                      <span className="account-menu-voce-ico"><IcoStoricoPren /></span>
+                      <span className="account-menu-voce-testo">Storico prenotazioni</span>
+                      <IcoFreccia />
+                    </button>
+                    <button type="button" className="account-menu-voce" onClick={() => setVista('club-giocatori')}>
+                      <span className="account-menu-voce-ico"><IcoGiocatoriClub /></span>
+                      <span className="account-menu-voce-testo">Giocatori del club</span>
+                      <IcoFreccia />
+                    </button>
+                  </div>
+                )}
+
                 <div className="account-panel-sezione">
                   <div className="account-panel-titolo">Informazioni legali</div>
                   <button type="button" className="account-menu-voce" onClick={() => setLegale('termini')}>
@@ -210,6 +330,20 @@ export default function MenuUtente() {
                 {vista === 'dati' && <DatiProfilo />}
                 {vista === 'attivita' && <AttivitaPage />}
                 {vista === 'impostazioni' && <ImpostazioniAccountPage />}
+                {vista === 'club-campi' && <GestioneCampi />}
+                {vista === 'club-punti' && (
+                  <>
+                    <ValoriPunti />
+                    <GestioneLivelli />
+                    <RigeneraPunti />
+                    <IntervalliCrediti />
+                    <RigeneraCrediti />
+                  </>
+                )}
+                {vista === 'club-premi' && <GestionePremi />}
+                {vista === 'club-annunci' && <GestioneAnnunci />}
+                {vista === 'club-storico-prenotazioni' && <StoricoPrenotazioni />}
+                {vista === 'club-giocatori' && <GestioneGiocatori />}
               </div>
             </div>
           )}

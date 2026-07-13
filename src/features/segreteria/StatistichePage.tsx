@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { messaggioErrore } from '@/lib/errori'
+import TornaAreaClub from '@/features/profilo/pagine/TornaAreaClub'
 
 // ── Date helpers ──────────────────────────────────────────────────────────────
 
@@ -324,14 +325,23 @@ export default function StatistichePage() {
 
   if (pren.isLoading || gioc.isLoading) {
     return (
-      <div className="stat-loading">
-        <div className="stat-loading-spinner" />
-        Caricamento statistiche…
+      <div>
+        <TornaAreaClub titolo="Statistiche" />
+        <div className="stat-loading">
+          <div className="stat-loading-spinner" />
+          Caricamento statistiche…
+        </div>
       </div>
     )
   }
-  if (pren.error) return <p className="sub">{messaggioErrore(pren.error)}</p>
-  if (gioc.error) return <p className="sub">{messaggioErrore(gioc.error)}</p>
+  if (pren.error || gioc.error) {
+    return (
+      <div>
+        <TornaAreaClub titolo="Statistiche" />
+        <p className="sub">{messaggioErrore(pren.error ?? gioc.error)}</p>
+      </div>
+    )
+  }
 
   const p = pren.data!
   const g = gioc.data!
@@ -348,6 +358,7 @@ export default function StatistichePage() {
 
   return (
     <div className="stat-page">
+      <TornaAreaClub titolo="Statistiche" />
       <p className="stat-ts">Aggiornato {ora}</p>
 
       {/* ── Riepilogo ── */}

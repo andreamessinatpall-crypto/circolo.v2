@@ -12,7 +12,9 @@ export function useImpostazioni() {
     queryFn: async (): Promise<Impostazioni> => {
       let res = await supabase
         .from('impostazioni')
-        .select('giorni_anticipo, max_pren_padel, max_pren_calcio')
+        .select(
+          'giorni_anticipo, max_pren_padel, max_pren_calcio, max_pren_padel_giorno, max_pren_calcio_giorno',
+        )
         .eq('id', 1)
         .maybeSingle()
       if (res.error) {
@@ -26,10 +28,14 @@ export function useImpostazioni() {
       const ga = Number(d.giorni_anticipo)
       const mp = Number(d.max_pren_padel)
       const mc = Number(d.max_pren_calcio)
+      const mpg = Number(d.max_pren_padel_giorno)
+      const mcg = Number(d.max_pren_calcio_giorno)
       return {
         giorniAnticipo: Number.isFinite(ga) ? ga : 6,
         maxPadel: Number.isFinite(mp) ? mp : 0,
         maxCalcio: Number.isFinite(mc) ? mc : 0,
+        maxPadelGiorno: Number.isFinite(mpg) ? mpg : 0,
+        maxCalcioGiorno: Number.isFinite(mcg) ? mcg : 0,
       }
     },
   })
@@ -88,17 +94,35 @@ export function usePrenotaCampo(sport: Sport, campiSport: Campo[], imp: Impostaz
     }) => {
       if (!profilo) throw new Error('Profilo non disponibile')
       const limite = sport === 'padel' ? imp.maxPadel : imp.maxCalcio
+      const limiteGiorno = sport === 'padel' ? imp.maxPadelGiorno : imp.maxCalcioGiorno
       const senzaLimite = prenotaSenzaLimite(profilo)
-      if (limite > 0 && !senzaLimite) {
+      if ((limite > 0 || limiteGiorno > 0) && !senzaLimite) {
         const idCampiSport = campiSport.map((c) => c.id)
-        const { count } = await supabase
-          .from('prenotazioni')
-          .select('id', { count: 'exact', head: true })
-          .eq('socio_id', profilo.id)
-          .eq('allenamento', false)
-          .in('campo_id', idCampiSport)
-          .gte('fine', new Date().toISOString())
-        if (count != null && count >= limite) throw new Error(`LIMITE:${count}:${limite}`)
+        if (limite > 0) {
+          const { count } = await supabase
+            .from('prenotazioni')
+            .select('id', { count: 'exact', head: true })
+            .eq('socio_id', profilo.id)
+            .eq('allenamento', false)
+            .in('campo_id', idCampiSport)
+            .gte('fine', new Date().toISOString())
+          if (count != null && count >= limite) throw new Error(`LIMITE:${count}:${limite}`)
+        }
+        if (limiteGiorno > 0) {
+          const giornoInizio = new Date(inizio)
+          giornoInizio.setHours(0, 0, 0, 0)
+          const giornoFine = new Date(giornoInizio.getTime() + 24 * 60 * 60 * 1000)
+          const { count } = await supabase
+            .from('prenotazioni')
+            .select('id', { count: 'exact', head: true })
+            .eq('socio_id', profilo.id)
+            .eq('allenamento', false)
+            .in('campo_id', idCampiSport)
+            .gte('inizio', giornoInizio.toISOString())
+            .lt('inizio', giornoFine.toISOString())
+          if (count != null && count >= limiteGiorno)
+            throw new Error(`LIMITEGIORNO:${count}:${limiteGiorno}`)
+        }
       }
       const dati: Record<string, unknown> = {
         campo_id: campo.id,
@@ -141,6 +165,11 @@ export function usePrenotaCampo(sport: Sport, campiSport: Campo[], imp: Impostaz
         const [, c, l] = err.message.split(':')
         window.alert(
           `Hai già ${c} prenotazioni ${sport} attive: il limite è ${l}. Annullane una per prenotare di nuovo.`,
+        )
+      } else if (err.message?.startsWith('LIMITEGIORNO:')) {
+        const [, c, l] = err.message.split(':')
+        window.alert(
+          `Hai già ${c} prenotazioni ${sport} in questo giorno: il limite giornaliero è ${l}.`,
         )
       } else if (err.code === '23505') {
         window.alert('Qualcuno ha appena prenotato questo slot.')

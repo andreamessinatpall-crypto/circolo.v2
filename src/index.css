@@ -482,24 +482,34 @@
      che diventa grigia quando il campo è sospeso. Corpo bianco con testo
      scuro nitido. */
   .campo-card {
-    border: 1px solid var(--color-verde-100);
+    border: 1px solid var(--border);
     border-radius: 14px;
     overflow: hidden;
-    background: #fff;
+    background: var(--surface);
     box-shadow: var(--ombra-card);
   }
   .campo-head {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 8px 13px;
+    gap: 8px;
+    padding: 6px 11px;
     color: #fff;
   }
-  .campo-head-calcio {
-    background: linear-gradient(135deg, var(--color-verde-600), var(--color-verde-800));
-  }
+  .campo-head-calcio,
   .campo-head-padel {
-    background: linear-gradient(135deg, #0d92ad, #0a4f63);
+    background: #fff;
+    color: #1b2219;
+  }
+  .campo-head-calcio .campo-toggle,
+  .campo-head-padel .campo-toggle {
+    background: #eef1f3;
+    border-color: rgba(27, 34, 25, 0.3);
+    color: #1b2219;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+  }
+  .campo-head-calcio .campo-toggle:hover,
+  .campo-head-padel .campo-toggle:hover {
+    background: #e2e6ea;
   }
   .campo-head-off {
     background: linear-gradient(135deg, #6b7689, #424c5e);
@@ -516,14 +526,14 @@
     text-transform: uppercase;
     letter-spacing: 0.1em;
     font-weight: 700;
-    font-size: 0.72rem;
+    font-size: 0.95rem;
   }
   .campo-head-tag {
-    font-size: 0.65rem;
+    font-size: 0.62rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.07em;
-    padding: 2px 8px;
+    padding: 1px 7px;
     border-radius: 999px;
     background: rgba(255, 255, 255, 0.22);
     color: #fff;
@@ -531,52 +541,95 @@
   /* interruttore di stato (icona) sull'intestazione */
   .campo-toggle {
     margin-left: auto;
-    width: 30px;
-    height: 30px;
+    width: 26px;
+    height: 26px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.18);
-    border: 1px solid rgba(255, 255, 255, 0.45);
+    background: rgba(255, 255, 255, 0.24);
+    border: 1.5px solid rgba(255, 255, 255, 0.65);
     color: #fff;
-    font-size: 1.15rem;
+    font-size: 1.05rem;
     transition: background 0.15s;
   }
   .campo-toggle:hover {
-    background: rgba(255, 255, 255, 0.32);
+    background: rgba(255, 255, 255, 0.4);
   }
   .campo-body {
-    padding: 12px 13px;
+    padding: 10px 11px;
   }
-  /* pillola per marcare un campo come scoperto (outdoor): usata dalla Fase
-     11 per decidere su quali campi mostrare il badge meteo in griglia. */
-  .campo-outdoor-toggle {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    margin-top: 10px;
-    padding: 5px 12px;
-    border-radius: 999px;
-    border: 1px solid var(--color-verde-100);
-    background: #fff;
-    color: var(--ink-2);
-    font-size: 0.8rem;
-    font-weight: 600;
-    transition: background 0.15s, color 0.15s, border-color 0.15s;
-  }
-  .campo-outdoor-toggle[aria-pressed='true'] {
-    background: linear-gradient(135deg, var(--g300), var(--g400));
-    color: var(--color-ottone-700);
-    border-color: transparent;
-  }
-  /* Tendine HH/MM di apertura/chiusura: più strette del campo standard
-     (contenuto di 2 cifre) così le due coppie affiancate restano dentro
-     la scheda anche su mobile, senza toccarne il bordo. Il font resta a
-     16px (non si tocca: sotto quella soglia iOS zooma sul focus). */
+  /* Picker orario (input type=time) di apertura/chiusura: più stretto del
+     campo standard così le tre voci affiancate (apertura, chiusura, durata)
+     restano dentro la scheda anche su mobile. Il font resta a 16px (non si
+     tocca: sotto quella soglia iOS zooma sul focus). */
   .ora-select {
+    width: 98px;
     padding-left: 8px;
     padding-right: 8px;
+  }
+
+  /* Numero con pulsanti +/− al posto delle frecce scure native del
+     browser sui campi "Regole di prenotazione". */
+  .stepper-numero {
+    display: flex;
+    align-items: stretch;
+    width: 100%;
+    margin-top: 6px;
+    border: 1.5px solid var(--border2);
+    border-radius: 10px;
+    background: var(--surface);
+    overflow: hidden;
+  }
+  .stepper-btn {
+    flex: 0 0 auto;
+    width: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: var(--v050);
+    color: var(--ink);
+    font-size: 1.2rem;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .stepper-btn:first-child {
+    border-right: 1px solid var(--border);
+  }
+  .stepper-btn:last-child {
+    border-left: 1px solid var(--border);
+  }
+  .stepper-btn:hover:not(:disabled) {
+    background: var(--v100);
+  }
+  .stepper-btn:disabled {
+    opacity: 0.35;
+    cursor: default;
+  }
+  .stepper-input {
+    flex: 1;
+    min-width: 0;
+    border: none !important;
+    background: transparent !important;
+    padding: 11px 4px !important;
+    border-radius: 0 !important;
+    text-align: center;
+    font-weight: 600;
+  }
+  .stepper-input:focus {
+    outline: none;
+    box-shadow: none !important;
+  }
+  .stepper-input::-webkit-inner-spin-button,
+  .stepper-input::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  .stepper-input {
+    -moz-appearance: textfield;
   }
 
   /* Eyebrow: titoletto di sezione con barretta oro */
@@ -4756,6 +4809,13 @@
     margin-top: 0;
     padding: 6px 4px;
     font-size: 16px;
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+  .match-admin input[type='number']::-webkit-outer-spin-button,
+  .match-admin input[type='number']::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
   }
   .match-admin button {
     margin-top: 0;
@@ -5002,6 +5062,13 @@
     margin-top: 0;
     padding: 6px 4px;
     font-size: 16px;
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+  .set-riga .set-game::-webkit-outer-spin-button,
+  .set-riga .set-game::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
   }
   .set-riga .x {
     border: none;
@@ -6430,6 +6497,62 @@
   .account-schermo-vista-corpo .zona-pericolo-testo {
     color: rgba(255, 255, 255, 0.72);
   }
+
+  /* Le viste "Il tuo club" (gestione campi/punti/premi/annunci/
+     prenotazioni/giocatori) riusano pagine di amministrazione pensate per
+     uno sfondo chiaro nella loro sede originale (Impostazioni/
+     Prenotazioni/Soci) — invece di un pannello chiaro "a parte" (prima
+     versione), ora hanno lo stesso stile a vetro scuro delle altre viste
+     del menu account (Modifica profilo ecc.), richiesto esplicitamente per
+     coerenza. Ridefiniamo i TOKEN colore alla radice invece di patchare
+     ogni singola classe (sarebbero troppe e cambierebbero nel tempo): ogni
+     classe che li usa — anche indirettamente tramite gli alias (--ink,
+     --surface...) o le utility Tailwind generate da @theme (text-ink-2,
+     bg-verde-50...) — eredita automaticamente la versione scura. Le
+     regole più sotto (.card, .club-sez-titolo, .btn-secondario,
+     .zona-pericolo-*) restano: più specifiche, rinforzano senza conflitto
+     quello che i token già producono.
+     IMPORTANTE: gli alias (--ink, --surface...) in :root si "congelano" al
+     valore calcolato lì (var() si risolve dov'è dichiarata la proprietà,
+     non dove viene letta) — ridefinire solo --color-ink/--color-superficie
+     qui non basta, l'alias in :root resterebbe comunque quello chiaro.
+     Vanno ridichiarati anche gli alias, non solo i token sotto. */
+  .account-schermo-vista-corpo {
+    --color-ink: #ffffff;
+    --color-ink-2: rgba(255, 255, 255, 0.75);
+    --color-ink-3: rgba(255, 255, 255, 0.55);
+    --color-superficie: rgba(255, 255, 255, 0.1);
+    --color-verde-50: rgba(255, 255, 255, 0.08);
+    --ink: var(--color-ink);
+    --ink2: var(--color-ink-2);
+    --ink3: var(--color-ink-3);
+    --surface: var(--color-superficie);
+    --v050: var(--color-verde-50);
+    --v100: rgba(255, 255, 255, 0.22);
+    --border: rgba(255, 255, 255, 0.2);
+    --border2: rgba(255, 255, 255, 0.32);
+    color: var(--color-ink);
+  }
+  /* Senza questo, il testo bianco dei nostri input/select viene ereditato
+     anche dal popup nativo del browser (tendina di <select>, picker di
+     iOS), che di default ha sfondo chiaro: risultato testo bianco su
+     bianco, illeggibile al tocco. color-scheme:dark dice al browser di
+     usare varianti scure per i controlli nativi in questa sezione. */
+  .account-schermo-vista-corpo input,
+  .account-schermo-vista-corpo select,
+  .account-schermo-vista-corpo textarea {
+    color-scheme: dark;
+  }
+  /* color-scheme non basta su tutti i browser/OS a colorare il popup delle
+     opzioni: qui forziamo esplicitamente sfondo scuro e testo chiaro sulle
+     singole <option>, così la tendina resta leggibile ovunque. */
+  .account-schermo-vista-corpo select option {
+    background: #14304f;
+    color: #ffffff;
+  }
+  .account-schermo-vista-corpo .eyebrow {
+    color: var(--g300);
+  }
   .account-schermo-vista-corpo .zona-pericolo-linea {
     background: rgba(255, 180, 163, 0.3);
   }
@@ -7192,6 +7315,35 @@
     border-radius: 999px;
     background: rgba(255, 255, 255, 0.14);
     color: var(--g300);
+  }
+  /* "Mostra altre N" sotto le prime 5 righe di ogni elenco dello storico
+     attività — freccia verso il basso che si capovolge quando espanso. */
+  .storico-espandi-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    margin-top: 4px;
+    padding: 10px 0 2px;
+    background: none;
+    border: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+    font-family: var(--font-sans);
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--g300);
+    cursor: pointer;
+  }
+  .storico-espandi-btn:hover {
+    color: #fff;
+  }
+  .storico-espandi-ico {
+    display: inline-flex;
+    transition: transform 0.15s;
+  }
+  .storico-espandi-ico.ruotata {
+    transform: rotate(180deg);
   }
 
   /* ── Card sezione "moderna": icona in badge + titolo + sottotitolo (+ pill) ── */
@@ -8453,5 +8605,12 @@
     text-align: center;
     margin-top: 0;
     padding: 6px 4px;
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+  .torneo-amici-punteggio-input::-webkit-outer-spin-button,
+  .torneo-amici-punteggio-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
   }
 }

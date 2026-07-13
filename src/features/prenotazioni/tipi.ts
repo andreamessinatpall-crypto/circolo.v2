@@ -32,4 +32,6 @@ export interface Impostazioni {
   giorniAnticipo: number
   maxPadel: number
   maxCalcio: number
+  maxPadelGiorno: number
+  maxCalcioGiorno: number
 }

@@ -1,15 +1,42 @@
 import { useState } from 'react'
+import { useMutation } from '@tanstack/react-query'
 import { useAuth } from '@/auth/useAuth'
 import { titleCase, iniziali } from '@/lib/formato'
-import { classiInput } from '@/components/stili'
+import { classiErrore, classiInput, classiOk } from '@/components/stili'
+import { messaggioErrore } from '@/lib/errori'
+import { costruisciCsv, scaricaCsv } from '@/lib/csv'
 import { useModalitaPremi } from '@/features/premi/datiPremi'
 import { LIVELLI_PUNTI_DEFAULT, livelloDaPunti } from '@/features/profilo/livelliPunti'
 import Avatar from '@/components/Avatar'
-import { useSoci, useAttivitaSoci, type SocioAdmin, type AttivitaSocio } from './datiSoci'
+import { useSoci, useAttivitaSoci, fetchStoricoSocio, type SocioAdmin, type AttivitaSocio } from './datiSoci'
 import DettaglioGiocatore from './DettaglioGiocatore'
 import { SportIcona, IconaPadel, IconaCalcio } from '@/components/IconeSport'
 
 type Ordine = 'ultima_desc' | 'ultima_asc' | 'cognome'
+
+const COLONNE_NASCOSTE_STORICO = ['socio_id', 'chiave', 'quando']
+
+// Storico movimenti di TUTTI i giocatori in un solo CSV (una riga di
+// intestazione "Giocatore" in più rispetto all'export per singolo socio di
+// DettaglioGiocatore.tsx): stessa RPC storico_movimenti, chiamata a blocchi
+// per non sparare centinaia di richieste in parallelo su un circolo grande.
+const BLOCCO_EXPORT = 6
+
+async function scaricaStoricoTutti(soci: SocioAdmin[]): Promise<{ vuoto: boolean }> {
+  const righe: Record<string, unknown>[] = []
+  for (let i = 0; i < soci.length; i += BLOCCO_EXPORT) {
+    const blocco = soci.slice(i, i + BLOCCO_EXPORT)
+    const esiti = await Promise.all(blocco.map((s) => fetchStoricoSocio(s.id)))
+    esiti.forEach((esito, idx) => {
+      if (!esito.ok) return
+      const nomeGiocatore = titleCase(`${blocco[idx].cognome} ${blocco[idx].nome}`)
+      for (const riga of esito.righe) righe.push({ Giocatore: nomeGiocatore, ...riga })
+    })
+  }
+  if (righe.length === 0) return { vuoto: true }
+  scaricaCsv('storico_giocatori.csv', costruisciCsv(righe, COLONNE_NASCOSTE_STORICO))
+  return { vuoto: false }
+}
 
 function isCancellato(s: SocioAdmin): boolean {
   return (s.email ?? '').endsWith('@cancellato.invalid')
@@ -75,6 +102,19 @@ export default function GestioneGiocatori() {
   const [selezionatoId, setSelezionatoId] = useState<string | null>(null)
   const [espandiSospesi, setEspandiSospesi] = useState(false)
   const [espandiCancellati, setEspandiCancellati] = useState(false)
+  const [msgStoricoTutti, setMsgStoricoTutti] = useState<{ tipo: 'ok' | 'errore'; testo: string } | null>(null)
+
+  const storicoTutti = useMutation({
+    mutationFn: () => scaricaStoricoTutti(soci ?? []),
+    onSuccess: (r) =>
+      setMsgStoricoTutti(
+        r.vuoto
+          ? { tipo: 'errore', testo: 'Nessun movimento da scaricare.' }
+          : { tipo: 'ok', testo: 'CSV scaricato.' },
+      ),
+    onError: (e: unknown) =>
+      setMsgStoricoTutti({ tipo: 'errore', testo: 'Esportazione non riuscita: ' + messaggioErrore(e) }),
+  })
 
   if (isLoading) return <p className="text-ink-2">Caricamento giocatori…</p>
   if (error) return <p className="msg-errore">Impossibile caricare i giocatori: {error.message}</p>
@@ -151,7 +191,20 @@ export default function GestioneGiocatori() {
             <option value="ultima_asc">Ultima partita ↑</option>
             <option value="cognome">A → Z</option>
           </select>
+          <button
+            type="button"
+            className="btn btn-secondario btn-mini !mt-0 shrink-0"
+            disabled={storicoTutti.isPending}
+            onClick={() => { setMsgStoricoTutti(null); storicoTutti.mutate() }}
+          >
+            {storicoTutti.isPending ? 'Preparazione…' : 'Scarica storico di tutti'}
+          </button>
         </div>
+        {msgStoricoTutti && (
+          <p className={`mt-2 text-sm ${msgStoricoTutti.tipo === 'ok' ? classiOk : classiErrore}`}>
+            {msgStoricoTutti.testo}
+          </p>
+        )}
       </div>
 
       {/* ── Blocco: In attesa di approvazione ──────────── */}

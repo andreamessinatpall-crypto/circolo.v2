@@ -100,6 +100,8 @@ export async function salvaRegole(
   giorniAnticipo: number,
   maxPadel: number,
   maxCalcio: number,
+  maxPadelGiorno: number,
+  maxCalcioGiorno: number,
 ): Promise<EsitoSalvataggio> {
   const { error } = await supabase
     .from('impostazioni')
@@ -107,6 +109,8 @@ export async function salvaRegole(
       giorni_anticipo: giorniAnticipo,
       max_pren_padel: maxPadel,
       max_pren_calcio: maxCalcio,
+      max_pren_padel_giorno: maxPadelGiorno,
+      max_pren_calcio_giorno: maxCalcioGiorno,
     })
     .eq('id', 1)
   if (error) {

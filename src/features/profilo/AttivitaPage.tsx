@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useAuth } from '@/auth/useAuth'
 import { dataEstesa, etichettaSport } from '@/lib/formato'
 import { messaggioErrore } from '@/lib/errori'
@@ -10,6 +11,16 @@ import {
   useTorneiPartecipati,
 } from './attivita/useStoricoAttivita'
 import type { PartitaStorico, TorneoStorico } from './attivita/useStoricoAttivita'
+
+const MOSTRATI_INIZIALI = 5
+
+function IcoScendi() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <polyline points="6 9 12 15 18 9" />
+    </svg>
+  )
+}
 
 function RigaPartita({ p }: { p: PartitaStorico }) {
   return (
@@ -41,6 +52,33 @@ function RigaTorneo({ t }: { t: TorneoStorico }) {
   )
 }
 
+// Mostra solo le prime 5 righe, con un bottone "Mostra altre N" per
+// estendere l'elenco (freccia verso il basso, richiesto esplicitamente
+// invece di scaricare/mostrare subito uno storico potenzialmente lunghissimo).
+function ListaEspandibile<T>({ dati, chiave, riga }: { dati: T[]; chiave: (t: T) => string | number; riga: (t: T) => React.ReactNode }) {
+  const [espansa, setEspansa] = useState(false)
+  const visibili = espansa ? dati : dati.slice(0, MOSTRATI_INIZIALI)
+  const altre = dati.length - MOSTRATI_INIZIALI
+
+  return (
+    <>
+      <div className="flex flex-col">
+        {visibili.map((el) => <div key={chiave(el)}>{riga(el)}</div>)}
+      </div>
+      {altre > 0 && (
+        <button
+          type="button"
+          className="storico-espandi-btn"
+          onClick={() => setEspansa((v) => !v)}
+        >
+          {espansa ? 'Mostra meno' : `Mostra altre ${altre}`}
+          <span className={'storico-espandi-ico' + (espansa ? ' ruotata' : '')}><IcoScendi /></span>
+        </button>
+      )}
+    </>
+  )
+}
+
 // Fase D (Modifica profilo → Storico attività): storico di partite giocate,
 // lezioni svolte e tornei a cui il socio ha partecipato. Niente titolo in
 // cima: la schermata che la ospita (MenuUtente) mostra già "Storico attività"
@@ -63,9 +101,7 @@ export default function AttivitaPage() {
           <p className="sub m-0">Nessuna partita giocata finora.</p>
         )}
         {(partite.data?.length ?? 0) > 0 && (
-          <div className="flex flex-col">
-            {partite.data!.map((p) => <RigaPartita key={p.id} p={p} />)}
-          </div>
+          <ListaEspandibile dati={partite.data!} chiave={(p) => p.id} riga={(p) => <RigaPartita p={p} />} />
         )}
       </div>
 
@@ -79,9 +115,7 @@ export default function AttivitaPage() {
           <p className="sub m-0">Nessuna lezione svolta finora.</p>
         )}
         {(lezioni.data?.length ?? 0) > 0 && (
-          <div className="flex flex-col">
-            {lezioni.data!.map((p) => <RigaPartita key={p.id} p={p} />)}
-          </div>
+          <ListaEspandibile dati={lezioni.data!} chiave={(p) => p.id} riga={(p) => <RigaPartita p={p} />} />
         )}
       </div>
 
@@ -95,9 +129,7 @@ export default function AttivitaPage() {
           <p className="sub m-0">Nessun torneo a cui hai partecipato finora.</p>
         )}
         {(tornei.data?.length ?? 0) > 0 && (
-          <div className="flex flex-col">
-            {tornei.data!.map((t) => <RigaTorneo key={t.id} t={t} />)}
-          </div>
+          <ListaEspandibile dati={tornei.data!} chiave={(t) => t.id} riga={(t) => <RigaTorneo t={t} />} />
         )}
       </div>
 
