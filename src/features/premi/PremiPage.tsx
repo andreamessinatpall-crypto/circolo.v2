@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import ModalConferma from '@/components/ModalConferma'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
@@ -142,8 +142,8 @@ export default function PremiPage() {
       ) : premi.length === 0 ? (
         <p className="sub">Nessun premio disponibile al momento.</p>
       ) : (
-        <div className="premi-griglia">
-          {premi.map((p) => (
+        <CatalogoPaginato
+          elementi={premi.map((p) => (
             <CardPremio
               key={p.id}
               premio={p}
@@ -153,7 +153,7 @@ export default function PremiPage() {
               onRiscatta={() => setRiscattaPending(p)}
             />
           ))}
-        </div>
+        />
       )}
 
       {/* Le mie richieste */}
@@ -200,6 +200,128 @@ export default function PremiPage() {
           onConferma={() => { annulla.mutate(annullaPending); setAnnullaPending(null) }}
           onAnnulla={() => setAnnullaPending(null)}
         />
+      )}
+    </div>
+  )
+}
+
+// Larghezza di una minicard (.premio-minicard in index.css) + il gap tra
+// due, per calcolare quante ce ne stanno affiancate in una pagina.
+const LARGHEZZA_MINICARD = 300
+const GAP_MINICARD = 12
+// Effetto "rivista": ogni pagina è più stretta del contenitore, così il
+// bordo della pagina successiva resta leggermente visibile a destra —
+// dà l'impressione di poterla sfogliare, non solo di scorrere una lista.
+// Volutamente piccola: si deve intravedere giusto l'ombra della scheda
+// dopo, non il suo contenuto.
+const SBIRCIATA = 16
+const GUTTER_PAGINE = 10
+
+const ICO_FRECCIA_SX = (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <polyline points="15 18 9 12 15 6" />
+  </svg>
+)
+const ICO_FRECCIA_DX = (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <polyline points="9 18 15 12 9 6" />
+  </svg>
+)
+
+// Catalogo a pagine, effetto rivista: ogni pagina è una riga di minicard
+// (tante quante ce ne stanno nella larghezza disponibile) più stretta del
+// contenitore, in modo che il bordo della pagina dopo resti sempre
+// leggermente visibile — swipe col dito per "sfogliare", o frecce/pallini
+// su desktop.
+function CatalogoPaginato({ elementi }: { elementi: ReactNode[] }) {
+  const viewportRef = useRef<HTMLDivElement>(null)
+  const [perPagina, setPerPagina] = useState(1)
+  const [pagina, setPagina] = useState(0)
+
+  useEffect(() => {
+    function calcola() {
+      const larghezza = viewportRef.current?.clientWidth
+      if (!larghezza) return
+      const disponibile = larghezza - SBIRCIATA
+      setPerPagina(Math.max(1, Math.floor((disponibile + GAP_MINICARD) / (LARGHEZZA_MINICARD + GAP_MINICARD))))
+    }
+    calcola()
+    window.addEventListener('resize', calcola)
+    return () => window.removeEventListener('resize', calcola)
+  }, [])
+
+  const pagine = useMemo(() => {
+    const risultato: ReactNode[][] = []
+    for (let i = 0; i < elementi.length; i += perPagina) risultato.push(elementi.slice(i, i + perPagina))
+    return risultato
+  }, [elementi, perPagina])
+
+  useEffect(() => {
+    if (pagina > pagine.length - 1) setPagina(0)
+  }, [pagine.length, pagina])
+
+  // Un "passo" di scroll = la larghezza di una pagina + il distacco prima
+  // della successiva, non l'intero contenitore (che è più largo delle
+  // pagine per lasciar sbirciare quella dopo).
+  function passo(el: HTMLDivElement) {
+    return el.clientWidth - SBIRCIATA + GUTTER_PAGINE
+  }
+
+  function vaiA(indice: number) {
+    const el = viewportRef.current
+    if (!el) return
+    el.scrollTo({ left: Math.min(Math.max(0, indice), pagine.length - 1) * passo(el), behavior: 'smooth' })
+  }
+
+  function alloScroll() {
+    const el = viewportRef.current
+    if (!el) return
+    setPagina(Math.round(el.scrollLeft / passo(el)))
+  }
+
+  if (pagine.length === 0) return null
+
+  return (
+    <div className="premi-pagine">
+      <div className="premi-pagine-viewport" ref={viewportRef} onScroll={alloScroll}>
+        {pagine.map((riga, i) => (
+          <div className="premi-pagina" key={i} style={{ width: `calc(100% - ${SBIRCIATA}px)` }}>
+            {riga}
+          </div>
+        ))}
+      </div>
+      {pagine.length > 1 && (
+        <>
+          <button
+            type="button"
+            className="premi-pagine-freccia premi-pagine-freccia-sx"
+            onClick={() => vaiA(pagina - 1)}
+            disabled={pagina === 0}
+            aria-label="Pagina precedente"
+          >
+            {ICO_FRECCIA_SX}
+          </button>
+          <button
+            type="button"
+            className="premi-pagine-freccia premi-pagine-freccia-dx"
+            onClick={() => vaiA(pagina + 1)}
+            disabled={pagina === pagine.length - 1}
+            aria-label="Pagina successiva"
+          >
+            {ICO_FRECCIA_DX}
+          </button>
+          <div className="premi-pagine-dots">
+            {pagine.map((_, i) => (
+              <button
+                key={i}
+                type="button"
+                className={'premi-pagine-dot' + (i === pagina ? ' attivo' : '')}
+                onClick={() => vaiA(i)}
+                aria-label={`Pagina ${i + 1}`}
+              />
+            ))}
+          </div>
+        </>
       )}
     </div>
   )

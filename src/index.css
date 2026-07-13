@@ -2784,11 +2784,91 @@
   }
   /* Griglia di minicard (non più una lista a scheda intera): tante piccole
      schede affiancate che vanno a capo, come .mini-torneo/.mini-persona
-     altrove nell'app. */
+     altrove nell'app. Usata in Segreteria (gestione, serve vedere tutto). */
   .premi-griglia {
     display: flex;
     flex-wrap: wrap;
     gap: 12px;
+  }
+  /* Catalogo premi lato giocatore: a pagine invece che a capo — ogni pagina
+     è una riga intera di minicard, si passa da una all'altra con uno
+     scorrimento "a scatto" (swipe col dito, o frecce/pallini su desktop). */
+  .premi-pagine {
+    position: relative;
+  }
+  .premi-pagine-viewport {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+  }
+  .premi-pagine-viewport::-webkit-scrollbar {
+    display: none;
+  }
+  /* Larghezza impostata inline (100% - SBIRCIATA in PremiPage.tsx): più
+     stretta del contenitore, così il bordo della pagina dopo resta visibile
+     — effetto "rivista da sfogliare" invece di pagine a tutta larghezza. */
+  .premi-pagina {
+    flex: 0 0 auto;
+    scroll-snap-align: start;
+    display: flex;
+    gap: 12px;
+    padding-bottom: 2px;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .premi-pagine-freccia {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      box-shadow: 0 4px 14px rgba(14, 74, 120, 0.16);
+      color: var(--v700);
+      cursor: pointer;
+      z-index: 2;
+      transition: opacity 0.15s, background 0.15s;
+    }
+    .premi-pagine-freccia:hover:not(:disabled) {
+      background: var(--v050);
+    }
+    .premi-pagine-freccia:disabled {
+      opacity: 0;
+      pointer-events: none;
+    }
+    .premi-pagine-freccia-sx {
+      left: -14px;
+    }
+    .premi-pagine-freccia-dx {
+      right: -14px;
+    }
+  }
+  .premi-pagine-dots {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+    margin-top: 10px;
+  }
+  .premi-pagine-dot {
+    width: 7px;
+    height: 7px;
+    padding: 0;
+    border: none;
+    border-radius: 4px;
+    background: var(--border2);
+    cursor: pointer;
+    transition: width 0.2s, background 0.2s;
+  }
+  .premi-pagine-dot.attivo {
+    width: 18px;
+    background: var(--v700);
   }
   /* Minicard: piccola, larghezza fissa, sfondo bianco semi-trasparente
      (non pieno — richiesto esplicitamente) anche dentro il vetro scuro del
@@ -2797,7 +2877,7 @@
      non solo lo sfondo, altrimenti il testo resterebbe bianco su bianco. */
   .premio-card.premio-minicard {
     flex: 0 0 auto;
-    width: 220px;
+    width: 300px;
     margin-bottom: 0;
     padding: 12px;
     padding-bottom: 44px;
@@ -2809,6 +2889,12 @@
     --border2: rgba(14, 74, 120, 0.2);
     --v050: #eef4f9;
     --surface: rgba(255, 255, 255, 0.82);
+  }
+  /* Ombra più marcata solo nel carosello a pagine (effetto rivista): con
+     una sbirciata così stretta si deve notare bene che c'è dell'altro,
+     non solo intuirlo. */
+  .premi-pagina .premio-card.premio-minicard {
+    box-shadow: 0 2px 6px rgba(5, 21, 38, 0.1), 0 12px 28px rgba(5, 21, 38, 0.22);
   }
   .premio-modifica-btn-assoluta {
     position: absolute;
@@ -2858,7 +2944,7 @@
     gap: 8px;
   }
   .premio-minicard .premio-nome {
-    font-size: 1.05rem;
+    font-size: 1.3rem;
     line-height: 1.15;
     color: var(--v900);
   }
@@ -8074,50 +8160,6 @@
     gap: 8px;
     padding-top: 22px;
     padding-bottom: 20px;
-  }
-  .club-tile-vuota-testo {
-    position: relative;
-    z-index: 1;
-    margin: 0;
-    font-size: 0.88rem;
-    color: var(--ink2);
-  }
-  /* "+" e testo uniti in un solo tasto pillola (non più due righe separate,
-     un cerchio "+" per conto suo sopra e il testo sotto) — più compatto e
-     riconoscibile come un vero pulsante da premere. */
-  .club-tile-vuota-cta {
-    position: relative;
-    z-index: 1;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 7px 16px 7px 7px;
-    border-radius: 999px;
-    background: var(--v700);
-    font-family: var(--font-display);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    font-weight: 700;
-    font-size: 0.8rem;
-    color: #fff;
-  }
-  .club-tile-vuota-piu {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.24);
-    color: #fff;
-    font-size: 0.95rem;
-    font-weight: 800;
-    line-height: 1;
-    flex-shrink: 0;
-  }
-  .club-tile-vuota-piu svg {
-    width: 13px;
-    height: 13px;
   }
   /* "Cerca partita" senza richieste attive: titolo tutto maiuscolo allineato
      a sinistra e, sulla stessa riga, il pulsante "Crea una partita" a

@@ -8,6 +8,7 @@ import { useAmici, type Amicizia, type VoceAmico } from './useAmici'
 import { useConversazioni } from '@/features/chat/useChat'
 import ChatModal from '@/features/chat/ChatModal'
 import DettaglioAmicoModal from './DettaglioAmicoModal'
+import { MiniInfoLivelloSport } from '../pagine/AreaClubSchede'
 
 function MiniAmico({
   voce,
@@ -25,6 +26,7 @@ function MiniAmico({
         {nonLetti > 0 && <span className="chat-puntino mini-persona-puntino" aria-label={`${nonLetti} messaggi non letti`} />}
       </span>
       <span className="mini-persona-nome">{voce.etichetta}</span>
+      <MiniInfoLivelloSport ruolo={voce.ruolo} punti={voce.punti} sport={voce.sport} />
     </button>
   )
 }

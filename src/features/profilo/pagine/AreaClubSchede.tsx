@@ -98,7 +98,7 @@ function troncaTesto(s: string, max = 100): string {
 const RUOLO_COLORE: Record<Ruolo, string> = { admin: '#c8972e', collaboratore: '#c8a83a', istruttore: '#be5436' }
 const RUOLO_NOME: Record<Ruolo, string> = { admin: 'Admin', collaboratore: 'Collaboratore', istruttore: 'Istruttore' }
 
-function MiniInfoLivelloSport({ ruolo, punti, sport }: { ruolo: Ruolo | null; punti: number; sport: string | null }) {
+export function MiniInfoLivelloSport({ ruolo, punti, sport }: { ruolo: Ruolo | null; punti: number; sport: string | null }) {
   const lv = livelloDaPunti(punti, LIVELLI_PUNTI_DEFAULT)
   const cfg = LIVELLI_PUNTI_DEFAULT[lv - 1]
   const nome = ruolo ? RUOLO_NOME[ruolo] : cfg.nome
@@ -157,59 +157,55 @@ function CardAttivita() {
   return (
     <div className="club-col">
       <TestataSezione titolo="La tua prossima attività" to="/profilo/mie-prenotazioni" azione="Gestisci" />
-      <Link
-        to={prossima || isLoading ? '/profilo/mie-prenotazioni' : '/prenota'}
-        className={'club-tile' + (prossima ? ' club-tile-hero' : isLoading ? '' : ' club-tile-hero club-tile-vuota')}
-      >
-        {isLoading ? (
+      {isLoading ? (
+        <div className="club-tile club-tile-hero">
           <p className="club-tile-testo-anteprima">Caricamento…</p>
-        ) : prossima ? (
-          <>
-            <div className="prossima-wow-fascia">
-              <span className="prossima-wow-sport">
-                <SportIcona sport={prossima.sport} size={16} />
-                {SPORT_LABEL[prossima.sport] ?? prossima.sport}
-              </span>
-              {previsione && (
-                <span className="prossima-wow-meteo">
-                  <IconaMeteo codice={previsione.weathercode} size={17} />
-                  {Math.round(previsione.tempMax)}°
-                </span>
-              )}
-            </div>
-            <div className="prossima-wow-giorno">{dataEstesa(prossima.inizio.slice(0, 10))}</div>
-            <div className="prossima-wow-orario">
-              {oraLocale(new Date(prossima.inizio))}
-              <span className="prossima-wow-trattino">–</span>
-              {oraLocale(new Date(prossima.fine))}
-            </div>
-            <div className="prossima-wow-campo">
-              <IcoPin /> {prossima.campo_nome ?? 'Campo'}
-            </div>
-            {prossima.partecipanti.length > 0 && (
-              <div className="prossima-wow-avatars">
-                {prossima.partecipanti.map((id) => (
-                  <Avatar
-                    key={id}
-                    foto={fotoPerId.get(id) ?? null}
-                    iniziali={inizialiDaEtichetta(label(id))}
-                    titolo={label(id)}
-                    size={30}
-                  />
-                ))}
-              </div>
-            )}
-          </>
-        ) : (
-          <>
-            <p className="club-tile-vuota-testo">Nessuna attività in programma.</p>
-            <span className="club-tile-vuota-cta">
-              <span className="club-tile-vuota-piu" aria-hidden="true">+</span>
-              Prenota un campo
+        </div>
+      ) : prossima ? (
+        <Link to="/profilo/mie-prenotazioni" className="club-tile club-tile-hero">
+          <div className="prossima-wow-fascia">
+            <span className="prossima-wow-sport">
+              <SportIcona sport={prossima.sport} size={16} />
+              {SPORT_LABEL[prossima.sport] ?? prossima.sport}
             </span>
-          </>
-        )}
-      </Link>
+            {previsione && (
+              <span className="prossima-wow-meteo">
+                <IconaMeteo codice={previsione.weathercode} size={17} />
+                {Math.round(previsione.tempMax)}°
+              </span>
+            )}
+          </div>
+          <div className="prossima-wow-giorno">{dataEstesa(prossima.inizio.slice(0, 10))}</div>
+          <div className="prossima-wow-orario">
+            {oraLocale(new Date(prossima.inizio))}
+            <span className="prossima-wow-trattino">–</span>
+            {oraLocale(new Date(prossima.fine))}
+          </div>
+          <div className="prossima-wow-campo">
+            <IcoPin /> {prossima.campo_nome ?? 'Campo'}
+          </div>
+          {prossima.partecipanti.length > 0 && (
+            <div className="prossima-wow-avatars">
+              {prossima.partecipanti.map((id) => (
+                <Avatar
+                  key={id}
+                  foto={fotoPerId.get(id) ?? null}
+                  iniziali={inizialiDaEtichetta(label(id))}
+                  titolo={label(id)}
+                  size={30}
+                />
+              ))}
+            </div>
+          )}
+        </Link>
+      ) : (
+        <div className="club-tile club-tile-hero club-tile-vuota cerca-vuota">
+          <span className="cerca-vuota-titolo-grande">Prenota la tua prossima partita</span>
+          <Link to="/prenota" className="cerca-vuota-bottone">
+            Clicca qui
+          </Link>
+        </div>
+      )}
     </div>
   )
 }
