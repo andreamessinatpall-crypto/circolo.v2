@@ -1,17 +1,20 @@
 import { useMemo, useState, useEffect } from 'react'
 import { useAuth } from '@/auth/useAuth'
-import { dataEstesa, etichettaSport } from '@/lib/formato'
+import { dataEstesa, etichettaSport, inizialiDaEtichetta } from '@/lib/formato'
 import { mancaTabella, messaggioErrore } from '@/lib/errori'
 import type { Sport } from '@/features/prenotazioni/tipi'
+import type { VoceStaff } from '@/features/profilo/amici/useAmici'
+import Avatar from '@/components/Avatar'
+import { SportIcona } from '@/components/IconeSport'
 import { useDisponibilita } from './useDisponibilita'
 import { useImpegniIstruttore, useInviaRichiestaLezione } from './useRichiesteLezione'
 import { generaSlotProposti, escludiSlotOccupati, type SlotProposto } from './slotLezione'
 
 const GIORNI = ['Domenica', 'Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato']
+const RUOLO_NOME: Record<string, string> = { istruttore: 'Istruttore', collaboratore: 'Collaboratore', admin: 'Admin' }
 
 interface Props {
-  istruttoreId: string
-  nome: string
+  istruttore: VoceStaff
   onChiudi: () => void
 }
 
@@ -19,10 +22,11 @@ function chiaveSlot(s: SlotProposto) {
   return `${s.data}_${s.oraInizio}`
 }
 
-// Consultazione delle disponibilità di un istruttore e richiesta di una
-// lezione privata (Fase 5): un giocatore ci arriva cliccando il suo nome
-// nella sezione Staff del club.
-export default function DisponibilitaIstruttoreModal({ istruttoreId, nome, onChiudi }: Props) {
+// Scheda professionale di un istruttore: dati anagrafici pubblici + tutte
+// le sue disponibilità e la richiesta di una lezione privata (Fase 5). Un
+// giocatore ci arriva cliccando il suo nome in Lezioni/Staff del club.
+export default function DisponibilitaIstruttoreModal({ istruttore, onChiudi }: Props) {
+  const { id: istruttoreId, etichetta: nome } = istruttore
   const { profilo } = useAuth()
   const { fasce, caricamento, errore } = useDisponibilita(istruttoreId)
   const { data: impegni = [] } = useImpegniIstruttore(istruttoreId)
@@ -33,7 +37,8 @@ export default function DisponibilitaIstruttoreModal({ istruttoreId, nome, onChi
 
   // Un istruttore è esclusivo per un solo sport (tappa70): tutte le sue
   // fasce lo riportano già, niente scelta da parte di chi richiede la lezione.
-  const sport = (fasce[0]?.sport ?? 'padel') as Sport
+  const sport = (fasce[0]?.sport ?? istruttore.sport ?? 'padel') as Sport
+  const annoIscrizione = istruttore.data_iscrizione ? new Date(istruttore.data_iscrizione).getFullYear() : null
 
   const slotProposti = useMemo(() => {
     const generati = generaSlotProposti(fasce)
@@ -68,8 +73,27 @@ export default function DisponibilitaIstruttoreModal({ istruttoreId, nome, onChi
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onChiudi}>
-      <div className="card w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
-        <h2 className="mb-3">Disponibilità di {nome}</h2>
+      <div className="card w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+        <div className="istruttore-scheda-header">
+          <Avatar foto={istruttore.foto_url} iniziali={inizialiDaEtichetta(nome)} titolo={nome} size={64} />
+          <div className="min-w-0">
+            <div className="istruttore-scheda-nome">{nome}</div>
+            <div className="istruttore-scheda-meta">
+              <span className="istruttore-scheda-ruolo">{RUOLO_NOME[istruttore.ruolo] ?? istruttore.ruolo}</span>
+              {istruttore.sport && (
+                <>
+                  <span className="istruttore-scheda-sep">·</span>
+                  <span className="istruttore-scheda-sport">
+                    <SportIcona sport={istruttore.sport} size={13} /> {etichettaSport(istruttore.sport)}
+                  </span>
+                </>
+              )}
+            </div>
+            {annoIscrizione && <div className="istruttore-scheda-anzianita">Nel circolo dal {annoIscrizione}</div>}
+          </div>
+        </div>
+
+        <div className="eyebrow" style={{ marginTop: '1rem' }}>Disponibilità</div>
 
         {errore ? (
           <p className="msg-errore">

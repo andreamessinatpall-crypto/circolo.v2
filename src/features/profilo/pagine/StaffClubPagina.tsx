@@ -138,7 +138,7 @@ function ContattiClub() {
   )
 }
 
-function CardStaff({
+export function CardStaff({
   voce,
   onClick,
   onChat,
@@ -227,8 +227,7 @@ export default function StaffClubPagina({ embedded = false }: { embedded?: boole
 
       {istruttoreAperto && (
         <DisponibilitaIstruttoreModal
-          istruttoreId={istruttoreAperto.id}
-          nome={istruttoreAperto.etichetta}
+          istruttore={istruttoreAperto}
           onChiudi={() => setIstruttoreAperto(null)}
         />
       )}

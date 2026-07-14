@@ -155,8 +155,7 @@ export default function ClubProfilo() {
 
       {istruttoreAperto && (
         <DisponibilitaIstruttoreModal
-          istruttoreId={istruttoreAperto.id}
-          nome={istruttoreAperto.etichetta}
+          istruttore={istruttoreAperto}
           onChiudi={() => setIstruttoreAperto(null)}
         />
       )}

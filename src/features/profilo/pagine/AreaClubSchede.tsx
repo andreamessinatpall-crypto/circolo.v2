@@ -10,9 +10,12 @@ import Avatar from '@/components/Avatar'
 import { MedagliaPodio } from '@/components/MedagliaPodio'
 import { CaroselloFrecce } from '@/components/Carosello'
 import { useSociEtichette } from '@/features/prenotazioni/datiAmichevoli'
-import { useAmici, ruoloDa, type VoceAmico, type SocioPubblico } from '../amici/useAmici'
+import { useAmici, ruoloDa, type VoceAmico, type VoceStaff, type SocioPubblico } from '../amici/useAmici'
 import DettaglioAmicoModal from '../amici/DettaglioAmicoModal'
 import ChatModal from '@/features/chat/ChatModal'
+import { useConversazioni } from '@/features/chat/useChat'
+import DisponibilitaIstruttoreModal from '@/features/lezioni/DisponibilitaIstruttoreModal'
+import { CardIstruttorePassaporto } from './IstruttoriPagina'
 import { useRichiestePartner } from '@/features/compagni/useRichiestePartner'
 import { useProssimaAttivita, useTop3Classifica } from './useAnteprimeAreaClub'
 import { useStatGioc } from '@/features/segreteria/StatistichePage'
@@ -398,7 +401,7 @@ function CardClassifica() {
   return (
     <div className="club-col">
       <TestataSezione titolo="Classifica" to="/profilo/classifica" />
-      <Link to="/profilo/classifica" className="club-tile">
+      <Link to="/profilo/classifica" className="club-tile club-tile-hero">
         {isLoading ? (
           <p className="club-tile-testo-anteprima">Caricamento…</p>
         ) : lista.length === 0 ? (
@@ -499,6 +502,58 @@ function CardCrediti() {
           <span className="credito-fascia-numero">{isLoading ? '···' : crediti ?? 0}</span>
         </div>
       </Link>
+    </div>
+  )
+}
+
+// ── Lezioni: le minicard "passaporto" degli istruttori (stesse di
+// IstruttoriPagina.tsx, non duplicate) in un carosello direttamente nella
+// scheda di Area Club, come già fatto per Giocatori/Amici — non solo un
+// riepilogo che rimanda alla pagina dedicata. Il click apre la scheda con
+// disponibilità e richiesta lezione (stesso DisponibilitaIstruttoreModal
+// già usato in Contatti). ──────────────────────────────────────────────
+function CardIstruttori() {
+  const [istruttoreAperto, setIstruttoreAperto] = useState<VoceStaff | null>(null)
+  const [chatCon, setChatCon] = useState<VoceStaff | null>(null)
+  const { profilo } = useAuth()
+  const { staff, caricamento } = useAmici(profilo?.id ?? '')
+  const istruttori = staff.filter((s) => s.ruolo === 'istruttore')
+  const { conversazioni } = useConversazioni(profilo?.id)
+  const nonLettiPerStaff = new Map(conversazioni.map((c) => [c.altroId, c.nonLetti]))
+
+  if (caricamento) return null
+  if (istruttori.length === 0) return null
+
+  return (
+    <div className="club-col">
+      <TestataSezione titolo="Lezioni" to="/profilo/lezioni" />
+      <CaroselloFrecce>
+        {istruttori.map((s) => (
+          <CardIstruttorePassaporto
+            key={s.id}
+            voce={s}
+            onClick={() => setIstruttoreAperto(s)}
+            onChat={() => setChatCon(s)}
+            nonLetti={nonLettiPerStaff.get(s.id) ?? 0}
+          />
+        ))}
+      </CaroselloFrecce>
+
+      {istruttoreAperto && (
+        <DisponibilitaIstruttoreModal
+          istruttore={istruttoreAperto}
+          onChiudi={() => setIstruttoreAperto(null)}
+        />
+      )}
+
+      {chatCon && profilo && (
+        <ChatModal
+          key={chatCon.id}
+          profiloId={profilo.id}
+          amico={chatCon}
+          onChiudi={() => setChatCon(null)}
+        />
+      )}
     </div>
   )
 }
@@ -636,17 +691,20 @@ export default function AreaClubSchede({ modalitaPremi }: { modalitaPremi: boole
         <>
           <CardStatistiche />
           <CardGiocatori />
+          <CardCercaPartita />
         </>
       )}
       {isCollaboratore && (
         <>
           <CardAttivita />
+          <CardCercaPartita />
           <CardGiocatori />
         </>
       )}
       {!isAdmin && !isCollaboratore && (
         <>
           <CardAttivita />
+          <CardCercaPartita />
           <CardAmici />
         </>
       )}
@@ -660,7 +718,7 @@ export default function AreaClubSchede({ modalitaPremi }: { modalitaPremi: boole
         <CardClassifica />
       )}
 
-      <CardCercaPartita />
+      <CardIstruttori />
     </div>
   )
 }

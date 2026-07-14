@@ -60,7 +60,7 @@ export default function RigeneraCrediti() {
       </p>
       <button
         type="button"
-        className="btn btn-pericolo !mt-0"
+        className="btn btn-bianco-rosso !mt-0"
         disabled={!pronto}
         onClick={() => {
           setMsg(null)

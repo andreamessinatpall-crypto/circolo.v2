@@ -104,12 +104,13 @@ function EditorIntervalli({ iniziali }: { iniziali: Intervallo[] }) {
       <div className="flex flex-col gap-2">
         {righe.map((r) => (
           <div key={r.id} className="flex flex-wrap items-end gap-3">
-            <label className="block">
+            <label className="block !mb-0">
               <span className="etichetta !mb-1">Dal</span>
               <input
                 type="date"
                 max="9999-12-31"
                 className="campo !mt-0 !w-auto"
+                style={{ height: 44 }}
                 value={r.da}
                 onChange={(e) => {
                   cambia(r.id, 'da', e.target.value)
@@ -117,12 +118,13 @@ function EditorIntervalli({ iniziali }: { iniziali: Intervallo[] }) {
                 }}
               />
             </label>
-            <label className="block">
+            <label className="block !mb-0">
               <span className="etichetta !mb-1">Al</span>
               <input
                 type="date"
                 max="9999-12-31"
                 className="campo !mt-0 !w-auto"
+                style={{ height: 44 }}
                 value={r.a}
                 onChange={(e) => {
                   cambia(r.id, 'a', e.target.value)
@@ -132,13 +134,16 @@ function EditorIntervalli({ iniziali }: { iniziali: Intervallo[] }) {
             </label>
             <button
               type="button"
-              className="btn btn-pericolo btn-mini !mt-0"
+              className="btn btn-pericolo !mt-0 !bg-white flex items-center justify-center !px-0"
+              style={{ height: 44, width: 44 }}
+              aria-label="Togli intervallo"
+              title="Togli intervallo"
               onClick={() => {
                 togli(r.id)
                 setMsg(null)
               }}
             >
-              Togli
+              ✕
             </button>
           </div>
         ))}

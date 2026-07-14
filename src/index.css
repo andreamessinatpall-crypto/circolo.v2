@@ -2080,15 +2080,15 @@
     white-space: nowrap;
   }
   /* Vetro chiaro, come le altre schede di Prenota/Area Club/Tornei: bianco
-     traslucido invece di trasparente puro, così sopra lo sfondo arcobaleno
-     di pagina (.pagina-arcobaleno) si vede la sfocatura invece di un
-     bottone "vuoto". */
+     traslucido (non trasparente puro). Opacità alta (0.5 risultava grigio,
+     poco distinguibile dallo sfondo pagina già chiaro di suo): deve leggersi
+     come bianco a colpo d'occhio, la trasparenza è solo un accenno. */
   .slot.libero {
-    background: rgba(255, 255, 255, 0.5);
+    background: rgba(255, 255, 255, 0.85);
     backdrop-filter: blur(8px) saturate(150%);
     -webkit-backdrop-filter: blur(8px) saturate(150%);
     color: var(--v700);
-    border: 1.5px solid rgba(255, 255, 255, 0.6);
+    border: 1.5px solid rgba(255, 255, 255, 0.9);
   }
   .slot.libero:hover {
     background: var(--v700);
@@ -2101,10 +2101,12 @@
   .slot.mio:hover {
     background: var(--terra);
   }
-  /* (Fase 8g) Slot prenotato: fondo bianco, lato sinistro PIATTO con una sottile
-     striscia del TIPO; lo STATO è un piccolo segno accanto al nome. */
+  /* (Fase 8g) Slot prenotato: bianco pieno (non vetro come gli slot liberi
+     — richiesto esplicitamente, deve distinguersi nettamente), lato
+     sinistro PIATTO con una sottile striscia del TIPO; lo STATO è un
+     piccolo segno accanto al nome. */
   .slot.occupato {
-    background: var(--surface);
+    background: #fff;
     color: var(--ink);
     cursor: default;
     border: 1px solid var(--border);
@@ -5766,6 +5768,193 @@
     display: inline-flex;
     align-items: center;
     flex-shrink: 0;
+  }
+
+  /* ── Minicard "passaporto" per gli istruttori (Area Club → Lezioni),
+     layout orizzontale "documento classico": foto quadrata a sinistra con
+     filo oro→blu sul bordo (come un vero documento), nome+ruolo e righe
+     Sport/Disponibilità con etichetta piccola a sinistra del valore. ──── */
+  .istruttore-passaporto-griglia {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .istruttore-passaporto {
+    position: relative;
+    flex: 0 0 auto;
+    width: 300px;
+    display: flex;
+    align-items: stretch;
+    gap: 12px;
+    padding: 12px 14px 12px 18px;
+    border-radius: 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    box-shadow: var(--ombra-card);
+    cursor: pointer;
+    text-align: left;
+    overflow: hidden;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .istruttore-passaporto:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.1);
+      border-color: var(--g300);
+    }
+  }
+  /* Filo di copertina sul bordo sinistro, come un vero documento */
+  .istruttore-passaporto::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 4px;
+    background: linear-gradient(180deg, var(--g500), var(--v700));
+  }
+  .istruttore-passaporto-foto-cornice {
+    flex-shrink: 0;
+    align-self: center;
+    width: 64px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid var(--border2);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  }
+  .istruttore-passaporto-foto {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .istruttore-passaporto-foto-vuota {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    background: var(--v050);
+    color: var(--v700);
+    font-weight: 700;
+    font-size: 1.2rem;
+  }
+  .istruttore-passaporto-corpo {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .istruttore-passaporto-nome {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--ink);
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .istruttore-passaporto-ruolo {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--v700);
+  }
+  .istruttore-passaporto-righe {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    margin-top: 6px;
+    padding-top: 6px;
+    border-top: 1px solid var(--border);
+  }
+  .istruttore-passaporto-riga {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    font-size: 0.78rem;
+  }
+  .istruttore-passaporto-label {
+    flex-shrink: 0;
+    width: 80px;
+    font-size: 0.6rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--ink3);
+  }
+  .istruttore-passaporto-valore {
+    display: inline-flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 3px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .istruttore-passaporto-chat {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 1px solid var(--border2);
+    background: var(--surface);
+    color: var(--v700);
+    cursor: pointer;
+  }
+
+  /* ── Intestazione professionale nella scheda disponibilità istruttore
+     (DisponibilitaIstruttoreModal.tsx): foto, nome, ruolo, sport, anzianità
+     nel circolo, prima dell'elenco delle fasce disponibili. ───────────── */
+  .istruttore-scheda-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .istruttore-scheda-nome {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1.15rem;
+    color: var(--ink);
+    line-height: 1.2;
+  }
+  .istruttore-scheda-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 3px;
+    font-size: 0.82rem;
+    color: var(--ink2);
+  }
+  .istruttore-scheda-ruolo {
+    font-weight: 600;
+    color: var(--v700);
+  }
+  .istruttore-scheda-sep {
+    color: var(--ink3);
+  }
+  .istruttore-scheda-sport {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .istruttore-scheda-anzianita {
+    margin-top: 2px;
+    font-size: 0.76rem;
+    color: var(--ink3);
   }
 
   /* Medaglia livello metallica */

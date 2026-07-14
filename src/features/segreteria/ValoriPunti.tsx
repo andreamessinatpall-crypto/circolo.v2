@@ -33,12 +33,12 @@ export default function ValoriPunti() {
 const SPORT_CFG = {
   padel: {
     label: 'Padel',
-    gradient: 'linear-gradient(135deg, #0d92ad, #0a4f63)',
+    colore: '#0d92ad',
     icona: <IconaPadel />,
   },
   calcio: {
     label: 'Calcio',
-    gradient: 'linear-gradient(135deg, var(--color-verde-600), var(--color-verde-800))',
+    colore: 'var(--color-verde-600)',
     icona: <IconaCalcio />,
   },
 } as const
@@ -47,15 +47,12 @@ function BloccoSport({ tipo, children }: { tipo: 'padel' | 'calcio'; children: R
   const cfg = SPORT_CFG[tipo]
   return (
     <div className="overflow-hidden rounded-xl border border-black/10">
-      <div
-        className="flex items-center gap-2 px-3 py-2"
-        style={{ background: cfg.gradient }}
-      >
-        <span className="flex h-4 w-4 items-center justify-center text-white">{cfg.icona}</span>
-        <span className="text-[0.72rem] font-bold uppercase tracking-[0.1em] text-white">
+      <div className="flex items-center gap-2 bg-white px-3 py-2">
+        <span className="flex h-4 w-4 items-center justify-center" style={{ color: cfg.colore }}>{cfg.icona}</span>
+        <span className="text-[0.72rem] font-bold uppercase tracking-[0.1em]" style={{ color: cfg.colore }}>
           {cfg.label}
         </span>
-        <span className="ml-auto flex items-center gap-2 text-[11px] font-bold text-white">
+        <span className="ml-auto flex items-center gap-2 text-[11px] font-bold text-ink">
           <span className="w-14 text-center">Punti</span>
           <span className="w-14 text-center">Crediti</span>
         </span>

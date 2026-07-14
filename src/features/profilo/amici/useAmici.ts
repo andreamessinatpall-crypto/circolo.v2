@@ -43,6 +43,8 @@ export interface VoceStaff {
   punti: number
   sport: string | null
   foto_url: string | null
+  data_iscrizione: string | null
+  genere: string | null
 }
 
 export function ruoloDa(s: SocioPubblico): Ruolo | null {
@@ -104,6 +106,8 @@ export function useAmici(profiloId: string) {
         punti: s.punti,
         sport: s.sport_preferito ?? null,
         foto_url: s.foto_url ?? null,
+        data_iscrizione: s.data_iscrizione ?? null,
+        genere: s.genere ?? null,
       }))
       .sort((a, b) => a.etichetta.localeCompare(b.etichetta, 'it'))
   }, [sociQuery.data, profiloId])

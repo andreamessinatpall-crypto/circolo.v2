@@ -16,6 +16,7 @@ import TorneiInCorsoPagina from '@/features/profilo/pagine/TorneiInCorsoPagina'
 import TorneiInProgrammaPagina from '@/features/profilo/pagine/TorneiInProgrammaPagina'
 import AnnunciPagina from '@/features/profilo/pagine/AnnunciPagina'
 import StaffClubPagina from '@/features/profilo/pagine/StaffClubPagina'
+import IstruttoriPagina from '@/features/profilo/pagine/IstruttoriPagina'
 import PrenotaPage from '@/features/prenotazioni/PrenotaPage'
 import TorneiPage from '@/features/tornei/TorneiPage'
 import PremiPage from '@/features/premi/PremiPage'
@@ -77,6 +78,7 @@ function App() {
         <Route path="/profilo/tornei-in-programma" element={<TorneiInProgrammaPagina />} />
         <Route path="/profilo/annunci" element={<AnnunciPagina />} />
         <Route path="/profilo/staff" element={<StaffClubPagina />} />
+        <Route path="/profilo/lezioni" element={<IstruttoriPagina />} />
         <Route path="/prenota" element={<PrenotaPage />} />
         <Route path="/tornei" element={<TorneiPage />} />
         {profilo?.is_allenatore && !profilo?.is_admin && (
