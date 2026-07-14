@@ -8,7 +8,11 @@ import Avatar from '@/components/Avatar'
 // Cartellino "Nome Cognome" con livello/punti/crediti: nato in Bacheca
 // (RiepilogoProfilo), riusato anche in cima al menu account (MenuUtente) —
 // stessa identica interfaccia nei due punti, richiesto esplicitamente.
-export default function BenvenutoHero() {
+// `onRichiesteClick`: solo per l'istruttore, passato da MenuUtente per
+// chiudere il menu account e portare direttamente alla pagina dove
+// accettare/rifiutare le richieste di lezione in attesa (stesso pallino
+// rosso della campanella notifiche, qui sul riquadro "Richieste").
+export default function BenvenutoHero({ onRichiesteClick }: { onRichiesteClick?: () => void } = {}) {
   const { profilo } = useAuth()
   const livelliQuery = useLivelliPunti()
 
@@ -195,13 +199,23 @@ export default function BenvenutoHero() {
               <em>In programma</em>
             </span>
             <span className="riep-istr-pipe">|</span>
-            <span className="riep-istr-item">
-              <span className="riep-istr-num-wrap">
-                <strong>{d?.richieste != null ? d.richieste : '—'}</strong>
-                {(d?.richieste ?? 0) > 0 && <span className="riep-istr-pallino" />}
+            {onRichiesteClick ? (
+              <button type="button" className="riep-istr-item riep-istr-item-link" onClick={onRichiesteClick}>
+                <span className="riep-istr-num-wrap">
+                  <strong>{d?.richieste != null ? d.richieste : '—'}</strong>
+                  {(d?.richieste ?? 0) > 0 && <span className="riep-istr-pallino" />}
+                </span>
+                <em>Richieste</em>
+              </button>
+            ) : (
+              <span className="riep-istr-item">
+                <span className="riep-istr-num-wrap">
+                  <strong>{d?.richieste != null ? d.richieste : '—'}</strong>
+                  {(d?.richieste ?? 0) > 0 && <span className="riep-istr-pallino" />}
+                </span>
+                <em>Richieste</em>
               </span>
-              <em>Richieste</em>
-            </span>
+            )}
           </div>
         </div>
       </div>

@@ -27,6 +27,14 @@ import { LIVELLI_PUNTI_DEFAULT, livelloDaPunti } from '@/features/profilo/livell
 import type { Ruolo } from '@/features/profilo/ruoloBadge'
 import { useSoci } from '@/features/segreteria/datiSoci'
 import DettaglioGiocatore from '@/features/segreteria/DettaglioGiocatore'
+import { useCampi } from '@/features/prenotazioni/datiPrenotazioni'
+import { useMieLezioni } from '@/features/prenotazioni/datiAmichevoli'
+import { useRichiesteRicevute } from '@/features/lezioni/useRichiesteLezione'
+import {
+  useLezioniGruppoFuture,
+  useIscrivitiLezioneGruppo,
+  useAnnullaIscrizioneLezioneGruppo,
+} from '@/features/lezioni/useLezioniGruppo'
 
 const SPORT_LABEL: Record<string, string> = { padel: 'Padel', calcio: 'Calcio' }
 
@@ -306,11 +314,14 @@ function CardStatistiche() {
 // come staff sono già "connessi" a chiunque, non serve il giro
 // richiesta/accetta. Mostra gli ultimi iscritti (ordinati per
 // data_iscrizione), "Visualizza" apre la stessa scheda dettaglio (di sola
-// lettura, niente "Rimuovi") usata per gli amici veri. ─────────────────────
-function CardGiocatori() {
+// lettura, niente "Rimuovi") usata per gli amici veri. `gestore` false per
+// l'istruttore semplice: vede la stessa card ma senza "Gestisci" (punti/
+// crediti/sospensione), permesso che non ha — vedi anche /soci, che per lui
+// resta GiocatoriReadOnly invece di SociPage. ─────────────────────────────
+function CardGiocatori({ gestore = true }: { gestore?: boolean }) {
   const { profilo } = useAuth()
   const amici = useAmici(profilo?.id ?? '')
-  const sociAdminQuery = useSoci()
+  const sociAdminQuery = useSoci(gestore)
   const { data: modalitaPremi } = useModalitaPremi()
   const [visualizzato, setVisualizzato] = useState<SocioPubblico | null>(null)
   const [chatCon, setChatCon] = useState<{ id: string; etichetta: string } | null>(null)
@@ -324,7 +335,7 @@ function CardGiocatori() {
       .slice(0, 12)
   }, [amici.sociPubblici, profilo?.id])
 
-  const gestisciSocio = sociAdminQuery.data?.find((s) => s.id === gestisciId) ?? null
+  const gestisciSocio = gestore ? (sociAdminQuery.data?.find((s) => s.id === gestisciId) ?? null) : null
 
   return (
     <div className="club-col">
@@ -368,15 +379,15 @@ function CardGiocatori() {
             setChatCon({ id: visualizzato.id, etichetta: titleCase(visualizzato.etichetta) })
             setVisualizzato(null)
           }}
-          onGestisci={() => {
+          onGestisci={gestore ? () => {
             setGestisciId(visualizzato.id)
             setVisualizzato(null)
-          }}
+          } : undefined}
           nascondiPrenotaInsieme={!!profilo?.is_admin}
           onChiudi={() => setVisualizzato(null)}
         />
       )}
-      {gestisciSocio && (
+      {gestore && gestisciSocio && (
         <DettaglioGiocatore
           socio={gestisciSocio}
           modalitaPremi={!!modalitaPremi}
@@ -387,6 +398,57 @@ function CardGiocatori() {
       {chatCon && profilo && (
         <ChatModal profiloId={profilo.id} amico={chatCon} onChiudi={() => setChatCon(null)} />
       )}
+    </div>
+  )
+}
+
+// ── Le tue lezioni (solo istruttore): al posto di "La tua prossima
+// attività", l'anteprima del suo lavoro — prossimo allenamento in
+// programma e numero di richieste di lezione ancora da accettare/rifiutare
+// (stessi dati di GestioneLezioniPagina.tsx, qui solo un assaggio). ───────
+function CardLezioniIstruttore() {
+  const { profilo } = useAuth()
+  const campiQuery = useCampi()
+  const idCampi = useMemo(() => (campiQuery.data ?? []).map((c) => c.id), [campiQuery.data])
+  const lezioniQuery = useMieLezioni(idCampi, profilo?.id ?? '')
+  const { richieste } = useRichiesteRicevute(profilo?.id)
+  const inAttesa = richieste.filter((r) => r.stato === 'in_attesa').length
+  const prossima = lezioniQuery.data?.lista[0]
+  const campo = campiQuery.data?.find((c) => String(c.id) === String(prossima?.campo_id))
+
+  return (
+    <div className="club-col">
+      <TestataSezione titolo="Le tue lezioni" to="/profilo/gestione-lezioni" azione="Gestisci" />
+      <Link to="/profilo/gestione-lezioni" className="club-tile club-tile-hero">
+        {lezioniQuery.isLoading ? (
+          <p className="club-tile-testo-anteprima">Caricamento…</p>
+        ) : prossima ? (
+          <>
+            <div className="prossima-wow-fascia">
+              <span className="prossima-wow-sport">Prossimo allenamento</span>
+            </div>
+            <div className="prossima-wow-giorno">{dataEstesa(prossima.inizio.slice(0, 10))}</div>
+            <div className="prossima-wow-orario">
+              {oraLocale(new Date(prossima.inizio))}
+              <span className="prossima-wow-trattino">–</span>
+              {oraLocale(new Date(prossima.fine))}
+            </div>
+            <div className="prossima-wow-campo">
+              <IcoPin /> {campo?.nome ?? 'Campo'}
+            </div>
+          </>
+        ) : (
+          <p className="club-tile-testo-anteprima">Nessuna lezione in programma.</p>
+        )}
+        {inAttesa > 0 && (
+          <div className="stat-anteprima-riga">
+            <div className="stat-anteprima-cella">
+              <span className="stat-anteprima-n">{inAttesa}</span>
+              <span className="stat-anteprima-lbl">Richieste in attesa</span>
+            </div>
+          </div>
+        )}
+      </Link>
     </div>
   )
 }
@@ -558,6 +620,116 @@ function CardIstruttori() {
   )
 }
 
+// ── Lezioni di gruppo (tappa91): l'istruttore fissa data/ora da "Le tue
+// lezioni" (CreaLezioneGruppo.tsx), qui ogni socio si iscrive da solo —
+// stesso principio di CardIstruttori ma per sessioni aperte a più persone
+// invece che una lezione privata 1:1. Filtrate per lo sport preferito del
+// socio, come le altre anteprime di Area Club (vedi CardNovita). Niente
+// pagina dedicata "vedi tutte": la card è già l'unico punto d'accesso.
+function CardLezioniGruppo() {
+  const { profilo } = useAuth()
+  const { data, isLoading } = useLezioniGruppoFuture()
+  const campiQuery = useCampi()
+  const sociQuery = useSociEtichette()
+  const nomeSocio = profilo ? `${profilo.nome} ${profilo.cognome}` : undefined
+  const iscriviti = useIscrivitiLezioneGruppo(profilo?.id, nomeSocio)
+  const annullaIscrizione = useAnnullaIscrizioneLezioneGruppo(profilo?.id)
+
+  const sportPreferito = profilo?.sport_preferito ?? 'entrambi'
+
+  const campoInfoById = useMemo(() => {
+    const m = new Map<string, { nome: string; sport: string }>()
+    for (const c of campiQuery.data ?? []) m.set(String(c.id), { nome: c.nome, sport: c.sport })
+    return m
+  }, [campiQuery.data])
+
+  const nomiIstruttori = useMemo(() => {
+    const m = new Map<string, string>()
+    for (const s of sociQuery.data ?? []) m.set(s.id, s.etichetta)
+    return m
+  }, [sociQuery.data])
+
+  const lezioni = useMemo(() => {
+    const lista = data?.lista ?? []
+    return lista.filter((p) => {
+      const campoSport = campoInfoById.get(String(p.campo_id))?.sport
+      return sportPreferito === 'entrambi' || campoSport === sportPreferito
+    })
+  }, [data, campoInfoById, sportPreferito])
+
+  const iscrittiPerLezione = useMemo(() => {
+    const m = new Map<string, number>()
+    const mieIscrizioni = new Set<string>()
+    for (const r of data?.parts ?? []) {
+      const k = String(r.prenotazione_id)
+      m.set(k, (m.get(k) ?? 0) + 1)
+      if (r.socio_id === profilo?.id) mieIscrizioni.add(k)
+    }
+    return { conteggi: m, mieIscrizioni }
+  }, [data?.parts, profilo?.id])
+
+  if (isLoading || campiQuery.isLoading) return null
+  if (lezioni.length === 0) return null
+
+  return (
+    <div className="club-col">
+      <div className="club-col-testata">
+        <div className="club-col-titolo">Lezioni di gruppo</div>
+      </div>
+      <CaroselloFrecce>
+        {lezioni.map((p) => {
+          const campo = campoInfoById.get(String(p.campo_id))
+          const iscritti = iscrittiPerLezione.conteggi.get(String(p.id)) ?? 0
+          const sonoIscritto = iscrittiPerLezione.mieIscrizioni.has(String(p.id))
+          const quando = `${dataEstesa(p.inizio.slice(0, 10))} alle ${oraLocale(new Date(p.inizio))}`
+
+          return (
+            <div key={p.id} className="mini-lezione-gruppo">
+              <span className="mini-lezione-gruppo-giorno">{titleCase(dataEstesa(p.inizio.slice(0, 10)))}</span>
+              <span className="mini-lezione-gruppo-orario">
+                {oraLocale(new Date(p.inizio))}–{oraLocale(new Date(p.fine))}
+              </span>
+              <span className="mini-lezione-gruppo-info">
+                {campo && <SportIcona sport={campo.sport} size={11} />} {campo?.nome ?? 'Campo'}
+              </span>
+              <span className="mini-lezione-gruppo-info">
+                Istruttore: {p.allenatore_id ? (nomiIstruttori.get(p.allenatore_id) ?? '—') : '—'}
+              </span>
+              <span className="mini-lezione-gruppo-iscritti">
+                {iscritti} iscritt{iscritti === 1 ? 'o' : 'i'}
+              </span>
+
+              {sonoIscritto ? (
+                <button
+                  type="button"
+                  className="mini-persona-btn mini-persona-btn-pericolo"
+                  disabled={annullaIscrizione.isPending}
+                  onClick={() => {
+                    if (window.confirm('Annullare la tua iscrizione a questa lezione di gruppo?')) {
+                      annullaIscrizione.mutate(p.id)
+                    }
+                  }}
+                >
+                  Annulla iscrizione
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="mini-persona-btn"
+                  disabled={iscriviti.isPending}
+                  onClick={() => iscriviti.mutate({ prenotazioneId: p.id, istruttoreId: p.allenatore_id ?? null, quando })}
+                >
+                  Iscriviti
+                </button>
+              )}
+            </div>
+          )
+        })}
+      </CaroselloFrecce>
+    </div>
+  )
+}
+
 // ── Amici (prima card "Aggiungi nuovo amico", poi fino a 5 contatti tra
 // amici già collegati, richieste inviate ancora in attesa e giocatori
 // suggeriti). Amici → "Visualizza" apre la scheda dettaglio (stessa di
@@ -675,13 +847,13 @@ function CardAmici() {
 // spostata nel menu profilo, sezione "Supporto", vedi MenuUtente.tsx).
 // Classifica e Premi vanno in fondo, affiancate; Premi sparisce del tutto
 // se la modalità premi non è attiva.
-// Stessa griglia per socio/collaboratore/admin (vedi ProfiloPage.tsx: solo
-// l'istruttore non arriva qui), con le prime schede diverse a seconda del
-// ruolo — vedi composizione qui sotto.
+// Stessa griglia per socio/istruttore/collaboratore/admin, con le prime
+// schede diverse a seconda del ruolo — vedi composizione qui sotto.
 export default function AreaClubSchede({ modalitaPremi }: { modalitaPremi: boolean }) {
   const { profilo } = useAuth()
   const isAdmin = !!profilo?.is_admin
   const isCollaboratore = !!profilo?.is_allenatore && !profilo?.is_admin
+  const isIstruttore = !!profilo?.e_allenatore && !profilo?.is_allenatore && !profilo?.is_admin
 
   return (
     <div className="club-tile-grid">
@@ -701,7 +873,15 @@ export default function AreaClubSchede({ modalitaPremi }: { modalitaPremi: boole
           <CardGiocatori />
         </>
       )}
-      {!isAdmin && !isCollaboratore && (
+      {isIstruttore && (
+        <>
+          <CardLezioniIstruttore />
+          <CardAttivita />
+          <CardGiocatori gestore={false} />
+          <CardCercaPartita />
+        </>
+      )}
+      {!isAdmin && !isCollaboratore && !isIstruttore && (
         <>
           <CardAttivita />
           <CardCercaPartita />
@@ -718,7 +898,15 @@ export default function AreaClubSchede({ modalitaPremi }: { modalitaPremi: boole
         <CardClassifica />
       )}
 
-      <CardIstruttori />
+      {/* L'istruttore ha già la sua card dedicata (CardLezioniIstruttore,
+          per gestire le proprie): niente scorciatoia per prenotare lezioni
+          da un collega, che qui sarebbe fuori posto. */}
+      {!isIstruttore && <CardIstruttori />}
+
+      {/* Lezioni di gruppo: solo per i giocatori — è la card con cui si
+          iscrivono, admin/collaboratore/istruttore non ne hanno bisogno
+          (l'istruttore la gestisce da "Le tue lezioni"). */}
+      {!isAdmin && !isCollaboratore && !isIstruttore && <CardLezioniGruppo />}
     </div>
   )
 }

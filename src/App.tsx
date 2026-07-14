@@ -17,6 +17,7 @@ import TorneiInProgrammaPagina from '@/features/profilo/pagine/TorneiInProgramma
 import AnnunciPagina from '@/features/profilo/pagine/AnnunciPagina'
 import StaffClubPagina from '@/features/profilo/pagine/StaffClubPagina'
 import IstruttoriPagina from '@/features/profilo/pagine/IstruttoriPagina'
+import GestioneLezioniPagina from '@/features/profilo/pagine/GestioneLezioniPagina'
 import PrenotaPage from '@/features/prenotazioni/PrenotaPage'
 import TorneiPage from '@/features/tornei/TorneiPage'
 import PremiPage from '@/features/premi/PremiPage'
@@ -90,6 +91,9 @@ function App() {
         {(profilo?.is_admin || profilo?.is_allenatore) && <Route path="/soci" element={<SociPage />} />}
         {profilo?.e_allenatore && !profilo?.is_allenatore && !profilo?.is_admin && (
           <Route path="/soci" element={<GiocatoriReadOnly />} />
+        )}
+        {profilo?.e_allenatore && !profilo?.is_allenatore && !profilo?.is_admin && (
+          <Route path="/profilo/gestione-lezioni" element={<GestioneLezioniPagina />} />
         )}
         {profilo?.is_admin && <Route path="/impostazioni" element={<ImpostazioniPage />} />}
         {profilo && puoGestirePrenotazioni(profilo) && (

@@ -576,7 +576,7 @@ function RigaSocio({
 
       {!cancellato && (
         <div className="gioc-minicard-info">
-          <span style={{ color: ruoloColore ?? cfg.colore }}>{ruoloNome ?? cfg.nome}</span>
+          <span style={{ color: ruoloColore ?? 'var(--v700)' }}>{ruoloNome ?? cfg.nome}</span>
           {!soloLivelloSport && !socio.punti_bloccati && (
             <>
               <span className="gioc-adm-sep">·</span>

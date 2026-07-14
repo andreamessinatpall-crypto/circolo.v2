@@ -27,10 +27,14 @@ export interface SocioAdmin {
   foto_url: string | null
 }
 
-// Tutti i soci (l'admin li legge grazie alle policy RLS).
-export function useSoci() {
+// Tutti i soci (l'admin/collaboratore li legge grazie alle policy RLS).
+// `enabled` a false per l'istruttore semplice, che non ha questo permesso
+// RLS: evita una richiesta destinata a fallire quando riusa CardGiocatori
+// in sola lettura (vedi AreaClubSchede.tsx).
+export function useSoci(enabled = true) {
   return useQuery({
     queryKey: ['soci'],
+    enabled,
     queryFn: async (): Promise<SocioAdmin[]> => {
       const { data, error } = await supabase.from('soci').select('*')
       if (error) throw error

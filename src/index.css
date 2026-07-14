@@ -2294,6 +2294,18 @@
     position: relative;
     z-index: 1;
   }
+  /* Variante "opaca" per le schede di Le tue lezioni (VistaLezioni.tsx):
+     stesso linguaggio di .att-wow (striscia dorata, angoli, divisori) ma
+     sfondo bianco pieno invece che vetro traslucido — vivono sempre sopra
+     lo sfondo arcobaleno di Area Club e devono restare bianche come le
+     altre card del club, non colorate dal gradiente sotto. */
+  .amichevole-riga.att-wow.att-wow-bianco {
+    background: var(--surface);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border: 1px solid var(--border);
+    box-shadow: var(--ombra-card);
+  }
   /* Il menu "+ amico" (.aggiungi-part-icona, dentro .chips oppure diretto
      figlio quando la partita non ha ancora partecipanti) deve restare sopra
      il pulsante "Annulla la prenotazione" sottostante: stessa z-index:1 dei
@@ -4131,6 +4143,16 @@
     border-radius: 50%;
     background: var(--terra);
     flex-shrink: 0;
+  }
+  /* Variante cliccabile del riquadro "Richieste": stesso aspetto del
+     span, ma è un <button> (porta a Le tue lezioni per accettare/
+     rifiutare) — azzera lo stile di default del browser. */
+  .riep-istr-item-link {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    font: inherit;
   }
   .riep-istr-item em {
     font-style: normal;
@@ -6162,13 +6184,13 @@
     color: var(--ink2);
     font-weight: 600;
   }
-  .gioc-adm-sep { color: var(--ink3); font-weight: 400; }
+  .gioc-adm-sep { color: var(--v600); font-weight: 400; }
   .gioc-minicard-attivita {
     display: flex;
     align-items: center;
     gap: 5px;
     font-size: 0.7rem;
-    color: var(--ink3);
+    color: var(--v600);
   }
   .gioc-att-dot {
     display: inline-block;
@@ -8878,6 +8900,47 @@
     font-size: 0.78rem;
     font-weight: 700;
     color: var(--g600);
+  }
+
+  /* Lezioni di gruppo (tappa91): mini-card testuale nel carosello di Area
+     Club — giorno/ora/campo/istruttore + iscritti, col bottone Iscriviti/
+     Annulla iscrizione sempre in fondo (stessi .mini-persona-btn di
+     Giocatori/Amici, per coerenza cromatica tra le card). */
+  .mini-lezione-gruppo {
+    flex: 0 0 auto;
+    width: 172px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    box-shadow: var(--ombra-card);
+    scroll-snap-align: start;
+  }
+  .mini-lezione-gruppo-giorno {
+    font-weight: 700;
+    font-size: 0.82rem;
+    color: var(--ink);
+    line-height: 1.25;
+  }
+  .mini-lezione-gruppo-orario {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--g600);
+  }
+  .mini-lezione-gruppo-info {
+    font-size: 0.72rem;
+    color: var(--ink2);
+    line-height: 1.3;
+  }
+  .mini-lezione-gruppo-iscritti {
+    font-size: 0.7rem;
+    color: var(--ink3);
+  }
+  .mini-lezione-gruppo .mini-persona-btn {
+    margin-top: 6px;
   }
 
   /* Top 3 classifica */

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/auth/useAuth'
 import ModaleLegale from './legale/ModaleLegale'
 import { PrivacyContent, TerminiContent } from './legale/DocumentiLegali'
@@ -203,6 +204,7 @@ const TITOLI_VISTA: Record<Exclude<Vista, 'menu'>, string> = {
 // campanella notifiche è un'icona a parte (vedi CampanellaNotifiche.tsx).
 export default function MenuUtente() {
   const { esci, profilo } = useAuth()
+  const navigate = useNavigate()
   const [aperto, setAperto] = useState(false)
   const [vista, setVista] = useState<Vista>('menu')
   const [legale, setLegale] = useState<Legale>(null)
@@ -210,6 +212,14 @@ export default function MenuUtente() {
   function chiudi() {
     setAperto(false)
     setVista('menu')
+  }
+
+  // Chiude lo schermo account (a tutto schermo, resterebbe sopra la
+  // pagina di destinazione) e porta alla gestione delle richieste di
+  // lezione — link diretto dal pallino rosso su "Richieste" in BenvenutoHero.
+  function vaiARichiesteLezione() {
+    chiudi()
+    navigate('/profilo/gestione-lezioni')
   }
 
   return (
@@ -238,7 +248,7 @@ export default function MenuUtente() {
               </button>
 
               <div className="account-schermo-corpo">
-                <BenvenutoHero />
+                <BenvenutoHero onRichiesteClick={vaiARichiesteLezione} />
 
                 <div className="account-panel-sezione">
                   <div className="account-panel-titolo">Il tuo account</div>

@@ -142,7 +142,7 @@ export function useInviaRichiestaLezione(socioId: string | undefined) {
             socio_id: dati.istruttoreId,
             titolo: 'Nuova richiesta di lezione',
             corpo: 'Un socio ha richiesto una lezione privata. Vai su Profilo → Lezioni per rispondere.',
-            url: '/profilo?sezione=lezioni',
+            url: '/profilo/gestione-lezioni',
           },
         })
         .catch(() => {})

@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/auth/useAuth'
 import { mancaTabella, messaggioErrore, mancaRpc } from '@/lib/errori'
-import { useSociEtichette } from '@/features/prenotazioni/datiAmichevoli'
+import { useSociEtichette, useSociPubblici } from '@/features/prenotazioni/datiAmichevoli'
 import { oraLocale, ymd } from '@/features/prenotazioni/orari'
 import { SportIcona } from '@/components/IconeSport'
 import { TipoAttivitaIcona } from '@/components/IconeAttivita'
@@ -33,9 +33,14 @@ const ICONA_GIORNO_GENERICA = (
 // sezione con "Le mie prenotazioni" che ripeteva le stesse partite). Le
 // attività prenotate dal giocatore stesso si annullano direttamente da qui
 // (unico posto dove si possono gestire) — per quelle prenotate da altri si
-// indica solo chi le gestisce, in sola lettura. Appena l'orario di inizio è
-// passato, la prenotazione sparisce da qui (RPC filtra su `inizio`) e
-// compare tra le "concluse" (AttivitaConcluse.tsx), non più annullabile.
+// indica solo chi le gestisce, in sola lettura. Eccezione: un allenamento
+// resta sempre gestito dal suo istruttore (allenatore_id), anche quando è
+// nato da una richiesta di lezione accettata e quindi "prenotato" a nome del
+// giocatore — vedi `gestisceAllenamento` più sotto, stesse mutation di
+// VistaLezioni.tsx (RLS già lo permetteva, tappa37/tappa55). Appena l'orario
+// di inizio è passato, la prenotazione sparisce da qui (RPC filtra su
+// `inizio`) e compare tra le "concluse" (AttivitaConcluse.tsx), non più
+// annullabile.
 export default function AttivitaInProgramma({ sport }: { sport?: Sport } = {}) {
   const { profilo } = useAuth()
   const qc = useQueryClient()
@@ -43,12 +48,20 @@ export default function AttivitaInProgramma({ sport }: { sport?: Sport } = {}) {
   // restare leggibile col vero nome anche se il partecipante è nel frattempo
   // stato sospeso o ha cancellato l'account.
   const sociQuery = useSociEtichette()
+  // soci_pubblici invece per le opzioni del menu "+ giocatore" di un
+  // allenamento: l'istruttore può aggiungere qualsiasi socio attivo, non
+  // solo i suoi amici (a differenza di PartecipantiPropria).
+  const sociPubbliciQuery = useSociPubblici()
   const meteoQuery = useMeteo()
   const amiciData = useAmici(profilo?.id ?? '')
 
   const invalidaAttivita = () => {
     qc.invalidateQueries({ queryKey: ['attivita-programma'] })
     qc.invalidateQueries({ queryKey: ['amichevoli'] })
+    // Un allenamento gestito da qui è lo stesso mostrato in "Le tue lezioni"
+    // (VistaLezioni.tsx) e nella sua card di anteprima in Area Club: tienili
+    // allineati. Nessun effetto per chi non è istruttore (query non montata).
+    qc.invalidateQueries({ queryKey: ['lezioni', profilo?.id] })
   }
 
   const annulla = useMutation({
@@ -161,6 +174,13 @@ export default function AttivitaInProgramma({ sport }: { sport?: Sport } = {}) {
     return m
   }, [sociQuery.data, profilo])
 
+  // Ogni socio attivo tranne l'istruttore stesso: opzioni del menu "+
+  // giocatore" di un allenamento che gestisce (vedi gestisceAllenamento).
+  const opzioniGiocatori = useMemo(
+    () => (sociPubbliciQuery.data ?? []).filter((s) => s.id !== profilo?.id),
+    [sociPubbliciQuery.data, profilo?.id],
+  )
+
   if (query.isLoading) return <p className="sub">Caricamento…</p>
   if (query.error) {
     return (
@@ -193,6 +213,13 @@ export default function AttivitaInProgramma({ sport }: { sport?: Sport } = {}) {
       {lista.map((m) => {
         const mia = !!profilo && m.prenotante_id === profilo.id
         const tipo = m.allenamento ? 'allenamento' : m.torneo_nome ? 'torneo' : 'partita'
+        // Un allenamento resta sempre gestito dal suo istruttore, non da chi
+        // l'ha "prenotato": per una lezione nata da una richiesta accettata
+        // prenotante_id è lo studente (mia sarebbe true per lui), ma è
+        // l'istruttore (allenatore_id) a doverlo annullare o cambiarne i
+        // giocatori — mai lo studente. Per partita/torneo resta invece `mia`.
+        const gestisceAllenamento = tipo === 'allenamento' && !!profilo && m.allenatore_id === profilo.id
+        const puoGestire = tipo === 'allenamento' ? gestisceAllenamento : mia
         const giornoData = new Date(m.inizio)
         const giornoLabel = giornoData.toLocaleDateString('it-IT', {
           weekday: 'long',
@@ -230,7 +257,7 @@ export default function AttivitaInProgramma({ sport }: { sport?: Sport } = {}) {
                 {m.allenamento && m.allenatore_id && (
                   <div className="dove">Istruttore: {label(m.allenatore_id)}</div>
                 )}
-                {!mia && m.prenotante_id && (
+                {!mia && !gestisceAllenamento && m.prenotante_id && (
                   <div className="dove">Gestita da {label(m.prenotante_id)}</div>
                 )}
               </div>
@@ -254,6 +281,16 @@ export default function AttivitaInProgramma({ sport }: { sport?: Sport } = {}) {
                 onAggiungiOspite={(nome) => aggiungiOspite.mutate({ prenId: m.id, nome })}
                 onRimuoviOspite={(nome) => rimuoviOspite.mutate({ prenId: m.id, nome })}
               />
+            ) : gestisceAllenamento ? (
+              <PartecipantiAllenamento
+                parti={m.parti}
+                label={label}
+                opzioniGiocatori={opzioniGiocatori}
+                onAggiungi={(socioId) => aggiungiAmico.mutate({ prenId: m.id, socioId })}
+                onRimuovi={(socioId) => rimuoviAmico.mutate({ prenId: m.id, socioId })}
+                onAggiungiOspite={(nome) => aggiungiOspite.mutate({ prenId: m.id, nome })}
+                onRimuoviOspite={(nome) => rimuoviOspite.mutate({ prenId: m.id, nome })}
+              />
             ) : (
               m.parti.length > 0 && (
                 <div className="att-parti">
@@ -267,7 +304,7 @@ export default function AttivitaInProgramma({ sport }: { sport?: Sport } = {}) {
               )
             )}
 
-            {mia && (
+            {puoGestire && (
               <div className="mt-auto">
                 <div className="att-wow-hr" />
                 <button
@@ -276,10 +313,13 @@ export default function AttivitaInProgramma({ sport }: { sport?: Sport } = {}) {
                   disabled={annulla.isPending}
                   onClick={() => {
                     const quando = giornoLabel + ' alle ' + oraLocale(new Date(m.inizio))
-                    if (window.confirm(`Annullare la tua prenotazione (${quando})?`)) annulla.mutate(m.id)
+                    const messaggio = tipo === 'allenamento'
+                      ? `Annullare l'allenamento (${quando})?`
+                      : `Annullare la tua prenotazione (${quando})?`
+                    if (window.confirm(messaggio)) annulla.mutate(m.id)
                   }}
                 >
-                  Annulla la prenotazione
+                  {tipo === 'allenamento' ? "Annulla l'allenamento" : 'Annulla la prenotazione'}
                 </button>
               </div>
             )}
@@ -372,6 +412,76 @@ function PartecipantiPropria({
                 ×
               </button>
             )}
+          </span>
+        )
+      })}
+      {menuAggiungi}
+    </div>
+  )
+}
+
+// Partecipanti di un allenamento gestito dall'istruttore: a differenza di
+// PartecipantiPropria non limita le opzioni agli amici (uno studente spesso
+// non lo è) — qualsiasi socio attivo può essere aggiunto, oltre all'ospite
+// non registrato. Stessa interfaccia della scheda gestita da VistaLezioni.tsx.
+function PartecipantiAllenamento({
+  parti,
+  label,
+  opzioniGiocatori,
+  onAggiungi,
+  onRimuovi,
+  onAggiungiOspite,
+  onRimuoviOspite,
+}: {
+  parti: { socio_id: string | null; nome_manuale: string | null; confermato: boolean }[]
+  label: (id: string) => string
+  opzioniGiocatori: { id: string; etichetta: string }[]
+  onAggiungi: (socioId: string) => void
+  onRimuovi: (socioId: string) => void
+  onAggiungiOspite: (nome: string) => void
+  onRimuoviOspite: (nome: string) => void
+}) {
+  const giaIds = new Set(parti.map((p) => p.socio_id).filter((id): id is string => !!id))
+  const selezionabili = opzioniGiocatori.filter((s) => !giaIds.has(s.id))
+
+  const menuAggiungi = (
+    <MenuAmici
+      opzioni={selezionabili}
+      onScegli={onAggiungi}
+      onOspite={onAggiungiOspite}
+      ariaLabel="Aggiungi un giocatore all'allenamento"
+      testoVuoto="Nessun giocatore trovato."
+    />
+  )
+
+  if (parti.length === 0) {
+    return (
+      <>
+        <div className="part-vuoto">Indica i giocatori di questo allenamento.</div>
+        {menuAggiungi}
+      </>
+    )
+  }
+
+  return (
+    <div className="chips">
+      {parti.map((r, i) => {
+        const nome = etichettaGiocatore(r, label)
+        return (
+          <span key={r.socio_id ?? `ospite-${i}`} className="chip">
+            {nome}
+            <button
+              type="button"
+              className="x"
+              title="Togli"
+              onClick={() => {
+                if (!window.confirm(`Rimuovere ${nome} da questo allenamento?`)) return
+                if (r.socio_id) onRimuovi(r.socio_id)
+                else onRimuoviOspite(r.nome_manuale!)
+              }}
+            >
+              ×
+            </button>
           </span>
         )
       })}

@@ -37,6 +37,9 @@ export interface MiaPrenotazione {
   fine: string
   allenamento?: boolean | null
   allenatore_id?: string | null
+  // Allenamento aperto alle iscrizioni (tappa91): i giocatori si iscrivono
+  // da soli da Area Club invece di passare da una richiesta 1:1.
+  lezione_gruppo?: boolean | null
   incontro_id?: number | string | null
   torneo_id?: string | null
   torneo_nome?: string | null

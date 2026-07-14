@@ -9,7 +9,6 @@ import MenuUtente from '@/components/MenuUtente'
 import CampanellaNotifiche from '@/components/CampanellaNotifiche'
 import {
   IconaPrenota,
-  IconaGiocatori,
   IconaTornei,
   IconaAreaClub,
 } from '@/components/IconeMenu'
@@ -35,7 +34,6 @@ function vociMenu(p: Socio): Voce[] {
   }
 
   const collaboratore = !!p.is_allenatore && !p.is_admin
-  const istruttore    = !!p.e_allenatore && !p.is_allenatore && !p.is_admin
 
   if (collaboratore) {
     return [
@@ -45,16 +43,9 @@ function vociMenu(p: Socio): Voce[] {
     ]
   }
 
-  if (istruttore) {
-    return [
-      { path: '/prenota', label: 'Prenota', Icona: IconaPrenota },
-      { path: '/soci', label: 'Giocatori', Icona: IconaGiocatori },
-      { path: '/profilo', label: 'Area Club', Icona: IconaAreaClub },
-      { path: '/tornei', label: 'Tornei', Icona: IconaTornei },
-    ]
-  }
-
-  // Giocatore regolare
+  // Istruttore e giocatore regolare: stessi 3 menu. "Giocatori" per
+  // l'istruttore non è più una tab a sé (era /soci coi 4 menu), ma una
+  // scheda dentro Area Club, come già per admin/collaboratore.
   return [
     { path: '/prenota', label: 'Prenota', Icona: IconaPrenota },
     { path: '/profilo', label: 'Area Club', Icona: IconaAreaClub },
@@ -95,11 +86,8 @@ export default function AppShell() {
   // "Area Club" deve restare selezionata anche nelle pagine raggiunte dalle
   // sue schede che non vivono sotto /profilo (Giocatori → /soci, Statistiche
   // → /statistiche), altrimenti la tab tornava bianca entrandoci — NavLink
-  // di suo la marca attiva solo per /profilo e le sue sotto-rotte. Esclusa
-  // /soci per l'istruttore, che ha una tab "Giocatori" propria su quel
-  // percorso: lì non devono accendersi insieme.
-  const haSociTab = voci.some((v) => v.path === '/soci')
-  const extraAreaClub = haSociTab ? ['/statistiche'] : ['/soci', '/statistiche']
+  // di suo la marca attiva solo per /profilo e le sue sotto-rotte.
+  const extraAreaClub = ['/soci', '/statistiche']
   function eAttiva(percorso: string): boolean {
     if (pathname === percorso || pathname.startsWith(percorso + '/')) return true
     if (percorso === '/profilo') {

@@ -653,10 +653,18 @@ export function MenuAmici({
   opzioni,
   onScegli,
   onOspite,
+  ariaLabel = 'Aggiungi un amico alla partita',
+  testoVuoto = 'Nessun amico trovato.',
 }: {
   opzioni: { id: string; etichetta: string }[]
   onScegli: (id: string) => void
   onOspite?: (nome: string) => void
+  // Riusato anche fuori da "amici" (es. l'istruttore che aggiunge un
+  // giocatore qualsiasi al proprio allenamento, vedi VistaLezioni.tsx):
+  // testi personalizzabili, di default quelli originali per non toccare
+  // gli usi esistenti.
+  ariaLabel?: string
+  testoVuoto?: string
 }) {
   const [aperto, setAperto] = useState(false)
   const [query, setQuery] = useState('')
@@ -690,7 +698,7 @@ export function MenuAmici({
       <button
         type="button"
         className="btn-icona-amico"
-        aria-label="Aggiungi un amico alla partita"
+        aria-label={ariaLabel}
         aria-haspopup="true"
         aria-expanded={aperto}
         onClick={() => setAperto((v) => !v)}
@@ -731,7 +739,7 @@ export function MenuAmici({
             </button>
           ))}
           {opzioni.length > 0 && filtrate.length === 0 && (
-            <p className="cerca-lista-vuota">Nessun amico trovato.</p>
+            <p className="cerca-lista-vuota">{testoVuoto}</p>
           )}
         </div>
       )}

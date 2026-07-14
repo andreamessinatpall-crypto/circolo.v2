@@ -205,7 +205,7 @@ export default function DettaglioAmicoModal({
       className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center sm:p-4"
       onClick={onChiudi}
     >
-      <div className="amico-dett-modal" onClick={(e) => e.stopPropagation()}>
+      <div className="amico-dett-modal modale-leggibile" onClick={(e) => e.stopPropagation()}>
         <button type="button" className="amico-dett-chiudi" onClick={onChiudi} aria-label="Chiudi">
           ✕
         </button>
@@ -265,7 +265,7 @@ export default function DettaglioAmicoModal({
                 : 'Impossibile caricare: ' + messaggioErrore(partite.error)}
             </p>
           ) : partiteSport.length === 0 ? (
-            <p className="sub">Non avete ancora giocato a {ETICHETTE_SPORT[sportAttivo].toLowerCase()} insieme.</p>
+            <p className="sub">Nessuna partita giocata insieme.</p>
           ) : (
             <CaroselloFrecce className="risultati-scroll">
               {partiteSport.map((m) => (
