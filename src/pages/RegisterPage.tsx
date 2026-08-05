@@ -203,6 +203,13 @@ export default function RegisterPage() {
         <button type="submit" className="btn btn-oro btn-riflesso btn-block mt-5" disabled={isSubmitting}>
           {isSubmitting ? 'Invio in corso…' : 'Crea account'}
         </button>
+        <button
+          type="button"
+          className="btn btn-secondario btn-block mt-2"
+          onClick={() => navigate('/login')}
+        >
+          Torna al login
+        </button>
       </form>
       </div>
 
