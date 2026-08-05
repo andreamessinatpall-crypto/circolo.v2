@@ -109,8 +109,7 @@ export default function AppShell() {
       {/* Barra superiore: marchio e utente */}
       <header className="app-header">
         <div className="brand">
-          Circolo Sportivo
-          <small>Padel &amp; Calcio</small>
+          CIRCOLY
         </div>
 
         <div className="header-utente flex items-center gap-1.5 text-sm">
