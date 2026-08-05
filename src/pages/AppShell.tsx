@@ -104,12 +104,8 @@ export default function AppShell() {
     (p) => pathname === p || pathname.startsWith(p + '/'),
   )
 
-  // var(--vh-reale) invece di 100dvh: su iOS "dvh" segue la toolbar del
-  // browser ma NON la tastiera software (calcolato sul viewport di layout,
-  // che la tastiera non ridimensiona) — --vh-reale, impostata in main.tsx
-  // da window.visualViewport, segue invece sempre l'area davvero visibile.
   return (
-    <div className="flex min-h-[var(--vh-reale,100dvh)] flex-col">
+    <div className="flex min-h-[100dvh] flex-col">
       {/* Barra superiore: marchio e utente */}
       <header className="app-header">
         <div className="brand">

@@ -95,7 +95,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="auth-page flex h-[var(--vh-reale,100dvh)] flex-col items-center overflow-y-auto px-4 py-5 [overscroll-behavior-y:contain]">
+    <div className="auth-page flex min-h-[100dvh] flex-col items-center px-4 py-5">
       <div className="flex w-full max-w-[420px] flex-1 flex-col justify-center">
         <AuthHero />
 
