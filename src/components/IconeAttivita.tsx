@@ -43,16 +43,19 @@ function IconaTorneo({ size = 16 }: { size?: number }) {
   )
 }
 
-export type TipoAttivita = 'partita' | 'allenamento' | 'torneo'
+export type TipoAttivita = 'partita' | 'allenamento' | 'torneo' | 'torneo_amici'
 
 const ETICHETTA: Record<TipoAttivita, string> = {
   partita: 'Partita',
   allenamento: 'Allenamento',
   torneo: 'Torneo',
+  torneo_amici: 'Torneo tra amici',
 }
 
 // Sostituisce le vecchie capsule di testo (PARTITA/ALLENAMENTO/TORNEO) con
 // un'icona colorata compatta, pensata per stare in alto a destra nella scheda.
+// "torneo_amici" riusa icona e colore di "torneo" (stessa natura, nome diverso
+// per distinguere il ramo di dati da arricchire in attivitaComune.ts).
 export function TipoAttivitaIcona({
   tipo,
   titolo,
@@ -62,9 +65,10 @@ export function TipoAttivitaIcona({
   titolo?: string
   size?: number
 }) {
-  const Icona = tipo === 'allenamento' ? IconaAllenamento : tipo === 'torneo' ? IconaTorneo : IconaPartita
+  const eTorneo = tipo === 'torneo' || tipo === 'torneo_amici'
+  const Icona = tipo === 'allenamento' ? IconaAllenamento : eTorneo ? IconaTorneo : IconaPartita
   return (
-    <span className={`tipo-ico tipo-ico-${tipo}`} title={titolo ?? ETICHETTA[tipo]}>
+    <span className={`tipo-ico tipo-ico-${eTorneo ? 'torneo' : tipo}`} title={titolo ?? ETICHETTA[tipo]}>
       <Icona size={size} />
     </span>
   )

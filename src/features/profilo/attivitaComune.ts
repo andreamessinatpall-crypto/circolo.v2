@@ -14,6 +14,12 @@ export interface Attivita {
   allenamento: boolean
   allenatore_id: string | null
   torneo_nome: string | null
+  // Valorizzato solo per le partite di un torneo tra amici: il risultato di
+  // queste va inserito con le squadre già fisse del torneo (vedi
+  // RisultatoIncontroAmici in AttivitaConcluse.tsx), non con la costruzione
+  // libera delle squadre usata per le partite semplici.
+  torneo_amici_id: string | null
+  torneo_amici_incontro_id: string | null
 }
 
 export interface RigaAttivitaBase {
@@ -44,6 +50,8 @@ export function righeInMappa<T extends RigaAttivitaBase>(rows: T[]): Map<string,
         allenamento: false,
         allenatore_id: null,
         torneo_nome: null,
+        torneo_amici_id: null,
+        torneo_amici_incontro_id: null,
       })
     }
     // socio_id e nome_manuale entrambi nulli: artefatto del LEFT JOIN quando
@@ -68,16 +76,18 @@ export async function arricchisciTipoAttivita(map: Map<string, Attivita>): Promi
 
   const { data: tipi } = await supabase
     .from('prenotazioni')
-    .select('id, allenamento, allenatore_id, incontro_id, torneo_id')
+    .select('id, allenamento, allenatore_id, incontro_id, torneo_id, torneo_amici_incontro_id')
     .in('id', ids)
   const incontroIds: (number | string)[] = []
   const torneoIds: string[] = []
+  const incontroAmiciIds: string[] = []
   const pren2 = (tipi ?? []) as Array<{
     id: number | string
     allenamento: boolean | null
     allenatore_id: string | null
     incontro_id: number | string | null
     torneo_id: string | null
+    torneo_amici_incontro_id: string | null
   }>
   for (const t of pren2) {
     const a = map.get(String(t.id))
@@ -85,7 +95,8 @@ export async function arricchisciTipoAttivita(map: Map<string, Attivita>): Promi
       a.allenamento = !!t.allenamento
       a.allenatore_id = t.allenatore_id ?? null
     }
-    if (t.incontro_id) incontroIds.push(t.incontro_id)
+    if (t.torneo_amici_incontro_id) incontroAmiciIds.push(t.torneo_amici_incontro_id)
+    else if (t.incontro_id) incontroIds.push(t.incontro_id)
     else if (t.torneo_id) torneoIds.push(t.torneo_id)
   }
 
@@ -114,6 +125,32 @@ export async function arricchisciTipoAttivita(map: Map<string, Attivita>): Promi
       if (t.torneo_id && !t.incontro_id) {
         const a = map.get(String(t.id))
         if (a) a.torneo_nome = nomePerTorneo.get(String(t.torneo_id)) ?? null
+      }
+    }
+  }
+
+  if (incontroAmiciIds.length) {
+    const { data: incA } = await supabase
+      .from('tornei_amici_incontri')
+      .select('id, torneo_amici_id, torneo:tornei_amici(nome)')
+      .in('id', incontroAmiciIds)
+    const perIncontroAmici = new Map<string, { torneoId: string; nome: string | null }>()
+    for (const r of (incA ?? []) as unknown as Array<{
+      id: string
+      torneo_amici_id: string
+      torneo: { nome: string } | null
+    }>) {
+      perIncontroAmici.set(r.id, { torneoId: r.torneo_amici_id, nome: r.torneo?.nome ?? null })
+    }
+    for (const t of pren2) {
+      if (t.torneo_amici_incontro_id) {
+        const a = map.get(String(t.id))
+        const info = perIncontroAmici.get(t.torneo_amici_incontro_id)
+        if (a && info) {
+          a.torneo_nome = info.nome
+          a.torneo_amici_id = info.torneoId
+          a.torneo_amici_incontro_id = t.torneo_amici_incontro_id
+        }
       }
     }
   }

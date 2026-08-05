@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
-import { incontroDisputato } from '@/features/tornei/calendario'
+import { formattaSet, incontroDisputato } from '@/features/tornei/calendario'
 import type { Incontro } from '@/features/tornei/tipi'
 import { generaCalendarioIniziale } from './generaIncontri'
 import { prossimeRigheEliminazioneAmici } from './eliminazioneAmici'
@@ -366,12 +366,22 @@ export function useInserisciRisultatoAmici(torneo: TorneoAmici, incontriAttuali:
       puntiOspite,
       setPunteggi,
       giocatori,
+      prenotazioneId,
+      nomiCasa,
+      nomiOspite,
     }: {
       incontro: IncontroAmici
       puntiCasa: number
       puntiOspite: number
       setPunteggi?: SetPunteggioAmici[]
       giocatori: string[]
+      // Quando l'incontro è collegato a una prenotazione vera, questi tre
+      // specchiano lo stesso risultato su di essa (RPC già usata da
+      // Attività > Partite concluse) — così le due schermate restano sempre
+      // coerenti qualunque sia quella usata per inserire il risultato.
+      prenotazioneId?: string
+      nomiCasa?: string[]
+      nomiOspite?: string[]
     }) => {
       const { data: userData } = await supabase.auth.getUser()
       const { error } = await supabase
@@ -406,6 +416,26 @@ export function useInserisciRisultatoAmici(torneo: TorneoAmici, incontriAttuali:
         }
       }
 
+      // Specchia il risultato sulla prenotazione (best-effort: se fallisce —
+      // es. un creatore che inserisce il risultato di una partita a cui non
+      // ha giocato, quindi non elencato tra i partecipanti della
+      // prenotazione — il risultato del torneo resta comunque salvato).
+      if (prenotazioneId && nomiCasa && nomiOspite) {
+        const testo = setPunteggi?.length
+          ? `${nomiCasa.join('/')} ${puntiCasa}-${puntiOspite} ${nomiOspite.join('/')} (${formattaSet(setPunteggi)})`
+          : `${nomiCasa.join('/')} ${puntiCasa}-${puntiOspite} ${nomiOspite.join('/')}`
+        try {
+          const { error: errSpecchio } = await supabase.rpc('imposta_risultato_prenotazione', {
+            p_prenotazione_id: prenotazioneId,
+            p_risultato: testo,
+            p_dettaglio: { squadraCasa: nomiCasa, squadraOspite: nomiOspite, puntiCasa, puntiOspite, set: setPunteggi ?? null },
+          })
+          if (errSpecchio) console.error('Specchio risultato prenotazione:', errSpecchio)
+        } catch (errSpecchio) {
+          console.error('Specchio risultato prenotazione:', errSpecchio)
+        }
+      }
+
       for (const socioId of giocatori) {
         invia({
           socio_id: socioId,
@@ -415,7 +445,11 @@ export function useInserisciRisultatoAmici(torneo: TorneoAmici, incontriAttuali:
         })
       }
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['tornei_amici_dettaglio', torneo.id] }) },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['tornei_amici_dettaglio', torneo.id] })
+      qc.invalidateQueries({ queryKey: ['partite-concluse'] })
+      qc.invalidateQueries({ queryKey: ['storico-partite'] })
+    },
   })
 }
 

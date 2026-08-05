@@ -7,12 +7,15 @@ import { useSociEtichette } from '@/features/prenotazioni/datiAmichevoli'
 import { oraLocale } from '@/features/prenotazioni/orari'
 import { SportIcona } from '@/components/IconeSport'
 import { TipoAttivitaIcona } from '@/components/IconeAttivita'
-import { formattaSet, setVinti } from '@/features/tornei/calendario'
+import { formattaSet, incontroDisputato, setVinti } from '@/features/tornei/calendario'
 import type { SetPunteggio } from '@/features/tornei/tipi'
 import CardPartita from './CardPartita'
 import { useImpostaRisultato, type DettaglioRisultato } from './datiRisultato'
 import { arricchisciTipoAttivita, etichettaGiocatore, righeInMappa, type Attivita, type RigaAttivitaBase } from './attivitaComune'
 import type { Sport } from '@/features/prenotazioni/tipi'
+import { useDettaglioTorneoAmici } from '@/features/torneiAmici/useTorneiAmici'
+import { RisultatoForm } from '@/features/torneiAmici/DettaglioTorneoAmici'
+import { nomeSquadra, nomiGiocatoriSquadra, partitaConclusa } from '@/features/torneiAmici/squadreAmici'
 
 const SPORT_LABEL: Record<string, string> = { padel: 'Padel', calcio: 'Calcio' }
 const GIORNI_FINESTRA = 7
@@ -100,7 +103,13 @@ export default function AttivitaConcluse({ sport }: { sport?: Sport } = {}) {
         {visibili.map((m) => {
           const mia = !!profilo && m.prenotante_id === profilo.id
           const gioco = m.parti.some((p) => p.socio_id === profilo?.id)
-          const tipo = m.allenamento ? 'allenamento' : m.torneo_nome ? 'torneo' : 'partita'
+          const tipo = m.allenamento
+            ? 'allenamento'
+            : m.torneo_amici_incontro_id
+              ? 'torneo_amici'
+              : m.torneo_nome
+                ? 'torneo'
+                : 'partita'
           const puoInserire = tipo === 'partita' && (mia || gioco)
 
           // Risultato già salvato: un unico cartellino "da sito sportivo"
@@ -146,7 +155,7 @@ export default function AttivitaConcluse({ sport }: { sport?: Sport } = {}) {
                   <TipoAttivitaIcona tipo={tipo} titolo={m.torneo_nome ?? undefined} />
                 )}
               </div>
-              {!(tipo === 'partita' && (puoInserire || m.risultato)) && m.parti.length > 0 && (
+              {!(tipo === 'partita' && (puoInserire || m.risultato)) && tipo !== 'torneo_amici' && m.parti.length > 0 && (
                 <div className="att-parti">
                   {m.parti.map((r, i) => (
                     <span key={r.socio_id ?? `ospite-${i}`}>
@@ -169,6 +178,13 @@ export default function AttivitaConcluse({ sport }: { sport?: Sport } = {}) {
                   partecipanti={m.parti
                   .filter((p): p is typeof p & { socio_id: string } => !!p.socio_id)
                   .map((p) => ({ socioId: p.socio_id, nome: etichettaGiocatore(p, label) }))}
+                />
+              )}
+              {tipo === 'torneo_amici' && m.torneo_amici_id && m.torneo_amici_incontro_id && (
+                <RisultatoIncontroAmici
+                  torneoAmiciId={m.torneo_amici_id}
+                  incontroAmiciId={m.torneo_amici_incontro_id}
+                  profiloId={profilo?.id}
                 />
               )}
             </div>
@@ -520,6 +536,105 @@ function RisultatoPartita({
           ‹ Squadre
         </button>
       </div>
+    </div>
+  )
+}
+
+// Partita di un torneo tra amici: a differenza di RisultatoPartita (squadre
+// libere, costruite lì per lì) qui le squadre sono già quelle fisse del
+// torneo — niente passo di formazione squadre, si inserisce solo il
+// punteggio, riusando lo stesso RisultatoForm della schermata del torneo
+// (stesso identico scrittore, tornei_amici_incontri, con specchio su
+// questa prenotazione): qualunque delle due schermate venga usata, il
+// risultato è sempre lo stesso perché è la stessa identica scrittura.
+function RisultatoIncontroAmici({
+  torneoAmiciId,
+  incontroAmiciId,
+  profiloId,
+}: {
+  torneoAmiciId: string
+  incontroAmiciId: string
+  profiloId: string | undefined
+}) {
+  const d = useDettaglioTorneoAmici(torneoAmiciId)
+  const [inserendo, setInserendo] = useState(false)
+
+  if (d.caricamento || !d.torneo) return <p className="sub">Caricamento…</p>
+
+  const torneo = d.torneo
+  const incontri = d.incontri ?? []
+  const incontro = incontri.find((m) => m.id === incontroAmiciId)
+  if (!incontro) return null
+
+  const partecipanti = d.partecipanti ?? []
+  const squadre = d.squadre ?? []
+  const nomiSoci = d.nomiSoci ?? new Map<string, string>()
+  const pren = (d.prenotazioni ?? []).find((p) => p.torneo_amici_incontro_id === incontroAmiciId)
+
+  const disputata = incontroDisputato(incontro)
+  const giocatori = partecipanti
+    .filter((p) => p.squadra_id === incontro.casa_id || p.squadra_id === incontro.ospite_id)
+    .map((p) => p.socio_id)
+    .filter((id): id is string => id != null)
+  const puoInserire = !!profiloId && (torneo.creatore_id === profiloId || giocatori.includes(profiloId))
+  if (!puoInserire && !disputata) return null
+
+  const nomeCasa = nomeSquadra(squadre.find((s) => s.id === incontro.casa_id), partecipanti, nomiSoci, torneo.sport, true)
+  const nomeOspite = nomeSquadra(squadre.find((s) => s.id === incontro.ospite_id), partecipanti, nomiSoci, torneo.sport, true)
+
+  // Primo inserimento: solo a partire dalla fine dell'orario prenotato.
+  // Una volta inserito, "Modifica risultato" (inserendo=true) resta sempre
+  // disponibile, senza riverificare l'orario — stessa regola della
+  // schermata del torneo.
+  if (!inserendo && puoInserire && !disputata) {
+    if (!pren || !partitaConclusa(pren)) {
+      return (
+        <p className="sub" style={{ margin: '8px 0 0' }}>
+          Il risultato si potrà inserire dopo la partita
+          {pren ? `, dalle ${oraLocale(new Date(pren.fine))}` : ''}.
+        </p>
+      )
+    }
+  }
+
+  if (inserendo || (puoInserire && !disputata)) {
+    return (
+      <RisultatoForm
+        incontro={incontro}
+        giocatori={giocatori}
+        torneo={torneo}
+        incontri={incontri}
+        prenotazioneId={pren?.id}
+        nomiCasa={nomiGiocatoriSquadra(incontro.casa_id, partecipanti, nomiSoci)}
+        nomiOspite={nomiGiocatoriSquadra(incontro.ospite_id, partecipanti, nomiSoci)}
+        onFatto={() => setInserendo(false)}
+      />
+    )
+  }
+
+  return (
+    <div className={'match' + (disputata ? ' giocata' : '')} style={{ marginTop: 8 }}>
+      <div className="match-row">
+        <div className="match-side">{nomeCasa}</div>
+        <div className="match-ris">
+          {disputata ? (
+            <>
+              {incontro.punti_casa}–{incontro.punti_ospite}
+              {incontro.set_punteggi?.length ? <span className="set-line">{formattaSet(incontro.set_punteggi)}</span> : null}
+            </>
+          ) : (
+            <span className="vs">vs</span>
+          )}
+        </div>
+        <div className="match-side">{nomeOspite}</div>
+      </div>
+      {puoInserire && disputata && (
+        <div className="flex justify-center mt-2">
+          <button type="button" className="btn btn-secondario btn-mini" onClick={() => setInserendo(true)}>
+            Modifica risultato
+          </button>
+        </div>
+      )}
     </div>
   )
 }

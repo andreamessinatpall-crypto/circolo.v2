@@ -14,7 +14,7 @@ export function useRealtimeCircolo() {
     const canale = supabase
       .channel('aggiornamenti-circolo')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'prenotazioni' }, () =>
-        inval(['prenotazioni', 'amichevoli', 'lezioni', 'attivita-programma', 'impegni_istruttore', 'riepilogo-stat', 'tornei_amici_dettaglio']),
+        inval(['prenotazioni', 'amichevoli', 'lezioni', 'attivita-programma', 'impegni_istruttore', 'riepilogo-stat', 'tornei_amici_dettaglio', 'partite-concluse', 'storico-partite']),
       )
       .on('postgres_changes', { event: '*', schema: 'public', table: 'campi' }, () =>
         inval(['campi']),
@@ -55,7 +55,7 @@ export function useRealtimeCircolo() {
         inval(['tornei_amici_dettaglio']),
       )
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tornei_amici_incontri' }, () =>
-        inval(['tornei_amici_dettaglio']),
+        inval(['tornei_amici_dettaglio', 'partite-concluse', 'storico-partite']),
       )
       .on('postgres_changes', { event: '*', schema: 'public', table: 'annunci' }, () =>
         inval(['annunci']),

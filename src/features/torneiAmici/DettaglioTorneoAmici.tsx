@@ -6,7 +6,6 @@ import { conferma } from '@/lib/dialoghi'
 import { titleCase, dataEstesa, inizialiDaEtichetta } from '@/lib/formato'
 import { oraLocale } from '@/features/prenotazioni/orari'
 import { formattaSet, incontroDisputato, setVinti } from '@/features/tornei/calendario'
-import { formatNomeAmericano } from '@/features/tornei/americano'
 import { unitaTorneo } from '@/features/tornei/gironi'
 import { nomeRoundDb, numDbRoundsAR, numTurniEliminazione } from '@/features/tornei/eliminazione'
 import { useAmici } from '@/features/profilo/amici/useAmici'
@@ -15,6 +14,7 @@ import { MedagliaPodio } from '@/components/MedagliaPodio'
 import { calcolaClassificaAmici } from './classificaAmici'
 import InvitaAltriAmiciModal from './InvitaAltriAmiciModal'
 import TabelloneAmici from './TabelloneAmici'
+import { nomeSquadra, nomiGiocatoriSquadra, partitaConclusa } from './squadreAmici'
 import { BottoneProgrammaAmici } from './ProgrammaIncontroAmici'
 import {
   useAggiungiOspiteAmici,
@@ -55,26 +55,6 @@ function IcoPartecipanti() {
       <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
     </svg>
   )
-}
-
-// abbreviato: "Cognome Iniziale." invece del nome completo — usato in
-// classifica e partite, come i tornei ufficiali (formatNomeAmericano).
-function nomeSquadra(
-  s: SquadraAmici | undefined,
-  partecipanti: PartecipanteTorneoAmici[],
-  nomiSoci: Map<string, string>,
-  sport: string,
-  abbreviato = false,
-): string {
-  if (!s) return '?'
-  if (s.nome) return s.nome
-  const membri = partecipanti
-    .filter((p) => p.squadra_id === s.id)
-    .map((p) => {
-      const nome = titleCase((p.socio_id ? nomiSoci.get(p.socio_id) : p.nome_manuale) ?? '?')
-      return abbreviato ? formatNomeAmericano(nome) : nome
-    })
-  return membri.join(' · ') || titleCase(unitaTorneo(sport, false))
 }
 
 function FormaSquadre({
@@ -312,18 +292,29 @@ type RigaSet = { casa: string; ospite: string }
 
 // Padel: risultato inserito set per set (es. 6-4, 4-6, 10-7 al terzo), con i
 // set vinti calcolati con la stessa logica dei tornei ufficiali (setVinti).
-// Calcio: un unico punteggio (gol), niente set.
-function RisultatoForm({
+// Calcio: un unico punteggio (gol), niente set. Riusato tale e quale anche in
+// Attività > Partite concluse (RisultatoIncontroAmici in AttivitaConcluse.tsx):
+// prenotazioneId/nomiCasa/nomiOspite, quando presenti, fanno sì che
+// useInserisciRisultatoAmici specchi lo stesso risultato anche sulla
+// prenotazione collegata, così le due schermate restano sempre coerenti
+// qualunque sia quella usata per inserirlo.
+export function RisultatoForm({
   incontro,
   giocatori,
   torneo,
   incontri,
+  prenotazioneId,
+  nomiCasa,
+  nomiOspite,
   onFatto,
 }: {
   incontro: IncontroAmici
   giocatori: string[]
   torneo: Parameters<typeof useInserisciRisultatoAmici>[0]
   incontri: IncontroAmici[]
+  prenotazioneId?: string
+  nomiCasa?: string[]
+  nomiOspite?: string[]
   onFatto: () => void
 }) {
   const isPadel = torneo.sport === 'padel'
@@ -355,12 +346,12 @@ function RisultatoForm({
       const setPunteggi: SetPunteggioAmici[] = sets.map((s) => ({ casa: Number(s.casa), ospite: Number(s.ospite) }))
       const { casa: setCasaVinti, ospite: setOspiteVinti } = setVinti(setPunteggi)
       inserisci.mutate(
-        { incontro, puntiCasa: setCasaVinti, puntiOspite: setOspiteVinti, setPunteggi, giocatori },
+        { incontro, puntiCasa: setCasaVinti, puntiOspite: setOspiteVinti, setPunteggi, giocatori, prenotazioneId, nomiCasa, nomiOspite },
         { onSuccess: onFatto },
       )
     } else {
       inserisci.mutate(
-        { incontro, puntiCasa: Number(casa), puntiOspite: Number(ospite), giocatori },
+        { incontro, puntiCasa: Number(casa), puntiOspite: Number(ospite), giocatori, prenotazioneId, nomiCasa, nomiOspite },
         { onSuccess: onFatto },
       )
     }
@@ -676,7 +667,16 @@ export default function DettaglioTorneoAmici({
                   </div>
 
                   {inserendoIn === m.id ? (
-                    <RisultatoForm incontro={m} giocatori={giocatoriIncontro(m)} torneo={torneo} incontri={incontri} onFatto={() => setInserendoIn(null)} />
+                    <RisultatoForm
+                      incontro={m}
+                      giocatori={giocatoriIncontro(m)}
+                      torneo={torneo}
+                      incontri={incontri}
+                      prenotazioneId={pren?.id}
+                      nomiCasa={nomiGiocatoriSquadra(m.casa_id, partecipanti, nomiSoci)}
+                      nomiOspite={nomiGiocatoriSquadra(m.ospite_id, partecipanti, nomiSoci)}
+                      onFatto={() => setInserendoIn(null)}
+                    />
                   ) : (
                     <div className="flex gap-2 flex-wrap" style={{ justifyContent: 'center', marginTop: 9 }}>
                       {!pren && !disputata && possoInserire(m) && (
@@ -687,10 +687,18 @@ export default function DettaglioTorneoAmici({
                           Annulla prenotazione
                         </button>
                       )}
-                      {possoInserire(m) && (
+                      {/* Il risultato si inserisce solo a partire dalla fine dell'orario
+                          prenotato — prima l'incontro non è ancora stato giocato. Una volta
+                          inserito, "Modifica risultato" resta sempre disponibile. */}
+                      {possoInserire(m) && (disputata || partitaConclusa(pren)) && (
                         <button type="button" className="btn btn-secondario btn-mini" onClick={() => setInserendoIn(m.id)}>
                           {disputata ? 'Modifica risultato' : 'Inserisci risultato'}
                         </button>
+                      )}
+                      {possoInserire(m) && !disputata && pren && !partitaConclusa(pren) && (
+                        <p className="sub" style={{ margin: '4px 0 0', width: '100%', textAlign: 'center' }}>
+                          Il risultato si potrà inserire dopo la partita, il {dataEstesa(pren.inizio.slice(0, 10))} dalle {oraLocale(new Date(pren.fine))}.
+                        </p>
                       )}
                     </div>
                   )}
