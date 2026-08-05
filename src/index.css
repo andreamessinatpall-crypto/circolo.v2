@@ -6777,9 +6777,16 @@
      vetro traslucido sullo stesso sfondo blu del resto del menu account
      (richiesto esplicitamente, stesso linguaggio della card di benvenuto
      e dei pulsanti). */
+  /* position:fixed invece di sticky — dentro il contenitore a schermo
+     intero (.account-schermo, anch'esso position:fixed con scroll interno)
+     sticky risultava inaffidabile su mobile e il titolo scorreva via con il
+     contenuto. fixed è lo stesso approccio già usato per il tasto "chiudi"
+     qui sotto, verificato affidabile in questo overlay. */
   .account-schermo-vista-head {
-    position: sticky;
+    position: fixed;
     top: 0;
+    left: 0;
+    right: 0;
     z-index: 2;
     display: flex;
     align-items: center;
@@ -6815,7 +6822,7 @@
   .account-schermo-vista-corpo {
     max-width: 640px;
     margin: 0 auto;
-    padding: 18px 16px 32px;
+    padding: calc(env(safe-area-inset-top, 0px) + 64px) 16px 32px;
   }
   @media (min-width: 640px) {
     .account-schermo-vista-corpo {
