@@ -7,6 +7,7 @@ import { useRealtimeCircolo } from '@/hooks/useRealtimeCircolo'
 import InstallaAppBanner from '@/components/InstallaAppBanner'
 import MenuUtente from '@/components/MenuUtente'
 import CampanellaNotifiche from '@/components/CampanellaNotifiche'
+import logoCIcon from '@/assets/logo-c-icon.png'
 import {
   IconaPrenota,
   IconaTornei,
@@ -108,8 +109,9 @@ export default function AppShell() {
     <div className="flex min-h-[100dvh] flex-col">
       {/* Barra superiore: marchio e utente */}
       <header className="app-header">
-        <div className="brand">
-          CIRCOLY
+        <div className="brand" aria-label="CIRCOLY">
+          <img src={logoCIcon} alt="" className="brand-c-icon" aria-hidden="true" />
+          <span aria-hidden="true">IRCOLY</span>
         </div>
 
         <div className="header-utente flex items-center gap-1.5 text-sm">

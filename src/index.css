@@ -1304,9 +1304,18 @@
     line-height: 1;
     position: relative;
     z-index: 1;
+    display: inline-flex;
+    align-items: center;
   }
   .brand small {
     display: none;
+  }
+  /* "C" della scritta sostituita dal simbolo del logo: altezza legata al
+     font-size del marchio così segue lo stesso breakpoint desktop. */
+  .brand-c-icon {
+    height: 1.05em;
+    width: auto;
+    margin-right: 0.03em;
   }
 
   /* ── Chip nome utente ─────────────────────────────────────
