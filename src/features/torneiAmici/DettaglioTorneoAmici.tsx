@@ -262,8 +262,8 @@ function FormaSquadreCalcio({
                       assegna.mutate({ partecipanteId: Number(v), squadraId: s.id })
                     }}
                   >
-                    <option value="">— Aggiungi un giocatore —</option>
-                    <option value="__ospite__">＋ Ospite (non registrato)…</option>
+                    <option value="">Aggiungi un giocatore</option>
+                    <option value="__ospite__">+ Ospite</option>
                     {liberi.map((p) => (
                       <option key={p.id} value={p.id}>
                         {titleCase(nomiSoci.get(p.socio_id!) ?? '?')}

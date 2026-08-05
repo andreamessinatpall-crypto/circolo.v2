@@ -337,7 +337,7 @@ export function SchedaPartita({
 
   const cap4 = sport === 'padel' && !pren.allenamento && lista.length >= 4
   const disabilita = amiciVuoti
-  const testoVuoto = staff ? '— Aggiungi giocatori —' : ''
+  const testoVuoto = staff ? 'Aggiungi giocatori' : ''
   // Ha amici ma li ha già aggiunti tutti a questa partita: niente da
   // proporre, si nasconde in silenzio (come a coppie complete) invece di
   // mostrare "Non hai ancora amici", che sarebbe fuorviante.
@@ -622,7 +622,7 @@ function Selettore({
         }}
       >
         <option value="">{testoVuoto}</option>
-        {onOspite && <option value="__ospite__">＋ Ospite (non registrato)…</option>}
+        {onOspite && <option value="__ospite__">+ Ospite</option>}
         {opzioni.map((o) => (
           <option key={o.id} value={o.id}>
             {o.etichetta}
