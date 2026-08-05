@@ -6,6 +6,8 @@ import { titleCase, dataEstesa, inizialiDaEtichetta } from '@/lib/formato'
 import { oraLocale } from '@/features/prenotazioni/orari'
 import { formattaSet, incontroDisputato, setVinti } from '@/features/tornei/calendario'
 import { formatNomeAmericano } from '@/features/tornei/americano'
+import { unitaTorneo } from '@/features/tornei/gironi'
+import { nomeRoundDb, numDbRoundsAR, numTurniEliminazione } from '@/features/tornei/eliminazione'
 import { useAmici } from '@/features/profilo/amici/useAmici'
 import Avatar from '@/components/Avatar'
 import { MedagliaPodio } from '@/components/MedagliaPodio'
@@ -23,7 +25,18 @@ import {
   useInvitaAltriAmiciTorneo,
   useScioglieSquadra,
 } from './useTorneiAmici'
-import type { IncontroAmici, PartecipanteTorneoAmici, SetPunteggioAmici, SquadraAmici } from './tipi'
+import type { IncontroAmici, PartecipanteTorneoAmici, SetPunteggioAmici, SquadraAmici, TorneoAmici } from './tipi'
+
+// Turno dell'incontro (solo eliminazione diretta): "Quarti di finale",
+// "Semifinali (A)", "3°/4° posto"… stessa logica/etichette dei tornei del
+// club (nomeRoundDb), così l'eliminazione si vede diversa dal girone
+// all'italiana invece di essere un'unica lista piatta indistinguibile.
+function etichettaTurnoAmici(m: IncontroAmici, torneo: TorneoAmici): string | null {
+  if (torneo.formato !== 'eliminazione' || !torneo.bracket_seed) return null
+  const tot = numTurniEliminazione(torneo.bracket_seed.length)
+  const totDb = torneo.andata_ritorno ? numDbRoundsAR(tot, torneo.finale_secca) : tot
+  return nomeRoundDb(m.round, tot, torneo.andata_ritorno, torneo.finale_secca, totDb)
+}
 
 const ETICHETTE_SPORT: Record<string, string> = { padel: 'Padel', calcio: 'Calcio' }
 const ETICHETTE_FORMATO: Record<string, string> = { girone: "Girone all'italiana", eliminazione: 'Eliminazione diretta' }
@@ -43,6 +56,7 @@ function nomeSquadra(
   s: SquadraAmici | undefined,
   partecipanti: PartecipanteTorneoAmici[],
   nomiSoci: Map<string, string>,
+  sport: string,
   abbreviato = false,
 ): string {
   if (!s) return '?'
@@ -53,22 +67,26 @@ function nomeSquadra(
       const nome = titleCase(nomiSoci.get(p.socio_id) ?? '?')
       return abbreviato ? formatNomeAmericano(nome) : nome
     })
-  return membri.join(' · ') || 'Coppia'
+  return membri.join(' · ') || titleCase(unitaTorneo(sport, false))
 }
 
 function FormaSquadre({
   torneoId,
+  sport,
   liberi,
   squadre,
   partecipanti,
   nomiSoci,
 }: {
   torneoId: string
+  sport: string
   liberi: PartecipanteTorneoAmici[]
   squadre: SquadraAmici[]
   partecipanti: PartecipanteTorneoAmici[]
   nomiSoci: Map<string, string>
 }) {
+  const unita = unitaTorneo(sport, false)
+  const unitaPlurale = unitaTorneo(sport, true)
   const [a, setA] = useState('')
   const [b, setB] = useState('')
   const forma = useFormaSquadra(torneoId)
@@ -83,15 +101,15 @@ function FormaSquadre({
     <div className="card" style={{ marginTop: '0.75rem' }}>
       <div className="club-sez-header" style={{ marginBottom: 12 }}>
         <span className="club-sez-icona"><IcoPartecipanti /></span>
-        <h3 className="club-sez-titolo">Forma le coppie</h3>
+        <h3 className="club-sez-titolo">{'Forma le ' + unitaPlurale}</h3>
       </div>
 
       {squadre.length > 0 && (
         <div className="flex flex-col gap-1.5 mb-3">
           {squadre.map((s) => (
             <div key={s.id} className="torneo-amici-squadra-riga">
-              <span>{nomeSquadra(s, partecipanti, nomiSoci)}</span>
-              <button type="button" className="icon-btn icon-btn-pericolo" title="Sciogli coppia" onClick={() => scioglie.mutate(s.id)}>
+              <span>{nomeSquadra(s, partecipanti, nomiSoci, sport)}</span>
+              <button type="button" className="icon-btn icon-btn-pericolo" title={'Sciogli ' + unita} onClick={() => scioglie.mutate(s.id)}>
                 ✕
               </button>
             </div>
@@ -126,13 +144,15 @@ function FormaSquadre({
         </div>
       ) : (
         <p className="sub">
-          {liberi.length === 0 ? 'Tutti i partecipanti sono già in coppia.' : 'Serve almeno un altro giocatore libero per formare una coppia.'}
+          {liberi.length === 0
+            ? `Tutti i partecipanti sono già in ${unita}.`
+            : `Serve almeno un altro giocatore libero per formare una ${unita}.`}
         </p>
       )}
 
       {liberi.length >= 2 && (
         <button type="button" className="btn btn-sm mt-2" onClick={handleForma} disabled={!a || !b || a === b || forma.isPending}>
-          {forma.isPending ? 'Formo…' : '+ Forma coppia'}
+          {forma.isPending ? 'Formo…' : '+ Forma ' + unita}
         </button>
       )}
       {forma.error && <p className="msg-errore mt-2">{messaggioErrore(forma.error)}</p>}
@@ -349,7 +369,7 @@ export default function DettaglioTorneoAmici({
 
       {/* ── Formazione coppie (solo creatore, solo in fase di creazione) ── */}
       {sonoCreatore && torneo.stato === 'creazione' && (
-        <FormaSquadre torneoId={torneoId} liberi={liberi} squadre={squadre} partecipanti={partecipanti} nomiSoci={nomiSoci} />
+        <FormaSquadre torneoId={torneoId} sport={torneo.sport} liberi={liberi} squadre={squadre} partecipanti={partecipanti} nomiSoci={nomiSoci} />
       )}
 
       {sonoCreatore && torneo.stato === 'creazione' && (
@@ -359,7 +379,11 @@ export default function DettaglioTorneoAmici({
           disabled={!squadreComplete || avvia.isPending}
           onClick={() => avvia.mutate({ formato: torneo.formato, squadraIds: squadre.map((s) => s.id), andataRitorno: torneo.andata_ritorno })}
         >
-          {avvia.isPending ? 'Avvio…' : squadreComplete ? '🏆 Avvia il torneo' : 'Servono almeno 2 coppie, tutti in coppia'}
+          {avvia.isPending
+            ? 'Avvio…'
+            : squadreComplete
+              ? '🏆 Avvia il torneo'
+              : `Servono almeno 2 ${unitaTorneo(torneo.sport, true)}, tutti in ${unitaTorneo(torneo.sport, false)}`}
         </button>
       )}
 
@@ -371,14 +395,14 @@ export default function DettaglioTorneoAmici({
               <div className="podio-corona">🏆</div>
               <div className="podio-eyebrow">Vincitore del torneo</div>
               <div className="podio-vincitore">
-                {nomeSquadra(squadre.find((s) => s.id === classifica[0].id), partecipanti, nomiSoci, true)}
+                {nomeSquadra(squadre.find((s) => s.id === classifica[0].id), partecipanti, nomiSoci, torneo.sport, true)}
               </div>
               {classifica.length > 1 && (
                 <div className="podio-lista">
                   {classifica.slice(0, 3).map((r, i) => (
                     <div key={r.id} className="podio-riga">
                       <span className="podio-medaglia">{['🥇', '🥈', '🥉'][i]}</span>
-                      <span className="podio-nome">{nomeSquadra(squadre.find((s) => s.id === r.id), partecipanti, nomiSoci, true)}</span>
+                      <span className="podio-nome">{nomeSquadra(squadre.find((s) => s.id === r.id), partecipanti, nomiSoci, torneo.sport, true)}</span>
                       <span className="podio-pti">{r.pti} pti</span>
                     </div>
                   ))}
@@ -393,8 +417,8 @@ export default function DettaglioTorneoAmici({
                 <thead>
                   <tr>
                     {(torneo.sport === 'calcio'
-                      ? ['#', 'Coppia', 'G', 'V', 'N', 'P', 'DR', 'Pti']
-                      : ['#', 'Coppia', 'G', 'V', 'P', 'DS', 'Pti']
+                      ? ['#', titleCase(unitaTorneo(torneo.sport, false)), 'G', 'V', 'N', 'P', 'DR', 'Pti']
+                      : ['#', titleCase(unitaTorneo(torneo.sport, false)), 'G', 'V', 'P', 'DS', 'Pti']
                     ).map((c) => <th key={c}>{c}</th>)}
                   </tr>
                 </thead>
@@ -408,7 +432,7 @@ export default function DettaglioTorneoAmici({
                     return (
                       <tr key={r.id}>
                         <td>{i < 3 ? <MedagliaPodio pos={(i + 1) as 1 | 2 | 3} /> : <span className="cl-rank">{i + 1}</span>}</td>
-                        <td className="nome-cl">{nomeSquadra(squadre.find((s) => s.id === r.id), partecipanti, nomiSoci, true)}</td>
+                        <td className="nome-cl">{nomeSquadra(squadre.find((s) => s.id === r.id), partecipanti, nomiSoci, torneo.sport, true)}</td>
                         {celle.map((val, idx) => (
                           <td key={idx} className={idx === celle.length - 1 ? 'pti' : undefined}>{val}</td>
                         ))}
@@ -422,13 +446,30 @@ export default function DettaglioTorneoAmici({
 
           <Sezione titolo="Partite">
           <div className="mb-3">
-            {incontri.map((m) => {
+            {(() => {
+              // Eliminazione diretta: ordinate per turno (e raggruppate con
+              // un'intestazione tipo "Quarti di finale"/"Semifinali"/"Finale"),
+              // così si vede subito che è un tabellone e non un girone —
+              // stessa distinzione visiva dei tornei del club. Il girone
+              // all'italiana resta invece nell'ordine già restituito, senza
+              // intestazioni di turno.
+              const inOrdine =
+                torneo.formato === 'eliminazione' && torneo.bracket_seed
+                  ? [...incontri].sort((a, b) => a.round - b.round || Number(a.girone || 0) - Number(b.girone || 0))
+                  : incontri
+              let ultimaEtichetta: string | null = null
+              return inOrdine.map((m) => {
               const pren = prenotazioniByIncontro.get(m.id)
               const disputata = incontroDisputato(m)
+              const etichettaTurno = etichettaTurnoAmici(m, torneo)
+              const cambioTurno = etichettaTurno !== null && etichettaTurno !== ultimaEtichetta
+              ultimaEtichetta = etichettaTurno
               return (
-                <div key={m.id} className={'match' + (disputata ? ' giocata' : '')}>
+                <div key={m.id}>
+                  {cambioTurno && <div className="eyebrow" style={{ marginTop: 14 }}>{etichettaTurno}</div>}
+                <div className={'match' + (disputata ? ' giocata' : '')}>
                   <div className="match-row">
-                    <div className="match-side">{nomeSquadra(squadre.find((s) => s.id === m.casa_id), partecipanti, nomiSoci, true)}</div>
+                    <div className="match-side">{nomeSquadra(squadre.find((s) => s.id === m.casa_id), partecipanti, nomiSoci, torneo.sport, true)}</div>
                     <div className="match-ris">
                       {disputata ? (
                         <>
@@ -439,7 +480,7 @@ export default function DettaglioTorneoAmici({
                         <span className="vs">vs</span>
                       )}
                     </div>
-                    <div className="match-side">{nomeSquadra(squadre.find((s) => s.id === m.ospite_id), partecipanti, nomiSoci, true)}</div>
+                    <div className="match-side">{nomeSquadra(squadre.find((s) => s.id === m.ospite_id), partecipanti, nomiSoci, torneo.sport, true)}</div>
                   </div>
 
                   <div className="match-meta">
@@ -472,8 +513,10 @@ export default function DettaglioTorneoAmici({
                     </div>
                   )}
                 </div>
+                </div>
               )
-            })}
+            })
+            })()}
           </div>
           </Sezione>
         </>
