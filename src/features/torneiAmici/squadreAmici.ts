@@ -39,6 +39,9 @@ export function nomeSquadra(
 // serve per lo specchio del risultato su prenotazioni.risultato_dettaglio,
 // che vuole un array di nomi come squadraCasa/squadraOspite (stessa forma di
 // RisultatoPartita in AttivitaConcluse.tsx), non un'unica etichetta.
+// Abbreviato "Cognome I." come il resto della vista del torneo (classifica,
+// podio, calendario), così il risultato salvato non cambia formato rispetto
+// a come si vedeva la partita mentre era in corso.
 export function nomiGiocatoriSquadra(
   squadraId: string,
   partecipanti: PartecipanteTorneoAmici[],
@@ -46,5 +49,5 @@ export function nomiGiocatoriSquadra(
 ): string[] {
   return partecipanti
     .filter((p) => p.squadra_id === squadraId)
-    .map((p) => titleCase((p.socio_id ? nomiSoci.get(p.socio_id) : p.nome_manuale) ?? '?'))
+    .map((p) => formatNomeAmericano(titleCase((p.socio_id ? nomiSoci.get(p.socio_id) : p.nome_manuale) ?? '?')))
 }

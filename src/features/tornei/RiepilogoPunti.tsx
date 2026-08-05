@@ -11,7 +11,7 @@ import {
   squadreDelGirone,
 } from './gironi'
 import { numTurniEliminazione, vincitoreEliminazione } from './eliminazione'
-import { americanoDisputata, calcolaClassificaAmericano } from './americano'
+import { americanoDisputata, calcolaClassificaAmericano, formatNomeAmericano } from './americano'
 import type { AmericanoPartita, Componente, Incontro, Squadra, Torneo } from './tipi'
 
 export default function RiepilogoPunti({
@@ -125,7 +125,7 @@ export default function RiepilogoPunti({
             <tbody>
               {righe.map((r) => (
                 <tr key={r.socioId}>
-                  <td className="nome-cl">{r.nome}</td>
+                  <td className="nome-cl">{formatNomeAmericano(r.nome)}</td>
                   <td>{r.iscr}</td>
                   <td>
                     {r.pos
@@ -212,7 +212,7 @@ export default function RiepilogoPunti({
           <tbody>
             {righe.map((r) => (
               <tr key={r.socioId}>
-                <td className="nome-cl">{r.nome}</td>
+                <td className="nome-cl">{formatNomeAmericano(r.nome)}</td>
                 <td>{r.iscr}</td>
                 <td>{r.puntiPartite}</td>
                 <td>{r.puntiTorneo}</td>
