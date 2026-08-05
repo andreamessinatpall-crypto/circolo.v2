@@ -111,8 +111,13 @@ export default function AppShell() {
     (p) => pathname === p || pathname.startsWith(p + '/'),
   )
 
+  // dvh, non svh: "svh" riserva sempre lo spazio per una barra degli
+  // strumenti del browser che potrebbe comparire scrollando — ma nella PWA
+  // installata (standalone, "Aggiungi a Home") quella barra non esiste mai,
+  // quindi con svh restava una striscia vuota in fondo allo schermo. "dvh"
+  // si adatta invece all'altezza realmente disponibile in ogni contesto.
   return (
-    <div className="flex h-[100svh] flex-col sm:h-auto sm:min-h-[100svh]">
+    <div className="flex h-[100dvh] flex-col sm:h-auto sm:min-h-[100dvh]">
       {/* Barra superiore: marchio e utente */}
       <header className="app-header">
         <div className="brand">
@@ -171,7 +176,7 @@ export default function AppShell() {
           di sempre (pagina intera che scorre, subnav sticky sotto l'header).
           min-h-0 è indispensabile: senza, un flex item di default non si
           restringe sotto la sua altezza di contenuto, quindi continuerebbe
-          a "spingere" il contenitore radice oltre i 100svh esattamente come
+          a "spingere" il contenitore radice oltre i 100dvh esattamente come
           se non ci fosse overflow-y-auto — niente overflow:hidden sul
           contenitore radice apposta: su iOS un elemento fixed (.app-subnav)
           dentro un antenato con overflow:hidden può essere posizionato in
