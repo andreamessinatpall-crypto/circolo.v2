@@ -225,13 +225,96 @@ export function useFormaSquadra(torneoId: string) {
   })
 }
 
-// Scioglie una coppia già formata (torna a partecipanti liberi).
+// Scioglie una squadra già formata: i membri registrati tornano liberi
+// (riassegnabili), gli ospiti (nessun socio_id) esistono solo dentro una
+// squadra e vengono quindi rimossi del tutto insieme ad essa.
 export function useScioglieSquadra(torneoId: string) {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async (squadraId: string) => {
+      await supabase.from('tornei_amici_partecipanti').delete().eq('squadra_id', squadraId).is('socio_id', null)
       await supabase.from('tornei_amici_partecipanti').update({ squadra_id: null }).eq('squadra_id', squadraId)
       const { error } = await supabase.from('tornei_amici_squadre').delete().eq('id', squadraId)
+      if (error) throw error
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['tornei_amici_dettaglio', torneoId] }) },
+  })
+}
+
+// ── Squadre di calcio a formazione libera (nessun limite di giocatori) ─────
+//
+// A differenza delle coppie fisse del padel (useFormaSquadra, sempre 2 su 2),
+// nel calcio l'organizzatore crea squadre vuote con un nome, poi vi assegna
+// (o toglie) partecipanti già invitati uno alla volta, ed eventualmente
+// aggiunge ospiti non registrati — stessa meccanica di GestioneSquadre.tsx
+// per i tornei del club (crea/rinomina/aggiungiComp/aggiungiCompManuale/
+// rimuoviComp), qui applicata a tornei_amici_squadre/partecipanti.
+
+export function useCreaSquadraAmici(torneoId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (nome: string) => {
+      const { error } = await supabase.from('tornei_amici_squadre').insert({ torneo_amici_id: torneoId, nome })
+      if (error) throw error
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['tornei_amici_dettaglio', torneoId] }) },
+  })
+}
+
+export function useRinominaSquadraAmici(torneoId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, nome }: { id: string; nome: string }) => {
+      const { error } = await supabase.from('tornei_amici_squadre').update({ nome }).eq('id', id)
+      if (error) throw error
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['tornei_amici_dettaglio', torneoId] }) },
+  })
+}
+
+// Assegna (squadraId) o toglie (squadraId null) un partecipante già invitato
+// a una squadra — un giocatore alla volta, a differenza di useFormaSquadra
+// che ne assegna sempre esattamente due insieme.
+export function useAssegnaSquadraAmici(torneoId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ partecipanteId, squadraId }: { partecipanteId: number; squadraId: string | null }) => {
+      const { error } = await supabase
+        .from('tornei_amici_partecipanti')
+        .update({ squadra_id: squadraId })
+        .eq('id', partecipanteId)
+      if (error) throw error
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['tornei_amici_dettaglio', torneoId] }) },
+  })
+}
+
+// Aggiunge un giocatore non registrato (ospite) direttamente in una squadra:
+// niente invito da accettare, il creatore lo iscrive con solo il nome.
+export function useAggiungiOspiteAmici(torneoId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ squadraId, nome }: { squadraId: string; nome: string }) => {
+      const { error } = await supabase.from('tornei_amici_partecipanti').insert({
+        torneo_amici_id: torneoId,
+        socio_id: null,
+        nome_manuale: nome,
+        squadra_id: squadraId,
+        stato_invito: 'accettata' as const,
+      })
+      if (error) throw error
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['tornei_amici_dettaglio', torneoId] }) },
+  })
+}
+
+// Rimuove del tutto un ospite (mai un partecipante registrato: quello si
+// toglie dalla squadra con useAssegnaSquadraAmici, restando invitato al torneo).
+export function useRimuoviOspiteAmici(torneoId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (partecipanteId: number) => {
+      const { error } = await supabase.from('tornei_amici_partecipanti').delete().eq('id', partecipanteId)
       if (error) throw error
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['tornei_amici_dettaglio', torneoId] }) },

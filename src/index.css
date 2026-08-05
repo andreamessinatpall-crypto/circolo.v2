@@ -9214,6 +9214,18 @@
     font-size: 0.82rem;
     color: var(--ink);
   }
+  /* Calcio: raggruppa intestazione squadra + membri + selettore "aggiungi",
+     a differenza delle coppie fisse del padel dove .torneo-amici-squadra-riga
+     basta da sola (nessuna gestione membri dopo la formazione). */
+  .torneo-amici-squadra-box {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 8px;
+  }
+  .torneo-amici-squadra-box .torneo-amici-squadra-riga {
+    margin-bottom: 6px;
+    font-weight: 700;
+  }
   .torneo-amici-check-riga {
     display: flex;
     align-items: center;

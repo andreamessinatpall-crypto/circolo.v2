@@ -21,10 +21,12 @@ export interface TorneoAmici {
 export interface PartecipanteTorneoAmici {
   id: number
   torneo_amici_id: string
-  socio_id: string
+  // null = ospite non registrato, inserito a mano dal creatore (vedi nome_manuale).
+  socio_id: string | null
   stato_invito: StatoInvitoAmici
   squadra_id: string | null
   invitato_il: string
+  nome_manuale?: string | null
 }
 
 export interface SquadraAmici {

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import ModalConferma from '@/components/ModalConferma'
 import Sezione from '@/components/Sezione'
 import { messaggioErrore } from '@/lib/errori'
+import { conferma } from '@/lib/dialoghi'
 import { titleCase, dataEstesa, inizialiDaEtichetta } from '@/lib/formato'
 import { oraLocale } from '@/features/prenotazioni/orari'
 import { formattaSet, incontroDisputato, setVinti } from '@/features/tornei/calendario'
@@ -16,14 +17,19 @@ import InvitaAltriAmiciModal from './InvitaAltriAmiciModal'
 import TabelloneAmici from './TabelloneAmici'
 import { BottoneProgrammaAmici } from './ProgrammaIncontroAmici'
 import {
+  useAggiungiOspiteAmici,
   useAnnullaPrenotazioneAmici,
+  useAssegnaSquadraAmici,
   useAvviaTorneoAmici,
   useCambiaStatoTorneoAmici,
+  useCreaSquadraAmici,
   useDettaglioTorneoAmici,
   useEliminaTorneoAmici,
   useFormaSquadra,
   useInserisciRisultatoAmici,
   useInvitaAltriAmiciTorneo,
+  useRimuoviOspiteAmici,
+  useRinominaSquadraAmici,
   useScioglieSquadra,
 } from './useTorneiAmici'
 import type { IncontroAmici, PartecipanteTorneoAmici, SetPunteggioAmici, SquadraAmici, TorneoAmici } from './tipi'
@@ -65,7 +71,7 @@ function nomeSquadra(
   const membri = partecipanti
     .filter((p) => p.squadra_id === s.id)
     .map((p) => {
-      const nome = titleCase(nomiSoci.get(p.socio_id) ?? '?')
+      const nome = titleCase((p.socio_id ? nomiSoci.get(p.socio_id) : p.nome_manuale) ?? '?')
       return abbreviato ? formatNomeAmericano(nome) : nome
     })
   return membri.join(' · ') || titleCase(unitaTorneo(sport, false))
@@ -126,7 +132,7 @@ function FormaSquadre({
               <option value="">Scegli…</option>
               {liberi.map((p) => (
                 <option key={p.id} value={p.id} disabled={String(p.id) === b}>
-                  {titleCase(nomiSoci.get(p.socio_id) ?? '?')}
+                  {titleCase(nomiSoci.get(p.socio_id!) ?? '?')}
                 </option>
               ))}
             </select>
@@ -137,7 +143,7 @@ function FormaSquadre({
               <option value="">Scegli…</option>
               {liberi.map((p) => (
                 <option key={p.id} value={p.id} disabled={String(p.id) === a}>
-                  {titleCase(nomiSoci.get(p.socio_id) ?? '?')}
+                  {titleCase(nomiSoci.get(p.socio_id!) ?? '?')}
                 </option>
               ))}
             </select>
@@ -157,6 +163,147 @@ function FormaSquadre({
         </button>
       )}
       {forma.error && <p className="msg-errore mt-2">{messaggioErrore(forma.error)}</p>}
+    </div>
+  )
+}
+
+// Calcio: squadre a formazione libera (nessun limite di giocatori), con nome
+// scelto dal creatore e possibilità di aggiungere ospiti non registrati —
+// stessa meccanica di GestioneSquadre.tsx per i tornei del club, qui
+// applicata alle squadre del torneo tra amici. A differenza del padel
+// (FormaSquadre, sempre coppie fisse) qui non c'è un numero di giocatori
+// "giusto": il creatore decide quando le squadre sono pronte.
+function FormaSquadreCalcio({
+  torneoId,
+  liberi,
+  squadre,
+  partecipanti,
+  nomiSoci,
+}: {
+  torneoId: string
+  liberi: PartecipanteTorneoAmici[]
+  squadre: SquadraAmici[]
+  partecipanti: PartecipanteTorneoAmici[]
+  nomiSoci: Map<string, string>
+}) {
+  const crea = useCreaSquadraAmici(torneoId)
+  const rinomina = useRinominaSquadraAmici(torneoId)
+  const scioglie = useScioglieSquadra(torneoId)
+  const assegna = useAssegnaSquadraAmici(torneoId)
+  const aggiungiOspite = useAggiungiOspiteAmici(torneoId)
+  const rimuoviOspite = useRimuoviOspiteAmici(torneoId)
+
+  function handleCrea() {
+    const nome = window.prompt('Nome della nuova squadra:')
+    if (nome && nome.trim()) crea.mutate(nome.trim())
+  }
+
+  return (
+    <div className="card" style={{ marginTop: '0.75rem' }}>
+      <div className="club-sez-header" style={{ marginBottom: 12 }}>
+        <span className="club-sez-icona"><IcoPartecipanti /></span>
+        <h3 className="club-sez-titolo">Forma le squadre</h3>
+      </div>
+
+      {squadre.length > 0 && (
+        <div className="flex flex-col gap-2 mb-3">
+          {squadre.map((s) => {
+            const membri = partecipanti.filter((p) => p.squadra_id === s.id)
+            return (
+              <div key={s.id} className="torneo-amici-squadra-box">
+                <div className="torneo-amici-squadra-riga">
+                  <span>{s.nome}</span>
+                  <div className="flex gap-1.5">
+                    <button
+                      type="button"
+                      className="icon-btn"
+                      title="Rinomina"
+                      onClick={() => {
+                        const nuovo = window.prompt('Nuovo nome:', s.nome ?? '')
+                        if (nuovo == null) return
+                        const nome = nuovo.trim()
+                        if (nome && nome !== s.nome) rinomina.mutate({ id: s.id, nome })
+                      }}
+                    >
+                      ✎
+                    </button>
+                    <button
+                      type="button"
+                      className="icon-btn icon-btn-pericolo"
+                      title="Sciogli squadra"
+                      onClick={async () => {
+                        if (await conferma(`Sciogliere "${s.nome}"?`)) scioglie.mutate(s.id)
+                      }}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </div>
+
+                {membri.length === 0 ? (
+                  <p className="sub" style={{ margin: '4px 0' }}>Nessun giocatore.</p>
+                ) : (
+                  membri.map((p) => {
+                    const nome = titleCase((p.socio_id ? nomiSoci.get(p.socio_id) : p.nome_manuale) ?? '?')
+                    return (
+                      <div key={p.id} className="comp-riga">
+                        <span className="nome">
+                          {nome}
+                          {!p.socio_id && <span className="sub text-xs"> · ospite</span>}
+                        </span>
+                        <button
+                          type="button"
+                          className="border-0 bg-transparent px-1 text-xl font-bold leading-none text-red-700"
+                          title="Togli dalla squadra"
+                          onClick={() =>
+                            p.socio_id
+                              ? assegna.mutate({ partecipanteId: p.id, squadraId: null })
+                              : rimuoviOspite.mutate(p.id)
+                          }
+                        >
+                          ×
+                        </button>
+                      </div>
+                    )
+                  })
+                )}
+
+                <div className="aggiungi-part">
+                  <select
+                    value=""
+                    onChange={(e) => {
+                      const v = e.target.value
+                      if (!v) return
+                      if (v === '__ospite__') {
+                        const nome = window.prompt('Nome del giocatore non registrato:')
+                        if (nome && nome.trim()) aggiungiOspite.mutate({ squadraId: s.id, nome: nome.trim() })
+                        return
+                      }
+                      assegna.mutate({ partecipanteId: Number(v), squadraId: s.id })
+                    }}
+                  >
+                    <option value="">— Aggiungi un giocatore —</option>
+                    <option value="__ospite__">＋ Ospite (non registrato)…</option>
+                    {liberi.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {titleCase(nomiSoci.get(p.socio_id!) ?? '?')}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      <button type="button" className="btn btn-secondario btn-sm" onClick={handleCrea} disabled={crea.isPending}>
+        + Nuova squadra
+      </button>
+      {crea.error && <p className="msg-errore mt-2">{messaggioErrore(crea.error)}</p>}
+      {rinomina.error && <p className="msg-errore mt-2">{messaggioErrore(rinomina.error)}</p>}
+      {assegna.error && <p className="msg-errore mt-2">{messaggioErrore(assegna.error)}</p>}
+      {aggiungiOspite.error && <p className="msg-errore mt-2">{messaggioErrore(aggiungiOspite.error)}</p>}
     </div>
   )
 }
@@ -296,7 +443,12 @@ export default function DettaglioTorneoAmici({
 
   const accettati = partecipanti.filter((p) => p.stato_invito === 'accettata')
   const liberi = accettati.filter((p) => !p.squadra_id)
-  const squadreComplete = squadre.length >= 2 && liberi.length === 0 && accettati.length === squadre.length * 2
+  // Padel: coppie fisse, ogni accettato deve finire in una delle N squadre da 2.
+  // Calcio: squadre a formazione libera, basta che nessuna resti vuota.
+  const squadreComplete =
+    torneo.sport === 'calcio'
+      ? squadre.length >= 2 && liberi.length === 0 && squadre.every((s) => partecipanti.some((p) => p.squadra_id === s.id))
+      : squadre.length >= 2 && liberi.length === 0 && accettati.length === squadre.length * 2
   const prenotazioniByIncontro = new Map(prenotazioni.map((p) => [p.torneo_amici_incontro_id, p]))
 
   const classifica = calcolaClassificaAmici(torneo.sport, squadre, incontri)
@@ -309,7 +461,10 @@ export default function DettaglioTorneoAmici({
   for (const s of squadre) nomiSquadre[s.id] = nomeSquadra(s, partecipanti, nomiSoci, torneo.sport, true)
 
   function giocatoriIncontro(m: IncontroAmici): string[] {
-    return partecipanti.filter((p) => p.squadra_id === m.casa_id || p.squadra_id === m.ospite_id).map((p) => p.socio_id)
+    return partecipanti
+      .filter((p) => p.squadra_id === m.casa_id || p.squadra_id === m.ospite_id)
+      .map((p) => p.socio_id)
+      .filter((id): id is string => id != null)
   }
 
   function possoInserire(m: IncontroAmici): boolean {
@@ -355,12 +510,13 @@ export default function DettaglioTorneoAmici({
       <Sezione titolo={`Partecipanti (${partecipanti.length})`}>
         <div className="mb-3">
           {partecipanti.map((p) => {
-            const nome = titleCase(nomiSoci.get(p.socio_id) ?? '?')
+            const nome = titleCase((p.socio_id ? nomiSoci.get(p.socio_id) : p.nome_manuale) ?? '?')
             return (
               <div key={p.id} className="comp-riga">
                 <span className="torneo-amici-persona nome">
-                  <Avatar foto={fotoSoci.get(p.socio_id) ?? null} iniziali={inizialiDaEtichetta(nome)} titolo={nome} size={26} />
+                  <Avatar foto={p.socio_id ? fotoSoci.get(p.socio_id) ?? null : null} iniziali={inizialiDaEtichetta(nome)} titolo={nome} size={26} />
                   {nome}
+                  {!p.socio_id && <span className="sub text-xs"> · ospite</span>}
                 </span>
               </div>
             )
@@ -374,9 +530,15 @@ export default function DettaglioTorneoAmici({
         </button>
       )}
 
-      {/* ── Formazione coppie (solo creatore, solo in fase di creazione) ── */}
+      {/* ── Formazione squadre (solo creatore, solo in fase di creazione) ──
+          Padel: coppie fisse. Calcio: squadre a formazione libera, con nome
+          scelto dal creatore ed eventuali ospiti non registrati. ── */}
       {sonoCreatore && torneo.stato === 'creazione' && (
-        <FormaSquadre torneoId={torneoId} sport={torneo.sport} liberi={liberi} squadre={squadre} partecipanti={partecipanti} nomiSoci={nomiSoci} />
+        torneo.sport === 'calcio' ? (
+          <FormaSquadreCalcio torneoId={torneoId} liberi={liberi} squadre={squadre} partecipanti={partecipanti} nomiSoci={nomiSoci} />
+        ) : (
+          <FormaSquadre torneoId={torneoId} sport={torneo.sport} liberi={liberi} squadre={squadre} partecipanti={partecipanti} nomiSoci={nomiSoci} />
+        )
       )}
 
       {sonoCreatore && torneo.stato === 'creazione' && (
@@ -390,7 +552,9 @@ export default function DettaglioTorneoAmici({
             ? 'Avvio…'
             : squadreComplete
               ? '🏆 Avvia il torneo'
-              : `Servono almeno 2 ${unitaTorneo(torneo.sport, true)}, tutti in ${unitaTorneo(torneo.sport, false)}`}
+              : torneo.sport === 'calcio'
+                ? 'Servono almeno 2 squadre, nessuna vuota e nessun invitato senza squadra'
+                : `Servono almeno 2 ${unitaTorneo(torneo.sport, true)}, tutti in ${unitaTorneo(torneo.sport, false)}`}
         </button>
       )}
 
