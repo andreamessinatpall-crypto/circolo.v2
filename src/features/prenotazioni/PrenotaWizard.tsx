@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import { useLocation } from 'react-router-dom'
 import { useAuth } from '@/auth/useAuth'
 import { useBloccaScrollBody } from '@/hooks/useBloccaScrollBody'
-import { useMeteo } from '@/hooks/useMeteo'
+import { useMeteo, type PrevisioneGiorno } from '@/hooks/useMeteo'
 import { IconaMeteo } from '@/components/IconeMeteo'
 import { SportIcona } from '@/components/IconeSport'
 import { messaggioErrore } from '@/lib/errori'
@@ -58,6 +58,90 @@ function PrenotazioneConfermataModal({ dettagli, onChiudi }: { dettagli: Dettagl
             Fatto
           </button>
         </div>
+      </div>
+    </div>,
+    document.body,
+  )
+}
+
+// Scheda che si apre al click su un orario libero: elenco dei campi
+// disponibili a quell'ora (selezionabili) e bottone di conferma. Sostituisce
+// le due sezioni inline che comparivano sotto la griglia orari, per non
+// costringere a scorrere fino in fondo alla pagina su mobile.
+function SceltaCampoModal({
+  orarioSel,
+  campoSel,
+  onSelezionaCampo,
+  meteo,
+  giorno,
+  onConferma,
+  onChiudi,
+  inCorso,
+}: {
+  orarioSel: OrarioDisponibile
+  campoSel: Campo | null
+  onSelezionaCampo: (c: Campo) => void
+  meteo: Map<string, PrevisioneGiorno> | undefined
+  giorno: string
+  onConferma: () => void
+  onChiudi: () => void
+  inCorso: boolean
+}) {
+  useBloccaScrollBody()
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onChiudi() }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [onChiudi])
+
+  const scelta = campoSel ? orarioSel.campi.find((c) => c.campo.id === campoSel.id) : null
+
+  return createPortal(
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 p-4" onClick={onChiudi}>
+      <div className="card w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
+        <div className="mb-3 flex items-start justify-between gap-3">
+          <div>
+            <p className="eyebrow" style={{ marginTop: 0 }}>Prenota · {orarioSel.label}</p>
+            <h2 className="text-lg">Scegli il campo</h2>
+          </div>
+          <button type="button" className="questionario-chiudi" onClick={onChiudi} aria-label="Chiudi">
+            ✕
+          </button>
+        </div>
+
+        <div className="flex flex-col gap-2.5">
+          {orarioSel.campi.map(({ campo, inizio, fine }) => {
+            const previsione = campo.outdoor ? meteo?.get(giorno) : undefined
+            return (
+              <button
+                key={campo.id}
+                type="button"
+                className={'campo-scelta' + (campoSel?.id === campo.id ? ' sel' : '')}
+                onClick={() => onSelezionaCampo(campo)}
+              >
+                <span className="campo-scelta-nome">{campo.nome}</span>
+                <span className="campo-scelta-orario">
+                  {oraLocale(inizio)}–{oraLocale(fine)}
+                </span>
+                {previsione && (
+                  <span className="meteo-badge" title={`Previsione: ${Math.round(previsione.tempMax)}°`}>
+                    <IconaMeteo codice={previsione.weathercode} size={16} />
+                    {Math.round(previsione.tempMax)}°
+                  </span>
+                )}
+              </button>
+            )
+          })}
+        </div>
+
+        <button
+          type="button"
+          className="btn btn-block mt-4"
+          disabled={!scelta || inCorso}
+          onClick={onConferma}
+        >
+          {inCorso ? 'Prenotazione in corso…' : 'Prenota il campo'}
+        </button>
       </div>
     </div>,
     document.body,
@@ -147,6 +231,20 @@ export default function PrenotaWizard({ sportOptions }: { sportOptions: Sport[] 
 
   const orarioSel = orari.find((o) => o.chiave === oraSel) ?? null
 
+  // Se a quell'ora c'è un solo campo disponibile, lo preselezioniamo: la
+  // scheda mostra comunque il campo (e resta possibile cambiare idea se in
+  // futuro ce ne fosse più di uno), ma un tocco in meno per confermare.
+  useEffect(() => {
+    if (orarioSel && orarioSel.campi.length === 1) {
+      setCampoSel(orarioSel.campi[0].campo)
+    }
+  }, [orarioSel])
+
+  function chiudiSceltaCampo() {
+    setOraSelRaw(null)
+    setCampoSel(null)
+  }
+
   function conferma() {
     if (!campoSel || !orarioSel) return
     const scelta = orarioSel.campi.find((c) => c.campo.id === campoSel.id)
@@ -230,57 +328,16 @@ export default function PrenotaWizard({ sportOptions }: { sportOptions: Sport[] 
       )}
 
       {orarioSel && (
-        <>
-          <div className="eyebrow">Campo disponibile · {orarioSel.label}</div>
-          <div className="flex flex-col gap-2.5">
-            {orarioSel.campi.map(({ campo, inizio, fine }) => {
-              const previsione = campo.outdoor ? meteoQuery.data?.get(giorno) : undefined
-              return (
-                <button
-                  key={campo.id}
-                  type="button"
-                  className={'campo-scelta' + (campoSel?.id === campo.id ? ' sel' : '')}
-                  onClick={() => setCampoSel(campo)}
-                >
-                  <span className="campo-scelta-nome">{campo.nome}</span>
-                  <span className="campo-scelta-orario">
-                    {oraLocale(inizio)}–{oraLocale(fine)}
-                  </span>
-                  {previsione && (
-                    <span className="meteo-badge" title={`Previsione: ${Math.round(previsione.tempMax)}°`}>
-                      <IconaMeteo codice={previsione.weathercode} size={16} />
-                      {Math.round(previsione.tempMax)}°
-                    </span>
-                  )}
-                </button>
-              )
-            })}
-          </div>
-        </>
-      )}
-
-      {campoSel && orarioSel && (
-        <div className="card mt-4">
-          {(() => {
-            const scelta = orarioSel.campi.find((c) => c.campo.id === campoSel.id)
-            if (!scelta) return null
-            return (
-              <p className="sub mb-3">
-                {scelta.campo.nome} ·{' '}
-                {scelta.inizio.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' })}
-                {' '}· {oraLocale(scelta.inizio)}–{oraLocale(scelta.fine)}
-              </p>
-            )
-          })()}
-          <button
-            type="button"
-            className="btn btn-block"
-            disabled={prenota.isPending}
-            onClick={conferma}
-          >
-            Prenota il campo
-          </button>
-        </div>
+        <SceltaCampoModal
+          orarioSel={orarioSel}
+          campoSel={campoSel}
+          onSelezionaCampo={setCampoSel}
+          meteo={meteoQuery.data}
+          giorno={giorno}
+          onConferma={conferma}
+          onChiudi={chiudiSceltaCampo}
+          inCorso={prenota.isPending}
+        />
       )}
 
       {ultimaConferma && (

@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import type { ComponentType } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '@/auth/useAuth'
@@ -57,14 +57,21 @@ export default function AppShell() {
   const { profilo } = useAuth()
   const { pathname } = useLocation()
   useRealtimeCircolo()
+  const contenutoRef = useRef<HTMLDivElement>(null)
 
   // Senza questo reset lo scroll residuo della pagina precedente (es. login
   // con tastiera aperta) resta e l'header sticky "in alto" parte già scrollato.
   // Su mobile la tastiera si chiude con un attimo di ritardo: il primo
   // scrollTo può arrivare troppo presto, quindi riproviamo anche quando il
   // visual viewport finisce di ridimensionarsi (fine chiusura tastiera).
+  // Sotto i 640px lo scroll vero è sul contenitore interno (vedi sotto, non
+  // più sul body), quindi resettiamo entrambi: quello attivo risponde,
+  // l'altro è un no-op innocuo.
   useEffect(() => {
-    const reset = () => window.scrollTo(0, 0)
+    const reset = () => {
+      window.scrollTo(0, 0)
+      if (contenutoRef.current) contenutoRef.current.scrollTop = 0
+    }
     reset()
     // Su iOS un rimbalzo elastico (overscroll) in corso sulla pagina precedente
     // può "restare congelato" a metà quando il DOM cambia: un solo scrollTo
@@ -105,7 +112,7 @@ export default function AppShell() {
   )
 
   return (
-    <div className="flex min-h-[100svh] flex-col">
+    <div className="flex h-[100svh] flex-col overflow-hidden sm:h-auto sm:min-h-[100svh] sm:overflow-visible">
       {/* Barra superiore: marchio e utente */}
       <header className="app-header">
         <div className="brand">
@@ -156,7 +163,19 @@ export default function AppShell() {
           (non su .main sotto, che è centrato con max-w-[900px]: la tinta
           si vedrebbe solo nella colonna centrale, grigio ai lati su schermi
           larghi). */}
-      <div className={'flex flex-1 flex-col' + (sfondoArcobaleno ? ' pagina-arcobaleno' : '')}>
+      {/* Sotto i 640px lo scroll vero è qui (non più sul body): su iOS un
+          documento che scorre per intero fa "ballare" gli elementi fixed
+          (come .app-subnav in fondo) durante il rimbalzo elastico — isolando
+          lo scroll in questo contenitore, header e subnav restano fuori dal
+          flusso e non si spostano mai. Da 640px in su torna il comportamento
+          di sempre (pagina intera che scorre, subnav sticky sotto l'header). */}
+      <div
+        ref={contenutoRef}
+        className={
+          'flex flex-1 flex-col overflow-y-auto [-webkit-overflow-scrolling:touch] [overscroll-behavior-y:contain] sm:overflow-visible' +
+          (sfondoArcobaleno ? ' pagina-arcobaleno' : '')
+        }
+      >
         <InstallaAppBanner />
 
         {/* Contenuto. pb-24 su mobile lascia spazio alla barra fissa in
