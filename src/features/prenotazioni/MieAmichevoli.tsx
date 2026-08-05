@@ -586,6 +586,10 @@ function Selettore({
   // senza voce vuota "Annulla": si chiude toccando fuori, come ogni menu.
   variante?: 'icona'
 }) {
+  // Stesso ModaleOspite usato da MenuAmici, per non tornare al vecchio
+  // window.prompt qui nella variante "select" (usata dallo staff).
+  const [modaleOspite, setModaleOspite] = useState(false)
+
   if (variante === 'icona') {
     // Niente amici da invitare: niente pulsante, un messaggio con un link
     // diretto alla sezione "Aggiungi un amico" del profilo.
@@ -608,11 +612,10 @@ function Selettore({
         onChange={(e) => {
           const v = e.target.value
           if (!v) return
-          // (Tappa 11) Voce "ospite": chiede il nome in una finestra a comparsa
-          // e aggiunge un giocatore non registrato.
+          // (Tappa 11) Voce "ospite": apre la scheda per il nome invece del
+          // vecchio window.prompt.
           if (v === '__ospite__') {
-            const nome = window.prompt('Nome dell’ospite (giocatore non registrato):')
-            if (nome && nome.trim()) onOspite?.(nome.trim())
+            setModaleOspite(true)
             return
           }
           onScegli(v)
@@ -626,6 +629,15 @@ function Selettore({
           </option>
         ))}
       </select>
+      {modaleOspite && onOspite && (
+        <ModaleOspite
+          onChiudi={() => setModaleOspite(false)}
+          onConferma={(nome) => {
+            setModaleOspite(false)
+            onOspite(nome)
+          }}
+        />
+      )}
     </div>
   )
 }
