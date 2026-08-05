@@ -39,7 +39,7 @@ export default function ResetPasswordPage() {
     <div className="auth-page flex min-h-[var(--vh-reale,100dvh)] flex-col items-center px-4 py-8">
       <div className="w-full max-w-[420px]">
         <AuthHero />
-        <div className="card auth-card form-verde">
+        <div className="card auth-card">
           <h2 className="mb-1 text-xl">Nuova password</h2>
           <p className="sub mb-4">Scegli una nuova password per il tuo account.</p>
 

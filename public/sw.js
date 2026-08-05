@@ -21,7 +21,7 @@
 // Le scritture (POST/PATCH/DELETE) non passano mai dalla cache: falliscono
 // normalmente offline, gestite dagli errori già presenti nell'app.
 
-const CACHE_STATICA = 'circolo-statica-v2'
+const CACHE_STATICA = 'circolo-statica-v4'
 const CACHE_DATI = 'circolo-dati-v1'
 const CACHE_ATTUALI = [CACHE_STATICA, CACHE_DATI]
 

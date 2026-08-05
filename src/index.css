@@ -1254,15 +1254,13 @@
   /* Barra bianca con icone/testo blu (era un gradiente blu scuro con testo
      bianco — richiesto esplicitamente il ritorno al bianco fisso, niente
      più dipendenza dal tema chiaro/scuro). Bianco vero (non var(--surface),
-     ora celeste per le schede): l'header/subnav non sono "schede" e restano
-     fissi bianchi indipendentemente da quel token. */
-  .app-header,
-  .app-subnav {
+     ora celeste per le schede): l'header non è una "scheda" e resta fisso
+     bianco indipendentemente da quel token. La subnav invece resta
+     trasparente: il bianco è sulla capsula .header-tabs, non su tutta la
+     larghezza. */
+  .app-header {
     background: #fff;
     color: var(--v700);
-  }
-
-  .app-header {
     position: sticky;
     top: 0;
     z-index: 20;
@@ -1278,27 +1276,18 @@
     padding-top: env(safe-area-inset-top, 0px);
   }
 
-  /* Su mobile (sotto 640px) la subnav è la barra di navigazione fissa in
-     fondo allo schermo, come nelle app native: più comoda da raggiungere
-     col pollice di una barra in alto. Da 640px in su torna ad essere il
-     sotto-header sticky di sempre (vedi media query sotto). */
+  /* La subnav è sempre il sotto-header sticky (stessa posizione a tutte le
+     larghezze, non solo da 640px in su): una barra fissa in fondo su iOS
+     è risultata inaffidabile (la tastiera software e altre stranezze del
+     viewport lasciavano vuoti/scatti nonostante vari tentativi di
+     correzione), quindi niente più barra fissa in fondo su mobile. */
   .app-subnav {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    position: sticky;
+    top: calc(56px + env(safe-area-inset-top, 0px));
     z-index: 19;
-    border-top: 1px solid var(--border);
-    /* La seconda ombra (offset 40px, blur 0) è un "prolungamento" pieno
-       dello stesso bianco della barra: su alcuni browser mobile la barra
-       degli strumenti del browser si ridimensiona durante lo scroll e per
-       un istante "bottom: 0" non combacia col vero bordo dello schermo,
-       lasciando intravedere lo sfondo (più visibile ora che è colorato).
-       Questo prolungamento copre quel margine invece di lasciarlo scoperto. */
-    box-shadow: 0 -2px 10px rgba(10, 47, 77, 0.08), 0 40px 0 0 var(--surface);
-    padding-bottom: env(safe-area-inset-bottom, 0px);
     display: flex;
     justify-content: center;
+    padding: 10px 16px;
   }
   .app-subnav .header-tabs {
     max-width: 900px;
@@ -1379,63 +1368,14 @@
       padding: 0 24px;
       padding-top: env(safe-area-inset-top, 0px);
     }
+    .app-subnav {
+      top: calc(62px + env(safe-area-inset-top, 0px));
+    }
     .brand {
       font-size: 1.35rem;
     }
     .header-chip-nome {
       font-size: 0.88rem;
-    }
-  }
-
-  /* Da 640px in su (tablet/desktop): la subnav diventa una capsula
-     flottante centrata, larga quanto le schede sotto (900px, come
-     .main) — non più la barra dritta a tutta larghezza con
-     sottolineatura, e non più la barra fissa in fondo del mobile
-     (su schermi larghi non c'è il vantaggio "pollice" del mobile, e
-     una barra fissa in fondo sarebbe fuori posto accanto a un mouse).
-     Selettori con ".app-subnav" davanti per battere in specificità le
-     regole base di .header-tabs/.header-tab dichiarate più sotto nel
-     file (a parità di specificità vincerebbe l'ultima dichiarata). */
-  @media (min-width: 640px) {
-    .app-subnav {
-      position: sticky;
-      top: calc(62px + env(safe-area-inset-top, 0px));
-      bottom: auto;
-      left: auto;
-      right: auto;
-      padding: 14px 20px;
-      background: transparent;
-      border-top: none;
-      box-shadow: none;
-    }
-    .app-subnav .header-tabs {
-      background: #fff;
-      border: 1px solid var(--border);
-      border-radius: 999px;
-      padding: 5px;
-      gap: 2px;
-      box-shadow: 0 6px 20px rgba(10, 47, 77, 0.12);
-    }
-    .app-subnav .header-tab {
-      flex: 1 1 0;
-      max-width: none;
-      flex-direction: row;
-      gap: 6px;
-      font-size: 0.72rem;
-      letter-spacing: 0.06em;
-      padding: 10px 16px;
-      border-radius: 999px;
-    }
-    .app-subnav .header-tab svg {
-      width: 16px;
-      height: 16px;
-    }
-    .app-subnav .header-tab:hover {
-      background: var(--v050);
-    }
-    .app-subnav .header-tab.attivo {
-      background: var(--v700);
-      color: #fff;
     }
   }
 
@@ -1452,51 +1392,51 @@
   }
 
   /* ── Tab di navigazione nel sotto-header ─────────────────── */
+  /* Capsula bianca fluttuante, stesso stile a tutte le larghezze (prima
+     era solo da 640px in su, con una barra fissa in fondo diversa sotto
+     — dismessa perché su iOS risultava inaffidabile: vedi commento su
+     .app-subnav più sopra). */
   .header-tabs {
     position: relative;
     z-index: 1;
     display: flex;
     flex-wrap: nowrap;
-    gap: 4px;
-    padding: 6px;
+    gap: 2px;
+    padding: 5px;
     overflow-x: auto;
     scrollbar-width: none;
     -webkit-overflow-scrolling: touch;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    box-shadow: 0 6px 20px rgba(10, 47, 77, 0.12);
   }
   .header-tabs::-webkit-scrollbar {
     display: none;
   }
 
-  /* Mobile: icona sopra, etichetta piccola sotto (come le app native), con
-     la scheda attiva evidenziata da una capsula piena (stesso linguaggio
-     della barra "alla Revolut" del browser, non più solo un sottile
-     bordo inferiore — richiesto esplicitamente: sennò le tab sembrano
-     sparire nel contesto). Da 640px in su torna orizzontale — vedi media
-     query più sopra. */
   .header-tab {
-    flex: 1 0 0;
-    min-width: 56px;
-    max-width: 160px;
+    flex: 1 1 0;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
     justify-content: center;
-    gap: 2px;
+    gap: 6px;
     text-align: center;
     white-space: nowrap;
     font-family: var(--font-display);
     text-transform: uppercase;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.06em;
     font-weight: 700;
-    font-size: 0.6rem;
-    padding: 8px 4px 7px;
-    border-radius: 14px;
+    font-size: 0.72rem;
+    padding: 10px 16px;
+    border-radius: 999px;
     color: var(--ink3);
     transition: background 0.15s, color 0.15s;
   }
   .header-tab svg {
-    width: 20px;
-    height: 20px;
+    width: 16px;
+    height: 16px;
   }
   .header-tab:hover {
     background: var(--v050);
@@ -1511,26 +1451,21 @@
     z-index: 1;
   }
 
-  /* Sfondo dietro il login/registrazione/reset password ("direzione
-     Olimpo": energia sportiva, non più crema da boutique). Niente scheda
-     separata: logo/campi/bottoni stanno direttamente su questo sfondo
-     (vedi .form-verde e il logo ricolorato in oro chiaro per il contrasto).
-     PROVA: blu campo da padel al posto del verde brand, su richiesta —
-     valutare se tenerlo prima di estenderlo alle altre pagine. Solo questa
-     pagina per ora, non tutta l'app (vedi memoria). */
+  /* Sfondo dietro il login/registrazione/reset password: bianco (era un
+     gradiente blu scuro "direzione Olimpo", cambiato perché il nuovo logo
+     CIRCOLY — testo blu navy, lato blu della "C" — ci si leggeva male).
+     Niente scheda separata: logo/campi/bottoni stanno direttamente su
+     questo sfondo, come i normali form chiari usati nel resto dell'app
+     (vedi .auth-card qui sotto, che toglie il box che .card porterebbe
+     di suo). */
   .auth-page {
     position: relative;
-    background:
-      radial-gradient(ellipse 90% 55% at 50% 0%, rgba(212, 165, 44, 0.16) 0%, transparent 60%),
-      linear-gradient(175deg, #0e4a78 0%, #082c48 55%, #020d18 100%);
+    background: #fff;
   }
 
-  /* Login / registrazione. Stessa trama "premium" dell'header dell'app
-     (trattini diagonali + alone ottone) invece del verde piatto, per dare
-     più rilievo al badge. */
   .auth-hero {
     position: relative;
-    color: #fff;
+    color: var(--ink);
     text-align: center;
     padding: 26px 28px 22px;
   }
@@ -1538,8 +1473,8 @@
      l'immagine, quindi il contenitore deve essere abbastanza grande da
      rendere leggibile il testo dell'anello. */
   .auth-crest {
-    width: 220px;
-    height: 210px;
+    width: 240px;
+    height: 190px;
     margin: 0 auto 6px;
     display: flex;
     align-items: center;
@@ -1554,14 +1489,14 @@
     height: 100%;
     object-fit: contain;
   }
-  /* Filo d'ottone con punto centrale sopra la citazione: stesso linguaggio
+  /* Filo con punto centrale sopra la citazione: stesso linguaggio
      decorativo dei puntini already usati altrove (es. .torneo-hero-puntino),
      niente virgolette tipografiche generiche. */
   .auth-rule {
     width: 3px;
     height: 3px;
     border-radius: 50%;
-    background: #fff;
+    background: var(--v700);
     margin: 0 auto 14px;
     position: relative;
     z-index: 1;
@@ -1573,8 +1508,7 @@
     top: 50%;
     width: 26px;
     height: 1px;
-    background: #fff;
-    opacity: 0.55;
+    background: var(--border2);
   }
   .auth-rule::before { right: 100%; margin-right: 8px; }
   .auth-rule::after { left: 100%; margin-left: 8px; }
@@ -1586,36 +1520,21 @@
     font-weight: 600;
     font-size: 1.7rem;
     line-height: 1.2;
-    color: var(--g300);
+    color: var(--v700);
     margin: 0;
     position: relative;
     z-index: 1;
     letter-spacing: 0.01em;
   }
-  /* Niente più scheda separata: form-verde dà i colori chiari a
-     etichette/input/link, questo override toglie il box verde che
-     form-verde porterebbe di suo — tutto sta direttamente sullo sfondo
-     di .auth-page (richiesto esplicitamente: "gli oggetti sulla scheda
-     devono stare direttamente sullo sfondo"). */
-  .auth-card.form-verde {
+  /* Niente più scheda separata: i form restano nei normali colori chiari
+     dell'app (niente più .form-verde qui, pensato per sfondi scuri), questo
+     override toglie solo il box (bordo/ombra/sfondo) che .card porterebbe
+     di suo — tutto sta direttamente sullo sfondo bianco di .auth-page. */
+  .auth-card {
     background: transparent;
     border: none;
     box-shadow: none;
     padding-top: 16px;
-  }
-  /* CTA principale ("Entra in campo" ecc.) nello stesso oro chiaro della
-     citazione/logo, non il giallo acceso di .btn-riflesso (pensato per
-     card chiare) — scoped a .auth-card per non toccare gli altri usi di
-     .btn-oro/.btn-riflesso nel resto dell'app. */
-  .auth-card .btn-oro,
-  .auth-card .btn-riflesso {
-    background: var(--g300);
-    color: #3a2906;
-  }
-  .auth-card .btn-oro:hover:not(:disabled),
-  .auth-card .btn-riflesso:hover:not(:disabled) {
-    background: var(--g400);
-    color: #3a2906;
   }
 
   /* ── Bottoni OAuth (Google / Apple) ──────────────────────────────────────── */

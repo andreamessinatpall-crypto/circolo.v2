@@ -93,7 +93,7 @@ export default function RegisterPage() {
       <div className="w-full max-w-[680px]">
       <AuthHero />
 
-      <form onSubmit={handleSubmit(onSubmit)} className="card auth-card form-verde">
+      <form onSubmit={handleSubmit(onSubmit)} className="card auth-card">
         <h1 className="text-2xl">Registrati</h1>
         <p className="sub mb-4 mt-1">
           Entra nel Club! Dopo aver confermato l'email la segreteria approverà il profilo.

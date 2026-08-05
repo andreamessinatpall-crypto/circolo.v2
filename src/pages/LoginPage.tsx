@@ -99,7 +99,7 @@ export default function LoginPage() {
       <div className="flex w-full max-w-[420px] flex-1 flex-col justify-center">
         <AuthHero />
 
-        <div className="card auth-card form-verde">
+        <div className="card auth-card">
           {!vistaRecupero && <h1 className="mb-1 text-center text-2xl">Accedi o registrati</h1>}
           {vistaRecupero ? (
             <>
