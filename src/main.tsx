@@ -17,6 +17,23 @@ if ('scrollRestoration' in window.history) {
   window.history.scrollRestoration = 'manual'
 }
 
+// Altezza reale dello schermo, per le pagine a schermo intero (AppShell,
+// login, registrazione…). "100dvh" NON basta: su iOS è calcolato sul
+// viewport di LAYOUT, che non si restringe quando compare la tastiera
+// software (a differenza della toolbar del browser, che invece dvh segue
+// correttamente) — risultato, un vuoto in fondo che spinge su header/barra
+// fissi appena si tocca un campo di testo. visualViewport.height segue
+// invece SEMPRE l'area effettivamente visibile (tastiera inclusa), quindi
+// la esponiamo come custom property e la usiamo al posto di 100dvh.
+function aggiornaAltezzaVisibile() {
+  const altezza = window.visualViewport?.height ?? window.innerHeight
+  document.documentElement.style.setProperty('--vh-reale', altezza + 'px')
+}
+aggiornaAltezzaVisibile()
+window.visualViewport?.addEventListener('resize', aggiornaAltezzaVisibile)
+window.addEventListener('resize', aggiornaAltezzaVisibile)
+window.addEventListener('orientationchange', aggiornaAltezzaVisibile)
+
 registraServiceWorker()
 
 createRoot(document.getElementById('root')!).render(

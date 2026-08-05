@@ -111,13 +111,12 @@ export default function AppShell() {
     (p) => pathname === p || pathname.startsWith(p + '/'),
   )
 
-  // dvh, non svh: "svh" riserva sempre lo spazio per una barra degli
-  // strumenti del browser che potrebbe comparire scrollando — ma nella PWA
-  // installata (standalone, "Aggiungi a Home") quella barra non esiste mai,
-  // quindi con svh restava una striscia vuota in fondo allo schermo. "dvh"
-  // si adatta invece all'altezza realmente disponibile in ogni contesto.
+  // var(--vh-reale) invece di 100dvh: su iOS "dvh" segue la toolbar del
+  // browser ma NON la tastiera software (calcolato sul viewport di layout,
+  // che la tastiera non ridimensiona) — --vh-reale, impostata in main.tsx
+  // da window.visualViewport, segue invece sempre l'area davvero visibile.
   return (
-    <div className="flex h-[100dvh] flex-col sm:h-auto sm:min-h-[100dvh]">
+    <div className="flex h-[var(--vh-reale,100dvh)] flex-col sm:h-auto sm:min-h-[var(--vh-reale,100dvh)]">
       {/* Barra superiore: marchio e utente */}
       <header className="app-header">
         <div className="brand">
