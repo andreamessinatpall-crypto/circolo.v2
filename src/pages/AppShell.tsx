@@ -112,7 +112,7 @@ export default function AppShell() {
   )
 
   return (
-    <div className="flex h-[100svh] flex-col overflow-hidden sm:h-auto sm:min-h-[100svh] sm:overflow-visible">
+    <div className="flex h-[100svh] flex-col sm:h-auto sm:min-h-[100svh]">
       {/* Barra superiore: marchio e utente */}
       <header className="app-header">
         <div className="brand">
@@ -168,11 +168,18 @@ export default function AppShell() {
           (come .app-subnav in fondo) durante il rimbalzo elastico — isolando
           lo scroll in questo contenitore, header e subnav restano fuori dal
           flusso e non si spostano mai. Da 640px in su torna il comportamento
-          di sempre (pagina intera che scorre, subnav sticky sotto l'header). */}
+          di sempre (pagina intera che scorre, subnav sticky sotto l'header).
+          min-h-0 è indispensabile: senza, un flex item di default non si
+          restringe sotto la sua altezza di contenuto, quindi continuerebbe
+          a "spingere" il contenitore radice oltre i 100svh esattamente come
+          se non ci fosse overflow-y-auto — niente overflow:hidden sul
+          contenitore radice apposta: su iOS un elemento fixed (.app-subnav)
+          dentro un antenato con overflow:hidden può essere posizionato in
+          modo incoerente rispetto al vero bordo dello schermo. */}
       <div
         ref={contenutoRef}
         className={
-          'flex flex-1 flex-col overflow-y-auto [-webkit-overflow-scrolling:touch] [overscroll-behavior-y:contain] sm:overflow-visible' +
+          'flex min-h-0 flex-1 flex-col overflow-y-auto [-webkit-overflow-scrolling:touch] [overscroll-behavior-y:contain] sm:overflow-visible' +
           (sfondoArcobaleno ? ' pagina-arcobaleno' : '')
         }
       >
