@@ -11,6 +11,7 @@ import Avatar from '@/components/Avatar'
 import { useSoci, useAttivitaSoci, fetchStoricoSocio, type SocioAdmin, type AttivitaSocio } from './datiSoci'
 import DettaglioGiocatore from './DettaglioGiocatore'
 import NuovoSocio from './NuovoSocio'
+import ImportaGiocatoriCsv from './ImportaGiocatoriCsv'
 import { SportIcona, IconaPadel, IconaCalcio } from '@/components/IconeSport'
 import { useAmici } from '@/features/profilo/amici/useAmici'
 import DettaglioAmicoModal from '@/features/profilo/amici/DettaglioAmicoModal'
@@ -123,6 +124,7 @@ export default function GestioneGiocatori({ embedded = false }: { embedded?: boo
   const [gestisciId, setGestisciId] = useState<string | null>(null)
   const [chatCon, setChatCon] = useState<{ id: string; etichetta: string } | null>(null)
   const [mostraNuovo, setMostraNuovo] = useState(false)
+  const [mostraImport, setMostraImport] = useState(false)
   const [espandiSospesi, setEspandiSospesi] = useState(false)
   const [espandiCancellati, setEspandiCancellati] = useState(false)
   const [msgStoricoTutti, setMsgStoricoTutti] = useState<{ tipo: 'ok' | 'errore'; testo: string } | null>(null)
@@ -197,18 +199,32 @@ export default function GestioneGiocatori({ embedded = false }: { embedded?: boo
         <StatItem num={nCalcio} label={<><IconaCalcio size={12} /> Calcio</>} />
       </div>
 
-      {/* ── Nuovo giocatore (riga con pulsante, prima della ricerca) ────── */}
+      {/* ── Nuovo giocatore / import CSV (riga con pulsanti, prima della ricerca) ── */}
       <div style={{ marginBottom: '0.75rem' }}>
-        <button
-          type="button"
-          className={'btn btn-block' + (mostraNuovo ? ' btn-secondario' : ' btn-aggiungi')}
-          onClick={() => setMostraNuovo((v) => !v)}
-        >
-          {mostraNuovo ? 'Annulla' : 'Aggiungi nuovo giocatore'}
-        </button>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <button
+            type="button"
+            className={'btn btn-block' + (mostraNuovo ? ' btn-secondario' : ' btn-aggiungi')}
+            onClick={() => { setMostraNuovo((v) => !v); setMostraImport(false) }}
+          >
+            {mostraNuovo ? 'Annulla' : 'Aggiungi nuovo giocatore'}
+          </button>
+          <button
+            type="button"
+            className={'btn btn-block' + (mostraImport ? ' btn-secondario' : ' btn-aggiungi')}
+            onClick={() => { setMostraImport((v) => !v); setMostraNuovo(false) }}
+          >
+            {mostraImport ? 'Annulla' : 'Importa da CSV'}
+          </button>
+        </div>
         {mostraNuovo && (
           <div className="mt-3">
             <NuovoSocio />
+          </div>
+        )}
+        {mostraImport && (
+          <div className="mt-3">
+            <ImportaGiocatoriCsv onChiudi={() => setMostraImport(false)} />
           </div>
         )}
       </div>

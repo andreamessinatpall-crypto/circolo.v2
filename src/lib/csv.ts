@@ -47,6 +47,54 @@ export function costruisciCsv(
   return [intest, ...corpo].join('\r\n')
 }
 
+// Spezza una riga CSV nei suoi campi, gestendo virgolette (con "" per la
+// virgoletta letterale) come da convenzione CSV/Excel.
+function splitRigaCsv(riga: string, sep: string): string[] {
+  const campi: string[] = []
+  let corrente = ''
+  let inVirgolette = false
+  for (let i = 0; i < riga.length; i++) {
+    const c = riga[i]
+    if (inVirgolette) {
+      if (c === '"') {
+        if (riga[i + 1] === '"') { corrente += '"'; i++ } else inVirgolette = false
+      } else corrente += c
+    } else if (c === '"') {
+      inVirgolette = true
+    } else if (c === sep) {
+      campi.push(corrente)
+      corrente = ''
+    } else {
+      corrente += c
+    }
+  }
+  campi.push(corrente)
+  return campi
+}
+
+// Legge un CSV (import) in righe oggetto, chiave = intestazione in minuscolo.
+// Riconosce da solo il separatore (";" convenzione Excel IT, o ",") guardando
+// la riga di intestazione. Non gestisce campi con "a capo" al loro interno
+// (non previsto per i dati anagrafici che importiamo).
+export function leggiCsv(testo: string): Record<string, string>[] {
+  const senzaBom = testo.charCodeAt(0) === 0xfeff ? testo.slice(1) : testo
+  const pulito = senzaBom.replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim()
+  if (!pulito) return []
+  const righeGrezze = pulito.split('\n').filter((r) => r.trim() !== '')
+  if (righeGrezze.length === 0) return []
+  const intestazioneGrezza = righeGrezze[0]
+  const nPuntoVirgola = (intestazioneGrezza.match(/;/g) ?? []).length
+  const nVirgola = (intestazioneGrezza.match(/,/g) ?? []).length
+  const sep = nPuntoVirgola >= nVirgola ? ';' : ','
+  const intestazioni = splitRigaCsv(intestazioneGrezza, sep).map((h) => h.trim().toLowerCase())
+  return righeGrezze.slice(1).map((riga) => {
+    const campi = splitRigaCsv(riga, sep)
+    const rec: Record<string, string> = {}
+    intestazioni.forEach((h, i) => { rec[h] = (campi[i] ?? '').trim() })
+    return rec
+  })
+}
+
 // Avvia il download di un file CSV. Antepone il BOM (U+FEFF) così Excel apre
 // bene le lettere accentate.
 export function scaricaCsv(nomeFile: string, csv: string): void {
