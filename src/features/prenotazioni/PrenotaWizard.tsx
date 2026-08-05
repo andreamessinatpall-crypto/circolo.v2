@@ -104,7 +104,12 @@ function SceltaCampoModal({
             <p className="eyebrow" style={{ marginTop: 0 }}>Prenota · {orarioSel.label}</p>
             <h2 className="text-lg">Scegli il campo</h2>
           </div>
-          <button type="button" className="questionario-chiudi" onClick={onChiudi} aria-label="Chiudi">
+          <button
+            type="button"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[var(--border2)] bg-white text-[var(--v700)] hover:border-[var(--v700)] hover:bg-[var(--v050)] hover:text-[var(--v800)]"
+            onClick={onChiudi}
+            aria-label="Chiudi"
+          >
             ✕
           </button>
         </div>
