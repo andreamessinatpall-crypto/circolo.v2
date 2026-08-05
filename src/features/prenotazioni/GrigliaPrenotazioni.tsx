@@ -104,7 +104,6 @@ export default function GrigliaPrenotazioni({ sport }: { sport: Sport }) {
         giorno={giorno}
         onGiorno={setGiorno}
         giorniAnticipo={imp.giorniAnticipo}
-        meteo={meteoQuery.data}
       />
 
       {prenQuery.error && (

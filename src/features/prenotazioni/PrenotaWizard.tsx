@@ -290,7 +290,6 @@ export default function PrenotaWizard({ sportOptions }: { sportOptions: Sport[] 
         giorno={giorno}
         onGiorno={setGiorno}
         giorniAnticipo={imp.giorniAnticipo}
-        meteo={meteoQuery.data}
       />
 
       {sportOptions.length > 1 && (

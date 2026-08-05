@@ -1,6 +1,4 @@
 import { useState } from 'react'
-import { IconaMeteo } from '@/components/IconeMeteo'
-import type { PrevisioneGiorno } from '@/hooks/useMeteo'
 import { ymd } from './orari'
 
 // Fascia settimanale di giorni selezionabili (finestra scorrevole di 7 alla volta),
@@ -10,12 +8,10 @@ export default function CalendarioSettimana({
   giorno,
   onGiorno,
   giorniAnticipo,
-  meteo,
 }: {
   giorno: string
   onGiorno: (g: string) => void
   giorniAnticipo: number
-  meteo?: Map<string, PrevisioneGiorno>
 }) {
   const [offset, setOffset] = useState(0)
   const adesso = new Date()
@@ -73,26 +69,17 @@ export default function CalendarioSettimana({
         </div>
       </div>
       <div className="cal-sett-griglia">
-        {visibili.map((g) => {
-          const previsione = meteo?.get(g.chiave)
-          return (
-            <button
-              key={g.chiave}
-              type="button"
-              className={'cal-giorno cal-giorno-compatto' + (g.isOggi ? ' oggi' : '') + (g.chiave === giorno ? ' sel' : '')}
-              onClick={() => onGiorno(g.chiave)}
-            >
-              <span className="cal-giorno-dow">{g.dow}</span>
-              <span className="cal-giorno-num">{g.num}</span>
-              {previsione && (
-                <span className="cal-giorno-meteo">
-                  <IconaMeteo codice={previsione.weathercode} size={13} />
-                  {Math.round(previsione.tempMax)}°
-                </span>
-              )}
-            </button>
-          )
-        })}
+        {visibili.map((g) => (
+          <button
+            key={g.chiave}
+            type="button"
+            className={'cal-giorno cal-giorno-compatto' + (g.isOggi ? ' oggi' : '') + (g.chiave === giorno ? ' sel' : '')}
+            onClick={() => onGiorno(g.chiave)}
+          >
+            <span className="cal-giorno-dow">{g.dow}</span>
+            <span className="cal-giorno-num">{g.num}</span>
+          </button>
+        ))}
       </div>
     </div>
   )

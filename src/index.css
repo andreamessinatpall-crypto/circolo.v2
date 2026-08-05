@@ -3384,17 +3384,6 @@
     min-height: 0;
     padding: 10px 4px;
   }
-  .cal-giorno-meteo {
-    display: flex;
-    align-items: center;
-    gap: 2px;
-    font-size: 0.68rem;
-    font-weight: 600;
-    color: var(--ink3);
-  }
-  .cal-giorno.sel .cal-giorno-meteo {
-    color: rgba(255, 255, 255, 0.85);
-  }
   .aggiungi-part {
     display: flex;
     gap: 8px;
