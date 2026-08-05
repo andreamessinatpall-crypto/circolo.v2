@@ -7,17 +7,10 @@ import { logoDaFile } from '@/lib/immagini'
 import { useSociPubblici } from '@/features/prenotazioni/datiAmichevoli'
 import { nomeSquadraElegante } from './gironi'
 import { annullaPuntiIscrizione, assegnaPuntiIscrizione } from './punti'
+import { formatNomeAmericano } from './americano'
 import { IconaCalcio } from '@/components/IconeSport'
 import { ICO_MATITA, ICO_TRASH } from './icone'
 import type { Componente, RichiestaIscrizione, Squadra, Torneo } from './tipi'
-
-// Cognome del socio: l'etichetta è "Cognome Nome" (es. "Rossi Mario"),
-// quindi prendiamo tutto tranne l'ultima parola (che è il nome).
-function cognomeDa(etichetta: string) {
-  const parti = (etichetta || '').trim().split(/\s+/)
-  if (parti.length <= 1) return parti[0] ?? ''
-  return parti.slice(0, -1).join(' ')
-}
 
 // Nome da mostrare per un componente: il socio registrato, oppure il nome
 // inserito a mano per un giocatore non registrato.
@@ -84,7 +77,8 @@ export default function GestioneSquadre({
 
   const aggiorna = () => qc.invalidateQueries({ queryKey: ['tornei'] })
 
-  // Padel: il nome della coppia = cognomi dei giocatori (titolari prima, riserva in fondo).
+  // Padel: il nome della coppia = "Cognome I." dei giocatori (titolari prima,
+  // riserva in fondo), stesso formato abbreviato usato in classifica/podio/calendario.
   async function aggiornaNomeCoppia(squadraId: number | string) {
     const { data: comp } = await supabase
       .from('squadra_componenti')
@@ -95,7 +89,7 @@ export default function GestioneSquadre({
       .slice()
       .sort((a, b) => (a.riserva ? 1 : 0) - (b.riserva ? 1 : 0))
     const cognomi = ord
-      .map((c) => cognomeDa(c.socio_id ? (etichette.get(c.socio_id) ?? '') : (c.nome_manuale ?? '')))
+      .map((c) => formatNomeAmericano(c.socio_id ? (etichette.get(c.socio_id) ?? '') : (c.nome_manuale ?? '')))
       .filter(Boolean)
     if (!cognomi.length) return
     await supabase.from('squadre').update({ nome: cognomi.join('/') }).eq('id', squadraId)
@@ -586,8 +580,8 @@ function RigaSquadra({
               onAggiungi(v, prossimoRiserva)
             }}
           >
-            <option value="">— Aggiungi un giocatore —</option>
-            <option value="__ospite__">＋ Ospite (non registrato)…</option>
+            <option value="">Aggiungi un giocatore</option>
+            <option value="__ospite__">+ Ospite</option>
             {selezionabili.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.etichetta}
