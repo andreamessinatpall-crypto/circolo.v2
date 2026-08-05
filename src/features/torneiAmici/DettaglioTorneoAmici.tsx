@@ -13,6 +13,7 @@ import Avatar from '@/components/Avatar'
 import { MedagliaPodio } from '@/components/MedagliaPodio'
 import { calcolaClassificaAmici } from './classificaAmici'
 import InvitaAltriAmiciModal from './InvitaAltriAmiciModal'
+import TabelloneAmici from './TabelloneAmici'
 import { BottoneProgrammaAmici } from './ProgrammaIncontroAmici'
 import {
   useAnnullaPrenotazioneAmici,
@@ -300,6 +301,12 @@ export default function DettaglioTorneoAmici({
 
   const classifica = calcolaClassificaAmici(torneo.sport, squadre, incontri)
   const tutteDisputate = incontri.length > 0 && incontri.every((m) => incontroDisputato(m))
+  const isEliminazione = torneo.formato === 'eliminazione'
+
+  // Mappa id squadra → nome visualizzato, per il tabellone grafico
+  // dell'eliminazione (stessa forma "nomi" del bracket ufficiale).
+  const nomiSquadre: Record<string, string> = {}
+  for (const s of squadre) nomiSquadre[s.id] = nomeSquadra(s, partecipanti, nomiSoci, torneo.sport, true)
 
   function giocatoriIncontro(m: IncontroAmici): string[] {
     return partecipanti.filter((p) => p.squadra_id === m.casa_id || p.squadra_id === m.ospite_id).map((p) => p.socio_id)
@@ -390,7 +397,10 @@ export default function DettaglioTorneoAmici({
       {/* ── Calendario/classifica (torneo avviato) ── */}
       {torneo.stato !== 'creazione' && (
         <>
-          {tutteDisputate && classifica[0] && (
+          {/* Eliminazione diretta: il tabellone grafico mostra già vincitore e
+              progressione turno per turno (con il suo podio interno) — la
+              classifica a punti non serve e sarebbe ridondante. */}
+          {!isEliminazione && tutteDisputate && classifica[0] && (
             <div className="podio mb-3">
               <div className="podio-corona">🏆</div>
               <div className="podio-eyebrow">Vincitore del torneo</div>
@@ -411,38 +421,46 @@ export default function DettaglioTorneoAmici({
             </div>
           )}
 
-          <Sezione titolo="Classifica">
-            <div className="classifica-wow mb-3">
-              <table className="classifica">
-                <thead>
-                  <tr>
-                    {(torneo.sport === 'calcio'
-                      ? ['#', titleCase(unitaTorneo(torneo.sport, false)), 'G', 'V', 'N', 'P', 'DR', 'Pti']
-                      : ['#', titleCase(unitaTorneo(torneo.sport, false)), 'G', 'V', 'P', 'DS', 'Pti']
-                    ).map((c) => <th key={c}>{c}</th>)}
-                  </tr>
-                </thead>
-                <tbody>
-                  {classifica.map((r, i) => {
-                    const dd = (r.diff > 0 ? '+' : '') + r.diff
-                    const celle =
-                      torneo.sport === 'calcio'
-                        ? [r.g, r.v, r.n, r.p, dd, r.pti]
-                        : [r.g, r.v, r.p, dd, r.pti]
-                    return (
-                      <tr key={r.id}>
-                        <td>{i < 3 ? <MedagliaPodio pos={(i + 1) as 1 | 2 | 3} /> : <span className="cl-rank">{i + 1}</span>}</td>
-                        <td className="nome-cl">{nomeSquadra(squadre.find((s) => s.id === r.id), partecipanti, nomiSoci, torneo.sport, true)}</td>
-                        {celle.map((val, idx) => (
-                          <td key={idx} className={idx === celle.length - 1 ? 'pti' : undefined}>{val}</td>
-                        ))}
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </Sezione>
+          {isEliminazione ? (
+            <Sezione titolo="Tabellone">
+              <div className="mb-3">
+                <TabelloneAmici torneo={torneo} incontri={incontri} nomi={nomiSquadre} />
+              </div>
+            </Sezione>
+          ) : (
+            <Sezione titolo="Classifica">
+              <div className="classifica-wow mb-3">
+                <table className="classifica">
+                  <thead>
+                    <tr>
+                      {(torneo.sport === 'calcio'
+                        ? ['#', titleCase(unitaTorneo(torneo.sport, false)), 'G', 'V', 'N', 'P', 'DR', 'Pti']
+                        : ['#', titleCase(unitaTorneo(torneo.sport, false)), 'G', 'V', 'P', 'DS', 'Pti']
+                      ).map((c) => <th key={c}>{c}</th>)}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {classifica.map((r, i) => {
+                      const dd = (r.diff > 0 ? '+' : '') + r.diff
+                      const celle =
+                        torneo.sport === 'calcio'
+                          ? [r.g, r.v, r.n, r.p, dd, r.pti]
+                          : [r.g, r.v, r.p, dd, r.pti]
+                      return (
+                        <tr key={r.id}>
+                          <td>{i < 3 ? <MedagliaPodio pos={(i + 1) as 1 | 2 | 3} /> : <span className="cl-rank">{i + 1}</span>}</td>
+                          <td className="nome-cl">{nomeSquadra(squadre.find((s) => s.id === r.id), partecipanti, nomiSoci, torneo.sport, true)}</td>
+                          {celle.map((val, idx) => (
+                            <td key={idx} className={idx === celle.length - 1 ? 'pti' : undefined}>{val}</td>
+                          ))}
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </Sezione>
+          )}
 
           <Sezione titolo="Partite">
           <div className="mb-3">
