@@ -15,6 +15,7 @@ import DettaglioAmicoModal from '../amici/DettaglioAmicoModal'
 import ChatModal from '@/features/chat/ChatModal'
 import { useConversazioni } from '@/features/chat/useChat'
 import DisponibilitaIstruttoreModal from '@/features/lezioni/DisponibilitaIstruttoreModal'
+import { conferma } from '@/lib/dialoghi'
 import { CardIstruttorePassaporto } from './IstruttoriPagina'
 import { useRichiestePartner } from '@/features/compagni/useRichiestePartner'
 import { useProssimaAttivita, useTop3Classifica } from './useAnteprimeAreaClub'
@@ -704,8 +705,8 @@ function CardLezioniGruppo() {
                   type="button"
                   className="mini-persona-btn mini-persona-btn-pericolo"
                   disabled={annullaIscrizione.isPending}
-                  onClick={() => {
-                    if (window.confirm('Annullare la tua iscrizione a questa lezione di gruppo?')) {
+                  onClick={async () => {
+                    if (await conferma('Annullare la tua iscrizione a questa lezione di gruppo?')) {
                       annullaIscrizione.mutate(p.id)
                     }
                   }}
@@ -826,8 +827,8 @@ function CardAmici() {
             ).length
           }
           onChat={() => { setChatAmico(dettaglioAmico); setDettaglioAmico(null) }}
-          onRimuovi={() => {
-            if (window.confirm(`Rimuovere ${dettaglioAmico.etichetta} dai tuoi amici?`)) {
+          onRimuovi={async () => {
+            if (await conferma(`Rimuovere ${dettaglioAmico.etichetta} dai tuoi amici?`)) {
               amici.rimuovi.mutate(dettaglioAmico.rec)
             }
             setDettaglioAmico(null)

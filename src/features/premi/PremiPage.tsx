@@ -3,6 +3,7 @@ import ModalConferma from '@/components/ModalConferma'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/auth/useAuth'
+import { avviso } from '@/lib/dialoghi'
 import { mancaRpc, messaggioErrore } from '@/lib/errori'
 import {
   SCRIPT_PREMI,
@@ -92,7 +93,7 @@ export default function PremiPage() {
     },
     onSuccess: aggiorna,
     onError: (e: unknown) =>
-      window.alert(
+      avviso(
         mancaRpc(e)
           ? `Sistema premi non ancora attivo: esegui lo script ${SCRIPT_PREMI} su Supabase.`
           : 'Non riuscito: ' + messaggioErrore(e),
@@ -107,7 +108,7 @@ export default function PremiPage() {
       if (esito && esito.ok === false) throw new Error(esito.errore || 'Non riuscito.')
     },
     onSuccess: aggiorna,
-    onError: (e: unknown) => window.alert('Non riuscito: ' + messaggioErrore(e)),
+    onError: (e: unknown) => avviso('Non riuscito: ' + messaggioErrore(e)),
   })
 
   if (!profilo) return null

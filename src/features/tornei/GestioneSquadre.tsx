@@ -2,6 +2,7 @@ import { useMemo, useRef } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { eDuplicato, messaggioErrore } from '@/lib/errori'
+import { avviso, conferma } from '@/lib/dialoghi'
 import { logoDaFile } from '@/lib/immagini'
 import { useSociPubblici } from '@/features/prenotazioni/datiAmichevoli'
 import { nomeSquadraElegante } from './gironi'
@@ -106,7 +107,7 @@ export default function GestioneSquadre({
       if (error) throw error
     },
     onSuccess: aggiorna,
-    onError: (e: unknown) => window.alert('Non riuscito: ' + messaggioErrore(e)),
+    onError: (e: unknown) => avviso('Non riuscito: ' + messaggioErrore(e)),
   })
 
   const rinomina = useMutation({
@@ -115,7 +116,7 @@ export default function GestioneSquadre({
       if (error) throw error
     },
     onSuccess: aggiorna,
-    onError: (e: unknown) => window.alert('Rinomina non riuscita: ' + messaggioErrore(e)),
+    onError: (e: unknown) => avviso('Rinomina non riuscita: ' + messaggioErrore(e)),
   })
 
   const elimina = useMutation({
@@ -124,7 +125,7 @@ export default function GestioneSquadre({
       if (error) throw error
     },
     onSuccess: aggiorna,
-    onError: (e: unknown) => window.alert('Non riuscito: ' + messaggioErrore(e)),
+    onError: (e: unknown) => avviso('Non riuscito: ' + messaggioErrore(e)),
   })
 
   const aggiungiComp = useMutation({
@@ -149,7 +150,7 @@ export default function GestioneSquadre({
         delete riga.riserva
         ;({ error } = await supabase.from('squadra_componenti').insert(riga))
         if (!error)
-          window.alert(
+          avviso(
             'Giocatore aggiunto, ma la colonna “riserva” manca: esegui lo script tappa9-riserva-coppie.sql su Supabase.',
           )
       }
@@ -162,7 +163,7 @@ export default function GestioneSquadre({
     },
     onSuccess: aggiorna,
     onError: (e: unknown) =>
-      window.alert(
+      avviso(
         eDuplicato(e)
           ? 'Questo giocatore è già in una squadra di questo torneo.'
           : 'Non riuscito: ' + messaggioErrore(e),
@@ -199,7 +200,7 @@ export default function GestioneSquadre({
     },
     onSuccess: aggiorna,
     onError: (e: unknown) =>
-      window.alert(
+      avviso(
         mancaColonnaManuale(e)
           ? 'Per inserire giocatori non registrati esegui lo script tappa10-componenti-manuali.sql su Supabase.'
           : 'Non riuscito: ' + messaggioErrore(e),
@@ -214,7 +215,7 @@ export default function GestioneSquadre({
     },
     onSuccess: aggiorna,
     onError: (e: unknown) =>
-      window.alert(
+      avviso(
         mancaColonnaLogo(e)
           ? 'Manca la colonna logo_url nella tabella squadre. Esegui su Supabase: ALTER TABLE squadre ADD COLUMN logo_url text;'
           : 'Salvataggio logo non riuscito: ' + messaggioErrore(e),
@@ -239,7 +240,7 @@ export default function GestioneSquadre({
       if (torneo.sport === 'padel') await aggiornaNomeCoppia(squadraId)
     },
     onSuccess: aggiorna,
-    onError: (e: unknown) => window.alert('Non riuscito: ' + messaggioErrore(e)),
+    onError: (e: unknown) => avviso('Non riuscito: ' + messaggioErrore(e)),
   })
 
   const accettaRichiesta = useMutation({
@@ -269,7 +270,7 @@ export default function GestioneSquadre({
       await supabase.from('richieste_iscrizione').delete().eq('id', r.id)
     },
     onSuccess: aggiorna,
-    onError: (e: unknown) => window.alert('Non riuscito: ' + messaggioErrore(e)),
+    onError: (e: unknown) => avviso('Non riuscito: ' + messaggioErrore(e)),
   })
 
   const eliminaRichiesta = useMutation({
@@ -278,7 +279,7 @@ export default function GestioneSquadre({
       if (error) throw error
     },
     onSuccess: aggiorna,
-    onError: (e: unknown) => window.alert('Non riuscito: ' + messaggioErrore(e)),
+    onError: (e: unknown) => avviso('Non riuscito: ' + messaggioErrore(e)),
   })
 
   if (sociQuery.isLoading) return <p className="sub">Caricamento soci…</p>
@@ -319,8 +320,8 @@ export default function GestioneSquadre({
                       type="button"
                       className="btn btn-pericolo btn-mini"
                       disabled={eliminaRichiesta.isPending}
-                      onClick={() => {
-                        if (window.confirm('Eliminare questa richiesta?')) eliminaRichiesta.mutate(r.id)
+                      onClick={async () => {
+                        if (await conferma('Eliminare questa richiesta?')) eliminaRichiesta.mutate(r.id)
                       }}
                     >
                       Elimina
@@ -445,8 +446,8 @@ function RigaSquadra({
             type="button"
             className="btn btn-pericolo btn-mini"
             title="Elimina"
-            onClick={() => {
-              if (window.confirm('Eliminare “' + squadra.nome + '”?')) onElimina()
+            onClick={async () => {
+              if (await conferma('Eliminare “' + squadra.nome + '”?')) onElimina()
             }}
           >
             <span style={{ display: 'inline-flex' }}>{ICO_TRASH}</span>
@@ -480,7 +481,7 @@ function RigaSquadra({
               try {
                 onLogo(await logoDaFile(file))
               } catch (err) {
-                window.alert(messaggioErrore(err))
+                avviso(messaggioErrore(err))
               }
             }}
           />

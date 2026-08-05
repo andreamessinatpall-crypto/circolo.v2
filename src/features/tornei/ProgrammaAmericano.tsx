@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useBloccaScrollBody } from '@/hooks/useBloccaScrollBody'
 import { messaggioErrore } from '@/lib/errori'
+import { avviso, conferma } from '@/lib/dialoghi'
 import { useCampi, usePrenotazioniGiorno } from '@/features/prenotazioni/datiPrenotazioni'
 import { dataDa, oraLocale, orariCampo, SLOT_MINUTI, ymd } from '@/features/prenotazioni/orari'
 import { formatNomeAmericano } from './americano'
@@ -62,15 +63,15 @@ export function BottoneAnnullaProgrammazioneAmericano({ m }: { m: AmericanoParti
       qc.invalidateQueries({ queryKey: ['tornei'] })
       qc.invalidateQueries({ queryKey: ['prenotazioni'] })
     },
-    onError: (e: unknown) => window.alert('Annullamento non riuscito: ' + messaggioErrore(e)),
+    onError: (e: unknown) => avviso('Annullamento non riuscito: ' + messaggioErrore(e)),
   })
   return (
     <button
       type="button"
       className="btn btn-mini btn-pericolo"
       disabled={annulla.isPending}
-      onClick={() => {
-        if (window.confirm('Annullare la programmazione? La prenotazione collegata verrà rimossa.'))
+      onClick={async () => {
+        if (await conferma('Annullare la programmazione? La prenotazione collegata verrà rimossa.'))
           annulla.mutate()
       }}
     >

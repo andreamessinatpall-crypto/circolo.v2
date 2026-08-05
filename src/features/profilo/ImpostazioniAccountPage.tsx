@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase'
 import { mancaTabella, messaggioErrore } from '@/lib/errori'
 import { usePushNotifiche } from '@/hooks/usePushNotifiche'
 import { classiErrore } from '@/components/stili'
+import { avviso } from '@/lib/dialoghi'
 import CancellaAccount from './CancellaAccount'
 
 // Fase A (restyling scheda account): "Impostazioni" raccoglie Notifiche ed
@@ -118,7 +119,7 @@ function SezionePrivacy({ socioId, attivo }: { socioId: string; attivo: boolean 
       if (error) throw error
     },
     onSuccess: ricaricaProfilo,
-    onError: (e: unknown) => window.alert('Salvataggio non riuscito: ' + messaggioErrore(e)),
+    onError: (e: unknown) => avviso('Salvataggio non riuscito: ' + messaggioErrore(e)),
   })
 
   return (

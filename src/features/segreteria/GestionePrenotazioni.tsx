@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+// Alias: il file usa già una mutation locale chiamata `conferma`.
+import { avviso, conferma as chiediConferma } from '@/lib/dialoghi'
 import { useAuth } from '@/auth/useAuth'
 import { useBloccaScrollBody } from '@/hooks/useBloccaScrollBody'
 import { classiErrore } from '@/components/stili'
@@ -180,7 +182,7 @@ export default function GestionePrenotazioni() {
       if (error) throw error
     },
     onSuccess: aggiorna,
-    onError: (e: unknown) => window.alert('Aggiunta non riuscita: ' + messaggioErrore(e)),
+    onError: (e: unknown) => avviso('Aggiunta non riuscita: ' + messaggioErrore(e)),
   })
 
   const aggiungiOspite = useMutation({
@@ -195,7 +197,7 @@ export default function GestionePrenotazioni() {
     },
     onSuccess: aggiorna,
     onError: (e: unknown) =>
-      window.alert(
+      avviso(
         mancaColonnaManuale(e)
           ? 'Per aggiungere ospiti esegui lo script tappa15-partecipanti-id.sql su Supabase.'
           : 'Aggiunta non riuscita: ' + messaggioErrore(e),
@@ -208,7 +210,7 @@ export default function GestionePrenotazioni() {
       if (error) throw error
     },
     onSuccess: aggiorna,
-    onError: (e: unknown) => window.alert('Rimozione non riuscita: ' + messaggioErrore(e)),
+    onError: (e: unknown) => avviso('Rimozione non riuscita: ' + messaggioErrore(e)),
   })
 
   // Conferma/annulla presenza + punti/crediti.
@@ -260,7 +262,7 @@ export default function GestionePrenotazioni() {
       if (ctx?.snapshot) {
         for (const [key, data] of ctx.snapshot) qc.setQueryData(key, data)
       }
-      window.alert('Operazione non riuscita: ' + messaggioErrore(e))
+      avviso('Operazione non riuscita: ' + messaggioErrore(e))
     },
     onSuccess: () => {
       aggiornaSaldi()
@@ -308,16 +310,16 @@ export default function GestionePrenotazioni() {
     },
     onError: (e: unknown) => {
       const err = e as { code?: string }
-      if (err.code === '23505') window.alert('Questo slot è appena stato prenotato.')
+      if (err.code === '23505') avviso('Questo slot è appena stato prenotato.')
       else if (err.code === '23514')
-        window.alert(
+        avviso(
           'Il database non accetta una durata diversa da 1h30 (vincolo CHECK sulla tabella prenotazioni): serve una modifica. Segnalamelo.',
         )
       else if (err.code === '42501')
-        window.alert(
+        avviso(
           'Il database ha rifiutato la prenotazione (probabilmente perché nel passato): serve una modifica alle regole RLS. Segnalamelo.',
         )
-      else window.alert('Prenotazione non riuscita: ' + messaggioErrore(e))
+      else avviso('Prenotazione non riuscita: ' + messaggioErrore(e))
     },
   })
 
@@ -330,7 +332,7 @@ export default function GestionePrenotazioni() {
       aggiorna()
       setSlot(null)
     },
-    onError: (e: unknown) => window.alert('Annullamento non riuscito: ' + messaggioErrore(e)),
+    onError: (e: unknown) => avviso('Annullamento non riuscito: ' + messaggioErrore(e)),
   })
 
   const modificaIstruttore = useMutation({
@@ -342,7 +344,7 @@ export default function GestionePrenotazioni() {
       if (error) throw error
     },
     onSuccess: aggiorna,
-    onError: (e: unknown) => window.alert('Modifica istruttore non riuscita: ' + messaggioErrore(e)),
+    onError: (e: unknown) => avviso('Modifica istruttore non riuscita: ' + messaggioErrore(e)),
   })
 
   // (Fase 8g · B) Modifica manuale degli orari di una prenotazione esistente.
@@ -389,14 +391,14 @@ export default function GestionePrenotazioni() {
     },
     onError: (e: unknown) => {
       const err = e as { code?: string }
-      if (err.code === '23505') window.alert('In quell’orario il campo risulta già occupato.')
+      if (err.code === '23505') avviso('In quell’orario il campo risulta già occupato.')
       else if (err.code === '23514')
-        window.alert(
+        avviso(
           'Il database non accetta questa durata (vincolo CHECK sulla tabella prenotazioni): serve una modifica. Segnalamelo.',
         )
       else if (err.code === '42501')
-        window.alert('Il database ha rifiutato la modifica (regole RLS): segnalamelo.')
-      else window.alert('Modifica orario non riuscita: ' + messaggioErrore(e))
+        avviso('Il database ha rifiutato la modifica (regole RLS): segnalamelo.')
+      else avviso('Modifica orario non riuscita: ' + messaggioErrore(e))
     },
   })
 
@@ -462,7 +464,7 @@ export default function GestionePrenotazioni() {
       }
     },
     onSuccess: () => { aggiorna(); aggiornaSaldi() },
-    onError: (e: unknown) => window.alert('Operazione non riuscita: ' + messaggioErrore(e)),
+    onError: (e: unknown) => avviso('Operazione non riuscita: ' + messaggioErrore(e)),
   })
 
   if (!profilo) return null
@@ -783,8 +785,8 @@ export default function GestionePrenotazioni() {
                     conferma.mutate({ part, pren: bookingSlot, valore })
                   }
                   onRimuovi={(part) => rimuovi.mutate(part.id)}
-                  onAnnulla={() => {
-                    if (window.confirm(`Annullare la prenotazione su ${slot.campo.nome}?`))
+                  onAnnulla={async () => {
+                    if (await chiediConferma(`Annullare la prenotazione su ${slot.campo.nome}?`))
                       annulla.mutate(bookingSlot.id)
                   }}
                 />

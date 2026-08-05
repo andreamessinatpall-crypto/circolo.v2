@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/auth/useAuth'
 import { mancaTabella, messaggioErrore } from '@/lib/errori'
+import { avviso, conferma } from '@/lib/dialoghi'
 import { SportIcona } from '@/components/IconeSport'
 import { TipoAttivitaIcona } from '@/components/IconeAttivita'
 import { IconaMeteo } from '@/components/IconeMeteo'
@@ -70,7 +71,7 @@ export default function VistaLezioni() {
       if (error) throw error
     },
     onSuccess: invalidaLezioni,
-    onError: (e: unknown) => window.alert('Annullamento non riuscito: ' + messaggioErrore(e)),
+    onError: (e: unknown) => avviso('Annullamento non riuscito: ' + messaggioErrore(e)),
   })
 
   const aggiungiGiocatore = useMutation({
@@ -84,7 +85,7 @@ export default function VistaLezioni() {
       if (error) throw error
     },
     onSuccess: invalidaLezioni,
-    onError: (e: unknown) => window.alert('Aggiunta non riuscita: ' + messaggioErrore(e)),
+    onError: (e: unknown) => avviso('Aggiunta non riuscita: ' + messaggioErrore(e)),
   })
 
   // Nessun id di riga disponibile (stesso limite di AttivitaInProgramma.tsx):
@@ -99,7 +100,7 @@ export default function VistaLezioni() {
       if (error) throw error
     },
     onSuccess: invalidaLezioni,
-    onError: (e: unknown) => window.alert('Rimozione non riuscita: ' + messaggioErrore(e)),
+    onError: (e: unknown) => avviso('Rimozione non riuscita: ' + messaggioErrore(e)),
   })
 
   const aggiungiOspite = useMutation({
@@ -113,7 +114,7 @@ export default function VistaLezioni() {
       if (error) throw error
     },
     onSuccess: invalidaLezioni,
-    onError: (e: unknown) => window.alert('Aggiunta non riuscita: ' + messaggioErrore(e)),
+    onError: (e: unknown) => avviso('Aggiunta non riuscita: ' + messaggioErrore(e)),
   })
 
   const rimuoviOspite = useMutation({
@@ -127,7 +128,7 @@ export default function VistaLezioni() {
       if (error) throw error
     },
     onSuccess: invalidaLezioni,
-    onError: (e: unknown) => window.alert('Rimozione non riuscita: ' + messaggioErrore(e)),
+    onError: (e: unknown) => avviso('Rimozione non riuscita: ' + messaggioErrore(e)),
   })
 
   const etichette = useMemo(() => {
@@ -319,8 +320,8 @@ function SchedaLezioneVista({
                   type="button"
                   className="x"
                   title="Togli"
-                  onClick={() => {
-                    if (!window.confirm(`Rimuovere ${nome} da questo allenamento?`)) return
+                  onClick={async () => {
+                    if (!(await conferma(`Rimuovere ${nome} da questo allenamento?`))) return
                     if (r.socio_id) onRimuoviGiocatore(r.socio_id)
                     else onRimuoviOspite(r.nome_manuale!)
                   }}
@@ -340,9 +341,9 @@ function SchedaLezioneVista({
           type="button"
           className="btn btn-pericolo btn-mini w-full"
           disabled={annullaPending}
-          onClick={() => {
+          onClick={async () => {
             const quando = giornoLabel + ' alle ' + oraLocale(inizio)
-            if (window.confirm(`Annullare l'allenamento (${quando})?`)) onAnnulla()
+            if (await conferma(`Annullare l'allenamento (${quando})?`)) onAnnulla()
           }}
         >
           Annulla l'allenamento

@@ -6,6 +6,7 @@ import { useMemo, useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { messaggioErrore } from '@/lib/errori'
+import { avviso, conferma } from '@/lib/dialoghi'
 import { useSociPubblici } from '@/features/prenotazioni/datiAmichevoli'
 import {
   americanoDisputata,
@@ -121,7 +122,7 @@ export default function GestioneAmericano({
       const mancaTabella =
         typeof e === 'object' && e !== null &&
         ('code' in e) && (e as { code?: string }).code === '42P01'
-      window.alert(
+      avviso(
         mancaTabella
           ? 'Tabella non trovata: esegui lo script tappa25-americano.sql su Supabase.'
           : 'Generazione non riuscita: ' + msg,
@@ -129,31 +130,31 @@ export default function GestioneAmericano({
     },
   })
 
-  function avviaGenerazione() {
+  async function avviaGenerazione() {
     if (isMisto) {
       if (erroreMisto) {
-        window.alert(erroreMisto)
+        avviso(erroreMisto)
         return
       }
     } else {
       const nValido = Math.floor(giocatori.length / 4) * 4
       if (nValido < 4) {
-        window.alert('Servono almeno 4 giocatori (multiplo di 4) per generare i turni.')
+        avviso('Servono almeno 4 giocatori (multiplo di 4) per generare i turni.')
         return
       }
       if (giocatori.length % 4 !== 0) {
         const esclusi = giocatori.length - nValido
-        if (!window.confirm(
+        if (!(await conferma(
           `${giocatori.length} giocatori: ${esclusi} ${esclusi === 1 ? 'verrà escluso' : 'verranno esclusi'} ` +
           `(solo multipli di 4 partecipano all'Americano).\n\nProcedo con ${nValido} giocatori?`
-        )) return
+        ))) return
       }
     }
     if (esistono && giocate > 0) {
-      if (!window.confirm(
+      if (!(await conferma(
         `Ci sono ${giocate} ${giocate === 1 ? 'partita già inserita' : 'partite già inserite'}. ` +
         `Rigenerare azzera tutti i risultati.\n\nProcedere?`
-      )) return
+      ))) return
     }
     genera.mutate()
   }
@@ -285,7 +286,7 @@ function RigaPartitaAmericano({
       if (error) throw error
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['tornei'] }) },
-    onError: (e: unknown) => window.alert('Salvataggio non riuscito: ' + messaggioErrore(e)),
+    onError: (e: unknown) => avviso('Salvataggio non riuscito: ' + messaggioErrore(e)),
   })
 
   const n = (id: number | string) => formatNomeAmericano(nomi[String(id)] ?? '?')
@@ -338,7 +339,7 @@ function EditorAmericano({
     const a = parseInt(casa, 10)
     const b = parseInt(ospite, 10)
     if (Number.isNaN(a) || Number.isNaN(b) || a < 0 || b < 0) {
-      window.alert('Inserisci due punteggi validi (numeri ≥ 0).')
+      avviso('Inserisci due punteggi validi (numeri ≥ 0).')
       return
     }
     salva({ punti_casa: a, punti_ospite: b })

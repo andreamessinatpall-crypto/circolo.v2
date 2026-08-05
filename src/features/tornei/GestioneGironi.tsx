@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { messaggioErrore } from '@/lib/errori'
+import { avviso, conferma } from '@/lib/dialoghi'
 import { classiInput } from '@/components/stili'
 import {
   LETTERE_GIRONE,
@@ -36,7 +37,7 @@ export default function GestioneGironi({
 
   // Mostra il messaggio giusto: o lo script SQL mancante, o l'errore vero.
   const segnalaErrore = (e: unknown) =>
-    window.alert(mancaColonnaGironi(e) ? SCRIPT_GIRONI : 'Non riuscito: ' + messaggioErrore(e))
+    avviso(mancaColonnaGironi(e) ? SCRIPT_GIRONI : 'Non riuscito: ' + messaggioErrore(e))
 
   const cambiaNumero = useMutation({
     mutationFn: async (nuovo: number) => {
@@ -104,13 +105,13 @@ export default function GestioneGironi({
     onError: segnalaErrore,
   })
 
-  function avviaSorteggio() {
+  async function avviaSorteggio() {
     if (!squadre.length) {
-      window.alert('Aggiungi prima le ' + unitaTorneo(torneo.sport, true) + '.')
+      avviso('Aggiungi prima le ' + unitaTorneo(torneo.sport, true) + '.')
       return
     }
     if (
-      window.confirm(
+      await conferma(
         'Distribuire a caso le ' +
           unitaTorneo(torneo.sport, true) +
           ' nei ' +

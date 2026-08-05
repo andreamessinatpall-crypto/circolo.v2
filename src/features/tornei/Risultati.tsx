@@ -2,6 +2,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { messaggioErrore } from '@/lib/errori'
+import { avviso } from '@/lib/dialoghi'
 import {
   formattaSet,
   incontroDisputato,
@@ -307,7 +308,7 @@ function RigaRisultato({
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['tornei'] }) },
     onError: (e: unknown) =>
-      window.alert(
+      avviso(
         mancaColonnaRisultato(e) ? SCRIPT_RISULTATO : 'Salvataggio non riuscito: ' + messaggioErrore(e),
       ),
   })
@@ -417,7 +418,7 @@ function EditorCalcio({
     const a = parseInt(casa, 10)
     const b = parseInt(ospite, 10)
     if (Number.isNaN(a) || Number.isNaN(b) || a < 0 || b < 0) {
-      window.alert('Inserisci due punteggi validi (numeri ≥ 0).')
+      avviso('Inserisci due punteggi validi (numeri ≥ 0).')
       return
     }
     salva({ punti_casa: a, punti_ospite: b })
@@ -481,18 +482,18 @@ function EditorPadel({
       const c = parseInt(nonVuoti[i].casa, 10)
       const o = parseInt(nonVuoti[i].ospite, 10)
       if (Number.isNaN(c) || Number.isNaN(o) || c < 0 || o < 0) {
-        window.alert('Set ' + (i + 1) + ': inserisci i game di entrambe le coppie (numeri ≥ 0).')
+        avviso('Set ' + (i + 1) + ': inserisci i game di entrambe le coppie (numeri ≥ 0).')
         return
       }
       if (c === o) {
-        window.alert('Set ' + (i + 1) + ': un set di padel non può finire in parità.')
+        avviso('Set ' + (i + 1) + ': un set di padel non può finire in parità.')
         return
       }
       validi.push({ casa: c, ospite: o })
     }
     const v = setVinti(validi)
     if (v.casa === v.ospite) {
-      window.alert('Risultato in parità di set: nel padel deve esserci una coppia vincitrice.')
+      avviso('Risultato in parità di set: nel padel deve esserci una coppia vincitrice.')
       return
     }
     salva({ punti_casa: v.casa, punti_ospite: v.ospite, set_punteggi: validi })

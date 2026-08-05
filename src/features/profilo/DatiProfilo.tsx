@@ -6,6 +6,7 @@ import { etichettaGenere } from '@/lib/formato'
 import { messaggioErrore } from '@/lib/errori'
 import { logoDaFile } from '@/lib/immagini'
 import { classiErrore, classiOk } from '@/components/stili'
+import { avviso } from '@/lib/dialoghi'
 import CambiaPasswordModal from './CambiaPasswordModal'
 import SezioneLivelloGioco from './livelloGioco/SezioneLivelloGioco'
 import SezionePreferenze from './preferenze/SezionePreferenze'
@@ -36,7 +37,7 @@ export default function DatiProfilo() {
       if (error) throw error
     },
     onSuccess: ricaricaProfilo,
-    onError: (e: unknown) => window.alert('Salvataggio foto non riuscito: ' + messaggioErrore(e)),
+    onError: (e: unknown) => avviso('Salvataggio foto non riuscito: ' + messaggioErrore(e)),
   })
 
   // Le modifiche a "I tuoi dati" si salvano da sole (niente più bottone "Salva
@@ -118,7 +119,7 @@ export default function DatiProfilo() {
                 const dataUrl = await logoDaFile(file, 200, 4096)
                 salvaFoto.mutate(dataUrl)
               } catch (err) {
-                window.alert(messaggioErrore(err))
+                avviso(messaggioErrore(err))
               }
             }}
           />

@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/auth/useAuth'
 import { useBloccaScrollBody } from '@/hooks/useBloccaScrollBody'
 import { mancaRpc, messaggioErrore } from '@/lib/errori'
+import { avviso, conferma } from '@/lib/dialoghi'
 import { puoGestireTornei } from '@/auth/ruoli'
 import { useCampi, usePrenotazioniGiorno } from '@/features/prenotazioni/datiPrenotazioni'
 import { dataDa, oraLocale, orariCampo, SLOT_MINUTI, ymd } from '@/features/prenotazioni/orari'
@@ -90,16 +91,16 @@ export function BottoneAnnullaProgrammazione({ m }: { m: Incontro }) {
       qc.invalidateQueries({ queryKey: ['tornei'] })
       qc.invalidateQueries({ queryKey: ['prenotazioni'] })
     },
-    onError: (e: unknown) => window.alert('Annullamento non riuscito: ' + messaggioErrore(e)),
+    onError: (e: unknown) => avviso('Annullamento non riuscito: ' + messaggioErrore(e)),
   })
   return (
     <button
       type="button"
       className="btn btn-mini btn-pericolo"
       disabled={annulla.isPending}
-      onClick={() => {
+      onClick={async () => {
         if (
-          window.confirm(
+          await conferma(
             'Annullare la programmazione di questo incontro? La prenotazione collegata verrà rimossa.',
           )
         )
@@ -219,7 +220,7 @@ function ModaleProgramma({
       qc.invalidateQueries({ queryKey: ['tornei'] })
       qc.invalidateQueries({ queryKey: ['prenotazioni'] })
       if (esito?.avviso) {
-        window.alert(
+        avviso(
           mancaRpc(esito.avviso)
             ? 'Incontro programmato, ma per aggiungere i giocatori serve lo script sfida.sql su Supabase.'
             : 'Incontro programmato, ma non ho potuto aggiungere i giocatori: ' +

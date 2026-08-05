@@ -6,6 +6,7 @@ import { tempoRelativo } from '@/lib/formato'
 import { useAuth } from '@/auth/useAuth'
 import RitaglioImmagine from '@/components/RitaglioImmagine'
 import { creaAnnuncio, eliminaAnnuncio, salvaAnnuncio, useAnnunci, type Annuncio } from '@/features/profilo/datiAnnunci'
+import { conferma } from '@/lib/dialoghi'
 
 type Esito = { tipo: 'errore'; testo: string } | null
 
@@ -389,9 +390,9 @@ export function RigaAnnuncio({ annuncio }: { annuncio: Annuncio }) {
             title="Elimina"
             className="icon-btn icon-btn-pericolo"
             disabled={elimina.isPending}
-            onClick={() => {
+            onClick={async () => {
               setMsg(null)
-              if (window.confirm(`Eliminare l'annuncio "${annuncio.titolo}"? L'operazione non si può annullare.`))
+              if (await conferma(`Eliminare l'annuncio "${annuncio.titolo}"? L'operazione non si può annullare.`))
                 elimina.mutate()
             }}
           >

@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { classiErrore, classiOk } from '@/components/stili'
 import { messaggioErrore } from '@/lib/errori'
+import { conferma } from '@/lib/dialoghi'
 import { useCampi } from '@/features/prenotazioni/datiPrenotazioni'
 import { useTornei } from '@/features/tornei/datiTornei'
 import { useModalitaPremi } from '@/features/premi/datiPremi'
@@ -68,9 +69,9 @@ export default function RigeneraPunti() {
           type="button"
           className="btn btn-bianco-rosso !mt-0"
           disabled={!pronto}
-          onClick={() => {
+          onClick={async () => {
             setMsg(null)
-            if (window.confirm('Rigenerare i punti di tutti i soci con i valori correnti?'))
+            if (await conferma('Rigenerare i punti di tutti i soci con i valori correnti?'))
               rigenera.mutate()
           }}
         >

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/auth/useAuth'
+import { avviso, conferma as chiediConferma } from '@/lib/dialoghi'
 import { mancaTabella, messaggioErrore } from '@/lib/errori'
 import { useAmici } from '@/features/profilo/amici/useAmici'
 import { useValoriPunti } from '@/features/segreteria/datiPunti'
@@ -94,11 +95,11 @@ export default function MieAmichevoli({ sport }: { sport: Sport }) {
     onError: (e: unknown) => {
       const err = e as { code?: string }
       if (err.code === '42501') {
-        window.alert('Puoi aggiungere solo i tuoi amici (e te stesso) alle tue prenotazioni.')
+        avviso('Puoi aggiungere solo i tuoi amici (e te stesso) alle tue prenotazioni.')
       } else if (mancaTabella(e, 'partecipanti_amichevole')) {
-        window.alert('Funzione non ancora attiva: esegui lo script tappa3a-amichevoli.sql su Supabase.')
+        avviso('Funzione non ancora attiva: esegui lo script tappa3a-amichevoli.sql su Supabase.')
       } else {
-        window.alert('Aggiunta non riuscita: ' + messaggioErrore(e))
+        avviso('Aggiunta non riuscita: ' + messaggioErrore(e))
       }
     },
   })
@@ -110,7 +111,7 @@ export default function MieAmichevoli({ sport }: { sport: Sport }) {
       if (error) throw error
     },
     onSuccess: aggiorna,
-    onError: (e: unknown) => window.alert('Rimozione non riuscita: ' + messaggioErrore(e)),
+    onError: (e: unknown) => avviso('Rimozione non riuscita: ' + messaggioErrore(e)),
   })
 
   // (Tappa 11) Solo l'admin: aggiunge un ospite non registrato (socio_id null).
@@ -126,7 +127,7 @@ export default function MieAmichevoli({ sport }: { sport: Sport }) {
     },
     onSuccess: aggiorna,
     onError: (e: unknown) =>
-      window.alert(
+      avviso(
         mancaColonnaManuale(e)
           ? 'Per aggiungere ospiti esegui lo script tappa15-partecipanti-id.sql su Supabase.'
           : 'Aggiunta non riuscita: ' + messaggioErrore(e),
@@ -168,7 +169,7 @@ export default function MieAmichevoli({ sport }: { sport: Sport }) {
       aggiorna()
       aggiornaSaldi()
     },
-    onError: (e: unknown) => window.alert('Operazione non riuscita: ' + messaggioErrore(e)),
+    onError: (e: unknown) => avviso('Operazione non riuscita: ' + messaggioErrore(e)),
   })
 
   const annulla = useMutation({
@@ -177,7 +178,7 @@ export default function MieAmichevoli({ sport }: { sport: Sport }) {
       if (error) throw error
     },
     onSuccess: aggiorna,
-    onError: (e: unknown) => window.alert('Annullamento non riuscito: ' + messaggioErrore(e)),
+    onError: (e: unknown) => avviso('Annullamento non riuscito: ' + messaggioErrore(e)),
   })
 
   if (!profilo) return null
@@ -264,7 +265,7 @@ export default function MieAmichevoli({ sport }: { sport: Sport }) {
                   admin ? (part, valore) => conferma.mutate({ part, pren: p, valore }) : undefined
                 }
                 onRimuovi={(part) => rimuovi.mutate(part.id)}
-                onAnnulla={() => {
+                onAnnulla={async () => {
                   const quando =
                     new Date(p.inizio).toLocaleDateString('it-IT', {
                       weekday: 'long',
@@ -274,7 +275,7 @@ export default function MieAmichevoli({ sport }: { sport: Sport }) {
                     ' alle ' +
                     oraLocale(new Date(p.inizio))
                   const dove = campiById.get(String(p.campo_id))?.nome ?? 'il campo'
-                  if (window.confirm(`Annullare la tua prenotazione su ${dove} (${quando})?`))
+                  if (await chiediConferma(`Annullare la tua prenotazione su ${dove} (${quando})?`))
                     annulla.mutate(p.id)
                 }}
               />
@@ -431,7 +432,7 @@ export function SchedaPartita({
                       {ospite}
                       {/* Non si può mai togliere il proprio nominativo dalla prenotazione. */}
                       {!r.confermato && r.socio_id !== mioId && (
-                        <button type="button" className="x" title="Togli" onClick={() => { if (window.confirm(`Rimuovere ${nome} da questa partita?`)) onRimuovi(r) }}>
+                        <button type="button" className="x" title="Togli" onClick={async () => { if (await chiediConferma(`Rimuovere ${nome} da questa partita?`)) onRimuovi(r) }}>
                           ×
                         </button>
                       )}
@@ -468,7 +469,7 @@ export function SchedaPartita({
                         type="button"
                         className="x"
                         title="Togli"
-                        onClick={(e) => { e.stopPropagation(); if (window.confirm(`Rimuovere ${nome} da questa partita?`)) onRimuovi(r) }}
+                        onClick={async (e) => { e.stopPropagation(); if (await chiediConferma(`Rimuovere ${nome} da questa partita?`)) onRimuovi(r) }}
                       >
                         ×
                       </button>
@@ -514,7 +515,7 @@ export function SchedaPartita({
                           type="button"
                           className="x"
                           title="Togli"
-                          onClick={() => { if (window.confirm(`Rimuovere ${nome} da questa partita?`)) onRimuovi(r) }}
+                          onClick={async () => { if (await chiediConferma(`Rimuovere ${nome} da questa partita?`)) onRimuovi(r) }}
                         >
                           ×
                         </button>

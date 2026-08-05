@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/auth/useAuth'
 import { prenotaSenzaLimite, puoGestirePrenotazioni } from '@/auth/ruoli'
+import { avviso } from '@/lib/dialoghi'
 import { dataDa } from './orari'
 import type { Campo, Impostazioni, PrenotazioneGiorno, Sport } from './tipi'
 
@@ -163,22 +164,22 @@ export function usePrenotaCampo(sport: Sport, campiSport: Campo[], imp: Impostaz
       const err = e as { code?: string; message?: string }
       if (err.message?.startsWith('LIMITE:')) {
         const [, c, l] = err.message.split(':')
-        window.alert(
+        avviso(
           `Hai già ${c} prenotazioni ${sport} attive: il limite è ${l}. Annullane una per prenotare di nuovo.`,
         )
       } else if (err.message?.startsWith('LIMITEGIORNO:')) {
         const [, c, l] = err.message.split(':')
-        window.alert(
+        avviso(
           `Hai già ${c} prenotazioni ${sport} in questo giorno: il limite giornaliero è ${l}.`,
         )
       } else if (err.code === '23505') {
-        window.alert('Qualcuno ha appena prenotato questo slot.')
+        avviso('Qualcuno ha appena prenotato questo slot.')
       } else if (err.code === '42501') {
-        window.alert(
+        avviso(
           `Prenotazione non consentita: si può prenotare solo entro ${imp.giorniAnticipo} giorni e per orari futuri.`,
         )
       } else {
-        window.alert('Prenotazione non riuscita: ' + (err.message ?? ''))
+        avviso('Prenotazione non riuscita: ' + (err.message ?? ''))
       }
       qc.invalidateQueries({ queryKey: ['prenotazioni'] })
     },

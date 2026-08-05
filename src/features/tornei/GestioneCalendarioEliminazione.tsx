@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { mancaTabella, messaggioErrore } from '@/lib/errori'
+import { avviso, conferma } from '@/lib/dialoghi'
 import { classiInput } from '@/components/stili'
 import { azzeraChiave } from '@/lib/punti'
 import {
@@ -131,7 +132,7 @@ export default function GestioneCalendarioEliminazione({
       setModalitaManuale(false)
       qc.invalidateQueries({ queryKey: ['tornei'] })
     },
-    onError: (e: unknown) => window.alert('Generazione non riuscita: ' + messaggioErrore(e)),
+    onError: (e: unknown) => avviso('Generazione non riuscita: ' + messaggioErrore(e)),
   })
 
   // ── Sorteggio casuale ─────────────────────────────────────────────────────
@@ -161,7 +162,7 @@ export default function GestioneCalendarioEliminazione({
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['tornei'] }) },
     onError: (e: unknown) =>
-      window.alert(
+      avviso(
         mancaTabella(e, 'incontri')
           ? 'Esegui lo script tappa3b2-girone.sql su Supabase.'
           : 'Generazione non riuscita: ' + messaggioErrore(e),
@@ -170,14 +171,14 @@ export default function GestioneCalendarioEliminazione({
 
   const azzera = useMutation({
     mutationFn: async () => {
-      if (!window.confirm('Azzerare tutto il tabellone? I risultati inseriti verranno persi.')) return
+      if (!(await conferma('Azzerare tutto il tabellone? I risultati inseriti verranno persi.'))) return
       for (const m of incontri) await azzeraChiave(`partita:${m.id}`)
       await azzeraChiave(`torneo:${torneo.id}:vittoria:1`)
       await supabase.from('incontri').delete().eq('torneo_id', torneo.id)
       await supabase.from('tornei').update({ bracket_seed: null }).eq('id', torneo.id)
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['tornei'] }) },
-    onError: (e: unknown) => window.alert('Errore: ' + messaggioErrore(e)),
+    onError: (e: unknown) => avviso('Errore: ' + messaggioErrore(e)),
   })
 
   if (N < 2) {

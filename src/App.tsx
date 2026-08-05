@@ -29,6 +29,7 @@ import GestionePrenotazioni from '@/features/segreteria/GestionePrenotazioni'
 import StatistichePage from '@/features/segreteria/StatistichePage'
 import { puoGestirePrenotazioni } from '@/auth/ruoli'
 import CookieBanner from '@/components/legale/CookieBanner'
+import { DialogoHost } from '@/lib/dialoghi'
 
 // Manda l'utente alla sua schermata di partenza in base al ruolo.
 function RedirezioneIniziale() {
@@ -43,11 +44,11 @@ function App() {
   const { pathname } = useLocation()
 
   if (stato === 'caricamento') return <SchermataCaricamento />
-  if (stato === 'recupero') return <><ResetPasswordPage /><CookieBanner /></>
+  if (stato === 'recupero') return <><ResetPasswordPage /><CookieBanner /><DialogoHost /></>
   // Con flusso PKCE Supabase può sparare SIGNED_IN invece di PASSWORD_RECOVERY:
   // controlliamo il path come fallback.
-  if (stato === 'attivo' && pathname === '/reset-password') return <><ResetPasswordPage /><CookieBanner /></>
-  if (stato === 'bloccato') return <><BloccoPage /><CookieBanner /></>
+  if (stato === 'attivo' && pathname === '/reset-password') return <><ResetPasswordPage /><CookieBanner /><DialogoHost /></>
+  if (stato === 'bloccato') return <><BloccoPage /><CookieBanner /><DialogoHost /></>
 
   if (stato === 'anonimo') {
     return (
@@ -58,6 +59,7 @@ function App() {
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
         <CookieBanner />
+        <DialogoHost />
       </>
     )
   }
@@ -66,6 +68,7 @@ function App() {
   return (
     <>
     <CookieBanner />
+    <DialogoHost />
     <Routes>
       <Route element={<AppShell />}>
         <Route path="/profilo" element={<ProfiloPage />} />

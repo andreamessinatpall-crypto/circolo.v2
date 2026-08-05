@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/auth/useAuth'
 import { mancaTabella, messaggioErrore, mancaRpc } from '@/lib/errori'
+import { avviso, conferma } from '@/lib/dialoghi'
 import { useSociEtichette, useSociPubblici } from '@/features/prenotazioni/datiAmichevoli'
 import { oraLocale, ymd } from '@/features/prenotazioni/orari'
 import { SportIcona } from '@/components/IconeSport'
@@ -74,7 +75,7 @@ export default function AttivitaInProgramma({ sport }: { sport?: Sport } = {}) {
       qc.invalidateQueries({ queryKey: ['prossima-attivita'] })
       qc.invalidateQueries({ queryKey: ['prenotazioni'] })
     },
-    onError: (e: unknown) => window.alert('Annullamento non riuscito: ' + messaggioErrore(e)),
+    onError: (e: unknown) => avviso('Annullamento non riuscito: ' + messaggioErrore(e)),
   })
 
   // Aggiungere/togliere un amico dalla propria partita: era in MieAmichevoli.tsx
@@ -93,11 +94,11 @@ export default function AttivitaInProgramma({ sport }: { sport?: Sport } = {}) {
     onError: (e: unknown) => {
       const err = e as { code?: string }
       if (err.code === '42501') {
-        window.alert('Puoi aggiungere solo i tuoi amici (e te stesso) alle tue prenotazioni.')
+        avviso('Puoi aggiungere solo i tuoi amici (e te stesso) alle tue prenotazioni.')
       } else if (mancaTabella(e, 'partecipanti_amichevole')) {
-        window.alert('Funzione non ancora attiva: esegui lo script tappa3a-amichevoli.sql su Supabase.')
+        avviso('Funzione non ancora attiva: esegui lo script tappa3a-amichevoli.sql su Supabase.')
       } else {
-        window.alert('Aggiunta non riuscita: ' + messaggioErrore(e))
+        avviso('Aggiunta non riuscita: ' + messaggioErrore(e))
       }
     },
   })
@@ -114,7 +115,7 @@ export default function AttivitaInProgramma({ sport }: { sport?: Sport } = {}) {
       if (error) throw error
     },
     onSuccess: invalidaAttivita,
-    onError: (e: unknown) => window.alert('Rimozione non riuscita: ' + messaggioErrore(e)),
+    onError: (e: unknown) => avviso('Rimozione non riuscita: ' + messaggioErrore(e)),
   })
 
   // Ospite non registrato: chiunque gestisce la propria partita può
@@ -132,7 +133,7 @@ export default function AttivitaInProgramma({ sport }: { sport?: Sport } = {}) {
       if (error) throw error
     },
     onSuccess: invalidaAttivita,
-    onError: (e: unknown) => window.alert('Aggiunta non riuscita: ' + messaggioErrore(e)),
+    onError: (e: unknown) => avviso('Aggiunta non riuscita: ' + messaggioErrore(e)),
   })
 
   // Un ospite non ha un socio_id per identificarlo: qui si toglie per la
@@ -149,7 +150,7 @@ export default function AttivitaInProgramma({ sport }: { sport?: Sport } = {}) {
       if (error) throw error
     },
     onSuccess: invalidaAttivita,
-    onError: (e: unknown) => window.alert('Rimozione non riuscita: ' + messaggioErrore(e)),
+    onError: (e: unknown) => avviso('Rimozione non riuscita: ' + messaggioErrore(e)),
   })
 
   const query = useQuery({
@@ -311,12 +312,12 @@ export default function AttivitaInProgramma({ sport }: { sport?: Sport } = {}) {
                   type="button"
                   className="btn btn-pericolo btn-mini w-full"
                   disabled={annulla.isPending}
-                  onClick={() => {
+                  onClick={async () => {
                     const quando = giornoLabel + ' alle ' + oraLocale(new Date(m.inizio))
                     const messaggio = tipo === 'allenamento'
                       ? `Annullare l'allenamento (${quando})?`
                       : `Annullare la tua prenotazione (${quando})?`
-                    if (window.confirm(messaggio)) annulla.mutate(m.id)
+                    if (await conferma(messaggio)) annulla.mutate(m.id)
                   }}
                 >
                   {tipo === 'allenamento' ? "Annulla l'allenamento" : 'Annulla la prenotazione'}
@@ -403,8 +404,8 @@ function PartecipantiPropria({
                 type="button"
                 className="x"
                 title="Togli"
-                onClick={() => {
-                  if (!window.confirm(`Rimuovere ${nome} da questa partita?`)) return
+                onClick={async () => {
+                  if (!(await conferma(`Rimuovere ${nome} da questa partita?`))) return
                   if (r.socio_id) onRimuovi(r.socio_id)
                   else onRimuoviOspite(r.nome_manuale!)
                 }}
@@ -474,8 +475,8 @@ function PartecipantiAllenamento({
               type="button"
               className="x"
               title="Togli"
-              onClick={() => {
-                if (!window.confirm(`Rimuovere ${nome} da questo allenamento?`)) return
+              onClick={async () => {
+                if (!(await conferma(`Rimuovere ${nome} da questo allenamento?`))) return
                 if (r.socio_id) onRimuovi(r.socio_id)
                 else onRimuoviOspite(r.nome_manuale!)
               }}

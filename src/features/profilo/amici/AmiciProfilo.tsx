@@ -9,6 +9,7 @@ import { useConversazioni } from '@/features/chat/useChat'
 import ChatModal from '@/features/chat/ChatModal'
 import DettaglioAmicoModal from './DettaglioAmicoModal'
 import { MiniInfoLivelloSport } from '../pagine/AreaClubSchede'
+import { conferma } from '@/lib/dialoghi'
 
 function MiniAmico({
   voce,
@@ -168,8 +169,8 @@ function CercaAmico({
   )
 }
 
-function rimuoviConConferma(v: VoceAmico, rimuovi: (rec: Amicizia) => void) {
-  if (window.confirm('Rimuovere ' + v.etichetta + ' dai tuoi amici?')) rimuovi(v.rec)
+async function rimuoviConConferma(v: VoceAmico, rimuovi: (rec: Amicizia) => void) {
+  if (await conferma('Rimuovere ' + v.etichetta + ' dai tuoi amici?')) rimuovi(v.rec)
 }
 
 export default function AmiciProfilo() {
@@ -312,8 +313,8 @@ export default function AmiciProfilo() {
             ).length
           }
           onChat={() => { setChatAmico(dettaglioAmico); setDettaglioAmico(null) }}
-          onRimuovi={() => {
-            rimuoviConConferma(dettaglioAmico, amici.rimuovi.mutate)
+          onRimuovi={async () => {
+            await rimuoviConConferma(dettaglioAmico, amici.rimuovi.mutate)
             setDettaglioAmico(null)
           }}
           onChiudi={() => setDettaglioAmico(null)}

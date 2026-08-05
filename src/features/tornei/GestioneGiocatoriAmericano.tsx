@@ -7,6 +7,7 @@ import ModalConferma from '@/components/ModalConferma'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { messaggioErrore } from '@/lib/errori'
+import { avviso } from '@/lib/dialoghi'
 import { useSociPubblici } from '@/features/prenotazioni/datiAmichevoli'
 import { assegnaPuntiIscrizione, annullaPuntiIscrizione } from './punti'
 import { genereEffettivoComponente, validaIscrizioneMista } from './americano'
@@ -88,7 +89,7 @@ export default function GestioneGiocatoriAmericano({
       await assegnaPuntiIscrizione(torneo, squadra, socioId)
     },
     onSuccess: aggiorna,
-    onError: (e: unknown) => window.alert('Non riuscito: ' + messaggioErrore(e)),
+    onError: (e: unknown) => avviso('Non riuscito: ' + messaggioErrore(e)),
   })
 
   // Aggiunge un ospite non registrato.
@@ -110,7 +111,7 @@ export default function GestioneGiocatoriAmericano({
       if (error) throw error
     },
     onSuccess: aggiorna,
-    onError: (e: unknown) => window.alert('Non riuscito: ' + messaggioErrore(e)),
+    onError: (e: unknown) => avviso('Non riuscito: ' + messaggioErrore(e)),
   })
 
   // (Fase 6bis) Imposta/corregge il genere di un componente per questo torneo
@@ -121,7 +122,7 @@ export default function GestioneGiocatoriAmericano({
       if (error) throw error
     },
     onSuccess: aggiorna,
-    onError: (e: unknown) => window.alert('Non riuscito: ' + messaggioErrore(e)),
+    onError: (e: unknown) => avviso('Non riuscito: ' + messaggioErrore(e)),
   })
 
   const rimuovi = useMutation({
@@ -138,7 +139,7 @@ export default function GestioneGiocatoriAmericano({
       if (error) throw error
     },
     onSuccess: aggiorna,
-    onError: (e: unknown) => window.alert('Non riuscito: ' + messaggioErrore(e)),
+    onError: (e: unknown) => avviso('Non riuscito: ' + messaggioErrore(e)),
   })
 
   if (sociQuery.isLoading) return <p className="sub">Caricamento soci…</p>

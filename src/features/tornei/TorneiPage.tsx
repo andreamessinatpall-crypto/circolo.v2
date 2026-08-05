@@ -9,6 +9,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/auth/useAuth'
 import { puoGestireTornei } from '@/auth/ruoli'
 import { mancaTabella, messaggioErrore } from '@/lib/errori'
+import { avviso } from '@/lib/dialoghi'
 import { dataEstesa } from '@/lib/formato'
 import { classiErrore, classiInput, classiOk } from '@/components/stili'
 import NumeroInput from '@/components/NumeroInput'
@@ -961,7 +962,7 @@ function DettaglioTorneo({
       }
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['tornei'] }) },
-    onError: (e: unknown) => window.alert('Aggiornamento non riuscito: ' + messaggioErrore(e)),
+    onError: (e: unknown) => avviso('Aggiornamento non riuscito: ' + messaggioErrore(e)),
   })
 
   const cancella = useMutation({
@@ -992,7 +993,7 @@ function DettaglioTorneo({
       await qc.invalidateQueries({ queryKey: ['tornei'] })
       onCancellato()
     },
-    onError: (e: unknown) => window.alert('Cancellazione non riuscita: ' + messaggioErrore(e)),
+    onError: (e: unknown) => avviso('Cancellazione non riuscita: ' + messaggioErrore(e)),
   })
 
   // Copia le regole del torneo (formato, punti, durata…) e gli iscritti
@@ -1068,7 +1069,7 @@ function DettaglioTorneo({
       await qc.invalidateQueries({ queryKey: ['tornei'] })
       onDuplicato(nuovoId)
     },
-    onError: (e: unknown) => window.alert('Duplicazione non riuscita: ' + messaggioErrore(e)),
+    onError: (e: unknown) => avviso('Duplicazione non riuscita: ' + messaggioErrore(e)),
   })
 
   function avviaCancellazione() {

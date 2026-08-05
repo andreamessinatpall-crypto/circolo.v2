@@ -8,6 +8,7 @@ import { useBloccaScrollBody } from '@/hooks/useBloccaScrollBody'
 import { useMeteo, type PrevisioneGiorno } from '@/hooks/useMeteo'
 import { IconaMeteo } from '@/components/IconeMeteo'
 import { puoGestirePrenotazioni } from '@/auth/ruoli'
+import { avviso } from '@/lib/dialoghi'
 import { messaggioErrore } from '@/lib/errori'
 import { useCampi, useImpostazioni, usePrenotazioniGiorno, usePrenotaCampo } from './datiPrenotazioni'
 import { oraLocale, ymd } from './orari'
@@ -58,7 +59,7 @@ export default function GrigliaPrenotazioni({ sport }: { sport: Sport }) {
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['prenotazioni'] }) },
     onError: (e: unknown) =>
-      window.alert('Annullamento non riuscito: ' + messaggioErrore(e)),
+      avviso('Annullamento non riuscito: ' + messaggioErrore(e)),
   })
 
   function chiediAnnulla(p: PrenotazioneGiorno, campo: Campo, inizio: Date, diChi?: string) {

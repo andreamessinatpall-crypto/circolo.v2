@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { classiErrore, classiOk } from '@/components/stili'
 import { messaggioErrore } from '@/lib/errori'
+import { conferma } from '@/lib/dialoghi'
 import { useCampi } from '@/features/prenotazioni/datiPrenotazioni'
 import { useModalitaPremi } from '@/features/premi/datiPremi'
 import type { Sport } from '@/features/prenotazioni/tipi'
@@ -62,9 +63,9 @@ export default function RigeneraCrediti() {
         type="button"
         className="btn btn-bianco-rosso !mt-0"
         disabled={!pronto}
-        onClick={() => {
+        onClick={async () => {
           setMsg(null)
-          if (window.confirm('Rigenerare i crediti di tutti i soci secondo gli intervalli?'))
+          if (await conferma('Rigenerare i crediti di tutti i soci secondo gli intervalli?'))
             rigenera.mutate()
         }}
       >

@@ -17,6 +17,7 @@ import { useAuth } from '@/auth/useAuth'
 import { useSociPubblici } from '@/features/prenotazioni/datiAmichevoli'
 import { supabase } from '@/lib/supabase'
 import { SportIcona } from '@/components/IconeSport'
+import { avviso } from '@/lib/dialoghi'
 
 function fmtData(s: string): string {
   return new Date(s + 'T00:00:00').toLocaleDateString('it-IT', { day: 'numeric', month: 'short' })
@@ -187,7 +188,7 @@ function ModaleIscrizione({
       qc.invalidateQueries({ queryKey: ['tornei'] })
       onClose()
     },
-    onError: (e: unknown) => window.alert('Errore: ' + messaggioErrore(e)),
+    onError: (e: unknown) => avviso('Errore: ' + messaggioErrore(e)),
   })
 
   return (
@@ -301,7 +302,7 @@ function CardTorneoInProgramma({
       if (error) throw error
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['tornei'] }) },
-    onError: (e: unknown) => window.alert('Errore: ' + messaggioErrore(e)),
+    onError: (e: unknown) => avviso('Errore: ' + messaggioErrore(e)),
   })
 
   return (

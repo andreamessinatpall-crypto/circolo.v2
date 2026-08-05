@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { classiErrore, classiOk } from '@/components/stili'
 import { messaggioErrore } from '@/lib/errori'
+import { avviso, conferma } from '@/lib/dialoghi'
 import CampoImmagine from '@/components/CampoImmagine'
 import {
   SCRIPT_PREMI,
@@ -435,9 +436,9 @@ function ModaleModificaPremio({ premio, onChiudi }: { premio: Premio; onChiudi: 
             type="button"
             className="btn btn-pericolo btn-mini !mt-0"
             disabled={elimina.isPending}
-            onClick={() => {
+            onClick={async () => {
               setMsg(null)
-              if (window.confirm(`Eliminare "${premio.nome}" dal catalogo? Le richieste già fatte restano nello storico.`))
+              if (await conferma(`Eliminare "${premio.nome}" dal catalogo? Le richieste già fatte restano nello storico.`))
                 elimina.mutate()
             }}
           >
@@ -581,12 +582,12 @@ function RigaRichiesta({ richiesta: r }: { richiesta: RichiestaConNome }) {
   const stato = useMutation({
     mutationFn: (s: 'approvato' | 'consegnato') => cambiaStatoRichiesta(r.id, s),
     onSuccess: invalida,
-    onError: (e: unknown) => window.alert('Operazione non riuscita: ' + erroreTesto(e)),
+    onError: (e: unknown) => avviso('Operazione non riuscita: ' + erroreTesto(e)),
   })
   const annulla = useMutation({
     mutationFn: () => annullaRichiesta(r.id),
     onSuccess: invalida,
-    onError: (e: unknown) => window.alert('Operazione non riuscita: ' + erroreTesto(e)),
+    onError: (e: unknown) => avviso('Operazione non riuscita: ' + erroreTesto(e)),
   })
   const inCorso = stato.isPending || annulla.isPending
 
@@ -627,8 +628,8 @@ function RigaRichiesta({ richiesta: r }: { richiesta: RichiestaConNome }) {
             type="button"
             className="btn btn-bianco-rosso btn-mini !mt-0"
             disabled={inCorso}
-            onClick={() => {
-              if (window.confirm('Eliminare la richiesta? I crediti tornano al socio.'))
+            onClick={async () => {
+              if (await conferma('Eliminare la richiesta? I crediti tornano al socio.'))
                 annulla.mutate()
             }}
           >

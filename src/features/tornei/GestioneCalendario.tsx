@@ -3,6 +3,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useBloccaScrollBody } from '@/hooks/useBloccaScrollBody'
 import { mancaTabella, messaggioErrore } from '@/lib/errori'
+// Alias: il file usa già una variabile locale `avviso` (stringa di warning).
+import { avviso as mostraAvviso, conferma as chiediConferma } from '@/lib/dialoghi'
 import { generaTurni, incontroDisputato, SCRIPT_INCONTRI } from './calendario'
 import { gironeSquadra, mancaColonnaGironi, nomeGirone, numGironi, SCRIPT_GIRONI, unitaTorneo } from './gironi'
 import { azzeraChiave } from '@/lib/punti'
@@ -139,7 +141,7 @@ export default function GestioneCalendario({
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['tornei'] }) },
     onError: (e: unknown) =>
-      window.alert(
+      mostraAvviso(
         mancaTabella(e, 'incontri')
           ? SCRIPT_INCONTRI
           : mancaColonnaGironi(e)
@@ -148,7 +150,7 @@ export default function GestioneCalendario({
       ),
   })
 
-  function avviaGenerazione() {
+  async function avviaGenerazione() {
     // Controllo che almeno un girone abbia 2+ squadre.
     const perGirone: Record<number, number> = {}
     for (const s of squadre) {
@@ -157,7 +159,7 @@ export default function GestioneCalendario({
     }
     const gironiPieni = Object.values(perGirone).filter((c) => c >= 2).length
     if (!gironiPieni) {
-      window.alert(
+      mostraAvviso(
         n > 1
           ? 'Ogni girone deve avere almeno 2 ' +
               unitaTorneo(torneo.sport, true) +
@@ -187,7 +189,7 @@ export default function GestioneCalendario({
           ' (saltati): ' +
           gironiSaltati.join(', ') +
           '.\n'
-      if (avviso && !window.confirm(avviso + '\nProcedo con la generazione del calendario?')) return
+      if (avviso && !(await chiediConferma(avviso + '\nProcedo con la generazione del calendario?'))) return
     }
 
     // Primo calendario: nessun risultato da salvare, genero subito.
@@ -242,8 +244,8 @@ export default function GestioneCalendario({
               <button
                 type="button"
                 className="btn btn-pericolo"
-                onClick={() => {
-                  if (!window.confirm('Azzerare TUTTI i risultati già inseriti?')) return
+                onClick={async () => {
+                  if (!(await chiediConferma('Azzerare TUTTI i risultati già inseriti?'))) return
                   setChiediScelta(false)
                   genera.mutate(false)
                 }}
