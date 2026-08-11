@@ -63,7 +63,7 @@ export async function creaAnnuncio(p: { titolo: string; testo: string; autore_id
   // admin, quindi chi pubblica l'annuncio non notifica se stesso. Un errore
   // qui non deve far fallire la creazione dell'annuncio, che è già salvato.
   try {
-    const { data: soci } = await supabase.rpc('soci_pubblici')
+    const { data: soci } = await supabase.rpc('soci_pubblici', { p_circolo_id: circoloId })
     const destinatari = ((soci ?? []) as { id: string }[]).map((s) => s.id)
     const corpo = p.testo ? (p.testo.length > 120 ? p.testo.slice(0, 117) + '…' : p.testo) : p.titolo
     await eseguiABlocchi(destinatari, (socioId) =>

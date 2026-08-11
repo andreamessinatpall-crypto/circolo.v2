@@ -79,9 +79,9 @@ export function useRichiestePartner(profiloId: string | undefined) {
   })
 
   const sociQuery = useQuery({
-    queryKey: ['soci_pubblici'],
+    queryKey: ['soci_pubblici', circolo.id],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('soci_pubblici')
+      const { data, error } = await supabase.rpc('soci_pubblici', { p_circolo_id: circolo.id })
       if (error) throw error
       return (data ?? []) as SocioPubblico[]
     },

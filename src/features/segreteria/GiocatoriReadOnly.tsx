@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import { useCircolo } from '@/circolo/useCircolo'
 import { titleCase, inizialiDaEtichetta } from '@/lib/formato'
 import { classiInput } from '@/components/stili'
 import { LIVELLI_PUNTI_DEFAULT, livelloDaPunti } from '@/features/profilo/livelliPunti'
@@ -15,10 +16,11 @@ function annoIscrizione(data: string | null): string {
 }
 
 function useSociPubblici() {
+  const circolo = useCircolo()
   return useQuery({
-    queryKey: ['soci_pubblici'],
+    queryKey: ['soci_pubblici', circolo.id],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('soci_pubblici')
+      const { data, error } = await supabase.rpc('soci_pubblici', { p_circolo_id: circolo.id })
       if (error) throw error
       return (data ?? []) as SocioPubblico[]
     },

@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import { useCircolo } from '@/circolo/useCircolo'
 import { titleCase } from '@/lib/formato'
 import type { Ruolo } from '@/features/profilo/ruoloBadge'
 
@@ -56,11 +57,12 @@ export function ruoloDa(s: SocioPubblico): Ruolo | null {
 
 export function useAmici(profiloId: string) {
   const qc = useQueryClient()
+  const circolo = useCircolo()
 
   const sociQuery = useQuery({
-    queryKey: ['soci_pubblici'],
+    queryKey: ['soci_pubblici', circolo.id],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('soci_pubblici')
+      const { data, error } = await supabase.rpc('soci_pubblici', { p_circolo_id: circolo.id })
       if (error) throw error
       return (data ?? []) as SocioPubblico[]
     },

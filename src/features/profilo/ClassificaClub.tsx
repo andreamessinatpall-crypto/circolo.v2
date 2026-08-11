@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import { useCircolo } from '@/circolo/useCircolo'
 import { messaggioErrore } from '@/lib/errori'
 import { titleCase, inizialiDaEtichetta } from '@/lib/formato'
 import { LIVELLI_PUNTI_DEFAULT, livelloDaPunti } from './livelliPunti'
@@ -35,10 +36,11 @@ function RigaCl({ r }: { r: RigaClassifica }) {
 // istruttore in ClubProfilo.tsx) per non duplicare la logica della query.
 export default function ClassificaClub({ nascondiHero = false }: { nascondiHero?: boolean }) {
   const [espanso, setEspanso] = useState(false)
+  const circolo = useCircolo()
   const query = useQuery({
-    queryKey: ['classifica_visibile'],
+    queryKey: ['classifica_visibile', circolo.id],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('classifica_visibile')
+      const { data, error } = await supabase.rpc('classifica_visibile', { p_circolo_id: circolo.id })
       if (error) throw error
       return (data ?? []) as RigaClassifica[]
     },

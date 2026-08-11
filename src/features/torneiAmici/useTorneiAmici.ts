@@ -141,6 +141,7 @@ export function useInvitaAltriAmiciTorneo(torneoId: string, nomeTorneo: string, 
 // eventuali prenotazioni già collegate a ciascun incontro.
 export function useDettaglioTorneoAmici(torneoId: string | undefined) {
   const qc = useQueryClient()
+  const circolo = useCircolo()
   const queryKey = ['tornei_amici_dettaglio', torneoId]
 
   const query = useQuery({
@@ -182,7 +183,7 @@ export function useDettaglioTorneoAmici(torneoId: string | undefined) {
       let puntiSoci = new Map<string, number>()
       let fotoSoci = new Map<string, string | null>()
       if (idSoci.size > 0) {
-        const { data: soci, error: e6 } = await supabase.rpc('soci_pubblici')
+        const { data: soci, error: e6 } = await supabase.rpc('soci_pubblici', { p_circolo_id: circolo.id })
         if (e6) throw e6
         const sociVisibili = (soci ?? []).filter((s: { id: string }) => idSoci.has(s.id))
         nomiSoci = new Map(sociVisibili.map((s: { id: string; etichetta: string }) => [s.id, s.etichetta]))

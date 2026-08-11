@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/auth/useAuth'
+import { useCircolo } from '@/circolo/useCircolo'
 
 export interface ProssimaAttivita {
   id: number | string
@@ -67,10 +68,11 @@ export interface RigaClassificaTop {
 // Anteprima leggera per la card "Classifica": solo i primi 3 (stessa RPC
 // della pagina completa, ClassificaClub.tsx).
 export function useTop3Classifica() {
+  const circolo = useCircolo()
   return useQuery({
-    queryKey: ['classifica_visibile'],
+    queryKey: ['classifica_visibile', circolo.id],
     queryFn: async (): Promise<RigaClassificaTop[]> => {
-      const { data, error } = await supabase.rpc('classifica_visibile')
+      const { data, error } = await supabase.rpc('classifica_visibile', { p_circolo_id: circolo.id })
       if (error) throw error
       return ((data ?? []) as RigaClassificaTop[]).slice(0, 3)
     },

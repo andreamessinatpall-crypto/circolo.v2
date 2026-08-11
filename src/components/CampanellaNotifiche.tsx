@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '@/auth/useAuth'
+import { useCircolo } from '@/circolo/useCircolo'
 import { useNotifiche, type Notifica } from '@/features/notifiche/useNotifiche'
 import { useConversazioni } from '@/features/chat/useChat'
 import ChatModal from '@/features/chat/ChatModal'
@@ -31,6 +32,7 @@ function IcoChiudi() {
 // del club, così non servono tre punti diversi per vedere "cosa c'è di nuovo".
 export default function CampanellaNotifiche() {
   const { profilo } = useAuth()
+  const circolo = useCircolo()
   const navigate = useNavigate()
   const location = useLocation()
   const [aperto, setAperto] = useState(false)
@@ -58,9 +60,9 @@ export default function CampanellaNotifiche() {
   // Amici/Contatti la cache è già calda, altrimenti si carica solo qui,
   // solo quando il pannello è aperto — non ad ogni pagina.
   const sociQuery = useQuery({
-    queryKey: ['soci_pubblici'],
+    queryKey: ['soci_pubblici', circolo.id],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('soci_pubblici')
+      const { data, error } = await supabase.rpc('soci_pubblici', { p_circolo_id: circolo.id })
       if (error) throw error
       return (data ?? []) as SocioPubblico[]
     },

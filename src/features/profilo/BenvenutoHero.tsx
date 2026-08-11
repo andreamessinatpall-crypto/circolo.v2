@@ -108,7 +108,7 @@ export default function BenvenutoHero({ onRichiesteClick }: { onRichiesteClick?:
       const crediti = me?.crediti_bloccati ? 0 : Number(me?.crediti) || 0
 
       let posizione: number | null = null
-      const { data: cls } = await supabase.rpc('classifica_visibile')
+      const { data: cls } = await supabase.rpc('classifica_visibile', { p_circolo_id: circolo.id })
       const righe = (cls ?? []) as Array<{ is_me?: boolean; posizione?: number }>
       const mia = righe.find((r) => r.is_me)
       if (mia?.posizione != null) posizione = mia.posizione

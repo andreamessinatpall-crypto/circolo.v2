@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import { useCircolo } from '@/circolo/useCircolo'
 import { titleCase } from '@/lib/formato'
 import type { Sport } from './tipi'
 
@@ -50,10 +51,11 @@ export interface MiaPrenotazione {
 // delle prenotazioni (vedi useSociEtichette), solo per liste "amici"/selezione
 // di nuovi giocatori, dove sospesi e cancellati non devono comparire.
 export function useSociPubblici() {
+  const circolo = useCircolo()
   return useQuery({
-    queryKey: ['soci_pubblici'],
+    queryKey: ['soci_pubblici', circolo.id],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('soci_pubblici')
+      const { data, error } = await supabase.rpc('soci_pubblici', { p_circolo_id: circolo.id })
       if (error) throw error
       return ((data ?? []) as SocioPubblico[]).map((s) => ({
         id: s.id,
@@ -69,10 +71,11 @@ export function useSociPubblici() {
 // cancellazione anonimizza email/telefono ma lascia apposta nome e cognome
 // leggibili nello storico).
 export function useSociEtichette() {
+  const circolo = useCircolo()
   return useQuery({
-    queryKey: ['soci_etichette'],
+    queryKey: ['soci_etichette', circolo.id],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('soci_etichette')
+      const { data, error } = await supabase.rpc('soci_etichette', { p_circolo_id: circolo.id })
       if (error) throw error
       return ((data ?? []) as { id: string; etichetta: string }[]).map((s) => ({
         id: s.id,
