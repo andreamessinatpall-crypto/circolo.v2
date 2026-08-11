@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/auth/useAuth'
 import { useCircolo } from '@/circolo/useCircolo'
-import { prenotaSenzaLimite, puoGestirePrenotazioni } from '@/auth/ruoli'
+import { useMioRuolo } from '@/circolo/useMioRuolo'
 import { avviso } from '@/lib/dialoghi'
 import { dataDa } from './orari'
 import type { Campo, Impostazioni, PrenotazioneGiorno, Sport } from './tipi'
@@ -87,6 +87,7 @@ export function usePrenotazioniGiorno(giorno: string) {
 export function usePrenotaCampo(sport: Sport, campiSport: Campo[], imp: Impostazioni) {
   const { profilo } = useAuth()
   const circolo = useCircolo()
+  const { puoGestire } = useMioRuolo()
   const qc = useQueryClient()
 
   return useMutation({
@@ -106,7 +107,7 @@ export function usePrenotaCampo(sport: Sport, campiSport: Campo[], imp: Impostaz
       if (!profilo) throw new Error('Profilo non disponibile')
       const limite = sport === 'padel' ? imp.maxPadel : imp.maxCalcio
       const limiteGiorno = sport === 'padel' ? imp.maxPadelGiorno : imp.maxCalcioGiorno
-      const senzaLimite = prenotaSenzaLimite(profilo)
+      const senzaLimite = puoGestire
       if ((limite > 0 || limiteGiorno > 0) && !senzaLimite) {
         const idCampiSport = campiSport.map((c) => c.id)
         if (limite > 0) {
@@ -144,9 +145,9 @@ export function usePrenotaCampo(sport: Sport, campiSport: Campo[], imp: Impostaz
       }
       if (allenamento) {
         dati.allenamento = true
-        // Chi è istruttore (o gestisce le prenotazioni) si auto-assegna come
-        // istruttore dell'allenamento, così gli compare nella vista Lezioni.
-        if (profilo.e_allenatore || puoGestirePrenotazioni(profilo)) dati.allenatore_id = profilo.id
+        // Chi gestisce il circolo si auto-assegna come istruttore
+        // dell'allenamento, così gli compare nella vista Lezioni.
+        if (puoGestire) dati.allenatore_id = profilo.id
       }
       const { data: creata, error } = await supabase
         .from('prenotazioni')

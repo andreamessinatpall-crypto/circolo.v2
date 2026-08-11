@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useAuth } from '@/auth/useAuth'
-import { sportConsentiti, puoGestirePrenotazioni } from '@/auth/ruoli'
+import { sportConsentiti } from '@/auth/ruoli'
+import { useMioRuolo } from '@/circolo/useMioRuolo'
 import SportPage from './SportPage'
 import PrenotaWizard from './PrenotaWizard'
 import type { Sport } from './tipi'
@@ -14,6 +15,7 @@ const ETICHETTA: Record<Sport, string> = { padel: 'Padel', calcio: 'Calcio' }
 // (calendario → sport → orari liberi → campo → conferma).
 export default function PrenotaPage() {
   const { profilo } = useAuth()
+  const { puoGestire } = useMioRuolo()
   const sport: Sport[] = profilo ? sportConsentiti(profilo) : ['padel', 'calcio']
   const [sel, setSel] = useState<Sport>(sport[0] ?? 'padel')
 
@@ -21,7 +23,7 @@ export default function PrenotaPage() {
   // ripiega sul primo disponibile.
   const attivo = sport.includes(sel) ? sel : (sport[0] ?? 'padel')
 
-  const staff = !!(profilo && (puoGestirePrenotazioni(profilo) || profilo.e_allenatore))
+  const staff = puoGestire
   if (!staff) return <PrenotaWizard sportOptions={sport} />
 
   return (

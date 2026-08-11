@@ -1,7 +1,6 @@
 import type { Socio } from './tipi'
 
 // Funzioni che traducono i ruoli del socio in "cosa può vedere/fare".
-// Riprendono gli helper della v1 (sportConsentiti, puoGestireTornei).
 
 // Gli sport che il socio vede nell'interfaccia, in base alla sua preferenza.
 export function sportConsentiti(p: Socio): Array<'padel' | 'calcio'> {
@@ -10,22 +9,10 @@ export function sportConsentiti(p: Socio): Array<'padel' | 'calcio'> {
   return ['padel', 'calcio']
 }
 
-// Chi può creare e gestire i tornei: amministratori, collaboratori e istruttori.
-export function puoGestireTornei(p: Socio): boolean {
-  return !!(p.is_admin || p.is_allenatore || p.e_allenatore)
-}
-
-// Chi gestisce le prenotazioni come l'admin (vede chi ha prenotato, annulla
-// prenotazioni altrui, sposta gli orari, conferma le presenze): admin e collaboratori.
-export function puoGestirePrenotazioni(p: Socio): boolean {
-  return !!(p.is_admin || p.is_allenatore)
-}
-
-// Chi prenota senza il limite massimo di prenotazioni attive:
-// admin, collaboratori e istruttori.
-export function prenotaSenzaLimite(p: Socio): boolean {
-  return !!(p.is_admin || p.is_allenatore || p.e_allenatore)
-}
+// NB: chi gestisce prenotazioni/tornei/limiti non si legge più da qui (erano
+// flag globali is_admin/is_allenatore/e_allenatore, uguali in ogni circolo).
+// Usare `useMioRuolo().puoGestire` dal componente: il ruolo vive per-circolo
+// in `soci_circoli`, risolto da <CircoloProvider>.
 
 // Chi gestisce la piattaforma multi-circolo (crea circoli, assegna gestori
 // e collaboratori): solo il super-admin.

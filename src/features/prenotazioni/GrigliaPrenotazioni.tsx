@@ -7,7 +7,7 @@ import { useAuth } from '@/auth/useAuth'
 import { useBloccaScrollBody } from '@/hooks/useBloccaScrollBody'
 import { useMeteo, type PrevisioneGiorno } from '@/hooks/useMeteo'
 import { IconaMeteo } from '@/components/IconeMeteo'
-import { puoGestirePrenotazioni } from '@/auth/ruoli'
+import { useMioRuolo } from '@/circolo/useMioRuolo'
 import { avviso } from '@/lib/dialoghi'
 import { messaggioErrore } from '@/lib/errori'
 import { useCampi, useImpostazioni, usePrenotazioniGiorno, usePrenotaCampo } from './datiPrenotazioni'
@@ -18,6 +18,7 @@ import type { Campo, PrenotazioneGiorno, Sport } from './tipi'
 
 export default function GrigliaPrenotazioni({ sport }: { sport: Sport }) {
   const { profilo } = useAuth()
+  const { puoGestire } = useMioRuolo()
   const qc = useQueryClient()
   const location = useLocation()
   const impQuery = useImpostazioni()
@@ -73,9 +74,9 @@ export default function GrigliaPrenotazioni({ sport }: { sport: Sport }) {
     setAnnullaPending({ id: String(p.id), domanda })
   }
 
-  // Chi sceglie tra prenotazione "partita" e "allenamento": admin, collaboratore
-  // e istruttore. Il socio normale prenota direttamente una partita.
-  const staff = !!(profilo && (puoGestirePrenotazioni(profilo) || profilo.e_allenatore))
+  // Chi sceglie tra prenotazione "partita" e "allenamento": gestore e
+  // collaboratore. Il socio normale prenota direttamente una partita.
+  const staff = puoGestire
   function apriPrenota(campo: Campo, inizio: Date, fine: Date) {
     if (staff) setScelta({ campo, inizio, fine })
     else {
@@ -125,7 +126,7 @@ export default function GrigliaPrenotazioni({ sport }: { sport: Sport }) {
           prenotazioni={(prenQuery.data ?? []).filter(
             (p) => String(p.campo_id) === String(campo.id),
           )}
-          isAdmin={!!profilo.is_admin}
+          isAdmin={puoGestire}
           isStaff={staff}
           mioId={profilo.id}
           previsione={campo.outdoor ? meteoQuery.data?.get(giorno) : undefined}

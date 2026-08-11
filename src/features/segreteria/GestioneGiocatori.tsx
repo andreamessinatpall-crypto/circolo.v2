@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { useAuth } from '@/auth/useAuth'
+import { useMioRuolo } from '@/circolo/useMioRuolo'
 import { titleCase, iniziali } from '@/lib/formato'
 import { classiErrore, classiInput, classiOk } from '@/components/stili'
 import { messaggioErrore } from '@/lib/errori'
@@ -114,6 +115,7 @@ function ruoloDi(s: SocioAdmin): 'admin' | 'collaboratore' | 'istruttore' | null
 // account) — mostrata invece nella pagina /soci raggiunta da Area Club.
 export default function GestioneGiocatori({ embedded = false }: { embedded?: boolean }) {
   const { profilo } = useAuth()
+  const { eGestore } = useMioRuolo()
   const { data: soci, isLoading, error } = useSoci()
   const { data: attivita } = useAttivitaSoci()
   const { data: modalitaPremi } = useModalitaPremi()
@@ -495,7 +497,7 @@ export default function GestioneGiocatori({ embedded = false }: { embedded?: boo
             setGestisciId(menuSocio.id)
             setMenuId(null)
           }}
-          nascondiPrenotaInsieme={!!profilo?.is_admin}
+          nascondiPrenotaInsieme={eGestore}
           onChiudi={() => setMenuId(null)}
         />
       )}

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/auth/useAuth'
+import { useMioRuolo } from '@/circolo/useMioRuolo'
 import { avviso, conferma as chiediConferma } from '@/lib/dialoghi'
 import { mancaTabella, messaggioErrore } from '@/lib/errori'
 import { useAmici } from '@/features/profilo/amici/useAmici'
@@ -28,6 +29,7 @@ const ICONA_GIORNO = (
 
 export default function MieAmichevoli({ sport }: { sport: Sport }) {
   const { profilo } = useAuth()
+  const { puoGestire } = useMioRuolo()
   const qc = useQueryClient()
   const campiQuery = useCampi()
   const sociQuery = useSociPubblici()
@@ -212,8 +214,8 @@ export default function MieAmichevoli({ sport }: { sport: Sport }) {
     partsByPren.get(k)!.push(r)
   }
 
-  const staff = !!(profilo.is_allenatore || profilo.is_admin || profilo.e_allenatore)
-  const admin = !!profilo.is_admin
+  const staff = puoGestire
+  const admin = puoGestire
   const candidati = staff
     ? (sociQuery.data ?? []).filter((s) => s.id !== profilo.id)
     : amiciData.amici.map((a) => ({ id: a.id, etichetta: a.etichetta }))

@@ -7,7 +7,7 @@ import { z } from 'zod'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/auth/useAuth'
-import { puoGestireTornei } from '@/auth/ruoli'
+import { useMioRuolo } from '@/circolo/useMioRuolo'
 import { mancaTabella, messaggioErrore } from '@/lib/errori'
 import { avviso } from '@/lib/dialoghi'
 import { dataEstesa } from '@/lib/formato'
@@ -132,6 +132,7 @@ function CardTorneoClub({
 
 export default function TorneiPage() {
   const { profilo } = useAuth()
+  const { puoGestire } = useMioRuolo()
   const [searchParams] = useSearchParams()
   // Deep link da altre pagine (es. "Crea un torneo con i tuoi amici" negli
   // Amici del profilo): ?vista=amici apre subito la scheda giusta.
@@ -188,7 +189,7 @@ export default function TorneiPage() {
     )
   }
 
-  const gestore = puoGestireTornei(profilo)
+  const gestore = puoGestire
   const d = torneiQuery.data!
   const visibili = gestore
     ? d.tornei

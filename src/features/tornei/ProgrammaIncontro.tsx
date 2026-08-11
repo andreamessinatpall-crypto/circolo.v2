@@ -6,7 +6,7 @@ import { useAuth } from '@/auth/useAuth'
 import { useBloccaScrollBody } from '@/hooks/useBloccaScrollBody'
 import { mancaRpc, messaggioErrore } from '@/lib/errori'
 import { avviso, conferma } from '@/lib/dialoghi'
-import { puoGestireTornei } from '@/auth/ruoli'
+import { useMioRuolo } from '@/circolo/useMioRuolo'
 import { useCampi, usePrenotazioniGiorno } from '@/features/prenotazioni/datiPrenotazioni'
 import { dataDa, oraLocale, orariCampo, SLOT_MINUTI, ymd } from '@/features/prenotazioni/orari'
 import { nomeSquadraElegante } from './gironi'
@@ -131,9 +131,10 @@ function ModaleProgramma({
 }) {
   useBloccaScrollBody()
   const { profilo } = useAuth()
+  const { puoGestire } = useMioRuolo()
   const qc = useQueryClient()
   const campiQuery = useCampi()
-  const staff = !!profilo && puoGestireTornei(profilo)
+  const staff = puoGestire
   const durataMn = torneo.durata_minuti ?? SLOT_MINUTI
 
   const campiSport = (campiQuery.data ?? []).filter(

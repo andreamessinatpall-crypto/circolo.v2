@@ -1,4 +1,5 @@
 import { useAuth } from '@/auth/useAuth'
+import { useMioRuolo } from '@/circolo/useMioRuolo'
 import { annuncioAttivo, useAnnunci } from '@/features/profilo/datiAnnunci'
 import { tempoRelativo } from '@/lib/formato'
 import { messaggioErrore } from '@/lib/errori'
@@ -15,7 +16,7 @@ import TornaAreaClub from './TornaAreaClub'
 // Annunci nella campanella notifiche) invece di essere una vera pagina/route.
 export default function AnnunciPagina({ embedded = false }: { embedded?: boolean }) {
   const { profilo } = useAuth()
-  const puoPubblicare = !!profilo?.is_admin || !!profilo?.is_allenatore
+  const { puoGestire: puoPubblicare } = useMioRuolo()
   const { data, isLoading, error } = useAnnunci()
   const lista = (data ?? []).filter((a) => annuncioAttivo(a))
 

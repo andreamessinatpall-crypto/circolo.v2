@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/auth/useAuth'
+import { useMioRuolo } from '@/circolo/useMioRuolo'
 import { useMemo, useState } from 'react'
 import { dataEstesa, titleCase, inizialiDaEtichetta } from '@/lib/formato'
 import { oraLocale, ymd } from '@/features/prenotazioni/orari'
@@ -321,6 +322,7 @@ function CardStatistiche() {
 // resta GiocatoriReadOnly invece di SociPage. ─────────────────────────────
 function CardGiocatori({ gestore = true }: { gestore?: boolean }) {
   const { profilo } = useAuth()
+  const { eGestore } = useMioRuolo()
   const amici = useAmici(profilo?.id ?? '')
   const sociAdminQuery = useSoci(gestore)
   const { data: modalitaPremi } = useModalitaPremi()
@@ -384,7 +386,7 @@ function CardGiocatori({ gestore = true }: { gestore?: boolean }) {
             setGestisciId(visualizzato.id)
             setVisualizzato(null)
           } : undefined}
-          nascondiPrenotaInsieme={!!profilo?.is_admin}
+          nascondiPrenotaInsieme={eGestore}
           onChiudi={() => setVisualizzato(null)}
         />
       )}
@@ -851,10 +853,10 @@ function CardAmici() {
 // Stessa griglia per socio/istruttore/collaboratore/admin, con le prime
 // schede diverse a seconda del ruolo — vedi composizione qui sotto.
 export default function AreaClubSchede({ modalitaPremi }: { modalitaPremi: boolean }) {
-  const { profilo } = useAuth()
-  const isAdmin = !!profilo?.is_admin
-  const isCollaboratore = !!profilo?.is_allenatore && !profilo?.is_admin
-  const isIstruttore = !!profilo?.e_allenatore && !profilo?.is_allenatore && !profilo?.is_admin
+  const { eGestore, eCollaboratore, puoDareLezioni } = useMioRuolo()
+  const isAdmin = eGestore
+  const isCollaboratore = eCollaboratore && !puoDareLezioni
+  const isIstruttore = eCollaboratore && puoDareLezioni
 
   return (
     <div className="club-tile-grid">

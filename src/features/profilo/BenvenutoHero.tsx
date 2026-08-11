@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/auth/useAuth'
+import { useMioRuolo } from '@/circolo/useMioRuolo'
 import { dataEstesa, iniziali } from '@/lib/formato'
 import { LIVELLI_PUNTI_DEFAULT, livelloDaPunti, useLivelliPunti } from './livelliPunti'
 import Avatar from '@/components/Avatar'
@@ -14,10 +15,14 @@ import Avatar from '@/components/Avatar'
 // rosso della campanella notifiche, qui sul riquadro "Richieste").
 export default function BenvenutoHero({ onRichiesteClick }: { onRichiesteClick?: () => void } = {}) {
   const { profilo } = useAuth()
+  const { eCollaboratore, puoDareLezioni } = useMioRuolo()
   const livelliQuery = useLivelliPunti()
 
-  const collaboratore = !!profilo?.is_allenatore && !profilo?.is_admin
-  const istruttore    = !!profilo?.e_allenatore && !profilo?.is_allenatore && !profilo?.is_admin
+  // Un gestore resta sulla vista "punti/classifica" normale (come un socio).
+  // Il collaboratore ha una vista con le partite di oggi; se il gestore gli
+  // ha concesso di dare lezioni, vede invece la vista dedicata alle lezioni.
+  const collaboratore = eCollaboratore && !puoDareLezioni
+  const istruttore    = eCollaboratore && puoDareLezioni
 
   const stat = useQuery({
     queryKey: ['riepilogo-stat', profilo?.id],
