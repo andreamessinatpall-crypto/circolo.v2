@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { classiErrore, classiOk } from '@/components/stili'
+import { useCircolo } from '@/circolo/useCircolo'
 import {
   applicaLivelliPunti,
   PALETTE,
@@ -47,6 +48,7 @@ interface Riga {
 
 function EditorLivelli({ iniziali }: { iniziali: LivelloPunti[] }) {
   const qc = useQueryClient()
+  const circolo = useCircolo()
   const [righe, setRighe] = useState<Riga[]>(() =>
     iniziali.map((l, i) => ({
       id: i,
@@ -77,7 +79,7 @@ function EditorLivelli({ iniziali }: { iniziali: LivelloPunti[] }) {
         colore: PALETTE[i % PALETTE.length],
         img: r.img,
       }))
-      const esito = await salvaLivelliPunti(livelli)
+      const esito = await salvaLivelliPunti(livelli, circolo.id)
       if (!esito.ok)
         throw new Error(
           esito.mancaPermesso

@@ -48,8 +48,8 @@ export function useTutteRichieste() {
   })
 }
 
-export async function salvaModalitaPremi(attiva: boolean): Promise<void> {
-  const { error } = await supabase.from('impostazioni').update({ modalita_premi: attiva }).eq('id', 1)
+export async function salvaModalitaPremi(attiva: boolean, circoloId: string): Promise<void> {
+  const { error } = await supabase.from('impostazioni').update({ modalita_premi: attiva }).eq('circolo_id', circoloId)
   if (error) throw error
 }
 

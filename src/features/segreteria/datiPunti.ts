@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import { useCircolo } from '@/circolo/useCircolo'
 import type { EsitoSalvataggio } from './datiCampi'
 
 // (Fase 8d · blocco 1) Valori dei punti e dei crediti per ogni azione, distinti
@@ -36,13 +37,14 @@ function num(perSport: unknown, legacy: unknown = undefined): number {
 }
 
 export function useValoriPunti() {
+  const circolo = useCircolo()
   return useQuery({
-    queryKey: ['valori-punti'],
+    queryKey: ['valori-punti', circolo.id],
     queryFn: async (): Promise<ValoriPunti> => {
       const { data, error } = await supabase
         .from('impostazioni')
         .select('*')
-        .eq('id', 1)
+        .eq('circolo_id', circolo.id)
         .maybeSingle()
       if (error) throw error
       const r = (data ?? {}) as Record<string, unknown>
@@ -60,7 +62,7 @@ export function useValoriPunti() {
   })
 }
 
-export async function salvaValoriPunti(v: ValoriPunti): Promise<EsitoSalvataggio> {
+export async function salvaValoriPunti(v: ValoriPunti, circoloId: string): Promise<EsitoSalvataggio> {
   const { error } = await supabase
     .from('impostazioni')
     .update({
@@ -73,7 +75,7 @@ export async function salvaValoriPunti(v: ValoriPunti): Promise<EsitoSalvataggio
       crediti_allenamento_padel: v.creditiAllenamentoPadel,
       crediti_allenamento_calcio: v.creditiAllenamentoCalcio,
     })
-    .eq('id', 1)
+    .eq('circolo_id', circoloId)
   if (error) {
     return {
       ok: false,

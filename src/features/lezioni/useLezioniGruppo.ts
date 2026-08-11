@@ -1,19 +1,22 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import { useCircolo } from '@/circolo/useCircolo'
 import type { MiaPrenotazione, Partecipante } from '@/features/prenotazioni/datiAmichevoli'
 
 // Le lezioni di gruppo future (tappa91): stessa forma di useMieLezioni, ma
 // non filtrate per istruttore — servono alla card di Area Club, visibile a
 // chiunque voglia iscriversi, non solo a chi le tiene.
 export function useLezioniGruppoFuture() {
+  const circolo = useCircolo()
   return useQuery({
-    queryKey: ['lezioni_gruppo'],
+    queryKey: ['lezioni_gruppo', circolo.id],
     queryFn: async () => {
       const adesso = new Date().toISOString()
       const { data: pren, error } = await supabase
         .from('prenotazioni')
         .select('*')
         .eq('lezione_gruppo', true)
+        .eq('circolo_id', circolo.id)
         .gte('fine', adesso)
         .order('inizio', { ascending: true })
       if (error) throw error
@@ -103,6 +106,7 @@ export function useAnnullaIscrizioneLezioneGruppo(profiloId: string | undefined)
 // riga, permesso dalla policy perché non vincola quelle colonne.
 export function useCreaLezioneGruppo(istruttoreId: string | undefined) {
   const qc = useQueryClient()
+  const circolo = useCircolo()
   return useMutation({
     mutationFn: async (dati: { campoId: number | string; inizio: string; fine: string }) => {
       if (!istruttoreId) throw new Error('Utente non autenticato')
@@ -114,6 +118,7 @@ export function useCreaLezioneGruppo(istruttoreId: string | undefined) {
         lezione_gruppo: true,
         inizio: dati.inizio,
         fine: dati.fine,
+        circolo_id: circolo.id,
       })
       if (error) throw error
     },

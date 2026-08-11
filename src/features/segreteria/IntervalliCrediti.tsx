@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { classiErrore, classiOk } from '@/components/stili'
+import { useCircolo } from '@/circolo/useCircolo'
 import RigeneraCrediti from './RigeneraCrediti'
 import {
   normalizzaIntervalli,
@@ -50,6 +51,7 @@ interface Riga {
 
 function EditorIntervalli({ iniziali }: { iniziali: Intervallo[] }) {
   const qc = useQueryClient()
+  const circolo = useCircolo()
   const [righe, setRighe] = useState<Riga[]>(() =>
     iniziali.length
       ? iniziali.map((iv, i) => ({ id: i, da: iv.da, a: iv.a }))
@@ -76,7 +78,7 @@ function EditorIntervalli({ iniziali }: { iniziali: Intervallo[] }) {
           throw new Error("In un intervallo la data di inizio non può essere dopo quella di fine.")
         raccolti.push({ da: r.da, a: r.a })
       }
-      const esito = await salvaIntervalli(raccolti)
+      const esito = await salvaIntervalli(raccolti, circolo.id)
       if (!esito.ok)
         throw new Error(
           esito.mancaPermesso

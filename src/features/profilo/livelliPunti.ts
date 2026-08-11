@@ -4,6 +4,7 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import { useCircolo } from '@/circolo/useCircolo'
 import type { EsitoSalvataggio } from '@/features/segreteria/datiCampi'
 
 export interface LivelloPunti {
@@ -61,13 +62,14 @@ export function livelloDaPunti(punti: number, livelli: LivelloPunti[] = LIVELLI_
 
 // Legge i livelli configurati (con ripiego sui default).
 export function useLivelliPunti() {
+  const circolo = useCircolo()
   return useQuery({
-    queryKey: ['livelli-punti'],
+    queryKey: ['livelli-punti', circolo.id],
     queryFn: async (): Promise<LivelloPunti[]> => {
       const { data, error } = await supabase
         .from('impostazioni')
         .select('*')
-        .eq('id', 1)
+        .eq('circolo_id', circolo.id)
         .maybeSingle()
       if (error) throw error
       const r = (data ?? {}) as Record<string, unknown>
@@ -81,12 +83,12 @@ function mancaColonna(error: { code?: string; message?: string }): boolean {
   return (error.message ?? '').toLowerCase().includes('livelli_punti')
 }
 
-export async function salvaLivelliPunti(livelli: LivelloPunti[]): Promise<EsitoSalvataggio> {
+export async function salvaLivelliPunti(livelli: LivelloPunti[], circoloId: string): Promise<EsitoSalvataggio> {
   const puliti = applicaLivelliPunti(livelli)
   const { error } = await supabase
     .from('impostazioni')
     .update({ livelli_punti: puliti })
-    .eq('id', 1)
+    .eq('circolo_id', circoloId)
   if (error) {
     return {
       ok: false,

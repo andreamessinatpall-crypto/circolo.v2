@@ -1,9 +1,10 @@
 import { useEffect } from 'react'
 import type { ComponentType } from 'react'
-import { NavLink, Outlet, useLocation } from 'react-router-dom'
+import { NavLink, Outlet, useLocation, useParams } from 'react-router-dom'
 import { useAuth } from '@/auth/useAuth'
-import type { Socio } from '@/auth/tipi'
 import { useRealtimeCircolo } from '@/hooks/useRealtimeCircolo'
+import { useCircolo } from '@/circolo/useCircolo'
+import { useMioRuolo } from '@/circolo/useMioRuolo'
 import InstallaAppBanner from '@/components/InstallaAppBanner'
 import MenuUtente from '@/components/MenuUtente'
 import CampanellaNotifiche from '@/components/CampanellaNotifiche'
@@ -22,11 +23,10 @@ interface Voce {
 
 // "Premi" non è più una voce di primo livello: vive come sotto-scheda
 // dentro Area Club (ProfiloPage.tsx), accanto a Bacheca/Amici/Club.
-function vociMenu(p: Socio): Voce[] {
-  // Statistiche e Giocatori non sono più tab di primo livello per l'admin:
-  // si raggiungono dalle schede dentro Area Club (vedi AreaClubSchede.tsx),
-  // così restano solo qui invece che sparse anche nell'header/subnav.
-  if (p.is_admin) {
+// Statistiche e Giocatori non sono più tab di primo livello per lo staff:
+// si raggiungono dalle schede dentro Area Club (vedi AreaClubSchede.tsx).
+function vociMenu(puoGestire: boolean): Voce[] {
+  if (puoGestire) {
     return [
       { path: '/prenotazioni', label: 'Prenotazioni', Icona: IconaPrenota },
       { path: '/profilo', label: 'Area Club', Icona: IconaAreaClub },
@@ -34,19 +34,6 @@ function vociMenu(p: Socio): Voce[] {
     ]
   }
 
-  const collaboratore = !!p.is_allenatore && !p.is_admin
-
-  if (collaboratore) {
-    return [
-      { path: '/prenotazioni', label: 'Prenotazioni', Icona: IconaPrenota },
-      { path: '/profilo', label: 'Area Club', Icona: IconaAreaClub },
-      { path: '/tornei', label: 'Tornei', Icona: IconaTornei },
-    ]
-  }
-
-  // Istruttore e giocatore regolare: stessi 3 menu. "Giocatori" per
-  // l'istruttore non è più una tab a sé (era /soci coi 4 menu), ma una
-  // scheda dentro Area Club, come già per admin/collaboratore.
   return [
     { path: '/prenota', label: 'Prenota', Icona: IconaPrenota },
     { path: '/profilo', label: 'Area Club', Icona: IconaAreaClub },
@@ -57,6 +44,16 @@ function vociMenu(p: Socio): Voce[] {
 export default function AppShell() {
   const { profilo } = useAuth()
   const { pathname } = useLocation()
+  const { slug } = useParams<{ slug: string }>()
+  const circolo = useCircolo()
+  const { eGestore, puoGestire } = useMioRuolo()
+  const basePercorso = `/c/${slug}`
+  // Le voci di menu e i confronti sotto usano percorsi SENZA il prefisso
+  // /c/:slug (com'erano prima della Fase 5): li ricaviamo qui una volta sola
+  // togliendo il prefisso da pathname, invece di riscrivere ogni confronto.
+  const sottoPercorso = pathname.startsWith(basePercorso)
+    ? pathname.slice(basePercorso.length) || '/'
+    : pathname
   useRealtimeCircolo()
 
   // Senza questo reset lo scroll residuo della pagina precedente (es. login
@@ -82,7 +79,7 @@ export default function AppShell() {
 
   if (!profilo) return null
 
-  const voci = vociMenu(profilo)
+  const voci = vociMenu(puoGestire)
 
   // "Area Club" deve restare selezionata anche nelle pagine raggiunte dalle
   // sue schede che non vivono sotto /profilo (Giocatori → /soci, Statistiche
@@ -90,9 +87,9 @@ export default function AppShell() {
   // di suo la marca attiva solo per /profilo e le sue sotto-rotte.
   const extraAreaClub = ['/soci', '/statistiche']
   function eAttiva(percorso: string): boolean {
-    if (pathname === percorso || pathname.startsWith(percorso + '/')) return true
+    if (sottoPercorso === percorso || sottoPercorso.startsWith(percorso + '/')) return true
     if (percorso === '/profilo') {
-      return extraAreaClub.some((p) => pathname === p || pathname.startsWith(p + '/'))
+      return extraAreaClub.some((p) => sottoPercorso === p || sottoPercorso.startsWith(p + '/'))
     }
     return false
   }
@@ -102,22 +99,41 @@ export default function AppShell() {
   // non ovunque (Segreteria/admin restano sullo sfondo piatto di sempre).
   const sezioniArcobaleno = ['/prenota', '/profilo', '/tornei']
   const sfondoArcobaleno = sezioniArcobaleno.some(
-    (p) => pathname === p || pathname.startsWith(p + '/'),
+    (p) => sottoPercorso === p || sottoPercorso.startsWith(p + '/'),
   )
 
   return (
     <div className="flex min-h-[100dvh] flex-col">
       {/* Barra superiore: marchio e utente */}
       <header className="app-header">
-        <div className="brand" aria-label="CIRCOLY">
-          <img src={logoCIcon} alt="" className="brand-c-icon" aria-hidden="true" />
-          <span aria-hidden="true">IRCOLY</span>
+        <div className="brand" aria-label={circolo.nome}>
+          <img src={circolo.logo_url || logoCIcon} alt="" className="brand-c-icon" aria-hidden="true" />
+          <span aria-hidden="true" className="max-w-[10rem] truncate align-bottom sm:max-w-[16rem]">
+            {circolo.nome}
+          </span>
         </div>
 
         <div className="header-utente flex items-center gap-1.5 text-sm">
-          {profilo.is_admin && (
+          {profilo.is_super_admin && (
             <NavLink
-              to="/impostazioni"
+              to={`${basePercorso}/piattaforma`}
+              title="Piattaforma"
+              className={({ isActive }) =>
+                'flex items-center rounded-lg p-1.5 text-white/60 transition hover:bg-white/10 hover:text-white' +
+                (isActive ? ' bg-white/10 text-white' : '')
+              }
+            >
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <rect x="3" y="3" width="7" height="7" rx="1" />
+                <rect x="14" y="3" width="7" height="7" rx="1" />
+                <rect x="3" y="14" width="7" height="7" rx="1" />
+                <rect x="14" y="14" width="7" height="7" rx="1" />
+              </svg>
+            </NavLink>
+          )}
+          {eGestore && (
+            <NavLink
+              to={`${basePercorso}/impostazioni`}
               title="Impostazioni"
               className={({ isActive }) =>
                 'flex items-center rounded-lg p-1.5 text-white/60 transition hover:bg-white/10 hover:text-white' +
@@ -141,7 +157,7 @@ export default function AppShell() {
           {voci.map((v) => (
             <NavLink
               key={v.path}
-              to={v.path}
+              to={`${basePercorso}${v.path}`}
               className={'header-tab' + (eAttiva(v.path) ? ' attivo' : '')}
             >
               <v.Icona />

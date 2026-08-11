@@ -57,6 +57,7 @@ export async function aggiungiCampo(
   sport: 'padel' | 'calcio',
   nome: string,
   ordine: number,
+  circoloId: string,
 ): Promise<EsitoSalvataggio> {
   const { error } = await supabase.from('campi').insert({
     sport,
@@ -68,6 +69,7 @@ export async function aggiungiCampo(
     nota_servizio: null,
     outdoor: false,
     durata_minuti: 90,
+    circolo_id: circoloId,
   })
   if (error) {
     return {
@@ -102,6 +104,7 @@ export async function salvaRegole(
   maxCalcio: number,
   maxPadelGiorno: number,
   maxCalcioGiorno: number,
+  circoloId: string,
 ): Promise<EsitoSalvataggio> {
   const { error } = await supabase
     .from('impostazioni')
@@ -112,7 +115,7 @@ export async function salvaRegole(
       max_pren_padel_giorno: maxPadelGiorno,
       max_pren_calcio_giorno: maxCalcioGiorno,
     })
-    .eq('id', 1)
+    .eq('circolo_id', circoloId)
   if (error) {
     const tabellaMancante =
       error.code === '42P01' || error.code === 'PGRST205' || error.code === 'PGRST204'

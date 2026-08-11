@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { classiErrore, classiOk } from '@/components/stili'
 import { IconaCalcio, IconaPadel } from '@/components/IconeSport'
+import { useCircolo } from '@/circolo/useCircolo'
 import { salvaValoriPunti, useValoriPunti, type ValoriPunti as Valori } from './datiPunti'
 
 type Esito = { tipo: 'ok' | 'errore'; testo: string } | null
@@ -115,6 +116,7 @@ function RigaValore({
 
 function FormValori({ valori }: { valori: Valori }) {
   const qc = useQueryClient()
+  const circolo = useCircolo()
   // Punti
   const [partitaPadel, setPartitaPadel] = useState(String(valori.partitaPadel))
   const [allenamentoPadel, setAllenamentoPadel] = useState(String(valori.allenamentoPadel))
@@ -146,7 +148,7 @@ function FormValori({ valori }: { valori: Valori }) {
           throw new Error('Inserisci numeri interi ≥ 0 in tutti i campi.')
         numeri[k] = n
       }
-      const esito = await salvaValoriPunti(numeri as unknown as Valori)
+      const esito = await salvaValoriPunti(numeri as unknown as Valori, circolo.id)
       if (!esito.ok)
         throw new Error(
           esito.mancaPermesso

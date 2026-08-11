@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import { useCircolo } from '@/circolo/useCircolo'
 import type { EsitoSalvataggio } from './datiCampi'
 
 // (Fase 8d · blocco 3) Intervalli per l'accumulo dei crediti.
@@ -51,14 +52,15 @@ function mancaColonna(error: { code?: string; message?: string }): boolean {
 }
 
 export function useIntervalliCrediti() {
+  const circolo = useCircolo()
   return useQuery({
-    queryKey: ['intervalli-crediti'],
+    queryKey: ['intervalli-crediti', circolo.id],
     queryFn: async (): Promise<Intervallo[]> => {
       // select('*') così la lettura non si rompe se la colonna non esiste ancora.
       const { data, error } = await supabase
         .from('impostazioni')
         .select('*')
-        .eq('id', 1)
+        .eq('circolo_id', circolo.id)
         .maybeSingle()
       if (error) throw error
       const r = (data ?? {}) as Record<string, unknown>
@@ -67,12 +69,12 @@ export function useIntervalliCrediti() {
   })
 }
 
-export async function salvaIntervalli(intervalli: Intervallo[]): Promise<EsitoSalvataggio> {
+export async function salvaIntervalli(intervalli: Intervallo[], circoloId: string): Promise<EsitoSalvataggio> {
   const puliti = normalizzaIntervalli(intervalli)
   const { error } = await supabase
     .from('impostazioni')
     .update({ intervalli_crediti: puliti })
-    .eq('id', 1)
+    .eq('circolo_id', circoloId)
   if (error) {
     return {
       ok: false,

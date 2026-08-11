@@ -4,6 +4,7 @@ import { classiErrore, classiOk } from '@/components/stili'
 import { messaggioErrore } from '@/lib/errori'
 import { avviso, conferma } from '@/lib/dialoghi'
 import CampoImmagine from '@/components/CampoImmagine'
+import { useCircolo } from '@/circolo/useCircolo'
 import {
   SCRIPT_PREMI,
   mancaPremi,
@@ -101,11 +102,12 @@ export default function GestionePremi() {
 // ── Interruttore modalità premi ──
 function InterruttorePremi() {
   const qc = useQueryClient()
+  const circolo = useCircolo()
   const { data: attiva } = useModalitaPremi()
   const [msg, setMsg] = useState<Esito>(null)
 
   const cambia = useMutation({
-    mutationFn: (v: boolean) => salvaModalitaPremi(v),
+    mutationFn: (v: boolean) => salvaModalitaPremi(v, circolo.id),
     onSuccess: (_d, v) => {
       qc.invalidateQueries({ queryKey: ['modalita-premi'] })
       setMsg({

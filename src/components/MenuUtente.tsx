@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/auth/useAuth'
+import { useMieCircoli } from '@/circolo/datiCircoloSocio'
+import { useMioRuolo } from '@/circolo/useMioRuolo'
 import ModaleLegale from './legale/ModaleLegale'
 import { PrivacyContent, TerminiContent } from './legale/DocumentiLegali'
 import DatiProfilo from '@/features/profilo/DatiProfilo'
@@ -66,6 +68,17 @@ function IcoScudo() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" />
+    </svg>
+  )
+}
+
+function IcoCambia() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M17 2.1 21 6l-4 3.9" />
+      <path d="M3 11V9a4 4 0 0 1 4-4h14" />
+      <path d="m7 21.9-4-3.9 4-3.9" />
+      <path d="M21 13v2a4 4 0 0 1-4 4H3" />
     </svg>
   )
 }
@@ -205,6 +218,8 @@ const TITOLI_VISTA: Record<Exclude<Vista, 'menu'>, string> = {
 export default function MenuUtente() {
   const { esci, profilo } = useAuth()
   const navigate = useNavigate()
+  const { data: mieiCircoli } = useMieCircoli(profilo?.id)
+  const { eGestore, puoGestire } = useMioRuolo()
   const [aperto, setAperto] = useState(false)
   const [vista, setVista] = useState<Vista>('menu')
   const [legale, setLegale] = useState<Legale>(null)
@@ -212,6 +227,11 @@ export default function MenuUtente() {
   function chiudi() {
     setAperto(false)
     setVista('menu')
+  }
+
+  function cambiaCircolo() {
+    chiudi()
+    navigate('/scegli-circolo')
   }
 
   // Chiude lo schermo account (a tutto schermo, resterebbe sopra la
@@ -267,6 +287,13 @@ export default function MenuUtente() {
                     <span className="account-menu-voce-testo">Impostazioni</span>
                     <IcoFreccia />
                   </button>
+                  {(mieiCircoli ?? []).length > 1 && (
+                    <button type="button" className="account-menu-voce" onClick={cambiaCircolo}>
+                      <span className="account-menu-voce-ico"><IcoCambia /></span>
+                      <span className="account-menu-voce-testo">Cambia circolo</span>
+                      <IcoFreccia />
+                    </button>
+                  )}
                 </div>
 
                 <div className="account-panel-sezione">
@@ -278,19 +305,23 @@ export default function MenuUtente() {
                   </button>
                 </div>
 
-                {profilo?.is_admin && (
+                {puoGestire && (
                   <div className="account-panel-sezione">
                     <div className="account-panel-titolo">Il tuo club</div>
-                    <button type="button" className="account-menu-voce" onClick={() => setVista('club-campi')}>
-                      <span className="account-menu-voce-ico"><IcoCampo /></span>
-                      <span className="account-menu-voce-testo">Campi e regole</span>
-                      <IcoFreccia />
-                    </button>
-                    <button type="button" className="account-menu-voce" onClick={() => setVista('club-punti')}>
-                      <span className="account-menu-voce-ico"><IcoPunti /></span>
-                      <span className="account-menu-voce-testo">Punti e crediti</span>
-                      <IcoFreccia />
-                    </button>
+                    {eGestore && (
+                      <>
+                        <button type="button" className="account-menu-voce" onClick={() => setVista('club-campi')}>
+                          <span className="account-menu-voce-ico"><IcoCampo /></span>
+                          <span className="account-menu-voce-testo">Campi e regole</span>
+                          <IcoFreccia />
+                        </button>
+                        <button type="button" className="account-menu-voce" onClick={() => setVista('club-punti')}>
+                          <span className="account-menu-voce-ico"><IcoPunti /></span>
+                          <span className="account-menu-voce-testo">Punti e crediti</span>
+                          <IcoFreccia />
+                        </button>
+                      </>
+                    )}
                     <button type="button" className="account-menu-voce" onClick={() => setVista('club-premi')}>
                       <span className="account-menu-voce-ico"><IcoRegalo /></span>
                       <span className="account-menu-voce-testo">Premi</span>

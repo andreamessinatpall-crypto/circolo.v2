@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import { useCircolo } from '@/circolo/useCircolo'
 import { mancaRpc } from '@/lib/errori'
 
 // Tipi del sistema premi (le tabelle vivono già su Supabase dalla v1).
@@ -40,13 +41,14 @@ export function mancaPremi(error: unknown): boolean {
 // Interruttore "modalità premi" della segreteria (v1: modalitaPremi).
 // Tollerante: se la colonna non c'è, resta spento.
 export function useModalitaPremi() {
+  const circolo = useCircolo()
   return useQuery({
-    queryKey: ['modalita-premi'],
+    queryKey: ['modalita-premi', circolo.id],
     queryFn: async (): Promise<boolean> => {
       const { data } = await supabase
         .from('impostazioni')
         .select('modalita_premi')
-        .eq('id', 1)
+        .eq('circolo_id', circolo.id)
         .maybeSingle()
       return !!(data && (data as { modalita_premi?: boolean }).modalita_premi === true)
     },

@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/auth/useAuth'
+import { useCircolo } from '@/circolo/useCircolo'
 import { prenotaSenzaLimite, puoGestirePrenotazioni } from '@/auth/ruoli'
 import { avviso } from '@/lib/dialoghi'
 import { dataDa } from './orari'
@@ -8,21 +9,22 @@ import type { Campo, Impostazioni, PrenotazioneGiorno, Sport } from './tipi'
 
 // Regole di prenotazione (tollerante: se le colonne nuove mancano, usa i default).
 export function useImpostazioni() {
+  const circolo = useCircolo()
   return useQuery({
-    queryKey: ['impostazioni'],
+    queryKey: ['impostazioni', circolo.id],
     queryFn: async (): Promise<Impostazioni> => {
       let res = await supabase
         .from('impostazioni')
         .select(
           'giorni_anticipo, max_pren_padel, max_pren_calcio, max_pren_padel_giorno, max_pren_calcio_giorno',
         )
-        .eq('id', 1)
+        .eq('circolo_id', circolo.id)
         .maybeSingle()
       if (res.error) {
         res = await supabase
           .from('impostazioni')
           .select('giorni_anticipo')
-          .eq('id', 1)
+          .eq('circolo_id', circolo.id)
           .maybeSingle()
       }
       const d = (res.data ?? {}) as Record<string, unknown>
@@ -43,10 +45,15 @@ export function useImpostazioni() {
 }
 
 export function useCampi() {
+  const circolo = useCircolo()
   return useQuery({
-    queryKey: ['campi'],
+    queryKey: ['campi', circolo.id],
     queryFn: async () => {
-      const { data, error } = await supabase.from('campi').select('*').order('ordine')
+      const { data, error } = await supabase
+        .from('campi')
+        .select('*')
+        .eq('circolo_id', circolo.id)
+        .order('ordine')
       if (error) throw error
       return (data ?? []) as Campo[]
     },
@@ -55,14 +62,16 @@ export function useCampi() {
 
 // Prenotazioni del giorno selezionato (tutti i campi); filtreremo per sport in pagina.
 export function usePrenotazioniGiorno(giorno: string) {
+  const circolo = useCircolo()
   return useQuery({
-    queryKey: ['prenotazioni', giorno],
+    queryKey: ['prenotazioni', giorno, circolo.id],
     queryFn: async () => {
       const alba = dataDa(giorno, '00:00')
       const tramonto = new Date(alba.getTime() + 24 * 60 * 60 * 1000)
       const { data, error } = await supabase.rpc('prenotazioni_giorno', {
         alba: alba.toISOString(),
         tramonto: tramonto.toISOString(),
+        p_circolo_id: circolo.id,
       })
       if (error) throw error
       return (data ?? []) as PrenotazioneGiorno[]
@@ -77,6 +86,7 @@ export function usePrenotazioniGiorno(giorno: string) {
 // giocatore) così il limite e la gestione errori restano in un solo posto.
 export function usePrenotaCampo(sport: Sport, campiSport: Campo[], imp: Impostazioni) {
   const { profilo } = useAuth()
+  const circolo = useCircolo()
   const qc = useQueryClient()
 
   return useMutation({
@@ -130,6 +140,7 @@ export function usePrenotaCampo(sport: Sport, campiSport: Campo[], imp: Impostaz
         socio_id: profilo.id,
         inizio: inizio.toISOString(),
         fine: fine.toISOString(),
+        circolo_id: circolo.id,
       }
       if (allenamento) {
         dati.allenamento = true

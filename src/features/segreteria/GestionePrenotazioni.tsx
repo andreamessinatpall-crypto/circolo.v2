@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase'
 // Alias: il file usa già una mutation locale chiamata `conferma`.
 import { avviso, conferma as chiediConferma } from '@/lib/dialoghi'
 import { useAuth } from '@/auth/useAuth'
+import { useCircolo } from '@/circolo/useCircolo'
 import { useBloccaScrollBody } from '@/hooks/useBloccaScrollBody'
 import { classiErrore } from '@/components/stili'
 import { mancaTabella, messaggioErrore } from '@/lib/errori'
@@ -83,6 +84,7 @@ interface SlotScelto {
 // cliccando uno slot si aprono gestione giocatori e conferma presenze.
 export default function GestionePrenotazioni() {
   const { profilo } = useAuth()
+  const circolo = useCircolo()
   const qc = useQueryClient()
   const [sport, setSport] = useState<Sport>('padel')
   const [inizioSettimana, setInizioSettimana] = useState<Date>(() => lunedi(new Date()))
@@ -294,6 +296,7 @@ export default function GestionePrenotazioni() {
         socio_id: profilo!.id,
         inizio: inizio.toISOString(),
         fine: fine.toISOString(),
+        circolo_id: circolo.id,
       }
       if (allenamento) {
         dati.allenamento = true

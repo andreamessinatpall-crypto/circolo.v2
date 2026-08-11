@@ -19,6 +19,7 @@ export interface Socio {
   is_admin: boolean
   is_allenatore: boolean | null
   e_allenatore: boolean | null
+  is_super_admin: boolean | null
   data_iscrizione: string | null
   mostra_in_classifica: boolean | null
   punti: number | null

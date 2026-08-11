@@ -7,6 +7,7 @@ import { useCampi, useImpostazioni } from '@/features/prenotazioni/datiPrenotazi
 import { orariCampo, SLOT_MINUTI } from '@/features/prenotazioni/orari'
 import type { Campo, Sport } from '@/features/prenotazioni/tipi'
 import { aggiungiCampo, eliminaCampo, salvaCampo, salvaRegole } from './datiCampi'
+import { useCircolo } from '@/circolo/useCircolo'
 
 type Esito = { tipo: 'ok' | 'errore'; testo: string } | null
 
@@ -324,6 +325,7 @@ function RigaCampo({ campo }: { campo: Campo }) {
 // ---- Aggiunta di un nuovo campo ----
 function AggiungiCampo({ campi }: { campi: Campo[] }) {
   const qc = useQueryClient()
+  const circolo = useCircolo()
   const [aperto, setAperto] = useState(false)
   const [sport, setSport] = useState<Sport>('padel')
   const [nome, setNome] = useState('')
@@ -334,7 +336,7 @@ function AggiungiCampo({ campi }: { campi: Campo[] }) {
       const n = nome.trim()
       if (!n) throw new Error('Dai un nome al campo.')
       const ordine = campi.reduce((max, c) => Math.max(max, c.ordine ?? 0), 0) + 1
-      const esito = await aggiungiCampo(sport, n, ordine)
+      const esito = await aggiungiCampo(sport, n, ordine, circolo.id)
       if (!esito.ok)
         throw new Error(
           esito.mancaPermesso
@@ -419,6 +421,7 @@ function FormRegole({
   }
 }) {
   const qc = useQueryClient()
+  const circolo = useCircolo()
   const [giorni, setGiorni] = useState(String(impostazioni.giorniAnticipo))
   const [maxPadel, setMaxPadel] = useState(String(impostazioni.maxPadel))
   const [maxCalcio, setMaxCalcio] = useState(String(impostazioni.maxCalcio))
@@ -440,7 +443,7 @@ function FormRegole({
       if (!Number.isInteger(mpg) || mpg < 0 || mpg > 20 || !Number.isInteger(mcg) || mcg < 0 || mcg > 20)
         throw new Error("Il numero massimo di prenotazioni al giorno dev'essere tra 0 e 20 (0 = nessun limite).")
 
-      const esito = await salvaRegole(g, mp, mc, mpg, mcg)
+      const esito = await salvaRegole(g, mp, mc, mpg, mcg, circolo.id)
       if (!esito.ok)
         throw new Error(
           esito.mancaScript

@@ -26,3 +26,9 @@ export function puoGestirePrenotazioni(p: Socio): boolean {
 export function prenotaSenzaLimite(p: Socio): boolean {
   return !!(p.is_admin || p.is_allenatore || p.e_allenatore)
 }
+
+// Chi gestisce la piattaforma multi-circolo (crea circoli, assegna gestori
+// e collaboratori): solo il super-admin.
+export function puoGestirePiattaforma(p: Socio): boolean {
+  return !!p.is_super_admin
+}
