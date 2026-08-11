@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/auth/useAuth'
+import { useCircolo } from '@/circolo/useCircolo'
 import { useBloccaScrollBody } from '@/hooks/useBloccaScrollBody'
 import { messaggioErrore } from '@/lib/errori'
 import { useCampi, usePrenotazioniGiorno } from '@/features/prenotazioni/datiPrenotazioni'
@@ -54,6 +55,7 @@ function ModaleProgrammaAmici({
 }) {
   useBloccaScrollBody()
   const { profilo } = useAuth()
+  const circolo = useCircolo()
   const qc = useQueryClient()
   const campiQuery = useCampi()
   const campiSport = (campiQuery.data ?? []).filter((c) => c.sport === sport && c.in_servizio !== false)
@@ -86,7 +88,13 @@ function ModaleProgrammaAmici({
       const fine = new Date(inizio.getTime() + SLOT_MINUTI * 60000)
       const { data, error } = await supabase
         .from('prenotazioni')
-        .insert({ campo_id: campo.id, socio_id: profilo.id, inizio: inizio.toISOString(), fine: fine.toISOString() })
+        .insert({
+          campo_id: campo.id,
+          socio_id: profilo.id,
+          inizio: inizio.toISOString(),
+          fine: fine.toISOString(),
+          circolo_id: circolo.id,
+        })
         .select('id')
         .single()
       if (error) throw error

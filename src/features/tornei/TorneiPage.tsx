@@ -7,6 +7,7 @@ import { z } from 'zod'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/auth/useAuth'
+import { useCircolo } from '@/circolo/useCircolo'
 import { useMioRuolo } from '@/circolo/useMioRuolo'
 import { mancaTabella, messaggioErrore } from '@/lib/errori'
 import { avviso } from '@/lib/dialoghi'
@@ -284,6 +285,7 @@ type FormTorneoOut = z.output<typeof schema>
 
 function NuovoTorneo({ onCreato }: { onCreato: (id: number | string) => void }) {
   const { profilo } = useAuth()
+  const circolo = useCircolo()
   const qc = useQueryClient()
   const [msg, setMsg] = useState<{ tipo: 'ok' | 'errore'; testo: string } | null>(null)
   // I punti stanno fuori da react-hook-form: con più gironi sono dinamici
@@ -383,6 +385,7 @@ function NuovoTorneo({ onCreato }: { onCreato: (id: number | string) => void }) 
       data_inizio: v.formato === 'americano' ? (amData || null) : (v.data_inizio || null),
       data_fine: v.formato === 'americano' ? (amData || null) : (v.data_fine || null),
       creato_da: profilo!.id,
+      circolo_id: circolo.id,
       numero_gironi: v.numero_gironi,
       durata_minuti: durata,
       max_squadre: v.max_squadre ?? null,
@@ -433,6 +436,7 @@ function NuovoTorneo({ onCreato }: { onCreato: (id: number | string) => void }) 
           inizio: new Date(`${amData}T${amOraInizio}`).toISOString(),
           fine:   new Date(`${amData}T${amOraFine}`).toISOString(),
           torneo_id: data.id,
+          circolo_id: circolo.id,
         })
       }
     }
@@ -911,6 +915,7 @@ function DettaglioTorneo({
 }) {
   const qc = useQueryClient()
   const { profilo } = useAuth()
+  const circolo = useCircolo()
   // Sotto-schede del dettaglio (solo per gli organizzatori; i giocatori vedono
   // direttamente "Risultati e Classifica").
   const [scheda, setScheda] = useState<'gestione' | 'risultati'>('gestione')
@@ -1010,6 +1015,7 @@ function DettaglioTorneo({
         data_inizio: null,
         data_fine: null,
         creato_da: profilo!.id,
+        circolo_id: circolo.id,
         numero_gironi: torneo.numero_gironi,
         nomi_gironi: torneo.nomi_gironi,
         punti_gironi: torneo.punti_gironi,

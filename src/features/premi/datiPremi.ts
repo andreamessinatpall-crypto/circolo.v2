@@ -57,12 +57,14 @@ export function useModalitaPremi() {
 
 // Catalogo visibile ai soci (esclude i premi nascosti dall'admin).
 export function usePremiCatalogo() {
+  const circolo = useCircolo()
   return useQuery({
-    queryKey: ['premi-catalogo'],
+    queryKey: ['premi-catalogo', circolo.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('premi')
         .select('*')
+        .eq('circolo_id', circolo.id)
         .eq('nascosto', false)
         .order('ordine')
         .order('costo')
@@ -112,14 +114,16 @@ export function usePopolaritaPremi() {
 
 // Le richieste di premio fatte dal socio corrente.
 export function useMieRichieste(socioId: string | undefined) {
+  const circolo = useCircolo()
   return useQuery({
-    queryKey: ['mie-richieste', socioId],
+    queryKey: ['mie-richieste', socioId, circolo.id],
     enabled: !!socioId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('richieste_premio')
         .select('*')
         .eq('socio_id', socioId!)
+        .eq('circolo_id', circolo.id)
         .order('creato_il', { ascending: false })
       if (error) throw error
       return (data ?? []) as Richiesta[]

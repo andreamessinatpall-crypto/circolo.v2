@@ -189,6 +189,7 @@ function Catalogo() {
 
 function FormNuovoPremio() {
   const qc = useQueryClient()
+  const circolo = useCircolo()
   const [aperto, setAperto] = useState(false)
   const [nome, setNome] = useState('')
   const [descrizione, setDescrizione] = useState('')
@@ -210,7 +211,7 @@ function FormNuovoPremio() {
         if (!Number.isInteger(s) || s < 0)
           throw new Error('Lo stock dev’essere un numero ≥ 0 (oppure lascialo vuoto = illimitato).')
       }
-      await creaPremio({ nome: n, descrizione: descrizione.trim() || null, costo: c, stock: s, immagine })
+      await creaPremio({ nome: n, descrizione: descrizione.trim() || null, costo: c, stock: s, immagine, circoloId: circolo.id })
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['premi-admin'] })

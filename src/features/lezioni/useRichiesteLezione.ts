@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import { useCircolo } from '@/circolo/useCircolo'
 import type { Campo, Sport } from '@/features/prenotazioni/tipi'
 import type { Intervallo } from './slotLezione'
 
@@ -20,8 +21,9 @@ export interface RichiestaLezione {
 // Impegni già esistenti di un istruttore (prenotazioni assegnate + richieste
 // in attesa/accettate): usati per non proporre allo studente slot già occupati.
 export function useImpegniIstruttore(istruttoreId: string | undefined) {
+  const circolo = useCircolo()
   return useQuery({
-    queryKey: ['impegni_istruttore', istruttoreId],
+    queryKey: ['impegni_istruttore', istruttoreId, circolo.id],
     enabled: !!istruttoreId,
     queryFn: async (): Promise<Intervallo[]> => {
       const [{ data: pren, error: e1 }, { data: rich, error: e2 }] = await Promise.all([
@@ -29,11 +31,13 @@ export function useImpegniIstruttore(istruttoreId: string | undefined) {
           .from('prenotazioni')
           .select('inizio, fine')
           .eq('allenatore_id', istruttoreId)
+          .eq('circolo_id', circolo.id)
           .gte('fine', new Date().toISOString()),
         supabase
           .from('richieste_lezione')
           .select('inizio, fine')
           .eq('istruttore_id', istruttoreId)
+          .eq('circolo_id', circolo.id)
           .in('stato', ['in_attesa', 'accettata']),
       ])
       if (e1) throw e1
@@ -46,7 +50,8 @@ export function useImpegniIstruttore(istruttoreId: string | undefined) {
 // Richieste ricevute da un istruttore (per la tab Lezioni).
 export function useRichiesteRicevute(istruttoreId: string | undefined) {
   const qc = useQueryClient()
-  const queryKey = ['richieste_lezione_ricevute', istruttoreId]
+  const circolo = useCircolo()
+  const queryKey = ['richieste_lezione_ricevute', istruttoreId, circolo.id]
 
   const query = useQuery({
     queryKey,
@@ -56,6 +61,7 @@ export function useRichiesteRicevute(istruttoreId: string | undefined) {
         .from('richieste_lezione')
         .select('*')
         .eq('istruttore_id', istruttoreId)
+        .eq('circolo_id', circolo.id)
         .order('creato_il', { ascending: false })
       if (error) throw error
       return (data ?? []) as RichiestaLezione[]
@@ -124,6 +130,7 @@ export function useRichiesteRicevute(istruttoreId: string | undefined) {
 // Invio di una nuova richiesta (lato socio), dalla scheda istruttore in Club.
 export function useInviaRichiestaLezione(socioId: string | undefined) {
   const qc = useQueryClient()
+  const circolo = useCircolo()
   return useMutation({
     mutationFn: async (dati: { istruttoreId: string; sport: Sport; inizio: string; fine: string }) => {
       if (!socioId) throw new Error('Utente non autenticato')
@@ -133,6 +140,7 @@ export function useInviaRichiestaLezione(socioId: string | undefined) {
         sport: dati.sport,
         inizio: dati.inizio,
         fine: dati.fine,
+        circolo_id: circolo.id,
       })
       if (error) throw error
 
@@ -153,14 +161,16 @@ export function useInviaRichiestaLezione(socioId: string | undefined) {
 
 // Richieste inviate da un socio (per mostrare quelle in attesa in Riepilogo).
 export function useRichiesteInviate(socioId: string | undefined) {
+  const circolo = useCircolo()
   return useQuery({
-    queryKey: ['richieste_lezione_inviate', socioId],
+    queryKey: ['richieste_lezione_inviate', socioId, circolo.id],
     enabled: !!socioId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('richieste_lezione')
         .select('*')
         .eq('socio_id', socioId)
+        .eq('circolo_id', circolo.id)
         .order('creato_il', { ascending: false })
       if (error) throw error
       return (data ?? []) as RichiestaLezione[]
@@ -169,10 +179,11 @@ export function useRichiesteInviate(socioId: string | undefined) {
 }
 
 // Campi liberi di uno sport in un intervallo (per il campo-picker all'accettazione).
-export async function campiLiberi(sport: Sport, inizio: string, fine: string): Promise<Campo[]> {
+export async function campiLiberi(sport: Sport, inizio: string, fine: string, circoloId: string): Promise<Campo[]> {
   const { data: campi, error: errCampi } = await supabase
     .from('campi')
     .select('*')
+    .eq('circolo_id', circoloId)
     .eq('sport', sport)
     .eq('in_servizio', true)
   if (errCampi) throw errCampi

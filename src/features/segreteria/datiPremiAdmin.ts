@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import { useCircolo } from '@/circolo/useCircolo'
 import type { Premio, Richiesta } from '@/features/premi/datiPremi'
 
 // (Fase 8f) Letture/scritture admin del sistema premi. Le tabelle premi /
@@ -7,12 +8,14 @@ import type { Premio, Richiesta } from '@/features/premi/datiPremi'
 
 // Tutti i premi, anche quelli nascosti (il catalogo socio esclude i nascosti).
 export function useTuttiPremi() {
+  const circolo = useCircolo()
   return useQuery({
-    queryKey: ['premi-admin'],
+    queryKey: ['premi-admin', circolo.id],
     queryFn: async (): Promise<Premio[]> => {
       const { data, error } = await supabase
         .from('premi')
         .select('*')
+        .eq('circolo_id', circolo.id)
         .order('ordine')
         .order('creato_il')
       if (error) throw error
@@ -27,12 +30,14 @@ export interface RichiestaConNome extends Richiesta {
 
 // Tutte le richieste di premio con il nome del socio richiedente.
 export function useTutteRichieste() {
+  const circolo = useCircolo()
   return useQuery({
-    queryKey: ['richieste-admin'],
+    queryKey: ['richieste-admin', circolo.id],
     queryFn: async (): Promise<RichiestaConNome[]> => {
       const { data, error } = await supabase
         .from('richieste_premio')
         .select('*')
+        .eq('circolo_id', circolo.id)
         .order('creato_il', { ascending: false })
       if (error) throw error
       const righe = (data ?? []) as Richiesta[]
@@ -59,8 +64,10 @@ export async function creaPremio(p: {
   costo: number
   stock: number | null
   immagine?: string | null
+  circoloId: string
 }): Promise<void> {
-  const { error } = await supabase.from('premi').insert(p)
+  const { circoloId, ...campi } = p
+  const { error } = await supabase.from('premi').insert({ ...campi, circolo_id: circoloId })
   if (error) throw error
 }
 

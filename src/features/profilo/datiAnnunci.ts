@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import { useCircolo } from '@/circolo/useCircolo'
 
 // Fase 10 — Bacheca annunci del circolo. Tabella `annunci` (tappa72):
 // lettura per tutti i soci, scrittura riservata all'admin/segreteria (RLS).
@@ -24,12 +25,14 @@ export function annuncioAttivo(a: Annuncio, ora: Date = new Date()): boolean {
 }
 
 export function useAnnunci(enabled = true) {
+  const circolo = useCircolo()
   return useQuery({
-    queryKey: ['annunci'],
+    queryKey: ['annunci', circolo.id],
     queryFn: async (): Promise<Annuncio[]> => {
       const { data, error } = await supabase
         .from('annunci')
         .select('*')
+        .eq('circolo_id', circolo.id)
         .order('creato_il', { ascending: false })
       if (error) throw error
       return (data ?? []) as Annuncio[]
@@ -51,8 +54,9 @@ async function eseguiABlocchi<T>(elementi: T[], azione: (el: T) => Promise<unkno
   }
 }
 
-export async function creaAnnuncio(p: { titolo: string; testo: string; autore_id: string; scadenza?: string | null; immagine?: string | null }): Promise<void> {
-  const { error } = await supabase.from('annunci').insert(p)
+export async function creaAnnuncio(p: { titolo: string; testo: string; autore_id: string; scadenza?: string | null; immagine?: string | null; circoloId: string }): Promise<void> {
+  const { circoloId, ...campi } = p
+  const { error } = await supabase.from('annunci').insert({ ...campi, circolo_id: circoloId })
   if (error) throw error
 
   // Notifica tutti i soci (in-app + push): soci_pubblici() esclude già gli

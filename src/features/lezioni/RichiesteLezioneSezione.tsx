@@ -3,6 +3,7 @@ import { messaggioErrore, mancaTabella } from '@/lib/errori'
 import { dataEstesa } from '@/lib/formato'
 import { classiOk } from '@/components/stili'
 import { oraLocale } from '@/features/prenotazioni/orari'
+import { useCircolo } from '@/circolo/useCircolo'
 import type { Campo, Sport } from '@/features/prenotazioni/tipi'
 import { useRichiesteRicevute, campiLiberi, type RichiestaLezione } from './useRichiesteLezione'
 
@@ -25,6 +26,7 @@ export default function RichiesteLezioneSezione({
   istruttoreId: string
   etichette: Map<string, string>
 }) {
+  const circolo = useCircolo()
   const { richieste, caricamento, errore, accetta, rifiuta } = useRichiesteRicevute(istruttoreId)
   const [accettando, setAccettando] = useState<RichiestaLezione | null>(null)
   const [campi, setCampi] = useState<Campo[]>([])
@@ -50,7 +52,7 @@ export default function RichiesteLezioneSezione({
     setCampoScelto('')
     setCaricamentoCampi(true)
     try {
-      setCampi(await campiLiberi(r.sport, r.inizio, r.fine))
+      setCampi(await campiLiberi(r.sport, r.inizio, r.fine, circolo.id))
     } finally {
       setCaricamentoCampi(false)
     }

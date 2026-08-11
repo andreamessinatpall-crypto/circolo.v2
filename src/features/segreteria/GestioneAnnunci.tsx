@@ -4,6 +4,7 @@ import { classiErrore } from '@/components/stili'
 import { messaggioErrore } from '@/lib/errori'
 import { tempoRelativo } from '@/lib/formato'
 import { useAuth } from '@/auth/useAuth'
+import { useCircolo } from '@/circolo/useCircolo'
 import RitaglioImmagine from '@/components/RitaglioImmagine'
 import { creaAnnuncio, eliminaAnnuncio, salvaAnnuncio, useAnnunci, type Annuncio } from '@/features/profilo/datiAnnunci'
 import { conferma } from '@/lib/dialoghi'
@@ -174,6 +175,7 @@ export default function GestioneAnnunci() {
 
 export function FormNuovoAnnuncio({ autoreId }: { autoreId: string }) {
   const qc = useQueryClient()
+  const circolo = useCircolo()
   const [aperto, setAperto] = useState(false)
   const [titolo, setTitolo] = useState('')
   const [testo, setTesto] = useState('')
@@ -192,6 +194,7 @@ export function FormNuovoAnnuncio({ autoreId }: { autoreId: string }) {
         autore_id: autoreId,
         scadenza: scadenza ? scadenza + 'T23:59:59' : null,
         immagine,
+        circoloId: circolo.id,
       })
     },
     onSuccess: () => {

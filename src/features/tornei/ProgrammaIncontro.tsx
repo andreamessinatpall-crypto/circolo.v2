@@ -7,6 +7,7 @@ import { useBloccaScrollBody } from '@/hooks/useBloccaScrollBody'
 import { mancaRpc, messaggioErrore } from '@/lib/errori'
 import { avviso, conferma } from '@/lib/dialoghi'
 import { useMioRuolo } from '@/circolo/useMioRuolo'
+import { useCircolo } from '@/circolo/useCircolo'
 import { useCampi, usePrenotazioniGiorno } from '@/features/prenotazioni/datiPrenotazioni'
 import { dataDa, oraLocale, orariCampo, SLOT_MINUTI, ymd } from '@/features/prenotazioni/orari'
 import { nomeSquadraElegante } from './gironi'
@@ -132,6 +133,7 @@ function ModaleProgramma({
   useBloccaScrollBody()
   const { profilo } = useAuth()
   const { puoGestire } = useMioRuolo()
+  const circolo = useCircolo()
   const qc = useQueryClient()
   const campiQuery = useCampi()
   const staff = puoGestire
@@ -182,6 +184,7 @@ function ModaleProgramma({
           inizio: inizio.toISOString(),
           fine: fine.toISOString(),
           incontro_id: m.id,
+          circolo_id: circolo.id,
         })
         .select('id')
         .single()

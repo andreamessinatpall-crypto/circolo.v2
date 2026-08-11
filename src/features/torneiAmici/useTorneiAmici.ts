@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import { useCircolo } from '@/circolo/useCircolo'
 import { formattaSet, incontroDisputato } from '@/features/tornei/calendario'
 import type { Incontro } from '@/features/tornei/tipi'
 import { generaCalendarioIniziale } from './generaIncontri'
@@ -69,6 +70,7 @@ export function useTorneiAmici(socioId: string | undefined) {
 // in fase di creazione.
 export function useCreaTorneoAmici(profiloId: string | undefined) {
   const qc = useQueryClient()
+  const circolo = useCircolo()
   return useMutation({
     mutationFn: async (dati: {
       nome: string
@@ -90,6 +92,7 @@ export function useCreaTorneoAmici(profiloId: string | undefined) {
           // Finale secca e 3°/4° posto hanno senso solo in eliminazione diretta.
           finale_secca: dati.formato === 'eliminazione' ? dati.finaleSecca : false,
           terzo_posto: dati.formato === 'eliminazione' ? dati.terzoPosto : false,
+          circolo_id: circolo.id,
         })
         .select('*')
         .single()

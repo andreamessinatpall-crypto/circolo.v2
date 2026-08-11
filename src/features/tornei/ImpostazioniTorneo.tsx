@@ -5,6 +5,7 @@ import { z } from 'zod'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/auth/useAuth'
+import { useCircolo } from '@/circolo/useCircolo'
 import { useBloccaScrollBody } from '@/hooks/useBloccaScrollBody'
 import { messaggioErrore } from '@/lib/errori'
 import { classiErrore, classiInput, classiOk } from '@/components/stili'
@@ -54,6 +55,7 @@ export default function ImpostazioniTorneo({
 }) {
   useBloccaScrollBody()
   const { profilo } = useAuth()
+  const circolo = useCircolo()
   const qc = useQueryClient()
   const campiQuery = useCampi()
   const isAmericano = torneo.formato === 'americano'
@@ -214,6 +216,7 @@ export default function ImpostazioniTorneo({
           inizio: new Date(`${amData}T${amOraInizio}`).toISOString(),
           fine:   new Date(`${amData}T${amOraFine}`).toISOString(),
           torneo_id: torneo.id,
+          circolo_id: circolo.id,
         })
       }
     }

@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/auth/useAuth'
 import { useMioRuolo } from '@/circolo/useMioRuolo'
+import { useCircolo } from '@/circolo/useCircolo'
 import { dataEstesa, iniziali } from '@/lib/formato'
 import { LIVELLI_PUNTI_DEFAULT, livelloDaPunti, useLivelliPunti } from './livelliPunti'
 import Avatar from '@/components/Avatar'
@@ -16,6 +17,7 @@ import Avatar from '@/components/Avatar'
 export default function BenvenutoHero({ onRichiesteClick }: { onRichiesteClick?: () => void } = {}) {
   const { profilo } = useAuth()
   const { eCollaboratore, puoDareLezioni } = useMioRuolo()
+  const circolo = useCircolo()
   const livelliQuery = useLivelliPunti()
 
   // Un gestore resta sulla vista "punti/classifica" normale (come un socio).
@@ -25,7 +27,7 @@ export default function BenvenutoHero({ onRichiesteClick }: { onRichiesteClick?:
   const istruttore    = eCollaboratore && puoDareLezioni
 
   const stat = useQuery({
-    queryKey: ['riepilogo-stat', profilo?.id],
+    queryKey: ['riepilogo-stat', profilo?.id, circolo.id],
     enabled: !!profilo,
     queryFn: async () => {
       // Istruttori: niente punti/classifica
@@ -37,6 +39,7 @@ export default function BenvenutoHero({ onRichiesteClick }: { onRichiesteClick?:
         const { count: cSvolti } = await supabase
           .from('prenotazioni')
           .select('*', { count: 'exact', head: true })
+          .eq('circolo_id', circolo.id)
           .eq('allenamento', true)
           .eq('allenatore_id', profilo!.id)
           .lte('fine', isoOra)
@@ -45,6 +48,7 @@ export default function BenvenutoHero({ onRichiesteClick }: { onRichiesteClick?:
         const { count: cProgramma } = await supabase
           .from('prenotazioni')
           .select('*', { count: 'exact', head: true })
+          .eq('circolo_id', circolo.id)
           .eq('allenamento', true)
           .eq('allenatore_id', profilo!.id)
           .gt('fine', isoOra)
@@ -53,6 +57,7 @@ export default function BenvenutoHero({ onRichiesteClick }: { onRichiesteClick?:
         const { count: cRichieste } = await supabase
           .from('richieste_lezione')
           .select('*', { count: 'exact', head: true })
+          .eq('circolo_id', circolo.id)
           .eq('istruttore_id', profilo!.id)
           .eq('stato', 'in_attesa')
 
@@ -67,6 +72,7 @@ export default function BenvenutoHero({ onRichiesteClick }: { onRichiesteClick?:
         const { data: sessioni } = await supabase
           .from('prenotazioni')
           .select('id')
+          .eq('circolo_id', circolo.id)
           .eq('allenamento', true)
           .eq('allenatore_id', profilo!.id)
           .lte('fine', isoOra)

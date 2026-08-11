@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import { useCircolo } from '@/circolo/useCircolo'
 
 export interface Disponibilita {
   id: number
@@ -23,7 +24,8 @@ export interface NuovaDisponibilita {
 // Sola aggiunta/rimozione, nessuna modifica diretta.
 export function useDisponibilita(istruttoreId: string | undefined) {
   const qc = useQueryClient()
-  const queryKey = ['disponibilita_maestri', istruttoreId]
+  const circolo = useCircolo()
+  const queryKey = ['disponibilita_maestri', istruttoreId, circolo.id]
 
   const query = useQuery({
     queryKey,
@@ -32,6 +34,7 @@ export function useDisponibilita(istruttoreId: string | undefined) {
         .from('disponibilita_maestri')
         .select('*')
         .eq('istruttore_id', istruttoreId)
+        .eq('circolo_id', circolo.id)
         .order('giorno_settimana', { ascending: true, nullsFirst: false })
         .order('data', { ascending: true })
         .order('ora_inizio', { ascending: true })
@@ -48,7 +51,7 @@ export function useDisponibilita(istruttoreId: string | undefined) {
       if (!istruttoreId) throw new Error('Utente non autenticato')
       const { error } = await supabase
         .from('disponibilita_maestri')
-        .insert({ istruttore_id: istruttoreId, ...nuova })
+        .insert({ istruttore_id: istruttoreId, ...nuova, circolo_id: circolo.id })
       if (error) throw error
     },
     onSuccess: ricarica,

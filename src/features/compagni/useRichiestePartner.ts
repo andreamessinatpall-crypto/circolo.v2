@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import { useCircolo } from '@/circolo/useCircolo'
 import type { Livello } from '@/features/profilo/livelloGioco/domande'
 import { dataDa } from '@/features/prenotazioni/orari'
 
@@ -48,13 +49,15 @@ interface SocioPubblico {
 // interessato si candida e l'organizzatore accetta/rifiuta.
 export function useRichiestePartner(profiloId: string | undefined) {
   const qc = useQueryClient()
+  const circolo = useCircolo()
 
   const richiesteQuery = useQuery({
-    queryKey: ['richieste_partner'],
+    queryKey: ['richieste_partner', circolo.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('richieste_partner')
         .select('*')
+        .eq('circolo_id', circolo.id)
         .gt('scade_il', new Date().toISOString())
         .order('creato_il', { ascending: false })
       if (error) throw error
@@ -63,9 +66,12 @@ export function useRichiestePartner(profiloId: string | undefined) {
   })
 
   const candidatureQuery = useQuery({
-    queryKey: ['candidature_partner'],
+    queryKey: ['candidature_partner', circolo.id],
     queryFn: async () => {
-      const { data, error } = await supabase.from('candidature_partner').select('*')
+      const { data, error } = await supabase
+        .from('candidature_partner')
+        .select('*')
+        .eq('circolo_id', circolo.id)
       if (error) throw error
       return (data ?? []) as CandidaturaPartner[]
     },
@@ -85,8 +91,8 @@ export function useRichiestePartner(profiloId: string | undefined) {
   // dedicato qui, per non ripetere il crash da doppia sottoscrizione già
   // visto in Fase 2 quando questo hook viene chiamato da più componenti).
   const ricarica = () => {
-    qc.invalidateQueries({ queryKey: ['richieste_partner'] })
-    qc.invalidateQueries({ queryKey: ['candidature_partner'] })
+    qc.invalidateQueries({ queryKey: ['richieste_partner', circolo.id] })
+    qc.invalidateQueries({ queryKey: ['candidature_partner', circolo.id] })
   }
 
   const crea = useMutation({
@@ -102,6 +108,7 @@ export function useRichiestePartner(profiloId: string | undefined) {
         socio_id: profiloId,
         ...dati,
         scade_il: scadeIlDa(dati.giorno, dati.ora_inizio),
+        circolo_id: circolo.id,
       })
       if (error) throw error
     },
@@ -144,7 +151,7 @@ export function useRichiestePartner(profiloId: string | undefined) {
       if (!profiloId) throw new Error('Utente non autenticato')
       const { error } = await supabase
         .from('candidature_partner')
-        .insert({ richiesta_id: richiesta.id, socio_id: profiloId })
+        .insert({ richiesta_id: richiesta.id, socio_id: profiloId, circolo_id: circolo.id })
       if (error) throw error
 
       supabase.functions

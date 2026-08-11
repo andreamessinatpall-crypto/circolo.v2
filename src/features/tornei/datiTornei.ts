@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import { useCircolo } from '@/circolo/useCircolo'
 import type { AmericanoPartita, Componente, Incontro, RichiestaIscrizione, Squadra, Torneo } from './tipi'
 
 export interface DatiTornei {
@@ -20,12 +21,14 @@ export interface DatiTornei {
 // Le tabelle squadre/componenti possono non esistere ancora: in tal caso le
 // trattiamo come vuote (l'errore vero è solo sulla tabella tornei).
 export function useTornei() {
+  const circolo = useCircolo()
   return useQuery({
-    queryKey: ['tornei'],
+    queryKey: ['tornei', circolo.id],
     queryFn: async (): Promise<DatiTornei> => {
       const { data: tornei, error } = await supabase
         .from('tornei')
         .select('*')
+        .eq('circolo_id', circolo.id)
         .order('creato_il', { ascending: false })
       if (error) throw error
 

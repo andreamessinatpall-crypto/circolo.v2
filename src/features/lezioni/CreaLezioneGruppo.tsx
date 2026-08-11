@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { messaggioErrore } from '@/lib/errori'
 import { etichettaSport } from '@/lib/formato'
 import type { Campo, Sport } from '@/features/prenotazioni/tipi'
+import { useCircolo } from '@/circolo/useCircolo'
 import { campiLiberi } from './useRichiesteLezione'
 import { useCreaLezioneGruppo } from './useLezioniGruppo'
 
@@ -83,6 +84,7 @@ function ModaleCreaLezioneGruppo({
   const [campiDisponibili, setCampiDisponibili] = useState<Campo[]>([])
   const [verificando, setVerificando] = useState(false)
   const [verificato, setVerificato] = useState(false)
+  const circolo = useCircolo()
   const crea = useCreaLezioneGruppo(istruttoreId)
 
   useEffect(() => {
@@ -111,7 +113,7 @@ function ModaleCreaLezioneGruppo({
     try {
       const inizio = `${data}T${oraInizio}:00`
       const fine = `${data}T${oraFine}:00`
-      const campi = await campiLiberi(sport as Sport, inizio, fine)
+      const campi = await campiLiberi(sport as Sport, inizio, fine, circolo.id)
       setCampiDisponibili(campi)
       setVerificato(true)
     } finally {
