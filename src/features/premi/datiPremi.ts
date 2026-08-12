@@ -96,10 +96,11 @@ export function useSaldoCrediti(socioId: string | undefined) {
 export const SCRIPT_POPOLARITA = 'tappa16-premi-popolarita.sql'
 
 export function usePopolaritaPremi() {
+  const circolo = useCircolo()
   return useQuery({
-    queryKey: ['premi-popolarita'],
+    queryKey: ['premi-popolarita', circolo.id],
     queryFn: async (): Promise<Map<string, number>> => {
-      const { data, error } = await supabase.rpc('premi_popolarita')
+      const { data, error } = await supabase.rpc('premi_popolarita', { p_circolo_id: circolo.id })
       if (error) {
         if (mancaRpc(error) || mancaPremi(error)) return new Map()
         throw error

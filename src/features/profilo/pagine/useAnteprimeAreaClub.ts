@@ -20,11 +20,12 @@ export interface ProssimaAttivita {
 // prenotazione_id prima di prendere la più vicina, non la prima riga.
 export function useProssimaAttivita() {
   const { profilo } = useAuth()
+  const circolo = useCircolo()
   return useQuery({
-    queryKey: ['prossima-attivita', profilo?.id],
+    queryKey: ['prossima-attivita', profilo?.id, circolo.id],
     enabled: !!profilo,
     queryFn: async (): Promise<ProssimaAttivita | null> => {
-      const { data, error } = await supabase.rpc('partite_in_programma')
+      const { data, error } = await supabase.rpc('partite_in_programma', { p_circolo_id: circolo.id })
       if (error) throw error
       const righe = (data ?? []) as Array<{
         prenotazione_id: number | string

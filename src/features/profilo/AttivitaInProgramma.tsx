@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/auth/useAuth'
+import { useCircolo } from '@/circolo/useCircolo'
 import { mancaTabella, messaggioErrore, mancaRpc } from '@/lib/errori'
 import { avviso, conferma } from '@/lib/dialoghi'
 import { useSociEtichette, useSociPubblici } from '@/features/prenotazioni/datiAmichevoli'
@@ -44,6 +45,7 @@ const ICONA_GIORNO_GENERICA = (
 // annullabile.
 export default function AttivitaInProgramma({ sport }: { sport?: Sport } = {}) {
   const { profilo } = useAuth()
+  const circolo = useCircolo()
   const qc = useQueryClient()
   // soci_etichette (non soci_pubblici): una prenotazione già registrata deve
   // restare leggibile col vero nome anche se il partecipante è nel frattempo
@@ -154,10 +156,10 @@ export default function AttivitaInProgramma({ sport }: { sport?: Sport } = {}) {
   })
 
   const query = useQuery({
-    queryKey: ['attivita-programma', profilo?.id],
+    queryKey: ['attivita-programma', profilo?.id, circolo.id],
     enabled: !!profilo,
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('partite_in_programma')
+      const { data, error } = await supabase.rpc('partite_in_programma', { p_circolo_id: circolo.id })
       if (error) throw error
       const map = righeInMappa((data ?? []) as RigaAttivitaBase[])
       const lista = [...map.values()].sort(

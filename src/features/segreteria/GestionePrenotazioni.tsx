@@ -103,9 +103,9 @@ export default function GestionePrenotazioni() {
   // soci_pubblici per la selezione di nuovi giocatori, dove vanno esclusi.
   const etichetteQuery = useSociEtichette()
   const istruttoriQuery = useQuery({
-    queryKey: ['istruttori-attivi'],
+    queryKey: ['istruttori-attivi', circolo.id],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('istruttori_attivi')
+      const { data, error } = await supabase.rpc('istruttori_attivi', { p_circolo_id: circolo.id })
       if (error) throw error
       return ((data ?? []) as Array<{ id: string; cognome: string; nome: string }>).map((s) => ({
         id: s.id,

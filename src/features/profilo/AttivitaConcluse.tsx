@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/auth/useAuth'
+import { useCircolo } from '@/circolo/useCircolo'
 import { mancaRpc, messaggioErrore } from '@/lib/errori'
 import { useSociEtichette } from '@/features/prenotazioni/datiAmichevoli'
 import { oraLocale } from '@/features/prenotazioni/orari'
@@ -45,14 +46,18 @@ function IcoFreccia() {
 // Storico attività (con il risultato, se inserito).
 export default function AttivitaConcluse({ sport }: { sport?: Sport } = {}) {
   const { profilo } = useAuth()
+  const circolo = useCircolo()
   const sociQuery = useSociEtichette()
   const [espansa, setEspansa] = useState(false)
 
   const query = useQuery({
-    queryKey: ['partite-concluse', profilo?.id],
+    queryKey: ['partite-concluse', profilo?.id, circolo.id],
     enabled: !!profilo,
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('partite_concluse', { p_giorni: GIORNI_FINESTRA })
+      const { data, error } = await supabase.rpc('partite_concluse', {
+        p_circolo_id: circolo.id,
+        p_giorni: GIORNI_FINESTRA,
+      })
       if (error) throw error
       const righe = (data ?? []) as RigaConclusa[]
       const map = righeInMappa(righe) as Map<string, AttivitaConclusa>

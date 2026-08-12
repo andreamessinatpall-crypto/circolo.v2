@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import { useCircolo } from '@/circolo/useCircolo'
 import { messaggioErrore } from '@/lib/errori'
 import TornaAreaClub from '@/features/profilo/pagine/TornaAreaClub'
 
@@ -107,12 +108,14 @@ function topLabel<T extends { label: string; val: number }>(ranking: T[]): strin
 // ── Hooks dati ────────────────────────────────────────────────────────────────
 
 function useStatPren() {
+  const circolo = useCircolo()
   return useQuery({
-    queryKey: ['stat-pren-anno'],
+    queryKey: ['stat-pren-anno', circolo.id],
     queryFn: async () => {
       const { data: pren, error } = await supabase
         .from('prenotazioni')
         .select('id, inizio, fine, campo_id, allenamento, incontro_id')
+        .eq('circolo_id', circolo.id)
         .gte('inizio', inizioAnno())
       if (error) throw error
       const lista = (pren ?? []) as PrenRow[]
@@ -215,10 +218,11 @@ function useStatPren() {
 }
 
 export function useStatGioc() {
+  const circolo = useCircolo()
   return useQuery({
-    queryKey: ['stat-gioc'],
+    queryKey: ['stat-gioc', circolo.id],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('stat_giocatori')
+      const { data, error } = await supabase.rpc('stat_giocatori', { p_circolo_id: circolo.id })
       if (error) throw error
       const r = data as {
         totale: number
