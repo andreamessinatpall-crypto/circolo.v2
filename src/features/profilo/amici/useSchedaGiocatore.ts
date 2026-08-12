@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import type { DettaglioRisultato } from '@/features/profilo/datiRisultato'
-import type { Preferenze, Sport } from '@/features/profilo/preferenze/domande'
+import { SPORT_LIST, type Preferenze, type Sport } from '@/features/profilo/preferenze/domande'
 
 // Attività totali (non solo quelle giocate insieme a chi guarda) di un socio
 // qualsiasi: RPC security definer, protetta lato server da sono_amici()
@@ -18,9 +18,9 @@ export function usePartiteTotaliSocio(socioId: string | undefined) {
   })
 }
 
-// Preferenze di un socio qualsiasi per entrambi gli sport (padel/calcio),
-// via preferenze_amico — la query diretta su preferenze_giocatore.ts resta
-// limitata dalla RLS alla riga propria.
+// Preferenze di un socio qualsiasi per ogni sport, via preferenze_amico —
+// la query diretta su preferenze_giocatore.ts resta limitata dalla RLS
+// alla riga propria.
 export function usePreferenzeAmico(socioId: string | undefined) {
   return useQuery({
     queryKey: ['preferenze-amico', socioId],
@@ -29,7 +29,7 @@ export function usePreferenzeAmico(socioId: string | undefined) {
       const { data, error } = await supabase.rpc('preferenze_amico', { p_socio: socioId })
       if (error) throw error
       const righe = (data ?? []) as (Preferenze & { sport: Sport })[]
-      const risultato: Record<Sport, Preferenze | null> = { padel: null, calcio: null }
+      const risultato = Object.fromEntries(SPORT_LIST.map((s) => [s, null])) as Record<Sport, Preferenze | null>
       for (const r of righe) {
         risultato[r.sport] = {
           mano_piede_preferito: r.mano_piede_preferito,

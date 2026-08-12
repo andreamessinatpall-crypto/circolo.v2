@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { ETICHETTE_SPORT, preferenzeImpostate } from './domande'
 import type { Sport } from './domande'
 import { usePreferenzeGiocatore } from './usePreferenzeGiocatore'
 import QuestionarioPreferenze from './QuestionarioPreferenze'
+import { useCampi, sportDisponibili } from '@/features/prenotazioni/datiPrenotazioni'
 
 function RigaPreferenzeSport({ socioId, sport }: { socioId: string; sport: Sport }) {
   const { attuale, caricamento } = usePreferenzeGiocatore(socioId, sport)
@@ -33,10 +34,11 @@ function RigaPreferenzeSport({ socioId, sport }: { socioId: string; sport: Sport
 }
 
 // Fase C (Modifica profilo): preferenze del giocatore divise per sport
-// (padel/calcio indipendenti). Se il socio segue entrambi gli sport, mostra
-// una riga per ciascuno, altrimenti solo quello preferito. Stesso stile di
-// titolo di "I tuoi dati" (richiesto esplicitamente): oro, niente icona/card
-// a parte.
+// (ognuno indipendente). Se il socio preferisce "entrambi", una riga per
+// ogni sport che il circolo offre davvero (stesso sportDisponibili() già
+// usato per prenotazioni/cerco-compagno), altrimenti solo quello preferito.
+// Stesso stile di titolo di "I tuoi dati" (richiesto esplicitamente): oro,
+// niente icona/card a parte.
 export default function SezionePreferenze({
   socioId,
   sportPreferito,
@@ -44,6 +46,11 @@ export default function SezionePreferenze({
   socioId: string
   sportPreferito: string | null
 }) {
+  const { data: campi } = useCampi()
+  const sportOfferti = useMemo(() => sportDisponibili(campi ?? []), [campi])
+  const sports: Sport[] =
+    sportPreferito && sportPreferito !== 'entrambi' ? [sportPreferito as Sport] : sportOfferti
+
   return (
     <>
       <div className="club-sez-header" style={{ marginTop: '2rem' }}>
@@ -51,12 +58,9 @@ export default function SezionePreferenze({
       </div>
       <div className="card">
         <div className="flex flex-col gap-2">
-          {(sportPreferito === 'padel' || sportPreferito === 'entrambi') && (
-            <RigaPreferenzeSport socioId={socioId} sport="padel" />
-          )}
-          {(sportPreferito === 'calcio' || sportPreferito === 'entrambi') && (
-            <RigaPreferenzeSport socioId={socioId} sport="calcio" />
-          )}
+          {sports.map((s) => (
+            <RigaPreferenzeSport key={s} socioId={socioId} sport={s} />
+          ))}
         </div>
       </div>
     </>

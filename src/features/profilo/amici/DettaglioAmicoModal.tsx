@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState } from 'react'
+import { Fragment, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { inizialiDaEtichetta } from '@/lib/formato'
 import { mancaRpc, messaggioErrore } from '@/lib/errori'
@@ -15,6 +15,7 @@ import {
   preferenzeImpostate,
   type Sport,
 } from '@/features/profilo/preferenze/domande'
+import { useCampi, sportDisponibili } from '@/features/prenotazioni/datiPrenotazioni'
 import { usePartiteConAmico } from './usePartiteConAmico'
 import { usePartiteTotaliSocio, usePreferenzeAmico, useUltimiRisultatiSocio } from './useSchedaGiocatore'
 import type { VoceAmico } from './useAmici'
@@ -195,7 +196,10 @@ export default function DettaglioAmicoModal({
     }
   }, [onChiudi])
 
-  const [sportAttivo, setSportAttivo] = useState<Sport>('padel')
+  const { data: campi } = useCampi()
+  const sportOfferti = useMemo(() => sportDisponibili(campi ?? []), [campi])
+  const [sport, setSport] = useState<Sport>('padel')
+  const sportAttivo = sportOfferti.includes(sport) ? sport : (sportOfferti[0] ?? 'padel')
   const partite = usePartiteConAmico(voce.id)
   const attivitaTotali = usePartiteTotaliSocio(voce.id)
   const partiteSport = (partite.data ?? []).filter((m) => m.sport === sportAttivo)
@@ -240,12 +244,12 @@ export default function DettaglioAmicoModal({
 
         <div className="amico-dett-sez">
           <nav className="sport-selettore" aria-label="Scegli lo sport">
-            {(['padel', 'calcio'] as Sport[]).map((s) => (
+            {sportOfferti.map((s) => (
               <button
                 key={s}
                 type="button"
                 className={'sport-rett' + (s === sportAttivo ? ' attivo' : '')}
-                onClick={() => setSportAttivo(s)}
+                onClick={() => setSport(s)}
               >
                 <SportIcona sport={s} size={18} />{ETICHETTE_SPORT[s]}
               </button>

@@ -82,19 +82,23 @@ export default function QuestionarioPreferenze({ socioId, sport, onChiudi }: Pro
               ))}
             </div>
 
-            <p className="pref-domanda-titolo">Posizione in campo</p>
-            <div className="pref-pill-group">
-              {POSIZIONI[sport].map((o) => (
-                <button
-                  key={o.id}
-                  type="button"
-                  className={'pref-pill' + (posizione === o.id ? ' attivo' : '')}
-                  onClick={() => setPosizione(o.id)}
-                >
-                  {o.label}
-                </button>
-              ))}
-            </div>
+            {POSIZIONI[sport].length > 0 && (
+              <>
+                <p className="pref-domanda-titolo">Posizione in campo</p>
+                <div className="pref-pill-group">
+                  {POSIZIONI[sport].map((o) => (
+                    <button
+                      key={o.id}
+                      type="button"
+                      className={'pref-pill' + (posizione === o.id ? ' attivo' : '')}
+                      onClick={() => setPosizione(o.id)}
+                    >
+                      {o.label}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
 
             <p className="pref-domanda-titolo">Orario preferito</p>
             <div className="pref-pill-group">

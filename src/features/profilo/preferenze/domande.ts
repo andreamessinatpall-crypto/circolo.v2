@@ -1,9 +1,14 @@
-// Preferenze del giocatore (Fase C): domande dirette (non un questionario a
-// punteggio come livelloGioco/domande.ts), divise per sport — padel e calcio
-// hanno domande indipendenti, richiesto esplicitamente dalla specifica
-// originale del socio.
+// Preferenze del giocatore (Fase C, estesa a tutti gli sport in Tappa 96):
+// domande dirette (non un questionario a punteggio come
+// livelloGioco/domande.ts), divise per sport — ogni sport ha domande
+// indipendenti (richiesto esplicitamente dalla specifica originale del
+// socio per padel/calcio, generalizzato agli sport aggiunti in Tappa 94).
 
-export type Sport = 'padel' | 'calcio'
+import { SPORT_LIST, type Sport } from '@/features/prenotazioni/tipi'
+import { ETICHETTE_SPORT } from '@/lib/formato'
+
+export type { Sport }
+export { SPORT_LIST }
 export type Orario = 'mattina' | 'pomeriggio' | 'sera' | 'qualsiasi'
 
 export interface Preferenze {
@@ -13,26 +18,48 @@ export interface Preferenze {
   giorni_preferiti: string[]
 }
 
-export const ETICHETTE_SPORT: Record<Sport, string> = {
-  padel: 'Padel',
-  calcio: 'Calcio',
-}
+export { ETICHETTE_SPORT }
 
+// Solo il calcio si gioca coi piedi: per tutti gli altri sport (racchetta/
+// palla a mano) ha senso chiedere la mano preferita.
 export const ETICHETTA_ARTO: Record<Sport, string> = {
   padel: 'Mano preferita',
+  pickleball: 'Mano preferita',
+  tennis: 'Mano preferita',
+  beachvolley: 'Mano preferita',
+  basket: 'Mano preferita',
   calcio: 'Piede preferito',
 }
 
+// Posizione in campo: significativa solo per sport con ruoli distinti
+// (squadra o lato fisso in doppio). Array vuoto = la domanda "Posizione in
+// campo" non compare per quello sport (vedi QuestionarioPreferenze.tsx).
 export const POSIZIONI: Record<Sport, { id: string; label: string }[]> = {
   padel: [
     { id: 'drive', label: 'Drive (destra)' },
     { id: 'reves', label: 'Revés (sinistra)' },
   ],
+  pickleball: [
+    { id: 'drive', label: 'Drive (destra)' },
+    { id: 'reves', label: 'Revés (sinistra)' },
+  ],
+  tennis: [],
   calcio: [
     { id: 'portiere', label: 'Portiere' },
     { id: 'difensore', label: 'Difensore' },
     { id: 'centrocampista', label: 'Centrocampista' },
     { id: 'attaccante', label: 'Attaccante' },
+  ],
+  basket: [
+    { id: 'playmaker', label: 'Playmaker' },
+    { id: 'guardia', label: 'Guardia' },
+    { id: 'ala', label: 'Ala' },
+    { id: 'centro', label: 'Centro' },
+  ],
+  beachvolley: [
+    { id: 'palleggiatore', label: 'Palleggiatore' },
+    { id: 'schiacciatore', label: 'Schiacciatore' },
+    { id: 'libero', label: 'Libero' },
   ],
 }
 
