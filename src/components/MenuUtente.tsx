@@ -18,6 +18,7 @@ import GestionePremi from '@/features/segreteria/GestionePremi'
 import GestioneAnnunci from '@/features/segreteria/GestioneAnnunci'
 import StoricoPrenotazioni from '@/features/segreteria/StoricoPrenotazioni'
 import GestioneGiocatori from '@/features/segreteria/GestioneGiocatori'
+import GestioneCollaboratori from '@/features/segreteria/GestioneCollaboratori'
 import StaffClubPagina from '@/features/profilo/pagine/StaffClubPagina'
 
 function IcoAvatar() {
@@ -143,6 +144,16 @@ function IcoContatti() {
   )
 }
 
+function IcoCollaboratori() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="9" cy="8" r="4" />
+      <path d="M2 21c0-3.9 3.1-7 7-7s7 3.1 7 7" />
+      <path d="m16.5 11.5 2 2 3.5-4" />
+    </svg>
+  )
+}
+
 function IcoGiocatoriClub() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -191,7 +202,7 @@ function IcoFreccia() {
 
 type Vista =
   | 'menu' | 'dati' | 'attivita' | 'impostazioni' | 'supporto-contatti'
-  | 'club-campi' | 'club-punti' | 'club-premi' | 'club-annunci'
+  | 'club-campi' | 'club-punti' | 'club-collaboratori' | 'club-premi' | 'club-annunci'
   | 'club-storico-prenotazioni' | 'club-giocatori'
 type Legale = 'privacy' | 'termini' | null
 
@@ -202,6 +213,7 @@ const TITOLI_VISTA: Record<Exclude<Vista, 'menu'>, string> = {
   'supporto-contatti': 'Contatti',
   'club-campi': 'Campi e regole',
   'club-punti': 'Punti e crediti',
+  'club-collaboratori': 'Collaboratori',
   'club-premi': 'Premi',
   'club-annunci': 'Annunci',
   'club-storico-prenotazioni': 'Storico prenotazioni',
@@ -320,6 +332,11 @@ export default function MenuUtente() {
                           <span className="account-menu-voce-testo">Punti e crediti</span>
                           <IcoFreccia />
                         </button>
+                        <button type="button" className="account-menu-voce" onClick={() => setVista('club-collaboratori')}>
+                          <span className="account-menu-voce-ico"><IcoCollaboratori /></span>
+                          <span className="account-menu-voce-testo">Collaboratori</span>
+                          <IcoFreccia />
+                        </button>
                       </>
                     )}
                     <button type="button" className="account-menu-voce" onClick={() => setVista('club-premi')}>
@@ -399,6 +416,7 @@ export default function MenuUtente() {
                     <IntervalliCrediti />
                   </>
                 )}
+                {vista === 'club-collaboratori' && <GestioneCollaboratori />}
                 {vista === 'club-premi' && <GestionePremi />}
                 {vista === 'club-annunci' && <GestioneAnnunci />}
                 {vista === 'club-storico-prenotazioni' && <StoricoPrenotazioni />}
