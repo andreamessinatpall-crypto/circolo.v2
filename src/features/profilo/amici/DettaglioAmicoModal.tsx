@@ -227,7 +227,7 @@ export default function DettaglioAmicoModal({
             </button>
           )}
           {!nascondiPrenotaInsieme && (
-            <Link to="/prenota" state={{ amicoId: voce.id }} className="btn">
+            <Link to="/profilo/prenota" state={{ amicoId: voce.id }} className="btn">
               <IcoCalendario /> Prenota insieme
             </Link>
           )}

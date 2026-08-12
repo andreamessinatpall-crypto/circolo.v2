@@ -8,11 +8,11 @@ import { useMioRuolo } from '@/circolo/useMioRuolo'
 import InstallaAppBanner from '@/components/InstallaAppBanner'
 import MenuUtente from '@/components/MenuUtente'
 import CampanellaNotifiche from '@/components/CampanellaNotifiche'
-import logoCIcon from '@/assets/logo-c-icon.png'
 import {
   IconaPrenota,
   IconaTornei,
   IconaAreaClub,
+  IconaHome,
 } from '@/components/IconeMenu'
 
 interface Voce {
@@ -35,7 +35,7 @@ function vociMenu(puoGestire: boolean): Voce[] {
   }
 
   return [
-    { path: '/prenota', label: 'Prenota', Icona: IconaPrenota },
+    { path: '/home', label: 'Home', Icona: IconaHome },
     { path: '/profilo', label: 'Area Club', Icona: IconaAreaClub },
     { path: '/tornei', label: 'Tornei', Icona: IconaTornei },
   ]
@@ -97,7 +97,7 @@ export default function AppShell() {
   // Sfondo a macchie sfumate colorate dietro le schede "vetro" (Attività,
   // prossima attività, cerca partita): solo nelle tre sezioni che le usano,
   // non ovunque (Segreteria/admin restano sullo sfondo piatto di sempre).
-  const sezioniArcobaleno = ['/prenota', '/profilo', '/tornei']
+  const sezioniArcobaleno = ['/home', '/profilo', '/tornei']
   const sfondoArcobaleno = sezioniArcobaleno.some(
     (p) => sottoPercorso === p || sottoPercorso.startsWith(p + '/'),
   )
@@ -107,7 +107,6 @@ export default function AppShell() {
       {/* Barra superiore: marchio e utente */}
       <header className="app-header">
         <div className="brand" aria-label={circolo.nome}>
-          <img src={circolo.logo_url || logoCIcon} alt="" className="brand-c-icon" aria-hidden="true" />
           <span aria-hidden="true" className="max-w-[10rem] truncate align-bottom sm:max-w-[16rem]">
             {circolo.nome}
           </span>

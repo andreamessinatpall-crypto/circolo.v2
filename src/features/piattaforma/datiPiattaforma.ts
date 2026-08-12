@@ -36,8 +36,10 @@ export function generaSlug(nome: string): string {
     .replace(/^-+|-+$/g, '')
 }
 
+// Nasce non attivo: diventa attivo solo quando il gestore completa il
+// questionario di primo accesso (OnboardingGestore) — vedi CircoloProvider.tsx.
 export async function creaCircolo(nome: string, slug: string): Promise<EsitoSalvataggio> {
-  const { error } = await supabase.from('circoli').insert({ nome, slug })
+  const { error } = await supabase.from('circoli').insert({ nome, slug, attivo: false })
   if (error) {
     const duplicato = error.code === '23505'
     return {
@@ -51,6 +53,19 @@ export async function creaCircolo(nome: string, slug: string): Promise<EsitoSalv
 
 export async function attivaDisattivaCircolo(id: string, attivo: boolean): Promise<EsitoSalvataggio> {
   const { error } = await supabase.from('circoli').update({ attivo }).eq('id', id)
+  if (error) return { ok: false, mancaPermesso: mancaPermesso(error), messaggio: error.message }
+  return { ok: true }
+}
+
+export async function salvaOrariDefault(
+  id: string,
+  apertura: string,
+  chiusura: string,
+): Promise<EsitoSalvataggio> {
+  const { error } = await supabase
+    .from('circoli')
+    .update({ apertura_default: apertura, chiusura_default: chiusura })
+    .eq('id', id)
   if (error) return { ok: false, mancaPermesso: mancaPermesso(error), messaggio: error.message }
   return { ok: true }
 }

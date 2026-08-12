@@ -19,6 +19,7 @@ import StaffClubPagina from '@/features/profilo/pagine/StaffClubPagina'
 import IstruttoriPagina from '@/features/profilo/pagine/IstruttoriPagina'
 import GestioneLezioniPagina from '@/features/profilo/pagine/GestioneLezioniPagina'
 import PrenotaPage from '@/features/prenotazioni/PrenotaPage'
+import HomePage from '@/features/profilo/HomePage'
 import TorneiPage from '@/features/tornei/TorneiPage'
 import PremiPage from '@/features/premi/PremiPage'
 import GestionePremi from '@/features/segreteria/GestionePremi'
@@ -34,16 +35,25 @@ import CircoloProvider from '@/circolo/CircoloProvider'
 import SceltaCircoloPage from '@/circolo/SceltaCircoloPage'
 import RichiedeRuolo from '@/circolo/RichiedeRuolo'
 import { useMioRuolo } from '@/circolo/useMioRuolo'
+import { useCircolo } from '@/circolo/useCircolo'
 import { useMieCircoli } from '@/circolo/datiCircoloSocio'
 
 // Manda l'utente alla sua schermata di partenza in base al ruolo NEL
 // CIRCOLO CORRENTE (non ai vecchi flag globali is_admin/is_allenatore su
-// `soci`, uguali in ogni circolo) — rende all'index di /c/:slug, quindi è
-// già dentro <CircoloProvider>.
+// `soci`, uguali in ogni circolo) — rende all'index di /c/:slug (o da
+// qualsiasi percorso "*" senza match sotto /c/:slug), quindi è già dentro
+// <CircoloProvider>. Percorso ASSOLUTO (non relativo): un target relativo
+// tipo "prenotazioni" si risolverebbe di nuovo su un percorso "*" ancora
+// senza match se il percorso di partenza era già invalido (es. "/c/slug/
+// login", che capita dopo login da /login con un solo circolo — vedi
+// RedirezioneCircolo), e ogni nuovo render tornerebbe qui appendendo un
+// altro "prenotazioni" invece di convergere — bug reale riscontrato con
+// l'URL che cresceva a dismisura.
 function RedirezioneIniziale() {
+  const circolo = useCircolo()
   const { puoGestire } = useMioRuolo()
-  if (puoGestire) return <Navigate to="prenotazioni" replace />
-  return <Navigate to="prenota" replace />
+  if (puoGestire) return <Navigate to={`/c/${circolo.slug}/prenotazioni`} replace />
+  return <Navigate to={`/c/${circolo.slug}/home`} replace />
 }
 
 // "/premi": ogni ruolo vede una vista diversa (il gestore gestisce i premi
@@ -114,6 +124,7 @@ function App() {
       <Route path="/scegli-circolo" element={<SceltaCircoloPage />} />
       <Route path="/c/:slug" element={<CircoloProvider><AppShell /></CircoloProvider>}>
         <Route index element={<RedirezioneIniziale />} />
+        <Route path="home" element={<HomePage />} />
         <Route path="profilo" element={<ProfiloPage />} />
         <Route path="profilo/mie-prenotazioni" element={<GestioneAttivitaPagina />} />
         <Route path="profilo/attivita-in-programma" element={<Navigate to="../mie-prenotazioni" replace />} />
@@ -126,7 +137,7 @@ function App() {
         <Route path="profilo/annunci" element={<AnnunciPagina />} />
         <Route path="profilo/staff" element={<StaffClubPagina />} />
         <Route path="profilo/lezioni" element={<IstruttoriPagina />} />
-        <Route path="prenota" element={<PrenotaPage />} />
+        <Route path="profilo/prenota" element={<PrenotaPage />} />
         <Route path="tornei" element={<TorneiPage />} />
         <Route path="premi" element={<PremiRoute />} />
         <Route

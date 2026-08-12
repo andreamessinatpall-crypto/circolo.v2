@@ -53,11 +53,16 @@ export async function salvaCampo(
 
 // Crea un nuovo campo. apertura/chiusura partono da una fascia tipica;
 // l'admin la regola subito dopo. `ordine` lo decide il chiamante (max + 1).
+// `overrides`: usato dal questionario di primo accesso (OnboardingGestore)
+// per applicare subito l'orario/durata/tipologia scelti dal gestore invece
+// dei valori fissi qui sotto — i chiamanti esistenti non lo passano e
+// ottengono lo stesso comportamento di sempre.
 export async function aggiungiCampo(
   sport: 'padel' | 'calcio',
   nome: string,
   ordine: number,
   circoloId: string,
+  overrides?: Partial<PatchCampo>,
 ): Promise<EsitoSalvataggio> {
   const { error } = await supabase.from('campi').insert({
     sport,
@@ -69,6 +74,7 @@ export async function aggiungiCampo(
     nota_servizio: null,
     outdoor: false,
     durata_minuti: 90,
+    ...overrides,
     circolo_id: circoloId,
   })
   if (error) {

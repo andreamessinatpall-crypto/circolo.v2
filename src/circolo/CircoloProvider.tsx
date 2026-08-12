@@ -1,13 +1,14 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useParams } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/auth/useAuth'
 import SchermataCaricamento from '@/components/SchermataCaricamento'
 import { classiErrore } from '@/components/stili'
 import { CircoloContext } from './CircoloContext'
 import { applicaTemaCircolo } from './temaCircolo'
+import OnboardingGestore from '@/features/onboarding/OnboardingGestore'
 import type { Circolo, RuoloCircolo } from '@/features/piattaforma/tipi'
 
 // Risolve lo slug nell'URL (/c/:slug/...) nel circolo corrente E il ruolo
@@ -18,6 +19,8 @@ import type { Circolo, RuoloCircolo } from '@/features/piattaforma/tipi'
 export default function CircoloProvider({ children }: { children: ReactNode }) {
   const { slug } = useParams<{ slug: string }>()
   const { profilo } = useAuth()
+  const qc = useQueryClient()
+  const [saltato, setSaltato] = useState(false)
 
   const { data: circolo, isLoading: caricoCircolo, error: erroreCircolo } = useQuery({
     queryKey: ['circolo', slug],
@@ -75,9 +78,37 @@ export default function CircoloProvider({ children }: { children: ReactNode }) {
     )
   }
 
+  const ruolo = ruoloInfo?.ruolo ?? 'socio'
+
+  // Un circolo appena creato nasce non attivo (vedi creaCircolo in
+  // datiPiattaforma.ts): lo diventa solo quando il suo gestore completa il
+  // questionario di primo accesso. I super-admin sono sempre "gestore"
+  // forzato ovunque per la Piattaforma, ma non sono loro il gestore reale
+  // da guidare nel questionario, quindi non vengono bloccati qui.
+  if (!circolo.attivo && !profilo?.is_super_admin) {
+    if (ruolo !== 'gestore') {
+      return (
+        <div className="mx-auto max-w-md p-6 text-center">
+          <p className="text-ink-2">
+            Il circolo "{circolo.nome}" è ancora in fase di configurazione da parte del gestore. Riprova più tardi.
+          </p>
+        </div>
+      )
+    }
+    if (!saltato) {
+      return (
+        <OnboardingGestore
+          circolo={circolo}
+          onSaltaPerOra={() => setSaltato(true)}
+          onCompletato={() => qc.invalidateQueries({ queryKey: ['circolo', slug] })}
+        />
+      )
+    }
+  }
+
   return (
     <CircoloContext.Provider
-      value={{ circolo, ruolo: ruoloInfo?.ruolo ?? 'socio', puoDareLezioni: ruoloInfo?.puoDareLezioni ?? false }}
+      value={{ circolo, ruolo, puoDareLezioni: ruoloInfo?.puoDareLezioni ?? false }}
     >
       {children}
     </CircoloContext.Provider>
