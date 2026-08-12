@@ -1,9 +1,10 @@
 import { nomeSquadraElegante } from './gironi'
-import { IconaCalcio } from '@/components/IconeSport'
+import { SportIcona } from '@/components/IconeSport'
 
 // Nome di una squadra/coppia da mostrare nel calendario e in classifica.
-// Per il calcio mostra il logo (o un segnaposto ⚽) accanto al nome; per il
-// padel resta il nome "elegante" della coppia (cognomi separati da " · ").
+// Per gli sport a rosa libera mostra il logo (o un segnaposto) accanto al
+// nome; per il padel resta il nome "elegante" della coppia fissa (cognomi
+// separati da " · ").
 export function NomeSquadra({
   nome,
   logoUrl,
@@ -13,14 +14,14 @@ export function NomeSquadra({
   logoUrl?: string | null
   sport: string
 }) {
-  if (sport !== 'calcio') return <>{nomeSquadraElegante(nome)}</>
+  if (sport === 'padel') return <>{nomeSquadraElegante(nome)}</>
   return (
     <span className="nome-con-logo">
       {logoUrl ? (
         <img className="logo-squadra" src={logoUrl} alt="" />
       ) : (
         <span className="logo-segnaposto" aria-hidden>
-          <IconaCalcio size={18} />
+          <SportIcona sport={sport} size={18} />
         </span>
       )}
       <span>{nome || '?'}</span>

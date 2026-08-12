@@ -1,4 +1,4 @@
-import { calcolaClassifica, incontriDelGirone, mappaLoghi, nomeGirone, numGironi, squadreDelGirone, unitaTorneo } from './gironi'
+import { calcolaClassifica, incontriDelGirone, mappaLoghi, nomeGirone, numGironi, squadreDelGirone, stileRisultato, unitaTorneo } from './gironi'
 import { NomeSquadra } from './NomeSquadra'
 import { MedagliaPodio } from '@/components/MedagliaPodio'
 import type { Incontro, Squadra, Torneo } from './tipi'
@@ -74,9 +74,10 @@ function TabellaClassifica({
 }) {
   const arr = calcolaClassifica(sport, squadre, incontri)
   const loghi = mappaLoghi(squadre)
-  // Calcio: pareggi (N) e differenza reti (DR). Padel: niente pareggi, differenza set (DS).
+  // Stile a punteggio (calcio/basket): pareggi (N) e differenza (DR). Stile a
+  // set (padel/tennis/pickleball/beachvolley): niente pareggi, differenza set (DS).
   const intestazioni =
-    sport === 'calcio'
+    stileRisultato(sport) === 'punteggio'
       ? ['#', 'Squadra', 'G', 'V', 'N', 'P', 'DR', 'Pti']
       : ['#', 'Squadra', 'G', 'V', 'P', 'DS', 'Pti']
 
@@ -94,7 +95,7 @@ function TabellaClassifica({
           {arr.map((r, idx) => {
             const dd = (r.diff > 0 ? '+' : '') + r.diff
             const celle =
-              sport === 'calcio'
+              stileRisultato(sport) === 'punteggio'
                 ? [r.nome, r.g, r.v, r.n, r.p, dd, r.pti]
                 : [r.nome, r.g, r.v, r.p, dd, r.pti]
             return (

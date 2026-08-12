@@ -13,10 +13,12 @@ import { dataDa, oraLocale, orariCampo, SLOT_MINUTI, ymd } from '@/features/pren
 import { nomeSquadraElegante } from './gironi'
 import { SPORT_LABEL } from './tipi'
 import type { Componente, Incontro, Torneo } from './tipi'
+import type { Sport } from '@/features/prenotazioni/tipi'
 
-// I titolari da iscrivere alla prenotazione: si esclude la riserva e, nel padel,
-// si tengono al massimo i primi 2 (la coppia che gioca davvero).
-function titolari(comp: Componente[], sport: 'padel' | 'calcio'): string[] {
+// I titolari da iscrivere alla prenotazione: si esclude la riserva e, nel padel
+// (unico sport a coppia fissa), si tengono al massimo i primi 2 (la coppia che
+// gioca davvero); gli altri sport (rosa libera) iscrivono tutti i titolari.
+function titolari(comp: Componente[], sport: Sport): string[] {
   // I componenti manuali (senza socio_id) non possono essere iscritti alla
   // prenotazione, che collega utenti registrati: li si esclude qui.
   const ids = comp

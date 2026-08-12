@@ -1,6 +1,9 @@
 import { useState } from 'react'
 import { useBloccaScrollBody } from '@/hooks/useBloccaScrollBody'
 import { messaggioErrore } from '@/lib/errori'
+import { etichettaSport } from '@/lib/formato'
+import { SportIcona } from '@/components/IconeSport'
+import { useCampi, sportDisponibili } from '@/features/prenotazioni/datiPrenotazioni'
 import type { Sport } from '@/features/prenotazioni/tipi'
 import type { FormatoTorneoAmici } from './tipi'
 
@@ -27,6 +30,8 @@ export default function CreaTorneoAmiciModal({
   onChiudi: () => void
 }) {
   useBloccaScrollBody()
+  const { data: campi } = useCampi()
+  const sportOfferti = sportDisponibili(campi ?? [])
   const [nome, setNome] = useState('')
   const [sport, setSport] = useState<Sport>('padel')
   const [formato, setFormato] = useState<FormatoTorneoAmici>('girone')
@@ -62,12 +67,11 @@ export default function CreaTorneoAmiciModal({
         </div>
 
         <div className="seg-group mb-2 mt-2">
-          <button type="button" className={'seg-btn' + (sport === 'padel' ? ' attivo' : '')} onClick={() => setSport('padel')}>
-            Padel
-          </button>
-          <button type="button" className={'seg-btn' + (sport === 'calcio' ? ' attivo' : '')} onClick={() => setSport('calcio')}>
-            Calcio
-          </button>
+          {sportOfferti.map((s) => (
+            <button key={s} type="button" className={'seg-btn' + (sport === s ? ' attivo' : '')} onClick={() => setSport(s)}>
+              <SportIcona sport={s} /> {etichettaSport(s)}
+            </button>
+          ))}
         </div>
 
         <div className="seg-group mb-2">

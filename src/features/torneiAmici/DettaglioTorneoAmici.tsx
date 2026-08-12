@@ -3,11 +3,11 @@ import ModalConferma from '@/components/ModalConferma'
 import Sezione from '@/components/Sezione'
 import { messaggioErrore } from '@/lib/errori'
 import { conferma } from '@/lib/dialoghi'
-import { titleCase, dataEstesa, inizialiDaEtichetta } from '@/lib/formato'
+import { titleCase, dataEstesa, inizialiDaEtichetta, ETICHETTE_SPORT } from '@/lib/formato'
 import { oraLocale } from '@/features/prenotazioni/orari'
 import { MenuAmici } from '@/features/prenotazioni/MieAmichevoli'
 import { formattaSet, incontroDisputato, setVinti } from '@/features/tornei/calendario'
-import { unitaTorneo } from '@/features/tornei/gironi'
+import { stileRisultato, unitaTorneo } from '@/features/tornei/gironi'
 import { nomeRoundDb, numDbRoundsAR, numTurniEliminazione } from '@/features/tornei/eliminazione'
 import { useAmici } from '@/features/profilo/amici/useAmici'
 import Avatar from '@/components/Avatar'
@@ -46,7 +46,6 @@ function etichettaTurnoAmici(m: IncontroAmici, torneo: TorneoAmici): string | nu
   return nomeRoundDb(m.round, tot, torneo.andata_ritorno, torneo.finale_secca, totDb)
 }
 
-const ETICHETTE_SPORT: Record<string, string> = { padel: 'Padel', calcio: 'Calcio' }
 const ETICHETTE_FORMATO: Record<string, string> = { girone: "Girone all'italiana", eliminazione: 'Eliminazione diretta' }
 const ETICHETTE_STATO: Record<string, string> = { creazione: 'In formazione', in_corso: 'In corso', concluso: 'Concluso' }
 
@@ -306,14 +305,14 @@ export function RisultatoForm({
   nomiOspite?: string[]
   onFatto: () => void
 }) {
-  const isPadel = torneo.sport === 'padel'
+  const usaSet = stileRisultato(torneo.sport) === 'set'
   const [sets, setSets] = useState<RigaSet[]>(
     incontro.set_punteggi?.length
       ? incontro.set_punteggi.map((s) => ({ casa: String(s.casa), ospite: String(s.ospite) }))
       : [{ casa: '', ospite: '' }],
   )
-  const [casa, setCasa] = useState(!isPadel && incontro.punti_casa != null ? String(incontro.punti_casa) : '')
-  const [ospite, setOspite] = useState(!isPadel && incontro.punti_ospite != null ? String(incontro.punti_ospite) : '')
+  const [casa, setCasa] = useState(!usaSet && incontro.punti_casa != null ? String(incontro.punti_casa) : '')
+  const [ospite, setOspite] = useState(!usaSet && incontro.punti_ospite != null ? String(incontro.punti_ospite) : '')
   const inserisci = useInserisciRisultatoAmici(torneo, incontri)
 
   function aggiornaSet(i: number, campo: 'casa' | 'ospite', val: string) {
@@ -327,11 +326,11 @@ export function RisultatoForm({
   }
 
   const setsValidi = sets.every((s) => s.casa !== '' && s.ospite !== '' && Number(s.casa) !== Number(s.ospite))
-  const valido = isPadel ? setsValidi : casa !== '' && ospite !== '' && Number(casa) !== Number(ospite)
+  const valido = usaSet ? setsValidi : casa !== '' && ospite !== '' && Number(casa) !== Number(ospite)
 
   function handleConferma() {
     if (!valido) return
-    if (isPadel) {
+    if (usaSet) {
       const setPunteggi: SetPunteggioAmici[] = sets.map((s) => ({ casa: Number(s.casa), ospite: Number(s.ospite) }))
       const { casa: setCasaVinti, ospite: setOspiteVinti } = setVinti(setPunteggi)
       inserisci.mutate(
@@ -348,7 +347,7 @@ export function RisultatoForm({
 
   return (
     <div className="flex flex-col gap-2" style={{ width: '100%' }}>
-      {isPadel ? (
+      {usaSet ? (
         <div className="flex flex-col gap-1.5">
           {sets.map((s, i) => (
             <div key={i} className="flex gap-2 items-center">
@@ -424,9 +423,9 @@ export default function DettaglioTorneoAmici({
   const accettati = partecipanti.filter((p) => p.stato_invito === 'accettata')
   const liberi = accettati.filter((p) => !p.squadra_id)
   // Padel: coppie fisse, ogni accettato deve finire in una delle N squadre da 2.
-  // Calcio: squadre a formazione libera, basta che nessuna resti vuota.
+  // Gli altri sport: squadre a formazione libera, basta che nessuna resti vuota.
   const squadreComplete =
-    torneo.sport === 'calcio'
+    torneo.sport !== 'padel'
       ? squadre.length >= 2 && liberi.length === 0 && squadre.every((s) => partecipanti.some((p) => p.squadra_id === s.id))
       : squadre.length >= 2 && liberi.length === 0 && accettati.length === squadre.length * 2
   const prenotazioniByIncontro = new Map(prenotazioni.map((p) => [p.torneo_amici_incontro_id, p]))
@@ -514,7 +513,7 @@ export default function DettaglioTorneoAmici({
           Padel: coppie fisse. Calcio: squadre a formazione libera, con nome
           scelto dal creatore ed eventuali ospiti non registrati. ── */}
       {sonoCreatore && torneo.stato === 'creazione' && (
-        torneo.sport === 'calcio' ? (
+        torneo.sport !== 'padel' ? (
           <FormaSquadreCalcio torneoId={torneoId} liberi={liberi} squadre={squadre} partecipanti={partecipanti} nomiSoci={nomiSoci} />
         ) : (
           <FormaSquadre torneoId={torneoId} sport={torneo.sport} liberi={liberi} squadre={squadre} partecipanti={partecipanti} nomiSoci={nomiSoci} />
@@ -532,7 +531,7 @@ export default function DettaglioTorneoAmici({
             ? 'Avvio…'
             : squadreComplete
               ? '🏆 Avvia il torneo'
-              : torneo.sport === 'calcio'
+              : torneo.sport !== 'padel'
                 ? 'Servono almeno 2 squadre, nessuna vuota e nessun invitato senza squadra'
                 : `Servono almeno 2 ${unitaTorneo(torneo.sport, true)}, tutti in ${unitaTorneo(torneo.sport, false)}`}
         </button>
@@ -577,7 +576,7 @@ export default function DettaglioTorneoAmici({
                 <table className="classifica">
                   <thead>
                     <tr>
-                      {(torneo.sport === 'calcio'
+                      {(stileRisultato(torneo.sport) === 'punteggio'
                         ? ['#', titleCase(unitaTorneo(torneo.sport, false)), 'G', 'V', 'N', 'P', 'DR', 'Pti']
                         : ['#', titleCase(unitaTorneo(torneo.sport, false)), 'G', 'V', 'P', 'DS', 'Pti']
                       ).map((c) => <th key={c}>{c}</th>)}
@@ -587,7 +586,7 @@ export default function DettaglioTorneoAmici({
                     {classifica.map((r, i) => {
                       const dd = (r.diff > 0 ? '+' : '') + r.diff
                       const celle =
-                        torneo.sport === 'calcio'
+                        stileRisultato(torneo.sport) === 'punteggio'
                           ? [r.g, r.v, r.n, r.p, dd, r.pti]
                           : [r.g, r.v, r.p, dd, r.pti]
                       return (

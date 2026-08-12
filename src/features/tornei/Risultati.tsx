@@ -17,6 +17,7 @@ import {
   nomeGirone,
   numGironi,
   squadreDelGirone,
+  stileRisultato,
   unitaTorneo,
 } from './gironi'
 import { SIMBOLO_ANDATA, SIMBOLO_RITORNO } from './eliminazione'
@@ -323,7 +324,7 @@ function RigaRisultato({
           {disputata ? (
             <>
               {m.punti_casa}–{m.punti_ospite}
-              {torneo.sport === 'padel' && m.set_punteggi?.length ? (
+              {stileRisultato(torneo.sport) === 'set' && m.set_punteggi?.length ? (
                 <span className="set-line">{formattaSet(m.set_punteggi)}</span>
               ) : null}
             </>
@@ -385,8 +386,8 @@ function RigaRisultato({
       )}
 
       {gestore && dPren ? (
-        torneo.sport === 'padel' ? (
-          <EditorPadel m={m} salva={salva.mutate} inSalvataggio={salva.isPending} />
+        stileRisultato(torneo.sport) === 'set' ? (
+          <EditorPadel sport={torneo.sport} m={m} salva={salva.mutate} inSalvataggio={salva.isPending} />
         ) : (
           <EditorCalcio m={m} salva={salva.mutate} inSalvataggio={salva.isPending} />
         )
@@ -448,13 +449,16 @@ function EditorCalcio({
   )
 }
 
-// Padel: un editor a set. Ogni set ha i game di casa e ospite; il vincitore è
-// chi vince più set. Si salvano i set vinti (punti_casa/ospite) + i game (set_punteggi).
+// Editor a set (padel, tennis, pickleball, beach volley). Ogni set ha i game
+// di casa e ospite; il vincitore è chi vince più set. Si salvano i set vinti
+// (punti_casa/ospite) + i game (set_punteggi).
 function EditorPadel({
+  sport,
   m,
   salva,
   inSalvataggio,
 }: {
+  sport: string
   m: Incontro
   salva: (patch: Partial<Incontro>) => void
   inSalvataggio: boolean
@@ -486,14 +490,14 @@ function EditorPadel({
         return
       }
       if (c === o) {
-        avviso('Set ' + (i + 1) + ': un set di padel non può finire in parità.')
+        avviso('Set ' + (i + 1) + ': un set non può finire in parità.')
         return
       }
       validi.push({ casa: c, ospite: o })
     }
     const v = setVinti(validi)
     if (v.casa === v.ospite) {
-      avviso('Risultato in parità di set: nel padel deve esserci una coppia vincitrice.')
+      avviso('Risultato in parità di set: deve esserci una ' + unitaTorneo(sport, false) + ' vincitrice.')
       return
     }
     salva({ punti_casa: v.casa, punti_ospite: v.ospite, set_punteggi: validi })

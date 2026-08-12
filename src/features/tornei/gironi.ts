@@ -111,10 +111,18 @@ export function costruisciPuntiGironi(
   return out
 }
 
-// Etichetta dell'unità del torneo: "coppia/coppie" nel padel, "squadra/squadre" nel calcio.
+// Etichetta dell'unità del torneo: "coppia/coppie" nel padel, "squadra/squadre" negli altri sport.
 export function unitaTorneo(sport: string, plurale: boolean): string {
   if (sport === 'padel') return plurale ? 'coppie' : 'coppia'
   return plurale ? 'squadre' : 'squadra'
+}
+
+// Stile di registrazione del risultato: a SET (senza pareggio, come nel
+// padel) per padel/tennis/pickleball/beach volley, a PUNTEGGIO singolo (con
+// pareggio possibile) per calcio/basket.
+export type StileRisultato = 'set' | 'punteggio'
+export function stileRisultato(sport: string): StileRisultato {
+  return sport === 'calcio' || sport === 'basket' ? 'punteggio' : 'set'
 }
 
 // Messaggio chiaro se mancano le colonne dei gironi (script SQL non ancora eseguito).
@@ -129,7 +137,8 @@ export const SCRIPT_GIRONI =
   'Mancano le colonne dei gironi: esegui su Supabase gli script tappa3c-gironi-multipli.sql e tappa3c2-nomi-gironi.sql.'
 
 // Classifica all'italiana: dalle partite con risultato calcola punti, vittorie, ecc.
-// Padel: 1 punto a vittoria, nessun pareggio. Calcio: 3 a vittoria, 1 a pareggio.
+// Stile SET (padel/tennis/pickleball/beachvolley): 1 punto a vittoria, nessun
+// pareggio. Stile PUNTEGGIO (calcio/basket): 3 a vittoria, 1 a pareggio.
 export function calcolaClassifica(
   sport: string,
   squadre: Squadra[],
@@ -161,16 +170,17 @@ export function calcolaClassifica(
     c.gs += m.punti_ospite
     o.gf += m.punti_ospite
     o.gs += m.punti_casa
+    const puntiVittoria = stileRisultato(sport) === 'punteggio' ? 3 : 1
     if (m.punti_casa > m.punti_ospite) {
       c.v++
       o.p++
-      c.pti += sport === 'calcio' ? 3 : 1
+      c.pti += puntiVittoria
     } else if (m.punti_casa < m.punti_ospite) {
       o.v++
       c.p++
-      o.pti += sport === 'calcio' ? 3 : 1
+      o.pti += puntiVittoria
     } else {
-      // Pareggio: previsto solo nel calcio.
+      // Pareggio: previsto solo nello stile a punteggio (calcio/basket).
       c.n++
       o.n++
       c.pti += 1

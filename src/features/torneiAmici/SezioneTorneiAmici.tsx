@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useAuth } from '@/auth/useAuth'
 import { mancaTabella, messaggioErrore } from '@/lib/errori'
-import { dataEstesa } from '@/lib/formato'
+import { dataEstesa, ETICHETTE_SPORT } from '@/lib/formato'
 import Sezione from '@/components/Sezione'
 import { SportIcona } from '@/components/IconeSport'
 import { unitaTorneo } from '@/features/tornei/gironi'
@@ -10,7 +10,6 @@ import DettaglioTorneoAmici from './DettaglioTorneoAmici'
 import { useCreaTorneoAmici, useTorneiAmici } from './useTorneiAmici'
 import type { TorneoAmici } from './tipi'
 
-const ETICHETTE_SPORT: Record<string, string> = { padel: 'Padel', calcio: 'Calcio' }
 const ETICHETTE_FORMATO: Record<string, string> = { girone: "Girone all'italiana", eliminazione: 'Eliminazione diretta' }
 const ETICHETTE_STATO: Record<string, string> = { creazione: 'In formazione', in_corso: 'In corso', concluso: 'Concluso' }
 

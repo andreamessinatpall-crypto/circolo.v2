@@ -1,3 +1,6 @@
+import type { Sport } from '@/features/prenotazioni/tipi'
+import { ETICHETTE_SPORT } from '@/lib/formato'
+
 export type StatoTorneo = 'bozza' | 'in_programma' | 'in_corso' | 'concluso'
 
 // (Fase 7b) Una terna di punti: iscrizione, partita vinta, vittoria torneo.
@@ -11,7 +14,7 @@ export interface PuntiSet {
 export interface Torneo {
   id: number | string
   nome: string
-  sport: 'padel' | 'calcio'
+  sport: Sport
   formato: string
   stato: StatoTorneo
   data_inizio: string | null
@@ -152,7 +155,7 @@ export interface AmericanoPartita {
   data_disputata?: string | null
 }
 
-export const SPORT_LABEL: Record<string, string> = { padel: 'Padel', calcio: 'Calcio' }
+export const SPORT_LABEL: Record<string, string> = ETICHETTE_SPORT
 
 // Un torneo "in programma" smette di comparire nelle anteprime/liste una
 // volta superata la data di inizio (anche se lo stato non è ancora stato

@@ -9,7 +9,7 @@ import { MenuAmici } from '@/features/prenotazioni/MieAmichevoli'
 import { nomeSquadraElegante } from './gironi'
 import { annullaPuntiIscrizione, assegnaPuntiIscrizione } from './punti'
 import { formatNomeAmericano } from './americano'
-import { IconaCalcio } from '@/components/IconeSport'
+import { SportIcona } from '@/components/IconeSport'
 import { ICO_MATITA, ICO_TRASH } from './icone'
 import type { Componente, RichiestaIscrizione, Squadra, Torneo } from './tipi'
 
@@ -450,7 +450,7 @@ function RigaSquadra({
         </div>
       </div>
 
-      {torneo.sport === 'calcio' && (
+      {torneo.sport !== 'padel' && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '10px 0' }}>
           {squadra.logo_url ? (
             <img
@@ -461,7 +461,7 @@ function RigaSquadra({
             />
           ) : (
             <span className="logo-segnaposto grande" aria-hidden style={{ flexShrink: 0 }}>
-              <IconaCalcio size={28} />
+              <SportIcona sport={torneo.sport} size={28} />
             </span>
           )}
           <input

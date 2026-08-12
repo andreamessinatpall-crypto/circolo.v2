@@ -11,11 +11,11 @@ import { useCircolo } from '@/circolo/useCircolo'
 import { useMioRuolo } from '@/circolo/useMioRuolo'
 import { mancaTabella, messaggioErrore } from '@/lib/errori'
 import { avviso } from '@/lib/dialoghi'
-import { dataEstesa } from '@/lib/formato'
+import { dataEstesa, etichettaSport } from '@/lib/formato'
 import { classiErrore, classiInput, classiOk } from '@/components/stili'
 import NumeroInput from '@/components/NumeroInput'
 import { useTornei } from './datiTornei'
-import { useCampi } from '@/features/prenotazioni/datiPrenotazioni'
+import { useCampi, sportDisponibili } from '@/features/prenotazioni/datiPrenotazioni'
 import type { DatiTornei } from './datiTornei'
 import GestioneSquadre from './GestioneSquadre'
 import GestioneGironi from './GestioneGironi'
@@ -94,7 +94,7 @@ function CardTorneoClub({
   else if (torneo.data_inizio) periodo = 'dal ' + dataEstesa(torneo.data_inizio)
   else if (torneo.data_fine) periodo = 'fino al ' + dataEstesa(torneo.data_fine)
   const formato = FORMATI_TORNEO[torneo.formato] ?? torneo.formato
-  const sportLabel = torneo.sport === 'padel' ? 'Padel' : 'Calcio'
+  const sportLabel = etichettaSport(torneo.sport)
   const unita = unitaTorneo(torneo.sport, nSquadre !== 1)
 
   const concluso = torneo.stato === 'concluso'
@@ -262,7 +262,7 @@ export default function TorneiPage() {
 const schema = z
   .object({
     nome: z.string().trim().min(1, 'Inserisci il nome'),
-    sport: z.enum(['padel', 'calcio']),
+    sport: z.enum(['padel', 'calcio', 'tennis', 'pickleball', 'beachvolley', 'basket']),
     formato: z.enum(['girone', 'eliminazione', 'americano']),
     data_inizio: z.string().optional(),
     data_fine: z.string().optional(),
@@ -303,6 +303,7 @@ function NuovoTorneo({ onCreato }: { onCreato: (id: number | string) => void }) 
   const [amOraInizio, setAmOraInizio] = useState('')
   const [amOraFine, setAmOraFine] = useState('')
   const campiQuery = useCampi()
+  const sportOfferti = sportDisponibili(campiQuery.data ?? [])
   // (Tappa 31) Andata/ritorno, finale secca, terzo posto.
   const [andataRitorno, setAndataRitorno] = useState(false)
   const [finaleSecca, setFinaleSecca] = useState(false)
@@ -476,23 +477,19 @@ function NuovoTorneo({ onCreato }: { onCreato: (id: number | string) => void }) 
         {/* ── Sport ─────────────────────────────────────────────── */}
         <label>Sport</label>
         <div className="seg-group">
-          <button
-            type="button"
-            className={`seg-btn${sportRaw === 'padel' ? ' attivo' : ''}`}
-            onClick={() => setValue('sport', 'padel')}
-          >
-            <SportIcona sport="padel" /> Padel
-          </button>
-          <button
-            type="button"
-            className={`seg-btn${sportRaw === 'calcio' ? ' attivo' : ''}`}
-            onClick={() => {
-              setValue('sport', 'calcio')
-              if (formattoRaw === 'americano') setValue('formato', 'girone')
-            }}
-          >
-            <SportIcona sport="calcio" /> Calcio
-          </button>
+          {sportOfferti.map((s) => (
+            <button
+              key={s}
+              type="button"
+              className={`seg-btn${sportRaw === s ? ' attivo' : ''}`}
+              onClick={() => {
+                setValue('sport', s)
+                if (s !== 'padel' && formattoRaw === 'americano') setValue('formato', 'girone')
+              }}
+            >
+              <SportIcona sport={s} /> {etichettaSport(s)}
+            </button>
+          ))}
         </div>
         {/* campi nascosti per react-hook-form */}
         <input type="hidden" {...register('sport')} />
