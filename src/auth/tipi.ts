@@ -3,7 +3,14 @@
 // In seguito la sostituiremo con i tipi generati dal database
 // (npx supabase gen types) per averli sempre allineati allo schema reale.
 
-export type SportPreferito = 'padel' | 'calcio' | 'entrambi'
+export type SportPreferito =
+  | 'padel'
+  | 'calcio'
+  | 'tennis'
+  | 'pickleball'
+  | 'beachvolley'
+  | 'basket'
+  | 'entrambi'
 
 export interface Socio {
   id: string

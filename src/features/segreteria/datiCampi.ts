@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import type { FormatoCalcio, LimitiSport, Sport } from '@/features/prenotazioni/tipi'
 
 // (Fase 8c) Salvataggi lato segreteria per campi e regole di prenotazione.
 // Le LETTURE riusano useCampi()/useImpostazioni() di features/prenotazioni.
@@ -33,6 +34,7 @@ export interface PatchCampo {
   nota_servizio: string | null
   outdoor: boolean
   durata_minuti: number
+  formato?: FormatoCalcio | null
 }
 
 export async function salvaCampo(
@@ -58,7 +60,7 @@ export async function salvaCampo(
 // dei valori fissi qui sotto — i chiamanti esistenti non lo passano e
 // ottengono lo stesso comportamento di sempre.
 export async function aggiungiCampo(
-  sport: 'padel' | 'calcio',
+  sport: Sport,
   nome: string,
   ordine: number,
   circoloId: string,
@@ -106,20 +108,14 @@ export async function eliminaCampo(campoId: number | string): Promise<EsitoSalva
 
 export async function salvaRegole(
   giorniAnticipo: number,
-  maxPadel: number,
-  maxCalcio: number,
-  maxPadelGiorno: number,
-  maxCalcioGiorno: number,
+  limitiPerSport: Partial<Record<Sport, LimitiSport>>,
   circoloId: string,
 ): Promise<EsitoSalvataggio> {
   const { error } = await supabase
     .from('impostazioni')
     .update({
       giorni_anticipo: giorniAnticipo,
-      max_pren_padel: maxPadel,
-      max_pren_calcio: maxCalcio,
-      max_pren_padel_giorno: maxPadelGiorno,
-      max_pren_calcio_giorno: maxCalcioGiorno,
+      limiti_per_sport: limitiPerSport,
     })
     .eq('circolo_id', circoloId)
   if (error) {
@@ -127,7 +123,7 @@ export async function salvaRegole(
       error.code === '42P01' || error.code === 'PGRST205' || error.code === 'PGRST204'
     return {
       ok: false,
-      mancaScript: tabellaMancante || mancaColonna(error, 'impostazioni', 'max_pren'),
+      mancaScript: tabellaMancante || mancaColonna(error, 'impostazioni', 'limiti_per_sport'),
       messaggio: error.message,
     }
   }

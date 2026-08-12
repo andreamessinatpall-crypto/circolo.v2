@@ -40,6 +40,10 @@ export function etichettaGenere(g: string | null): string {
 export const ETICHETTE_SPORT: Record<string, string> = {
   padel: 'Padel',
   calcio: 'Calcio',
+  tennis: 'Tennis',
+  pickleball: 'Pickleball',
+  beachvolley: 'Beach volley',
+  basket: 'Basket',
   entrambi: 'Entrambi',
 }
 

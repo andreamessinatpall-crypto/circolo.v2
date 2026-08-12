@@ -19,13 +19,15 @@ import type { MiaPrenotazione } from './datiAmichevoli'
 import type { Sport } from './tipi'
 
 function valorePunti(v: ValoriPunti, sport: Sport, allenamento: boolean): number {
-  if (sport === 'padel') return allenamento ? v.allenamentoPadel : v.partitaPadel
-  return allenamento ? v.allenamentoCalcio : v.partitaCalcio
+  const s = v[sport]
+  if (!s) return 0
+  return allenamento ? s.allenamento : s.partita
 }
 
 function valoreCrediti(v: ValoriPunti, sport: Sport, allenamento: boolean): number {
-  if (sport === 'padel') return allenamento ? v.creditiAllenamentoPadel : v.creditiPartitaPadel
-  return allenamento ? v.creditiAllenamentoCalcio : v.creditiPartitaCalcio
+  const s = v[sport]
+  if (!s) return 0
+  return allenamento ? s.creditiAllenamento : s.creditiPartita
 }
 
 function chiavePresenza(prenId: number | string, socioId: string): string {

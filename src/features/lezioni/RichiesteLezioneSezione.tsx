@@ -1,13 +1,11 @@
 import { useState } from 'react'
 import { messaggioErrore, mancaTabella } from '@/lib/errori'
-import { dataEstesa } from '@/lib/formato'
+import { dataEstesa, ETICHETTE_SPORT } from '@/lib/formato'
 import { classiOk } from '@/components/stili'
 import { oraLocale } from '@/features/prenotazioni/orari'
 import { useCircolo } from '@/circolo/useCircolo'
-import type { Campo, Sport } from '@/features/prenotazioni/tipi'
+import type { Campo } from '@/features/prenotazioni/tipi'
 import { useRichiesteRicevute, campiLiberi, type RichiestaLezione } from './useRichiesteLezione'
-
-const ETICHETTE_SPORT: Record<Sport, string> = { padel: 'Padel', calcio: 'Calcio' }
 
 function IcoRichiesta() {
   return (

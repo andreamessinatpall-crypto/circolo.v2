@@ -1,13 +1,9 @@
 import type { Socio } from './tipi'
 
 // Funzioni che traducono i ruoli del socio in "cosa può vedere/fare".
-
-// Gli sport che il socio vede nell'interfaccia, in base alla sua preferenza.
-export function sportConsentiti(p: Socio): Array<'padel' | 'calcio'> {
-  if (p.sport_preferito === 'padel') return ['padel']
-  if (p.sport_preferito === 'calcio') return ['calcio']
-  return ['padel', 'calcio']
-}
+// `sportConsentiti` si è spostata in features/prenotazioni/datiPrenotazioni.ts
+// (serve anche la lista degli sport realmente disponibili nel circolo, che
+// vive lì insieme a useCampi()).
 
 // NB: chi gestisce prenotazioni/tornei/limiti non si legge più da qui (erano
 // flag globali is_admin/is_allenatore/e_allenatore, uguali in ogni circolo).

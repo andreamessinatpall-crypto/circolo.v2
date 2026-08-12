@@ -1,11 +1,11 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { classiErrore, classiOk } from '@/components/stili'
-import { IconaCalcio, IconaPadel } from '@/components/IconeSport'
+import { SportIcona } from '@/components/IconeSport'
 import { etichettaSport } from '@/lib/formato'
-import { useCampi, useImpostazioni } from '@/features/prenotazioni/datiPrenotazioni'
+import { useCampi, useImpostazioni, sportDisponibili } from '@/features/prenotazioni/datiPrenotazioni'
 import { orariCampo, SLOT_MINUTI } from '@/features/prenotazioni/orari'
-import type { Campo, Sport } from '@/features/prenotazioni/tipi'
+import { SPORT_LIST, type Campo, type FormatoCalcio, type LimitiSport, type Sport } from '@/features/prenotazioni/tipi'
 import { aggiungiCampo, eliminaCampo, salvaCampo, salvaRegole } from './datiCampi'
 import { useCircolo } from '@/circolo/useCircolo'
 
@@ -25,6 +25,7 @@ function durataLabel(min: number): string {
 export default function GestioneCampi() {
   const { data: campi, isLoading, error } = useCampi()
   const { data: impostazioni } = useImpostazioni()
+  const sports = useMemo(() => sportDisponibili(campi ?? []), [campi])
 
   return (
     <div>
@@ -48,7 +49,7 @@ export default function GestioneCampi() {
       <div className="eyebrow">Regole di prenotazione</div>
       <div className="card">
         {impostazioni ? (
-          <FormRegole impostazioni={impostazioni} />
+          <FormRegole impostazioni={impostazioni} sports={sports} />
         ) : (
           <p className="text-ink-2">Caricamento…</p>
         )}
@@ -133,6 +134,7 @@ function RigaCampo({ campo }: { campo: Campo }) {
   const [nota, setNota] = useState(campo.nota_servizio || '')
   const [outdoor, setOutdoor] = useState(campo.outdoor === true)
   const [durata, setDurata] = useState(campo.durata_minuti || SLOT_MINUTI)
+  const [formato, setFormato] = useState<FormatoCalcio | null>(campo.formato ?? null)
   const [msg, setMsg] = useState<Esito>(null)
 
   const minuti = (s: string) => Number(s.slice(0, 2)) * 60 + Number(s.slice(3, 5))
@@ -154,6 +156,7 @@ function RigaCampo({ campo }: { campo: Campo }) {
         nota_servizio: inServizio ? null : nota.trim() || null,
         outdoor,
         durata_minuti: durata,
+        formato: campo.sport === 'calcio' ? formato : null,
       })
       if (!esito.ok)
         throw new Error(
@@ -188,20 +191,19 @@ function RigaCampo({ campo }: { campo: Campo }) {
     onError: (e: Error) => setMsg({ tipo: 'errore', testo: e.message }),
   })
 
-  const intestazione = inServizio
-    ? campo.sport === 'padel'
-      ? 'campo-head-padel'
-      : 'campo-head-calcio'
-    : 'campo-head-off'
+  const intestazione = inServizio ? 'campo-head-attivo' : 'campo-head-off'
 
   return (
     <div className="campo-card">
       {/* Intestazione colorata: icona + sport + stato + interruttore */}
       <div className={`campo-head ${intestazione}`}>
         <span className="campo-head-icona">
-          {campo.sport === 'padel' ? <IconaPadel /> : <IconaCalcio />}
+          <SportIcona sport={campo.sport} />
         </span>
-        <span className="campo-head-sport">{etichettaSport(campo.sport)}</span>
+        <span className="campo-head-sport">
+          {etichettaSport(campo.sport)}
+          {campo.sport === 'calcio' && formato && ` ${formato.toUpperCase()}`}
+        </span>
         {!inServizio && <span className="campo-head-tag">Sospeso</span>}
         <button
           type="button"
@@ -244,6 +246,22 @@ function RigaCampo({ campo }: { campo: Campo }) {
               <option value="scoperto">Scoperto</option>
             </select>
           </label>
+          {campo.sport === 'calcio' && (
+            <label className="block">
+              <span className="etichetta !mb-1">Formato</span>
+              <select
+                className="campo !mt-0 !w-auto"
+                value={formato ?? 'a7'}
+                onChange={(e) => {
+                  setFormato(e.target.value as FormatoCalcio)
+                  setMsg(null)
+                }}
+              >
+                <option value="a5">Calcio a 5</option>
+                <option value="a7">Calcio a 7</option>
+              </select>
+            </label>
+          )}
         </div>
 
         {/* Orari e durata, sulla stessa riga */}
@@ -328,6 +346,7 @@ function AggiungiCampo({ campi }: { campi: Campo[] }) {
   const circolo = useCircolo()
   const [aperto, setAperto] = useState(false)
   const [sport, setSport] = useState<Sport>('padel')
+  const [formato, setFormato] = useState<FormatoCalcio>('a7')
   const [nome, setNome] = useState('')
   const [msg, setMsg] = useState<Esito>(null)
 
@@ -336,7 +355,13 @@ function AggiungiCampo({ campi }: { campi: Campo[] }) {
       const n = nome.trim()
       if (!n) throw new Error('Dai un nome al campo.')
       const ordine = campi.reduce((max, c) => Math.max(max, c.ordine ?? 0), 0) + 1
-      const esito = await aggiungiCampo(sport, n, ordine, circolo.id)
+      const esito = await aggiungiCampo(
+        sport,
+        n,
+        ordine,
+        circolo.id,
+        sport === 'calcio' ? { formato } : undefined,
+      )
       if (!esito.ok)
         throw new Error(
           esito.mancaPermesso
@@ -370,9 +395,22 @@ function AggiungiCampo({ campi }: { campi: Campo[] }) {
           value={sport}
           onChange={(e) => setSport(e.target.value as Sport)}
         >
-          <option value="padel">Padel</option>
-          <option value="calcio">Calcio</option>
+          {SPORT_LIST.map((s) => (
+            <option key={s} value={s}>
+              {etichettaSport(s)}
+            </option>
+          ))}
         </select>
+        {sport === 'calcio' && (
+          <select
+            className="campo !mt-0 !w-auto"
+            value={formato}
+            onChange={(e) => setFormato(e.target.value as FormatoCalcio)}
+          >
+            <option value="a5">A 5</option>
+            <option value="a7">A 7</option>
+          </select>
+        )}
         <input
           type="text"
           maxLength={20}
@@ -408,56 +446,63 @@ function AggiungiCampo({ campi }: { campi: Campo[] }) {
   )
 }
 
-// ---- Regole globali di prenotazione ----
+// ---- Regole globali di prenotazione (giorni anticipo + limiti per ogni
+// sport effettivamente configurato nel circolo, non più solo padel/calcio) ----
 function FormRegole({
   impostazioni,
+  sports,
 }: {
-  impostazioni: {
-    giorniAnticipo: number
-    maxPadel: number
-    maxCalcio: number
-    maxPadelGiorno: number
-    maxCalcioGiorno: number
-  }
+  impostazioni: { giorniAnticipo: number; limitiPerSport: Partial<Record<Sport, LimitiSport>> }
+  sports: Sport[]
 }) {
   const qc = useQueryClient()
   const circolo = useCircolo()
   const [giorni, setGiorni] = useState(String(impostazioni.giorniAnticipo))
-  const [maxPadel, setMaxPadel] = useState(String(impostazioni.maxPadel))
-  const [maxCalcio, setMaxCalcio] = useState(String(impostazioni.maxCalcio))
-  const [maxPadelGiorno, setMaxPadelGiorno] = useState(String(impostazioni.maxPadelGiorno))
-  const [maxCalcioGiorno, setMaxCalcioGiorno] = useState(String(impostazioni.maxCalcioGiorno))
+  const [limiti, setLimiti] = useState<Record<Sport, { maxAttive: string; maxGiorno: string }>>(() => {
+    const iniziali = {} as Record<Sport, { maxAttive: string; maxGiorno: string }>
+    for (const s of sports) {
+      iniziali[s] = {
+        maxAttive: String(impostazioni.limitiPerSport[s]?.maxAttive ?? 0),
+        maxGiorno: String(impostazioni.limitiPerSport[s]?.maxGiorno ?? 0),
+      }
+    }
+    return iniziali
+  })
   const [msg, setMsg] = useState<Esito>(null)
+
+  function aggiorna(sport: Sport, campo: 'maxAttive' | 'maxGiorno', valore: string) {
+    setLimiti((prev) => ({ ...prev, [sport]: { ...prev[sport], [campo]: valore } }))
+  }
 
   const salva = useMutation({
     mutationFn: async () => {
       const g = parseInt(giorni, 10)
       if (!Number.isInteger(g) || g < 1 || g > 30)
         throw new Error('Inserisci un numero di giorni tra 1 e 30.')
-      const mp = parseInt(maxPadel, 10)
-      const mc = parseInt(maxCalcio, 10)
-      if (!Number.isInteger(mp) || mp < 0 || mp > 50 || !Number.isInteger(mc) || mc < 0 || mc > 50)
-        throw new Error("Il numero massimo di prenotazioni attive dev'essere tra 0 e 50 (0 = nessun limite).")
-      const mpg = parseInt(maxPadelGiorno, 10)
-      const mcg = parseInt(maxCalcioGiorno, 10)
-      if (!Number.isInteger(mpg) || mpg < 0 || mpg > 20 || !Number.isInteger(mcg) || mcg < 0 || mcg > 20)
-        throw new Error("Il numero massimo di prenotazioni al giorno dev'essere tra 0 e 20 (0 = nessun limite).")
 
-      const esito = await salvaRegole(g, mp, mc, mpg, mcg, circolo.id)
+      const limitiPerSport: Partial<Record<Sport, LimitiSport>> = {}
+      for (const s of sports) {
+        const ma = parseInt(limiti[s]?.maxAttive ?? '0', 10)
+        const mg = parseInt(limiti[s]?.maxGiorno ?? '0', 10)
+        if (!Number.isInteger(ma) || ma < 0 || ma > 50)
+          throw new Error(`${etichettaSport(s)}: il numero massimo di prenotazioni attive dev'essere tra 0 e 50 (0 = nessun limite).`)
+        if (!Number.isInteger(mg) || mg < 0 || mg > 20)
+          throw new Error(`${etichettaSport(s)}: il numero massimo di prenotazioni al giorno dev'essere tra 0 e 20 (0 = nessun limite).`)
+        limitiPerSport[s] = { maxAttive: ma, maxGiorno: mg }
+      }
+
+      const esito = await salvaRegole(g, limitiPerSport, circolo.id)
       if (!esito.ok)
         throw new Error(
           esito.mancaScript
             ? 'Tabella o colonne impostazioni mancanti: esegui gli script regole-prenotazione.sql e max-prenotazioni.sql su Supabase.'
             : 'Salvataggio non riuscito: ' + (esito.messaggio ?? ''),
         )
-      return { g, mp, mc, mpg, mcg }
+      return g
     },
-    onSuccess: ({ g, mp, mc, mpg, mcg }) => {
+    onSuccess: (g) => {
       qc.invalidateQueries({ queryKey: ['impostazioni'] })
-      setMsg({
-        tipo: 'ok',
-        testo: `Regole aggiornate: prenotazione fino a ${g} ${g === 1 ? 'giorno' : 'giorni'} di anticipo; max attive — padel ${mp === 0 ? 'illimitate' : mp}, calcio ${mc === 0 ? 'illimitate' : mc}; max al giorno — padel ${mpg === 0 ? 'illimitate' : mpg}, calcio ${mcg === 0 ? 'illimitate' : mcg}.`,
-      })
+      setMsg({ tipo: 'ok', testo: `Regole aggiornate: prenotazione fino a ${g} ${g === 1 ? 'giorno' : 'giorni'} di anticipo.` })
     },
     onError: (e: Error) => setMsg({ tipo: 'errore', testo: e.message }),
   })
@@ -475,41 +520,33 @@ function FormRegole({
       </label>
       <CampoNumero id="rg-giorni" min={1} max={30} value={giorni} onChange={setGiorni} />
 
-      <span className="etichetta mt-3 block">Padel</span>
-      <div className="flex items-end gap-3">
-        <label className="block flex-1">
-          <span className="etichetta !mb-1">Prenotazioni attive max (0 = nessun limite)</span>
-          <CampoNumero id="rg-max-padel" min={0} max={50} value={maxPadel} onChange={setMaxPadel} />
-        </label>
-        <label className="block flex-1">
-          <span className="etichetta !mb-1">Prenotazioni al giorno max (0 = nessun limite)</span>
-          <CampoNumero
-            id="rg-max-padel-giorno"
-            min={0}
-            max={20}
-            value={maxPadelGiorno}
-            onChange={setMaxPadelGiorno}
-          />
-        </label>
-      </div>
-
-      <span className="etichetta mt-3 block">Calcio</span>
-      <div className="flex items-end gap-3">
-        <label className="block flex-1">
-          <span className="etichetta !mb-1">Prenotazioni attive max (0 = nessun limite)</span>
-          <CampoNumero id="rg-max-calcio" min={0} max={50} value={maxCalcio} onChange={setMaxCalcio} />
-        </label>
-        <label className="block flex-1">
-          <span className="etichetta !mb-1">Prenotazioni al giorno max (0 = nessun limite)</span>
-          <CampoNumero
-            id="rg-max-calcio-giorno"
-            min={0}
-            max={20}
-            value={maxCalcioGiorno}
-            onChange={setMaxCalcioGiorno}
-          />
-        </label>
-      </div>
+      {sports.map((s) => (
+        <div key={s}>
+          <span className="etichetta mt-3 block">{etichettaSport(s)}</span>
+          <div className="flex items-end gap-3">
+            <label className="block flex-1">
+              <span className="etichetta !mb-1">Prenotazioni attive max (0 = nessun limite)</span>
+              <CampoNumero
+                id={`rg-max-${s}`}
+                min={0}
+                max={50}
+                value={limiti[s]?.maxAttive ?? '0'}
+                onChange={(v) => aggiorna(s, 'maxAttive', v)}
+              />
+            </label>
+            <label className="block flex-1">
+              <span className="etichetta !mb-1">Prenotazioni al giorno max (0 = nessun limite)</span>
+              <CampoNumero
+                id={`rg-max-${s}-giorno`}
+                min={0}
+                max={20}
+                value={limiti[s]?.maxGiorno ?? '0'}
+                onChange={(v) => aggiorna(s, 'maxGiorno', v)}
+              />
+            </label>
+          </div>
+        </div>
+      ))}
 
       <button type="submit" className="btn mt-6" disabled={salva.isPending}>
         Salva regole

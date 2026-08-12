@@ -234,9 +234,13 @@ export default function DatiProfilo() {
             defaultValue={profilo.sport_preferito}
             onChange={(e) => salvaSport(e.target.value)}
           >
-            <option value="entrambi">Padel e Calcio</option>
+            <option value="entrambi">Tutti gli sport</option>
             <option value="padel">Padel</option>
             <option value="calcio">Calcio</option>
+            <option value="tennis">Tennis</option>
+            <option value="pickleball">Pickleball</option>
+            <option value="beachvolley">Beach volley</option>
+            <option value="basket">Basket</option>
           </select>
         </div>
 

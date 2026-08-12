@@ -37,6 +37,7 @@ import RichiedeRuolo from '@/circolo/RichiedeRuolo'
 import { useMioRuolo } from '@/circolo/useMioRuolo'
 import { useCircolo } from '@/circolo/useCircolo'
 import { useMieCircoli } from '@/circolo/datiCircoloSocio'
+import { useModalitaPremi } from '@/features/premi/datiPremi'
 
 // Manda l'utente alla sua schermata di partenza in base al ruolo NEL
 // CIRCOLO CORRENTE (non ai vecchi flag globali is_admin/is_allenatore su
@@ -58,11 +59,21 @@ function RedirezioneIniziale() {
 
 // "/premi": ogni ruolo vede una vista diversa (il gestore gestisce i premi
 // dal pannello account, non da qui — vedi MenuUtente "Il tuo club").
+// Il ramo socio è l'unico che dipende da modalita_premi: se il gestore l'ha
+// disattivata, la schermata di riscatto non deve restare raggiungibile via
+// URL diretto anche se non compare più nessuna scorciatoia verso di lei
+// (gap reale trovato: prima di questo fix restava aperta comunque).
 function PremiRoute() {
+  const circolo = useCircolo()
   const { ruolo } = useMioRuolo()
+  const { data: modalitaPremi, isLoading } = useModalitaPremi()
   if (ruolo === 'collaboratore') return <GestionePremi />
-  if (ruolo === 'socio') return <PremiPage />
-  return <Navigate to="../prenotazioni" replace />
+  if (ruolo === 'socio') {
+    if (isLoading) return null
+    if (!modalitaPremi) return <Navigate to={`/c/${circolo.slug}/home`} replace />
+    return <PremiPage />
+  }
+  return <Navigate to={`/c/${circolo.slug}/prenotazioni`} replace />
 }
 
 // Qualsiasi percorso senza /c/:slug (link "vecchi" da prima della Fase 5,

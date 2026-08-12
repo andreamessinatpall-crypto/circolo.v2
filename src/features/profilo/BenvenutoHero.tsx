@@ -5,6 +5,7 @@ import { useMioRuolo } from '@/circolo/useMioRuolo'
 import { useCircolo } from '@/circolo/useCircolo'
 import { dataEstesa, iniziali } from '@/lib/formato'
 import { LIVELLI_PUNTI_DEFAULT, livelloDaPunti, useLivelliPunti } from './livelliPunti'
+import { useModalitaClassifica } from './datiClassifica'
 import Avatar from '@/components/Avatar'
 
 // Cartellino "Nome Cognome" con livello/punti/crediti: nato in Bacheca
@@ -19,6 +20,8 @@ export default function BenvenutoHero({ onRichiesteClick }: { onRichiesteClick?:
   const { eCollaboratore, puoDareLezioni } = useMioRuolo()
   const circolo = useCircolo()
   const livelliQuery = useLivelliPunti()
+  const { data: modalitaClassifica } = useModalitaClassifica()
+  const classificaAttiva = modalitaClassifica !== false
 
   // Un gestore resta sulla vista "punti/classifica" normale (come un socio).
   // Il collaboratore ha una vista con le partite di oggi; se il gestore gli
@@ -239,47 +242,53 @@ export default function BenvenutoHero({ onRichiesteClick }: { onRichiesteClick?:
         <Avatar foto={profilo.foto_url} iniziali={iniziali(profilo.nome, profilo.cognome)} size={66} />
         <div className="riep-wow-hi">
           <h1>{profilo.nome} {profilo.cognome}</h1>
-          <p className="riep-liv-eyebrow">
-            Livello {livN} · {liv.nome}
-          </p>
+          {classificaAttiva && (
+            <p className="riep-liv-eyebrow">
+              Livello {livN} · {liv.nome}
+            </p>
+          )}
           <p className="riep-wow-sub">Iscritto dal {dataEstesa(profilo.data_iscrizione)}</p>
         </div>
       </div>
 
-      <div className="riep-liv-prog">
-        {prossimo ? (
-          <>
+      {classificaAttiva && (
+        <div className="riep-liv-prog">
+          {prossimo ? (
+            <>
+              <div className="pp-top">
+                <span>Prossimo livello</span>
+                <b>{prossimo.nome}</b>
+              </div>
+              <div className="pp-bar">
+                <i style={{ width: pct + '%' }} />
+              </div>
+              <div className="pp-top" style={{ marginTop: 4 }}>
+                <span>
+                  {punti} / {prossimo.soglia} punti
+                </span>
+                <span>{pct}%</span>
+              </div>
+            </>
+          ) : (
             <div className="pp-top">
-              <span>Prossimo livello</span>
-              <b>{prossimo.nome}</b>
+              <span>Livello massimo raggiunto</span>
+              <b>★</b>
             </div>
-            <div className="pp-bar">
-              <i style={{ width: pct + '%' }} />
-            </div>
-            <div className="pp-top" style={{ marginTop: 4 }}>
-              <span>
-                {punti} / {prossimo.soglia} punti
-              </span>
-              <span>{pct}%</span>
-            </div>
-          </>
-        ) : (
-          <div className="pp-top">
-            <span>Livello massimo raggiunto</span>
-            <b>★</b>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
-      <div className={`riep-griglia${collaboratore ? ' riep-griglia-2' : ''}`}>
-        <Stat valore={String(punti)} nome="Punti" />
+      <div className={`riep-griglia${collaboratore || !classificaAttiva ? ' riep-griglia-2' : ''}`}>
+        {classificaAttiva && <Stat valore={String(punti)} nome="Punti" />}
         {!collaboratore && (
           <Stat valore={String(crediti)} nome="Crediti" />
         )}
         {!collaboratore && (
           <Stat valore={attivita != null ? String(attivita) : '—'} nome="Attività" />
         )}
-        <Stat valore={posizione != null ? posizione + 'º' : '—'} nome="Posizione" />
+        {classificaAttiva && (
+          <Stat valore={posizione != null ? posizione + 'º' : '—'} nome="Posizione" />
+        )}
       </div>
       {collaboratore && (
         <div className="riep-oggi">

@@ -1,13 +1,20 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useAuth } from '@/auth/useAuth'
-import { sportConsentiti } from '@/auth/ruoli'
 import { useMioRuolo } from '@/circolo/useMioRuolo'
 import SportPage from './SportPage'
 import PrenotaWizard from './PrenotaWizard'
+import { sportConsentiti, sportDisponibili, useCampi } from './datiPrenotazioni'
 import type { Sport } from './tipi'
 import { SportIcona } from '@/components/IconeSport'
 
-const ETICHETTA: Record<Sport, string> = { padel: 'Padel', calcio: 'Calcio' }
+const ETICHETTA: Record<Sport, string> = {
+  padel: 'Padel',
+  calcio: 'Calcio',
+  tennis: 'Tennis',
+  pickleball: 'Pickleball',
+  beachvolley: 'Beach volley',
+  basket: 'Basket',
+}
 
 // Tab "Prenota": per admin/collaboratore/istruttore resta la griglia per-campo
 // (SportPage → GrigliaPrenotazioni, con la scelta "Prenotazione campo /
@@ -16,7 +23,9 @@ const ETICHETTA: Record<Sport, string> = { padel: 'Padel', calcio: 'Calcio' }
 export default function PrenotaPage() {
   const { profilo } = useAuth()
   const { puoGestire } = useMioRuolo()
-  const sport: Sport[] = profilo ? sportConsentiti(profilo) : ['padel', 'calcio']
+  const campiQuery = useCampi()
+  const disponibili = useMemo(() => sportDisponibili(campiQuery.data ?? []), [campiQuery.data])
+  const sport: Sport[] = profilo ? sportConsentiti(profilo, disponibili) : disponibili
   const [sel, setSel] = useState<Sport>(sport[0] ?? 'padel')
 
   // Se la preferenza cambia e lo sport selezionato non è più consentito,

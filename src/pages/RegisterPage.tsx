@@ -22,7 +22,7 @@ const schema = z.object({
     return anni >= 14
   }, { message: 'Devi avere almeno 14 anni per iscriverti (art. 8 GDPR)' }),
   genere: z.enum(['M', 'F', 'altro']),
-  sport_preferito: z.enum(['padel', 'calcio', 'entrambi']),
+  sport_preferito: z.enum(['padel', 'calcio', 'tennis', 'pickleball', 'beachvolley', 'basket', 'entrambi']),
   password: z.string().min(8, 'La password deve avere almeno 8 caratteri'),
   consenso_privacy: z.literal(true, { error: "Devi accettare l'informativa privacy" }),
   consenso_termini: z.literal(true, { error: "Devi accettare i termini d'uso" }),
@@ -140,6 +140,10 @@ export default function RegisterPage() {
               <option value="entrambi">Tutti</option>
               <option value="padel">Padel</option>
               <option value="calcio">Calcio</option>
+              <option value="tennis">Tennis</option>
+              <option value="pickleball">Pickleball</option>
+              <option value="beachvolley">Beach volley</option>
+              <option value="basket">Basket</option>
             </select>
           </Campo>
 

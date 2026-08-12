@@ -111,7 +111,7 @@ function RigaCircolo({
 
   return (
     <div className="campo-card">
-      <div className={`campo-head ${circolo.attivo ? 'campo-head-padel' : 'campo-head-off'}`}>
+      <div className={`campo-head ${circolo.attivo ? 'campo-head-attivo' : 'campo-head-off'}`}>
         <span className="campo-head-sport">{circolo.nome}</span>
         <span className="campo-head-tag">/{circolo.slug}</span>
         {!circolo.attivo && <span className="campo-head-tag">Disattivato</span>}

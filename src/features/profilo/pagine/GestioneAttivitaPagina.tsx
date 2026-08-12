@@ -1,14 +1,21 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useAuth } from '@/auth/useAuth'
-import { sportConsentiti } from '@/auth/ruoli'
 import { SportIcona } from '@/components/IconeSport'
 import AttivitaInProgramma from '@/features/profilo/AttivitaInProgramma'
 import AttivitaConcluse from '@/features/profilo/AttivitaConcluse'
 import { RichiesteLezioneInviate } from '@/features/profilo/RiepilogoProfilo'
+import { sportConsentiti, sportDisponibili, useCampi } from '@/features/prenotazioni/datiPrenotazioni'
 import type { Sport } from '@/features/prenotazioni/tipi'
 import TornaAreaClub from './TornaAreaClub'
 
-const ETICHETTA: Record<Sport, string> = { padel: 'Padel', calcio: 'Calcio' }
+const ETICHETTA: Record<Sport, string> = {
+  padel: 'Padel',
+  calcio: 'Calcio',
+  tennis: 'Tennis',
+  pickleball: 'Pickleball',
+  beachvolley: 'Beach volley',
+  basket: 'Basket',
+}
 
 // Sport da scegliere sempre in cima, poi due liste distinte: le attività
 // ancora in programma (con "Annulla la prenotazione" per le proprie) e
@@ -18,7 +25,9 @@ const ETICHETTA: Record<Sport, string> = { padel: 'Padel', calcio: 'Calcio' }
 // risultato se inserito.
 export default function GestioneAttivitaPagina() {
   const { profilo } = useAuth()
-  const sport: Sport[] = profilo ? sportConsentiti(profilo) : ['padel', 'calcio']
+  const campiQuery = useCampi()
+  const disponibili = useMemo(() => sportDisponibili(campiQuery.data ?? []), [campiQuery.data])
+  const sport: Sport[] = profilo ? sportConsentiti(profilo, disponibili) : disponibili
   const [sel, setSel] = useState<Sport>(sport[0] ?? 'padel')
   const attivo = sport.includes(sel) ? sel : (sport[0] ?? 'padel')
 

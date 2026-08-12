@@ -1,8 +1,18 @@
-export type Sport = 'padel' | 'calcio'
+export type Sport = 'padel' | 'calcio' | 'tennis' | 'pickleball' | 'beachvolley' | 'basket'
+
+// Elenco fisso (non personalizzabile per circolo): aggiungere un nuovo
+// sport significa estendere qui il tipo e questa lista, tutto il resto
+// (regole, punti/crediti, campi) è già generico su questo elenco.
+export const SPORT_LIST: Sport[] = ['padel', 'calcio', 'tennis', 'pickleball', 'beachvolley', 'basket']
+
+// Formato del campo calcio (a5/a7): non è un altro sport, solo un dettaglio
+// del campo. Le altre sezioni (icone, regole, punti) restano per 'calcio'.
+export type FormatoCalcio = 'a5' | 'a7'
 
 export interface Campo {
   id: number | string
   sport: Sport
+  formato: FormatoCalcio | null
   nome: string
   ordine: number | null
   apertura: string | null
@@ -28,10 +38,12 @@ export interface PrenotazioneGiorno {
   giocatori_torneo?: string | null
 }
 
+export interface LimitiSport {
+  maxAttive: number
+  maxGiorno: number
+}
+
 export interface Impostazioni {
   giorniAnticipo: number
-  maxPadel: number
-  maxCalcio: number
-  maxPadelGiorno: number
-  maxCalcioGiorno: number
+  limitiPerSport: Partial<Record<Sport, LimitiSport>>
 }

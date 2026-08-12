@@ -4,6 +4,7 @@ import { useAuth } from '@/auth/useAuth'
 import { useCircolo } from '@/circolo/useCircolo'
 import { useMieCircoli } from '@/circolo/datiCircoloSocio'
 import { useModalitaPremi } from '@/features/premi/datiPremi'
+import { useModalitaClassifica } from './datiClassifica'
 import AreaClubSchede from './pagine/AreaClubSchede'
 
 function IcoFreccia({ aperto }: { aperto: boolean }) {
@@ -76,10 +77,11 @@ function SelettoreCircolo() {
 // ruolo, vedi la composizione in AreaClubSchede.tsx.
 export default function ProfiloPage() {
   const { data: modalitaPremi } = useModalitaPremi()
+  const { data: modalitaClassifica } = useModalitaClassifica()
   return (
     <div>
       <SelettoreCircolo />
-      <AreaClubSchede modalitaPremi={!!modalitaPremi} />
+      <AreaClubSchede modalitaPremi={!!modalitaPremi} modalitaClassifica={modalitaClassifica !== false} />
     </div>
   )
 }

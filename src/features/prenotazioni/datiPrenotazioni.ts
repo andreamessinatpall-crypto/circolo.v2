@@ -1,11 +1,32 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/auth/useAuth'
+import type { Socio } from '@/auth/tipi'
 import { useCircolo } from '@/circolo/useCircolo'
 import { useMioRuolo } from '@/circolo/useMioRuolo'
 import { avviso } from '@/lib/dialoghi'
 import { dataDa } from './orari'
+import { SPORT_LIST } from './tipi'
 import type { Campo, Impostazioni, PrenotazioneGiorno, Sport } from './tipi'
+
+// Sport per cui il circolo ha almeno un campo, nell'ordine fisso di
+// SPORT_LIST (non l'ordine dei campi). Base per capire cosa un socio può
+// prenotare/vedere in questo circolo specifico.
+export function sportDisponibili(campi: Campo[]): Sport[] {
+  const presenti = new Set(campi.map((c) => c.sport))
+  return SPORT_LIST.filter((s) => presenti.has(s))
+}
+
+// Gli sport che il socio vede nell'interfaccia: la sua preferenza (se il
+// circolo la offre davvero), altrimenti tutti quelli disponibili nel
+// circolo ("entrambi", o una preferenza per uno sport che qui non c'è).
+export function sportConsentiti(p: Socio, disponibili: Sport[]): Sport[] {
+  const preferito = p.sport_preferito
+  if (preferito !== 'entrambi' && disponibili.includes(preferito as Sport)) {
+    return [preferito as Sport]
+  }
+  return disponibili
+}
 
 // Regole di prenotazione (tollerante: se le colonne nuove mancano, usa i default).
 export function useImpostazioni() {
@@ -15,9 +36,7 @@ export function useImpostazioni() {
     queryFn: async (): Promise<Impostazioni> => {
       let res = await supabase
         .from('impostazioni')
-        .select(
-          'giorni_anticipo, max_pren_padel, max_pren_calcio, max_pren_padel_giorno, max_pren_calcio_giorno',
-        )
+        .select('giorni_anticipo, limiti_per_sport')
         .eq('circolo_id', circolo.id)
         .maybeSingle()
       if (res.error) {
@@ -29,16 +48,9 @@ export function useImpostazioni() {
       }
       const d = (res.data ?? {}) as Record<string, unknown>
       const ga = Number(d.giorni_anticipo)
-      const mp = Number(d.max_pren_padel)
-      const mc = Number(d.max_pren_calcio)
-      const mpg = Number(d.max_pren_padel_giorno)
-      const mcg = Number(d.max_pren_calcio_giorno)
       return {
         giorniAnticipo: Number.isFinite(ga) ? ga : 6,
-        maxPadel: Number.isFinite(mp) ? mp : 0,
-        maxCalcio: Number.isFinite(mc) ? mc : 0,
-        maxPadelGiorno: Number.isFinite(mpg) ? mpg : 0,
-        maxCalcioGiorno: Number.isFinite(mcg) ? mcg : 0,
+        limitiPerSport: (d.limiti_per_sport as Impostazioni['limitiPerSport']) ?? {},
       }
     },
   })
@@ -105,8 +117,9 @@ export function usePrenotaCampo(sport: Sport, campiSport: Campo[], imp: Impostaz
       amicoId?: string | null
     }) => {
       if (!profilo) throw new Error('Profilo non disponibile')
-      const limite = sport === 'padel' ? imp.maxPadel : imp.maxCalcio
-      const limiteGiorno = sport === 'padel' ? imp.maxPadelGiorno : imp.maxCalcioGiorno
+      const limiti = imp.limitiPerSport[sport]
+      const limite = limiti?.maxAttive ?? 0
+      const limiteGiorno = limiti?.maxGiorno ?? 0
       const senzaLimite = puoGestire
       if ((limite > 0 || limiteGiorno > 0) && !senzaLimite) {
         const idCampiSport = campiSport.map((c) => c.id)

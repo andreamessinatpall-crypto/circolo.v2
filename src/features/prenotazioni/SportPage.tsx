@@ -1,4 +1,5 @@
 import GrigliaPrenotazioni from './GrigliaPrenotazioni'
+import { etichettaSport } from '@/lib/formato'
 import type { Sport } from './tipi'
 
 const ICO_CAMPO = (
@@ -10,7 +11,7 @@ const ICO_CAMPO = (
 // Vista staff (admin/collaboratore/istruttore): griglia per-campo. "Le mie
 // prenotazioni" è stata spostata in Area Club (GestioneAttivitaPagina.tsx).
 export default function SportPage({ sport }: { sport: Sport }) {
-  const label = sport === 'padel' ? 'Padel' : 'Calcio'
+  const label = etichettaSport(sport)
 
   return (
     <div>

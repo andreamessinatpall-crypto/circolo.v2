@@ -8,11 +8,12 @@ import { useCircolo } from '@/circolo/useCircolo'
 import { useBloccaScrollBody } from '@/hooks/useBloccaScrollBody'
 import { classiErrore } from '@/components/stili'
 import { mancaTabella, messaggioErrore } from '@/lib/errori'
-import { useCampi } from '@/features/prenotazioni/datiPrenotazioni'
+import { useCampi, sportDisponibili } from '@/features/prenotazioni/datiPrenotazioni'
 import { mancaColonnaManuale, useSociEtichette, useSociPubblici } from '@/features/prenotazioni/datiAmichevoli'
 import { SchedaPartita } from '@/features/prenotazioni/MieAmichevoli'
 import { assegnaPuntiPresenza, annullaPuntiPresenza } from '@/features/prenotazioni/puntiPresenze'
 import { oraLocale } from '@/features/prenotazioni/orari'
+import { etichettaSport } from '@/lib/formato'
 import { useModalitaPremi } from '@/features/premi/datiPremi'
 import { SportIcona } from '@/components/IconeSport'
 import { useValoriPunti } from './datiPunti'
@@ -96,6 +97,10 @@ export default function GestionePrenotazioni() {
   useBloccaScrollBody(!!slot)
 
   const campiQuery = useCampi()
+  const sportiOfferti = useMemo(() => sportDisponibili(campiQuery.data ?? []), [campiQuery.data])
+  // Se lo sport selezionato non è (più) tra quelli con campi configurati,
+  // ripiega sul primo disponibile — stesso pattern di PrenotaPage.tsx.
+  const attivo = sportiOfferti.includes(sport) ? sport : (sportiOfferti[0] ?? 'padel')
   const sociQuery = useSociPubblici()
   // soci_etichette (non soci_pubblici): per i nomi mostrati/esportati sulle
   // prenotazioni già registrate, così un partecipante sospeso o cancellato
@@ -121,9 +126,9 @@ export default function GestionePrenotazioni() {
   const campiSport = useMemo(
     () =>
       (campiQuery.data ?? [])
-        .filter((c) => c.sport === sport)
+        .filter((c) => c.sport === attivo)
         .sort((a, b) => (a.ordine ?? 0) - (b.ordine ?? 0)),
-    [campiQuery.data, sport],
+    [campiQuery.data, attivo],
   )
   const idCampi = useMemo(() => campiSport.map((c) => c.id), [campiSport])
 
@@ -251,7 +256,7 @@ export default function GestionePrenotazioni() {
           await assegnaPuntiPresenza(
             p,
             part.socio_id,
-            sport,
+            attivo,
             valoriQuery.data,
             !!modalitaPremiQuery.data,
             intervalliQuery.data ?? [],
@@ -498,23 +503,23 @@ export default function GestionePrenotazioni() {
       <div className="eyebrow">Prenotazioni</div>
 
       {/* Sport — stesso selettore "a rettangoli" della pagina Prenota
-          (.sport-selettore/.sport-rett), non più le pillole subtab-btn. */}
-      <nav className="sport-selettore" aria-label="Sport">
-        <button
-          type="button"
-          className={'sport-rett' + (sport === 'padel' ? ' attivo' : '')}
-          onClick={() => setSport('padel')}
-        >
-          <SportIcona sport="padel" size={18} /> Padel
-        </button>
-        <button
-          type="button"
-          className={'sport-rett' + (sport === 'calcio' ? ' attivo' : '')}
-          onClick={() => setSport('calcio')}
-        >
-          <SportIcona sport="calcio" size={18} /> Calcio
-        </button>
-      </nav>
+          (.sport-selettore/.sport-rett), non più le pillole subtab-btn.
+          Un rettangolo per ogni sport con almeno un campo nel circolo,
+          non più fisso su Padel/Calcio. */}
+      {sportiOfferti.length > 1 && (
+        <nav className="sport-selettore" aria-label="Sport">
+          {sportiOfferti.map((s) => (
+            <button
+              key={s}
+              type="button"
+              className={'sport-rett' + (attivo === s ? ' attivo' : '')}
+              onClick={() => setSport(s)}
+            >
+              <SportIcona sport={s} size={18} /> {etichettaSport(s)}
+            </button>
+          ))}
+        </nav>
+      )}
 
       {/* Calendario settimanale */}
       <div className="cal-sett">
@@ -579,7 +584,7 @@ export default function GestionePrenotazioni() {
       ) : pren.error ? (
         <p className="sub">Impossibile caricare le prenotazioni: {messaggioErrore(pren.error)}</p>
       ) : campiSport.length === 0 ? (
-        <p className="sub">Nessun campo {sport} configurato.</p>
+        <p className="sub">Nessun campo {etichettaSport(attivo).toLowerCase()} configurato.</p>
       ) : (
         <>
           <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-ink-2">
@@ -771,7 +776,7 @@ export default function GestionePrenotazioni() {
                   />
                 )}
                 <SchedaPartita
-                  sport={sport}
+                  sport={attivo}
                   pren={bookingSlot}
                   campo={slot.campo}
                   partecipanti={partsByPren.get(String(bookingSlot.id)) ?? []}

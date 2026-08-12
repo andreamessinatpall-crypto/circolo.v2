@@ -2,38 +2,32 @@ import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useCircolo } from '@/circolo/useCircolo'
 import type { EsitoSalvataggio } from './datiCampi'
+import type { Sport } from '@/features/prenotazioni/tipi'
 
-// (Fase 8d · blocco 1) Valori dei punti e dei crediti per ogni azione, distinti
-// per Padel e Calcio. Stanno nella riga impostazioni (id=1).
-//   - punti_*   : già presenti dalla v1.
-//   - crediti_* : novità della v2 (script tappa14-valori-crediti.sql). Nella v1
-//                 i crediti valevano quanto i punti; ora hanno un valore proprio.
-// Si legge con select('*') così la lettura non si rompe se le colonne crediti
-// non esistono ancora (prima della migrazione vengono lette come 0).
+// (Fase 8d · blocco 1, estesa Tappa 94) Valori dei punti e dei crediti per
+// ogni azione, per sport — `impostazioni.punti_per_sport`/`crediti_per_sport`
+// (jsonb, una chiave per sport, vedi tappa94-nuovi-sport-classifica-toggle.sql).
+// Le vecchie colonne per-sport (punti_partita_padel, ecc.) restano in tabella
+// per rollback ma non sono più lette/scritte da qui.
 
-export interface ValoriPunti {
-  partitaPadel: number
-  partitaCalcio: number
-  allenamentoPadel: number
-  allenamentoCalcio: number
-  creditiPartitaPadel: number
-  creditiPartitaCalcio: number
-  creditiAllenamentoPadel: number
-  creditiAllenamentoCalcio: number
+export interface ValoriSport {
+  partita: number
+  allenamento: number
+  creditiPartita: number
+  creditiAllenamento: number
+}
+
+export type ValoriPunti = Partial<Record<Sport, ValoriSport>>
+
+function num(v: unknown): number {
+  return typeof v === 'number' ? v : 0
 }
 
 // Una colonna nuova non esiste ancora (manca lo script SQL relativo).
 function mancaColonna(error: { code?: string; message?: string }): boolean {
   if (error.code === '42703' || error.code === 'PGRST204') return true
   const m = (error.message ?? '').toLowerCase()
-  return m.includes('crediti_partita_padel') || m.includes('punti_partita_padel')
-}
-
-// Legge un numero, con eventuale ripiego sul valore legacy a colonna unica.
-function num(perSport: unknown, legacy: unknown = undefined): number {
-  if (typeof perSport === 'number') return perSport
-  if (typeof legacy === 'number') return legacy
-  return 0
+  return m.includes('punti_per_sport') || m.includes('crediti_per_sport')
 }
 
 export function useValoriPunti() {
@@ -43,38 +37,38 @@ export function useValoriPunti() {
     queryFn: async (): Promise<ValoriPunti> => {
       const { data, error } = await supabase
         .from('impostazioni')
-        .select('*')
+        .select('punti_per_sport, crediti_per_sport')
         .eq('circolo_id', circolo.id)
         .maybeSingle()
       if (error) throw error
-      const r = (data ?? {}) as Record<string, unknown>
-      return {
-        partitaPadel: num(r.punti_partita_padel, r.punti_partita),
-        partitaCalcio: num(r.punti_partita_calcio, r.punti_partita),
-        allenamentoPadel: num(r.punti_allenamento_padel, r.punti_allenamento),
-        allenamentoCalcio: num(r.punti_allenamento_calcio, r.punti_allenamento),
-        creditiPartitaPadel: num(r.crediti_partita_padel),
-        creditiPartitaCalcio: num(r.crediti_partita_calcio),
-        creditiAllenamentoPadel: num(r.crediti_allenamento_padel),
-        creditiAllenamentoCalcio: num(r.crediti_allenamento_calcio),
+      const puntiPerSport = (data?.punti_per_sport ?? {}) as Record<string, { partita?: number; allenamento?: number }>
+      const creditiPerSport = (data?.crediti_per_sport ?? {}) as Record<string, { partita?: number; allenamento?: number }>
+      const sportPresenti = new Set([...Object.keys(puntiPerSport), ...Object.keys(creditiPerSport)])
+      const valori: ValoriPunti = {}
+      for (const sport of sportPresenti) {
+        valori[sport as Sport] = {
+          partita: num(puntiPerSport[sport]?.partita),
+          allenamento: num(puntiPerSport[sport]?.allenamento),
+          creditiPartita: num(creditiPerSport[sport]?.partita),
+          creditiAllenamento: num(creditiPerSport[sport]?.allenamento),
+        }
       }
+      return valori
     },
   })
 }
 
 export async function salvaValoriPunti(v: ValoriPunti, circoloId: string): Promise<EsitoSalvataggio> {
+  const puntiPerSport: Record<string, { partita: number; allenamento: number }> = {}
+  const creditiPerSport: Record<string, { partita: number; allenamento: number }> = {}
+  for (const [sport, valori] of Object.entries(v)) {
+    if (!valori) continue
+    puntiPerSport[sport] = { partita: valori.partita, allenamento: valori.allenamento }
+    creditiPerSport[sport] = { partita: valori.creditiPartita, allenamento: valori.creditiAllenamento }
+  }
   const { error } = await supabase
     .from('impostazioni')
-    .update({
-      punti_partita_padel: v.partitaPadel,
-      punti_partita_calcio: v.partitaCalcio,
-      punti_allenamento_padel: v.allenamentoPadel,
-      punti_allenamento_calcio: v.allenamentoCalcio,
-      crediti_partita_padel: v.creditiPartitaPadel,
-      crediti_partita_calcio: v.creditiPartitaCalcio,
-      crediti_allenamento_padel: v.creditiAllenamentoPadel,
-      crediti_allenamento_calcio: v.creditiAllenamentoCalcio,
-    })
+    .update({ punti_per_sport: puntiPerSport, crediti_per_sport: creditiPerSport })
     .eq('circolo_id', circoloId)
   if (error) {
     return {

@@ -1,14 +1,17 @@
 import { useRef, useState } from 'react'
 import { classiErrore, classiInput } from '@/components/stili'
+import { etichettaSport } from '@/lib/formato'
 import type { Circolo } from '@/features/piattaforma/tipi'
 import { salvaOrariDefault, attivaDisattivaCircolo } from '@/features/piattaforma/datiPiattaforma'
 import { aggiungiCampo, salvaRegole } from '@/features/segreteria/datiCampi'
-import { salvaValoriPunti, type ValoriPunti } from '@/features/segreteria/datiPunti'
+import { salvaValoriPunti, type ValoriPunti, type ValoriSport } from '@/features/segreteria/datiPunti'
 import { LIVELLI_PUNTI_DEFAULT, salvaLivelliPunti, type LivelloPunti } from '@/features/profilo/livelliPunti'
+import { salvaModalitaClassifica } from '@/features/profilo/datiClassifica'
 import { salvaModalitaPremi, creaPremio } from '@/features/segreteria/datiPremiAdmin'
-import type { Sport } from '@/features/prenotazioni/tipi'
+import { SPORT_LIST, type FormatoCalcio, type LimitiSport, type Sport } from '@/features/prenotazioni/tipi'
 
-const ETICHETTA_SPORT: Record<Sport, string> = { padel: 'Padel', calcio: 'Calcio' }
+const VALORI_PUNTI_SUGGERITI: ValoriSport = { partita: 10, allenamento: 5, creditiPartita: 1, creditiAllenamento: 1 }
+const LIMITI_DEFAULT: LimitiSport = { maxAttive: 0, maxGiorno: 0 }
 
 interface CampoBozza {
   key: number
@@ -16,6 +19,7 @@ interface CampoBozza {
   nome: string
   outdoor: boolean
   durata: number
+  formato: FormatoCalcio | null
 }
 
 interface PremioBozza {
@@ -32,7 +36,7 @@ const TITOLO_PASSO: Record<Passo, string> = {
   orario: 'Orario del circolo',
   campi: 'Campi',
   regole: 'Regole di prenotazione',
-  punti: 'Punti e livelli',
+  punti: 'Punti e classifica',
   premi: 'Premi',
   riepilogo: 'Riepilogo',
 }
@@ -56,24 +60,16 @@ export default function OnboardingGestore({
   const contatore = useRef(0)
 
   const [sportOfferti, setSportOfferti] = useState<Sport[]>(['padel'])
+  const [formatoCalcioDefault, setFormatoCalcioDefault] = useState<FormatoCalcio>('a7')
   const [apertura, setApertura] = useState(circolo.apertura_default.slice(0, 5))
   const [chiusura, setChiusura] = useState(circolo.chiusura_default.slice(0, 5))
   const [campi, setCampi] = useState<CampoBozza[]>([])
   const [giorniAnticipo, setGiorniAnticipo] = useState(7)
-  const [maxPadel, setMaxPadel] = useState(0)
-  const [maxCalcio, setMaxCalcio] = useState(0)
-  const [maxPadelGiorno, setMaxPadelGiorno] = useState(0)
-  const [maxCalcioGiorno, setMaxCalcioGiorno] = useState(0)
-  const [valoriPunti, setValoriPunti] = useState<ValoriPunti>({
-    partitaPadel: 10,
-    partitaCalcio: 10,
-    allenamentoPadel: 5,
-    allenamentoCalcio: 5,
-    creditiPartitaPadel: 1,
-    creditiPartitaCalcio: 1,
-    creditiAllenamentoPadel: 1,
-    creditiAllenamentoCalcio: 1,
-  })
+  const [limitiPerSport, setLimitiPerSport] = useState<Partial<Record<Sport, LimitiSport>>>({})
+  // null = non ancora risposto: la prima domanda del passo Punti blocca
+  // l'avanzamento finché il gestore non sceglie sì/no.
+  const [vuoleClassifica, setVuoleClassifica] = useState<boolean | null>(null)
+  const [valoriPunti, setValoriPunti] = useState<Partial<Record<Sport, ValoriSport>>>({})
   const [livelli, setLivelli] = useState<LivelloPunti[]>(LIVELLI_PUNTI_DEFAULT.map((l) => ({ ...l })))
   const [modalitaPremi, setModalitaPremi] = useState(false)
   const [premi, setPremi] = useState<PremioBozza[]>([])
@@ -92,7 +88,14 @@ export default function OnboardingGestore({
     contatore.current += 1
     setCampi((c) => [
       ...c,
-      { key: contatore.current, sport, nome: `Campo ${c.filter((x) => x.sport === sport).length + 1}`, outdoor: false, durata: 90 },
+      {
+        key: contatore.current,
+        sport,
+        nome: `Campo ${c.filter((x) => x.sport === sport).length + 1}`,
+        outdoor: false,
+        durata: 90,
+        formato: sport === 'calcio' ? formatoCalcioDefault : null,
+      },
     ])
   }
   function rimuoviCampoBozza(key: number) {
@@ -114,6 +117,7 @@ export default function OnboardingGestore({
     if (passoAttuale === 'sport' && sportOfferti.length === 0) return 'Scegli almeno uno sport.'
     if (passoAttuale === 'orario' && chiusura <= apertura) return "La chiusura deve venire dopo l'apertura."
     if (passoAttuale === 'campi' && campi.length === 0) return 'Aggiungi almeno un campo.'
+    if (passoAttuale === 'punti' && vuoleClassifica === null) return 'Rispondi sì o no per continuare.'
     return null
   }
 
@@ -146,27 +150,38 @@ export default function OnboardingGestore({
           chiusura,
           durata_minuti: c.durata,
           outdoor: c.outdoor,
+          formato: c.sport === 'calcio' ? c.formato : null,
         })
         if (!esito.ok) throw new Error(esito.messaggio ?? 'Creazione campo non riuscita.')
         campiCreati.current.add(c.key)
       }
 
       if (!fatti.current.has('regole')) {
-        const esito = await salvaRegole(giorniAnticipo, maxPadel, maxCalcio, maxPadelGiorno, maxCalcioGiorno, circolo.id)
+        const limitiCompleti: Partial<Record<Sport, LimitiSport>> = {}
+        for (const s of sportOfferti) limitiCompleti[s] = limitiPerSport[s] ?? LIMITI_DEFAULT
+        const esito = await salvaRegole(giorniAnticipo, limitiCompleti, circolo.id)
         if (!esito.ok) throw new Error(esito.messaggio ?? 'Salvataggio regole non riuscito.')
         fatti.current.add('regole')
       }
 
-      if (!fatti.current.has('punti')) {
-        const esito = await salvaValoriPunti(valoriPunti, circolo.id)
-        if (!esito.ok) throw new Error(esito.messaggio ?? 'Salvataggio punti non riuscito.')
-        fatti.current.add('punti')
+      if (!fatti.current.has('classifica')) {
+        await salvaModalitaClassifica(vuoleClassifica === true, circolo.id)
+        fatti.current.add('classifica')
       }
 
-      if (!fatti.current.has('livelli')) {
-        const esito = await salvaLivelliPunti(livelli, circolo.id)
-        if (!esito.ok) throw new Error(esito.messaggio ?? 'Salvataggio livelli non riuscito.')
-        fatti.current.add('livelli')
+      if (vuoleClassifica) {
+        if (!fatti.current.has('punti')) {
+          const valoriCompleti: ValoriPunti = {}
+          for (const s of sportOfferti) valoriCompleti[s] = valoriPunti[s] ?? VALORI_PUNTI_SUGGERITI
+          const esito = await salvaValoriPunti(valoriCompleti, circolo.id)
+          if (!esito.ok) throw new Error(esito.messaggio ?? 'Salvataggio punti non riuscito.')
+          fatti.current.add('punti')
+        }
+        if (!fatti.current.has('livelli')) {
+          const esito = await salvaLivelliPunti(livelli, circolo.id)
+          if (!esito.ok) throw new Error(esito.messaggio ?? 'Salvataggio livelli non riuscito.')
+          fatti.current.add('livelli')
+        }
       }
 
       if (!fatti.current.has('modalita-premi')) {
@@ -215,7 +230,12 @@ export default function OnboardingGestore({
           </div>
 
           {passoAttuale === 'sport' && (
-            <PassoSport sportOfferti={sportOfferti} setSportOfferti={setSportOfferti} />
+            <PassoSport
+              sportOfferti={sportOfferti}
+              setSportOfferti={setSportOfferti}
+              formatoCalcioDefault={formatoCalcioDefault}
+              setFormatoCalcioDefault={setFormatoCalcioDefault}
+            />
           )}
           {passoAttuale === 'orario' && (
             <PassoOrario apertura={apertura} chiusura={chiusura} setApertura={setApertura} setChiusura={setChiusura} />
@@ -231,20 +251,33 @@ export default function OnboardingGestore({
           )}
           {passoAttuale === 'regole' && (
             <PassoRegole
+              sportOfferti={sportOfferti}
               giorniAnticipo={giorniAnticipo}
-              maxPadel={maxPadel}
-              maxCalcio={maxCalcio}
-              maxPadelGiorno={maxPadelGiorno}
-              maxCalcioGiorno={maxCalcioGiorno}
               setGiorniAnticipo={setGiorniAnticipo}
-              setMaxPadel={setMaxPadel}
-              setMaxCalcio={setMaxCalcio}
-              setMaxPadelGiorno={setMaxPadelGiorno}
-              setMaxCalcioGiorno={setMaxCalcioGiorno}
+              limitiPerSport={limitiPerSport}
+              onCambia={(sport, campo, valore) =>
+                setLimitiPerSport((prev) => ({
+                  ...prev,
+                  [sport]: { ...(prev[sport] ?? LIMITI_DEFAULT), [campo]: valore },
+                }))
+              }
             />
           )}
           {passoAttuale === 'punti' && (
-            <PassoPunti valoriPunti={valoriPunti} setValoriPunti={setValoriPunti} livelli={livelli} setLivelli={setLivelli} />
+            <PassoPunti
+              sportOfferti={sportOfferti}
+              vuoleClassifica={vuoleClassifica}
+              setVuoleClassifica={setVuoleClassifica}
+              valoriPunti={valoriPunti}
+              onCambiaValori={(sport, campo, valore) =>
+                setValoriPunti((prev) => ({
+                  ...prev,
+                  [sport]: { ...(prev[sport] ?? VALORI_PUNTI_SUGGERITI), [campo]: valore },
+                }))
+              }
+              livelli={livelli}
+              setLivelli={setLivelli}
+            />
           )}
           {passoAttuale === 'premi' && (
             <PassoPremi
@@ -262,6 +295,7 @@ export default function OnboardingGestore({
               apertura={apertura}
               chiusura={chiusura}
               campi={campi}
+              vuoleClassifica={!!vuoleClassifica}
               modalitaPremi={modalitaPremi}
               premi={premi}
             />
@@ -296,7 +330,17 @@ export default function OnboardingGestore({
 }
 
 // ---- Passo 1: sport ----
-function PassoSport({ sportOfferti, setSportOfferti }: { sportOfferti: Sport[]; setSportOfferti: (s: Sport[]) => void }) {
+function PassoSport({
+  sportOfferti,
+  setSportOfferti,
+  formatoCalcioDefault,
+  setFormatoCalcioDefault,
+}: {
+  sportOfferti: Sport[]
+  setSportOfferti: (s: Sport[]) => void
+  formatoCalcioDefault: FormatoCalcio
+  setFormatoCalcioDefault: (f: FormatoCalcio) => void
+}) {
   function toggle(sport: Sport) {
     setSportOfferti(sportOfferti.includes(sport) ? sportOfferti.filter((s) => s !== sport) : [...sportOfferti, sport])
   }
@@ -304,13 +348,26 @@ function PassoSport({ sportOfferti, setSportOfferti }: { sportOfferti: Sport[]; 
     <div>
       <p className="questionario-domanda">Quali sport offre il tuo circolo?</p>
       <div className="flex flex-col gap-2">
-        {(['padel', 'calcio'] as Sport[]).map((s) => (
+        {SPORT_LIST.map((s) => (
           <label key={s} className={'questionario-opzione' + (sportOfferti.includes(s) ? ' selezionata' : '')}>
             <input type="checkbox" className="sr-only" checked={sportOfferti.includes(s)} onChange={() => toggle(s)} />
-            {ETICHETTA_SPORT[s]}
+            {etichettaSport(s)}
           </label>
         ))}
       </div>
+      {sportOfferti.includes('calcio') && (
+        <label className="mt-3 block">
+          <span className="etichetta !mb-1">Formato calcio (di default per i nuovi campi)</span>
+          <select
+            className={`${classiInput} !mt-0 !w-auto`}
+            value={formatoCalcioDefault}
+            onChange={(e) => setFormatoCalcioDefault(e.target.value as FormatoCalcio)}
+          >
+            <option value="a5">A 5</option>
+            <option value="a7">A 7</option>
+          </select>
+        </label>
+      )}
     </div>
   )
 }
@@ -377,7 +434,7 @@ function PassoCampi({
             </label>
             <label className="block">
               <span className="etichetta !mb-1">Sport</span>
-              <div className="pt-2 text-sm font-medium">{ETICHETTA_SPORT[c.sport]}</div>
+              <div className="pt-2 text-sm font-medium">{etichettaSport(c.sport)}</div>
             </label>
             <label className="block">
               <span className="etichetta !mb-1">Tipologia</span>
@@ -390,6 +447,19 @@ function PassoCampi({
                 <option value="scoperto">Scoperto</option>
               </select>
             </label>
+            {c.sport === 'calcio' && (
+              <label className="block">
+                <span className="etichetta !mb-1">Formato</span>
+                <select
+                  className={`${classiInput} !mt-0 !w-auto`}
+                  value={c.formato ?? 'a7'}
+                  onChange={(e) => onCambia(c.key, { formato: e.target.value as FormatoCalcio })}
+                >
+                  <option value="a5">A 5</option>
+                  <option value="a7">A 7</option>
+                </select>
+              </label>
+            )}
             <button type="button" className="ml-auto rounded-lg px-3 py-2 text-sm text-ink-2 hover:bg-black/5" onClick={() => onRimuovi(c.key)}>
               🗑
             </button>
@@ -399,7 +469,7 @@ function PassoCampi({
       <div className="mt-3 flex flex-wrap gap-2">
         {sportOfferti.map((s) => (
           <button key={s} type="button" className="btn btn-secondario" onClick={() => onAggiungi(s)}>
-            ＋ Campo {ETICHETTA_SPORT[s]}
+            ＋ Campo {etichettaSport(s)}
           </button>
         ))}
       </div>
@@ -407,29 +477,19 @@ function PassoCampi({
   )
 }
 
-// ---- Passo 4: regole ----
+// ---- Passo 4: regole (loop sugli sport scelti al passo 1) ----
 function PassoRegole({
+  sportOfferti,
   giorniAnticipo,
-  maxPadel,
-  maxCalcio,
-  maxPadelGiorno,
-  maxCalcioGiorno,
   setGiorniAnticipo,
-  setMaxPadel,
-  setMaxCalcio,
-  setMaxPadelGiorno,
-  setMaxCalcioGiorno,
+  limitiPerSport,
+  onCambia,
 }: {
+  sportOfferti: Sport[]
   giorniAnticipo: number
-  maxPadel: number
-  maxCalcio: number
-  maxPadelGiorno: number
-  maxCalcioGiorno: number
   setGiorniAnticipo: (v: number) => void
-  setMaxPadel: (v: number) => void
-  setMaxCalcio: (v: number) => void
-  setMaxPadelGiorno: (v: number) => void
-  setMaxCalcioGiorno: (v: number) => void
+  limitiPerSport: Partial<Record<Sport, LimitiSport>>
+  onCambia: (sport: Sport, campo: keyof LimitiSport, valore: number) => void
 }) {
   return (
     <div>
@@ -445,92 +505,123 @@ function PassoRegole({
           onChange={(e) => setGiorniAnticipo(Math.max(1, Math.min(30, Number(e.target.value) || 1)))}
         />
       </label>
-      <div className="mt-3 flex flex-wrap gap-4">
-        <label className="block">
-          <span className="etichetta !mb-1">Max prenotazioni attive padel (0 = illimitate)</span>
-          <input type="number" min={0} max={50} className={`${classiInput} !mt-0 !w-24`} value={maxPadel} onChange={(e) => setMaxPadel(Math.max(0, Number(e.target.value) || 0))} />
-        </label>
-        <label className="block">
-          <span className="etichetta !mb-1">Max prenotazioni attive calcio (0 = illimitate)</span>
-          <input type="number" min={0} max={50} className={`${classiInput} !mt-0 !w-24`} value={maxCalcio} onChange={(e) => setMaxCalcio(Math.max(0, Number(e.target.value) || 0))} />
-        </label>
-      </div>
-      <div className="mt-3 flex flex-wrap gap-4">
-        <label className="block">
-          <span className="etichetta !mb-1">Max al giorno padel (0 = illimitate)</span>
-          <input type="number" min={0} max={20} className={`${classiInput} !mt-0 !w-24`} value={maxPadelGiorno} onChange={(e) => setMaxPadelGiorno(Math.max(0, Number(e.target.value) || 0))} />
-        </label>
-        <label className="block">
-          <span className="etichetta !mb-1">Max al giorno calcio (0 = illimitate)</span>
-          <input type="number" min={0} max={20} className={`${classiInput} !mt-0 !w-24`} value={maxCalcioGiorno} onChange={(e) => setMaxCalcioGiorno(Math.max(0, Number(e.target.value) || 0))} />
-        </label>
-      </div>
+
+      {sportOfferti.map((s) => {
+        const limiti = limitiPerSport[s] ?? LIMITI_DEFAULT
+        return (
+          <div key={s} className="mt-3 flex flex-wrap items-end gap-4">
+            <span className="etichetta w-full">{etichettaSport(s)}</span>
+            <label className="block">
+              <span className="etichetta !mb-1">Max prenotazioni attive (0 = illimitate)</span>
+              <input
+                type="number"
+                min={0}
+                max={50}
+                className={`${classiInput} !mt-0 !w-24`}
+                value={limiti.maxAttive}
+                onChange={(e) => onCambia(s, 'maxAttive', Math.max(0, Number(e.target.value) || 0))}
+              />
+            </label>
+            <label className="block">
+              <span className="etichetta !mb-1">Max al giorno (0 = illimitate)</span>
+              <input
+                type="number"
+                min={0}
+                max={20}
+                className={`${classiInput} !mt-0 !w-24`}
+                value={limiti.maxGiorno}
+                onChange={(e) => onCambia(s, 'maxGiorno', Math.max(0, Number(e.target.value) || 0))}
+              />
+            </label>
+          </div>
+        )
+      })}
     </div>
   )
 }
 
-// ---- Passo 5: punti e livelli ----
+// ---- Passo 5: punti e classifica ----
 function PassoPunti({
+  sportOfferti,
+  vuoleClassifica,
+  setVuoleClassifica,
   valoriPunti,
-  setValoriPunti,
+  onCambiaValori,
   livelli,
   setLivelli,
 }: {
-  valoriPunti: ValoriPunti
-  setValoriPunti: (v: ValoriPunti) => void
+  sportOfferti: Sport[]
+  vuoleClassifica: boolean | null
+  setVuoleClassifica: (v: boolean) => void
+  valoriPunti: Partial<Record<Sport, ValoriSport>>
+  onCambiaValori: (sport: Sport, campo: keyof ValoriSport, valore: number) => void
   livelli: LivelloPunti[]
   setLivelli: (l: LivelloPunti[]) => void
 }) {
-  function campo(etichetta: string, chiave: keyof ValoriPunti) {
-    return (
-      <label className="block">
-        <span className="etichetta !mb-1">{etichetta}</span>
-        <input
-          type="number"
-          min={0}
-          className={`${classiInput} !mt-0 !w-24`}
-          value={valoriPunti[chiave]}
-          onChange={(e) => setValoriPunti({ ...valoriPunti, [chiave]: Math.max(0, Number(e.target.value) || 0) })}
-        />
-      </label>
-    )
-  }
-
   return (
     <div>
-      <p className="questionario-domanda">Quanti punti/crediti valgono le attività?</p>
-      <p className="sub mb-2">Valori suggeriti, modificali come preferisci.</p>
-      <div className="flex flex-wrap gap-4">
-        {campo('Punti a partita (padel)', 'partitaPadel')}
-        {campo('Punti a partita (calcio)', 'partitaCalcio')}
-        {campo('Punti ad allenamento (padel)', 'allenamentoPadel')}
-        {campo('Punti ad allenamento (calcio)', 'allenamentoCalcio')}
+      <p className="questionario-domanda">Vuoi un sistema di punti per una classifica interna?</p>
+      <div className="flex flex-col gap-2">
+        <label className={'questionario-opzione' + (vuoleClassifica === true ? ' selezionata' : '')}>
+          <input type="radio" name="classifica" className="sr-only" checked={vuoleClassifica === true} onChange={() => setVuoleClassifica(true)} />
+          Sì, voglio punti e classifica
+        </label>
+        <label className={'questionario-opzione' + (vuoleClassifica === false ? ' selezionata' : '')}>
+          <input type="radio" name="classifica" className="sr-only" checked={vuoleClassifica === false} onChange={() => setVuoleClassifica(false)} />
+          No, non mi serve
+        </label>
       </div>
 
-      <p className="questionario-domanda mt-4">Livelli a punti</p>
-      <div className="flex flex-col gap-2">
-        {livelli.map((l, i) => (
-          <div key={i} className="flex items-center gap-2">
-            <span className="inline-block h-3 w-3 rounded-full" style={{ background: l.colore }} />
-            <input
-              type="text"
-              maxLength={30}
-              className={`${classiInput} !mt-0 flex-1`}
-              value={l.nome}
-              onChange={(e) => setLivelli(livelli.map((x, k) => (k === i ? { ...x, nome: e.target.value } : x)))}
-            />
-            <input
-              type="number"
-              min={0}
-              disabled={i === 0}
-              className={`${classiInput} !mt-0 !w-24`}
-              value={l.soglia}
-              onChange={(e) => setLivelli(livelli.map((x, k) => (k === i ? { ...x, soglia: Math.max(0, Number(e.target.value) || 0) } : x)))}
-            />
-            <span className="text-sm text-ink-2">pt</span>
+      {vuoleClassifica && (
+        <>
+          <p className="sub mt-4 mb-2">Quanti punti/crediti valgono le attività? Valori suggeriti, modificali come preferisci.</p>
+          <div className="flex flex-col gap-3">
+            {sportOfferti.map((s) => {
+              const v = valoriPunti[s] ?? VALORI_PUNTI_SUGGERITI
+              return (
+                <div key={s}>
+                  <span className="etichetta">{etichettaSport(s)}</span>
+                  <div className="mt-1 flex flex-wrap gap-4">
+                    <label className="block">
+                      <span className="etichetta !mb-1">Punti a partita</span>
+                      <input type="number" min={0} className={`${classiInput} !mt-0 !w-24`} value={v.partita} onChange={(e) => onCambiaValori(s, 'partita', Math.max(0, Number(e.target.value) || 0))} />
+                    </label>
+                    <label className="block">
+                      <span className="etichetta !mb-1">Punti ad allenamento</span>
+                      <input type="number" min={0} className={`${classiInput} !mt-0 !w-24`} value={v.allenamento} onChange={(e) => onCambiaValori(s, 'allenamento', Math.max(0, Number(e.target.value) || 0))} />
+                    </label>
+                  </div>
+                </div>
+              )
+            })}
           </div>
-        ))}
-      </div>
+
+          <p className="questionario-domanda mt-4">Livelli a punti</p>
+          <div className="flex flex-col gap-2">
+            {livelli.map((l, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <span className="inline-block h-3 w-3 rounded-full" style={{ background: l.colore }} />
+                <input
+                  type="text"
+                  maxLength={30}
+                  className={`${classiInput} !mt-0 flex-1`}
+                  value={l.nome}
+                  onChange={(e) => setLivelli(livelli.map((x, k) => (k === i ? { ...x, nome: e.target.value } : x)))}
+                />
+                <input
+                  type="number"
+                  min={0}
+                  disabled={i === 0}
+                  className={`${classiInput} !mt-0 !w-24`}
+                  value={l.soglia}
+                  onChange={(e) => setLivelli(livelli.map((x, k) => (k === i ? { ...x, soglia: Math.max(0, Number(e.target.value) || 0) } : x)))}
+                />
+                <span className="text-sm text-ink-2">pt</span>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   )
 }
@@ -594,6 +685,7 @@ function PassoRiepilogo({
   apertura,
   chiusura,
   campi,
+  vuoleClassifica,
   modalitaPremi,
   premi,
 }: {
@@ -601,6 +693,7 @@ function PassoRiepilogo({
   apertura: string
   chiusura: string
   campi: CampoBozza[]
+  vuoleClassifica: boolean
   modalitaPremi: boolean
   premi: PremioBozza[]
 }) {
@@ -608,9 +701,10 @@ function PassoRiepilogo({
     <div>
       <p className="questionario-domanda">Tutto pronto?</p>
       <ul className="flex flex-col gap-1.5 text-sm text-ink">
-        <li>Sport: {sportOfferti.map((s) => ETICHETTA_SPORT[s]).join(', ')}</li>
+        <li>Sport: {sportOfferti.map((s) => etichettaSport(s)).join(', ')}</li>
         <li>Orario: {apertura}–{chiusura}</li>
         <li>Campi: {campi.length} ({campi.map((c) => c.nome).join(', ')})</li>
+        <li>Classifica: {vuoleClassifica ? 'attiva' : 'non attiva'}</li>
         <li>Programma premi: {modalitaPremi ? `attivo (${premi.length} premi)` : 'non attivo'}</li>
       </ul>
       <p className="sub mt-3">

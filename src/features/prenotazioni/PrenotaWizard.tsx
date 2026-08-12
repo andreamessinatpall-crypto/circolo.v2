@@ -7,13 +7,12 @@ import { useMeteo, type PrevisioneGiorno } from '@/hooks/useMeteo'
 import { IconaMeteo } from '@/components/IconeMeteo'
 import { SportIcona } from '@/components/IconeSport'
 import { messaggioErrore } from '@/lib/errori'
+import { ETICHETTE_SPORT } from '@/lib/formato'
 import CalendarioSettimana from './CalendarioSettimana'
 import { useCampi, useImpostazioni, usePrenotaCampo, usePrenotazioniGiorno } from './datiPrenotazioni'
 import { oraLocale, ymd } from './orari'
 import { costruisciSlots, SLOT_DEF } from './slotGiornata'
 import type { Campo, Sport } from './tipi'
-
-const ETICHETTA: Record<Sport, string> = { padel: 'Padel', calcio: 'Calcio' }
 
 // Un orario libero, con l'elenco dei campi che a quell'ora hanno uno slot pieno
 // disponibile (durate diverse per campo → orari di inizio diversi per campo).
@@ -175,13 +174,7 @@ export default function PrenotaWizard({ sportOptions }: { sportOptions: Sport[] 
   const prenQuery = usePrenotazioniGiorno(giorno)
   const meteoQuery = useMeteo()
 
-  const imp = impQuery.data ?? {
-    giorniAnticipo: 6,
-    maxPadel: 0,
-    maxCalcio: 0,
-    maxPadelGiorno: 0,
-    maxCalcioGiorno: 0,
-  }
+  const imp = impQuery.data ?? { giorniAnticipo: 6, limitiPerSport: {} }
   const attivo = sportOptions.includes(sport) ? sport : (sportOptions[0] ?? 'padel')
 
   function setGiorno(g: string) {
@@ -301,7 +294,7 @@ export default function PrenotaWizard({ sportOptions }: { sportOptions: Sport[] 
               className={'sport-rett' + (s === attivo ? ' attivo' : '')}
               onClick={() => setSport(s)}
             >
-              <SportIcona sport={s} size={18} />{ETICHETTA[s]}
+              <SportIcona sport={s} size={18} />{ETICHETTE_SPORT[s]}
             </button>
           ))}
         </nav>
@@ -313,9 +306,9 @@ export default function PrenotaWizard({ sportOptions }: { sportOptions: Sport[] 
           Impossibile caricare le prenotazioni: {messaggioErrore(prenQuery.error)}
         </div>
       ) : campiSport.length === 0 ? (
-        <p className="sub">Nessun campo {ETICHETTA[attivo].toLowerCase()} configurato.</p>
+        <p className="sub">Nessun campo {ETICHETTE_SPORT[attivo].toLowerCase()} configurato.</p>
       ) : orari.length === 0 ? (
-        <p className="sub">Nessun orario libero per {ETICHETTA[attivo].toLowerCase()} in questo giorno.</p>
+        <p className="sub">Nessun orario libero per {ETICHETTE_SPORT[attivo].toLowerCase()} in questo giorno.</p>
       ) : (
         <div className="slot-griglia">
           {orari.map((o) => (

@@ -495,20 +495,17 @@
     padding: 6px 11px;
     color: #fff;
   }
-  .campo-head-calcio,
-  .campo-head-padel {
+  .campo-head-attivo {
     background: #fff;
     color: #1b2219;
   }
-  .campo-head-calcio .campo-toggle,
-  .campo-head-padel .campo-toggle {
+  .campo-head-attivo .campo-toggle {
     background: #eef1f3;
     border-color: rgba(27, 34, 25, 0.3);
     color: #1b2219;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
   }
-  .campo-head-calcio .campo-toggle:hover,
-  .campo-head-padel .campo-toggle:hover {
+  .campo-head-attivo .campo-toggle:hover {
     background: #e2e6ea;
   }
   .campo-head-off {

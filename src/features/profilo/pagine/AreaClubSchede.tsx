@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '@/auth/useAuth'
 import { useMioRuolo } from '@/circolo/useMioRuolo'
 import { useMemo, useState } from 'react'
-import { dataEstesa, titleCase, inizialiDaEtichetta } from '@/lib/formato'
+import { dataEstesa, titleCase, inizialiDaEtichetta, ETICHETTE_SPORT } from '@/lib/formato'
 import { oraLocale, ymd } from '@/features/prenotazioni/orari'
 import { SportIcona } from '@/components/IconeSport'
 import { IconaMeteo } from '@/components/IconeMeteo'
@@ -38,7 +38,6 @@ import {
   useAnnullaIscrizioneLezioneGruppo,
 } from '@/features/lezioni/useLezioniGruppo'
 
-const SPORT_LABEL: Record<string, string> = { padel: 'Padel', calcio: 'Calcio' }
 
 // Scatola regalo con fiocco: per "Rewards" (premi da riscattare).
 function IcoRewards() {
@@ -199,7 +198,7 @@ function CardAttivita() {
           <div className="prossima-wow-fascia">
             <span className="prossima-wow-sport">
               <SportIcona sport={prossima.sport} size={16} />
-              {SPORT_LABEL[prossima.sport] ?? prossima.sport}
+              {ETICHETTE_SPORT[prossima.sport] ?? prossima.sport}
             </span>
             {previsione && (
               <span className="prossima-wow-meteo">
@@ -267,7 +266,7 @@ function CardCercaPartita() {
             <div className="cerca-wow-testi">
               <div className="cerca-wow-nome">{titleCase(sociById.get(ultima.socio_id) ?? 'Un socio')}</div>
               <div className="cerca-wow-sub">
-                cerca giocatori di {SPORT_LABEL[ultima.sport] ?? ultima.sport}
+                cerca giocatori di {ETICHETTE_SPORT[ultima.sport] ?? ultima.sport}
               </div>
             </div>
           </div>
@@ -872,7 +871,13 @@ function CardAmici() {
 // se la modalità premi non è attiva.
 // Stessa griglia per socio/istruttore/collaboratore/admin, con le prime
 // schede diverse a seconda del ruolo — vedi composizione qui sotto.
-export default function AreaClubSchede({ modalitaPremi }: { modalitaPremi: boolean }) {
+export default function AreaClubSchede({
+  modalitaPremi,
+  modalitaClassifica,
+}: {
+  modalitaPremi: boolean
+  modalitaClassifica: boolean
+}) {
   const { eGestore, eCollaboratore, puoDareLezioni } = useMioRuolo()
   const isAdmin = eGestore
   const isCollaboratore = eCollaboratore && !puoDareLezioni
@@ -913,14 +918,16 @@ export default function AreaClubSchede({ modalitaPremi }: { modalitaPremi: boole
         </>
       )}
 
-      {modalitaPremi ? (
+      {modalitaClassifica && modalitaPremi ? (
         <div className="club-riga club-riga-2">
           <CardClassifica />
           <CardCrediti />
         </div>
-      ) : (
+      ) : modalitaClassifica ? (
         <CardClassifica />
-      )}
+      ) : modalitaPremi ? (
+        <CardCrediti />
+      ) : null}
 
       {/* L'istruttore ha già la sua card dedicata (CardLezioniIstruttore,
           per gestire le proprie): niente scorciatoia per prenotare lezioni
