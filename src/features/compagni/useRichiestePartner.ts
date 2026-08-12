@@ -3,8 +3,8 @@ import { supabase } from '@/lib/supabase'
 import { useCircolo } from '@/circolo/useCircolo'
 import type { Livello } from '@/features/profilo/livelloGioco/domande'
 import { dataDa } from '@/features/prenotazioni/orari'
-
-const SPORT_LABEL: Record<Sport, string> = { padel: 'Padel', calcio: 'Calcio' }
+import { etichettaSport } from '@/lib/formato'
+import type { Sport } from '@/features/prenotazioni/tipi'
 
 // L'annuncio smette di valere mezz'ora prima dell'inizio della partita
 // proposta, non più a un tempo fisso dalla pubblicazione (il default a 48h
@@ -14,7 +14,7 @@ function scadeIlDa(giorno: string, oraInizio: string): string {
   return new Date(inizio.getTime() - 30 * 60 * 1000).toISOString()
 }
 
-export type Sport = 'padel' | 'calcio'
+export type { Sport }
 export type StatoCandidatura = 'in_attesa' | 'accettato' | 'rifiutato'
 
 export interface RichiestaPartner {
@@ -43,10 +43,12 @@ interface SocioPubblico {
   foto_url?: string | null
 }
 
-// Bacheca "Cerco compagno" (Fase 3). Padel: richiesta con livello, rispondere
-// apre una chat diretta (nessuna riga da tracciare). Calcio: l'organizzatore
-// segna quanti giocatori mancano, indistintamente dal livello; chi è
-// interessato si candida e l'organizzatore accetta/rifiuta.
+// Bacheca "Cerco compagno" (Fase 3, estesa a tutti gli sport in Tappa 95).
+// Padel: richiesta con livello (unico sport con un livello di gioco
+// tracciato), rispondere apre una chat diretta (nessuna riga da tracciare).
+// Tutti gli altri sport: l'organizzatore segna quanti giocatori mancano,
+// senza livello; chi è interessato si candida e l'organizzatore accetta/
+// rifiuta.
 export function useRichiestePartner(profiloId: string | undefined) {
   const qc = useQueryClient()
   const circolo = useCircolo()
@@ -159,7 +161,7 @@ export function useRichiestePartner(profiloId: string | undefined) {
           body: {
             socio_id: richiesta.socio_id,
             titolo: 'Hanno risposto alla tua richiesta',
-            corpo: `${nomeCandidato} ha risposto alla tua richiesta di ${SPORT_LABEL[richiesta.sport]}.`,
+            corpo: `${nomeCandidato} ha risposto alla tua richiesta di ${etichettaSport(richiesta.sport)}.`,
             url: '/profilo/cerco-giocatori',
           },
         })
@@ -178,7 +180,7 @@ export function useRichiestePartner(profiloId: string | undefined) {
           body: {
             socio_id: richiesta.socio_id,
             titolo: 'Hanno risposto alla tua richiesta',
-            corpo: `${nomeRisponditore} ha risposto alla tua richiesta di ${SPORT_LABEL[richiesta.sport]}.`,
+            corpo: `${nomeRisponditore} ha risposto alla tua richiesta di ${etichettaSport(richiesta.sport)}.`,
             url: '/profilo/cerco-giocatori',
           },
         })
@@ -189,9 +191,11 @@ export function useRichiestePartner(profiloId: string | undefined) {
   const rispondiCandidatura = useMutation({
     mutationFn: async ({
       candidatura,
+      richiesta,
       stato,
     }: {
       candidatura: CandidaturaPartner
+      richiesta: RichiestaPartner
       stato: 'accettato' | 'rifiutato'
     }) => {
       const { error } = await supabase.from('candidature_partner').update({ stato }).eq('id', candidatura.id)
@@ -204,7 +208,7 @@ export function useRichiestePartner(profiloId: string | undefined) {
             titolo: stato === 'accettato' ? 'Candidatura accettata' : 'Candidatura rifiutata',
             corpo:
               stato === 'accettato'
-                ? 'Sei stato accettato per la partita di calcio!'
+                ? `Sei stato accettato per la partita di ${etichettaSport(richiesta.sport)}!`
                 : 'La tua candidatura non è stata accettata questa volta.',
             url: '/profilo?sezione=club',
           },

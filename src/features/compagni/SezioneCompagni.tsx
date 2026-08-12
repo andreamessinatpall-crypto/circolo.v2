@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useAuth } from '@/auth/useAuth'
 import { mancaTabella, messaggioErrore } from '@/lib/errori'
-import { titleCase, dataEstesa } from '@/lib/formato'
+import { titleCase, dataEstesa, etichettaSport } from '@/lib/formato'
 import { ETICHETTE_LIVELLO } from '@/features/profilo/livelloGioco/domande'
+import { useCampi, sportDisponibili } from '@/features/prenotazioni/datiPrenotazioni'
 import ChatModal from '@/features/chat/ChatModal'
 import NuovaRichiestaModal from './NuovaRichiestaModal'
 import { useRichiestePartner } from './useRichiestePartner'
@@ -32,7 +33,10 @@ export default function SezioneCompagni() {
     notificaRisposta,
   } = useRichiestePartner(profilo?.id)
   const location = useLocation()
+  const campiQuery = useCampi()
+  const sportOfferti = useMemo(() => sportDisponibili(campiQuery.data ?? []), [campiQuery.data])
   const [sport, setSport] = useState<Sport>('padel')
+  const sportAttivo = sportOfferti.includes(sport) ? sport : (sportOfferti[0] ?? 'padel')
   // null = chiuso, 'nuovo' = crea, altrimenti l'annuncio da modificare.
   // Si apre subito se si arriva da "Crea una partita" in Area Club.
   const [modaleAnnuncio, setModaleAnnuncio] = useState<'nuovo' | RichiestaPartner | null>(
@@ -59,22 +63,23 @@ export default function SezioneCompagni() {
   }
 
   const richiesteVisibili = richieste.filter((r) => {
-    if (r.sport !== sport) return false
-    if (r.sport !== 'calcio' || r.socio_id === profilo.id) return true
+    if (r.sport !== sportAttivo) return false
+    if (r.sport === 'padel' || r.socio_id === profilo.id) return true
     const accettati = candidatureDi(r.id).filter((c) => c.stato === 'accettato').length
     return (r.giocatori_mancanti ?? 0) - accettati > 0
   })
 
   return (
     <div>
-      <div className="seg-group mb-3">
-        <button type="button" className={'seg-btn' + (sport === 'padel' ? ' attivo' : '')} onClick={() => setSport('padel')}>
-          Padel
-        </button>
-        <button type="button" className={'seg-btn' + (sport === 'calcio' ? ' attivo' : '')} onClick={() => setSport('calcio')}>
-          Calcio
-        </button>
-      </div>
+      {sportOfferti.length > 1 && (
+        <div className="seg-group mb-3">
+          {sportOfferti.map((s) => (
+            <button key={s} type="button" className={'seg-btn' + (sportAttivo === s ? ' attivo' : '')} onClick={() => setSport(s)}>
+              {etichettaSport(s)}
+            </button>
+          ))}
+        </div>
+      )}
 
       <button type="button" className="btn btn-verde-scuro btn-block mb-3" onClick={() => setModaleAnnuncio('nuovo')}>
         Cerca giocatori
@@ -84,7 +89,7 @@ export default function SezioneCompagni() {
         <p className="sub">Caricamento…</p>
       ) : richiesteVisibili.length === 0 ? (
         <div className="card py-6 text-center text-sm text-ink-3">
-          Nessun annuncio attivo per {sport === 'padel' ? 'il padel' : 'il calcio'}.
+          Nessun annuncio attivo per {etichettaSport(sportAttivo).toLowerCase()}.
         </div>
       ) : (
         <div className="flex flex-col gap-2">
@@ -118,7 +123,7 @@ export default function SezioneCompagni() {
 
                 {mio ? (
                   <>
-                    {r.sport === 'calcio' && mieCandidature.length > 0 && (
+                    {r.sport !== 'padel' && mieCandidature.length > 0 && (
                       <div className="compagni-candidature">
                         {mieCandidature.map((c) => (
                           <div key={c.id} className="compagni-candidatura-riga">
@@ -128,14 +133,14 @@ export default function SezioneCompagni() {
                                 <button
                                   type="button"
                                   className="btn btn-mini"
-                                  onClick={() => rispondiCandidatura.mutate({ candidatura: c, stato: 'accettato' })}
+                                  onClick={() => rispondiCandidatura.mutate({ candidatura: c, richiesta: r, stato: 'accettato' })}
                                 >
                                   Accetta
                                 </button>
                                 <button
                                   type="button"
                                   className="btn btn-pericolo btn-mini"
-                                  onClick={() => rispondiCandidatura.mutate({ candidatura: c, stato: 'rifiutato' })}
+                                  onClick={() => rispondiCandidatura.mutate({ candidatura: c, richiesta: r, stato: 'rifiutato' })}
                                 >
                                   Rifiuta
                                 </button>
@@ -206,6 +211,7 @@ export default function SezioneCompagni() {
         <NuovaRichiestaModal
           crea={crea}
           aggiorna={aggiorna}
+          sportOfferti={sportOfferti}
           modifica={modaleAnnuncio !== 'nuovo' ? modaleAnnuncio : undefined}
           onChiudi={() => setModaleAnnuncio(null)}
         />

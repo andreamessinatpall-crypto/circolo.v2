@@ -3,14 +3,28 @@ import type { FormEvent } from 'react'
 import { useAuth } from '@/auth/useAuth'
 import { useBloccaScrollBody } from '@/hooks/useBloccaScrollBody'
 import { messaggioErrore } from '@/lib/errori'
+import { etichettaSport } from '@/lib/formato'
 import { ETICHETTE_LIVELLO } from '@/features/profilo/livelloGioco/domande'
 import { useLivelloGiocoPadel } from '@/features/profilo/livelloGioco/useLivelliGioco'
 import QuestionarioLivello from '@/features/profilo/livelloGioco/QuestionarioLivello'
 import type { RichiestaPartner, Sport, useRichiestePartner } from './useRichiestePartner'
 
+// Numero massimo di "giocatori mancanti" selezionabile, per sport: padel/
+// tennis/pickleball sono formati piccoli (coppie/doppio, max 4 in campo),
+// beach volley un filo più largo, calcio/basket squadre più numerose.
+const MAX_MANCANTI: Record<Sport, number> = {
+  padel: 3,
+  tennis: 3,
+  pickleball: 3,
+  beachvolley: 5,
+  calcio: 13,
+  basket: 9,
+}
+
 interface Props {
   crea: ReturnType<typeof useRichiestePartner>['crea']
   aggiorna: ReturnType<typeof useRichiestePartner>['aggiorna']
+  sportOfferti: Sport[]
   onChiudi: () => void
   // Se presente, il modale modifica questo annuncio invece di crearne uno nuovo.
   modifica?: RichiestaPartner
@@ -19,12 +33,12 @@ interface Props {
 // Riceve "crea"/"aggiorna" dalla pagina invece di richiamare useRichiestePartner:
 // quella hook apre un canale realtime, e una seconda istanza con lo stesso nome
 // canale manderebbe in crash l'app (visto già in Fase 2 con la chat).
-export default function NuovaRichiestaModal({ crea, aggiorna, onChiudi, modifica }: Props) {
+export default function NuovaRichiestaModal({ crea, aggiorna, sportOfferti, onChiudi, modifica }: Props) {
   useBloccaScrollBody()
   const { profilo } = useAuth()
   const { attuale: livelloPadel, caricamento: caricamentoLivello } = useLivelloGiocoPadel(profilo?.id)
 
-  const [sport, setSport] = useState<Sport>(modifica?.sport ?? 'padel')
+  const [sport, setSport] = useState<Sport>(modifica?.sport ?? sportOfferti[0] ?? 'padel')
   const [giorno, setGiorno] = useState(modifica?.giorno ?? '')
   const [oraInizio, setOraInizio] = useState(modifica?.ora_inizio?.slice(0, 5) ?? '19:00')
   const [giocatoriMancanti, setGiocatoriMancanti] = useState(modifica?.giocatori_mancanti ?? 1)
@@ -32,8 +46,10 @@ export default function NuovaRichiestaModal({ crea, aggiorna, onChiudi, modifica
 
   if (!profilo) return null
 
-  const maxMancanti = sport === 'padel' ? 3 : 13
-  const puoPubblicare = giorno && oraInizio && (sport === 'calcio' || (sport === 'padel' && !!livelloPadel))
+  // Solo il padel ha un livello di gioco tracciato (QuestionarioLivello):
+  // per tutti gli altri sport basta indicare quanti giocatori mancano.
+  const maxMancanti = MAX_MANCANTI[sport]
+  const puoPubblicare = giorno && oraInizio && (sport !== 'padel' || !!livelloPadel)
   const mutazione = modifica ? aggiorna : crea
 
   function cambiaSport(s: Sport) {
@@ -66,20 +82,16 @@ export default function NuovaRichiestaModal({ crea, aggiorna, onChiudi, modifica
 
         <span className="etichetta">Sport</span>
         <div className="seg-group">
-          <button
-            type="button"
-            className={'seg-btn' + (sport === 'padel' ? ' attivo' : '')}
-            onClick={() => cambiaSport('padel')}
-          >
-            Padel
-          </button>
-          <button
-            type="button"
-            className={'seg-btn' + (sport === 'calcio' ? ' attivo' : '')}
-            onClick={() => cambiaSport('calcio')}
-          >
-            Calcio
-          </button>
+          {sportOfferti.map((s) => (
+            <button
+              key={s}
+              type="button"
+              className={'seg-btn' + (sport === s ? ' attivo' : '')}
+              onClick={() => cambiaSport(s)}
+            >
+              {etichettaSport(s)}
+            </button>
+          ))}
         </div>
 
         <div className="grid grid-cols-2 gap-3 mt-3">
