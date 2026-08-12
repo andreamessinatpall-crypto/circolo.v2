@@ -1,39 +1,37 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { createClient } from '@supabase/supabase-js'
 import { useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import { useCircolo } from '@/circolo/useCircolo'
 import { classiInput, classiErrore, classiOk } from '@/components/stili'
 
 // Iscrizione di un nuovo giocatore da parte della segreteria.
 // Come la v1: si crea l'account di login con un client Supabase "usa e getta"
 // (persistSession:false) così NON si tocca la sessione dell'admin, poi si
 // inserisce la scheda nella tabella `soci`.
+// (Fase 9c) Il ruolo (collaboratore/gestore) non si assegna più da qui: si
+// iscrive sempre come semplice socio DI QUESTO circolo, la promozione a
+// collaboratore/gestore si fa da `/piattaforma`.
 
-const schema = z
-  .object({
-    nome: z.string().trim().min(1, 'Inserisci il nome'),
-    cognome: z.string().trim().min(1, 'Inserisci il cognome'),
-    email: z.string().trim().email('Email non valida'),
-    data_nascita: z.string().min(1, 'Inserisci la data di nascita'),
-    genere: z.enum(['M', 'F', 'altro']),
-    sport_preferito: z.enum(['padel', 'calcio', 'entrambi']),
-    telefono: z.string().trim().optional(),
-    password: z.string().min(8, 'La password provvisoria deve avere almeno 8 caratteri'),
-    is_allenatore: z.boolean(),
-    e_allenatore: z.boolean(),
-  })
-  .refine((v) => !(v.e_allenatore && v.sport_preferito === 'entrambi'), {
-    message: 'Un istruttore deve essere esclusivo per Padel o per Calcio, non entrambi.',
-    path: ['sport_preferito'],
-  })
+const schema = z.object({
+  nome: z.string().trim().min(1, 'Inserisci il nome'),
+  cognome: z.string().trim().min(1, 'Inserisci il cognome'),
+  email: z.string().trim().email('Email non valida'),
+  data_nascita: z.string().min(1, 'Inserisci la data di nascita'),
+  genere: z.enum(['M', 'F', 'altro']),
+  sport_preferito: z.enum(['padel', 'calcio', 'entrambi']),
+  telefono: z.string().trim().optional(),
+  password: z.string().min(8, 'La password provvisoria deve avere almeno 8 caratteri'),
+})
 
 type DatiNuovoSocio = z.infer<typeof schema>
 
 export default function NuovoSocio() {
   const queryClient = useQueryClient()
+  const circolo = useCircolo()
   const [erroreGenerale, setErroreGenerale] = useState('')
   const [successo, setSuccesso] = useState('')
 
@@ -41,28 +39,14 @@ export default function NuovoSocio() {
     register,
     handleSubmit,
     reset,
-    watch,
-    setValue,
     formState: { errors, isSubmitting },
   } = useForm<DatiNuovoSocio>({
     resolver: zodResolver(schema),
     defaultValues: {
       genere: 'M',
       sport_preferito: 'entrambi',
-      is_allenatore: false,
-      e_allenatore: false,
     },
   })
-
-  // Un istruttore è sempre esclusivo per un solo sport: se si spunta la
-  // casella con "Padel e Calcio" già selezionato, si passa subito a Padel.
-  const eAllenatore = watch('e_allenatore')
-  const sportPreferito = watch('sport_preferito')
-  useEffect(() => {
-    if (eAllenatore && sportPreferito === 'entrambi') {
-      setValue('sport_preferito', 'padel')
-    }
-  }, [eAllenatore, sportPreferito, setValue])
 
   async function onSubmit(valori: DatiNuovoSocio) {
     setErroreGenerale('')
@@ -101,13 +85,24 @@ export default function NuovoSocio() {
       genere: valori.genere,
       sport_preferito: valori.sport_preferito,
       is_admin: false,
-      is_allenatore: valori.is_allenatore,
-      e_allenatore: valori.e_allenatore,
     })
     if (errIns) {
       setErroreGenerale(
         'Account di login creato, ma il salvataggio del profilo non è riuscito: ' +
           errIns.message,
+      )
+      return
+    }
+
+    // Iscrizione al circolo corrente (nessun trigger automatico: senza
+    // questo insert il giocatore non vedrebbe nulla, vedi Fase 9c).
+    const { error: errCircolo } = await supabase
+      .from('soci_circoli')
+      .insert({ socio_id: data.user.id, circolo_id: circolo.id, ruolo: 'socio' })
+    if (errCircolo) {
+      setErroreGenerale(
+        'Account e profilo creati, ma l\'iscrizione al circolo non è riuscita: ' +
+          errCircolo.message,
       )
       return
     }
@@ -159,13 +154,10 @@ export default function NuovoSocio() {
           <Campo errore={errors.sport_preferito?.message}>
             <label>Sport preferito</label>
             <select className={classiInput} {...register('sport_preferito')}>
-              {!eAllenatore && <option value="entrambi">Padel e Calcio</option>}
+              <option value="entrambi">Padel e Calcio</option>
               <option value="padel">Padel</option>
               <option value="calcio">Calcio</option>
             </select>
-            {eAllenatore && (
-              <p className="mt-1 text-xs text-ink-3">Un istruttore insegna un solo sport.</p>
-            )}
           </Campo>
           <Campo>
             <label>Telefono (facoltativo)</label>
@@ -178,14 +170,10 @@ export default function NuovoSocio() {
           </Campo>
         </div>
 
-        <div className="mt-4 flex flex-col gap-2.5">
-          <Spunta {...register('is_allenatore')}>
-            <strong>Collaboratore</strong> (può creare e gestire i tornei)
-          </Spunta>
-          <Spunta {...register('e_allenatore')}>
-            <strong>Istruttore</strong> (selezionabile negli slot allenamento)
-          </Spunta>
-        </div>
+        <p className="sub mt-4">
+          Il giocatore si iscrive come socio semplice. Per renderlo collaboratore o gestore del
+          circolo, chiedi al super-admin della piattaforma.
+        </p>
 
         {erroreGenerale && <p className={`mt-4 ${classiErrore}`}>{erroreGenerale}</p>}
         {successo && <p className={`mt-4 ${classiOk}`}>{successo}</p>}
@@ -214,17 +202,3 @@ function Campo({
     </div>
   )
 }
-
-// Riga con casella di spunta + etichetta (sostituisce la classe .check della v1).
-// In React 19 il `ref` di react-hook-form passa attraverso {...props} all'input.
-const Spunta = ({
-  children,
-  ...props
-}: React.InputHTMLAttributes<HTMLInputElement> & {
-  ref?: React.Ref<HTMLInputElement>
-}) => (
-  <label className="flex items-center gap-2.5 text-sm text-ink-2">
-    <input type="checkbox" className="h-4 w-4 shrink-0 accent-verde-600" {...props} />
-    <span>{children}</span>
-  </label>
-)

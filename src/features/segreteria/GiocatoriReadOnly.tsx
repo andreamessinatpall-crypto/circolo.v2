@@ -87,7 +87,7 @@ export default function GiocatoriReadOnly() {
   if (isLoading) return <p className="text-ink-2">Caricamento giocatori…</p>
   if (error) return <p className="msg-errore">Impossibile caricare i giocatori.</p>
 
-  const tutti = (data ?? []).filter((s) => !s.is_allenatore && !s.e_allenatore)
+  const tutti = (data ?? []).filter((s) => s.ruolo === 'socio')
 
   const q = cerca.trim().toLowerCase()
   const filtrati = q.length >= 1

@@ -50,7 +50,7 @@ function isCancellato(s: SocioAdmin): boolean {
 }
 
 function isStaff(s: SocioAdmin): boolean {
-  return !!(s.is_admin || s.is_allenatore || s.e_allenatore)
+  return s.ruolo === 'gestore' || s.ruolo === 'collaboratore'
 }
 
 function StatItem({ num, label, colore }: { num: string | number; label: React.ReactNode; colore?: string }) {
@@ -100,13 +100,12 @@ function fmtData(iso: string | null): string {
 }
 
 // Ruolo di un socio (usato per il "menu giocatore" condiviso con Area
-// Club, vedi DettaglioAmicoModal): non si può riusare ruoloDa() di
-// useAmici.ts perché lavora su SocioPubblico, con i booleani non
-// annullabili — qui SocioAdmin li ha come boolean | null.
+// Club, vedi DettaglioAmicoModal), dal ruolo per-circolo in soci_circoli:
+// gestore -> 'admin' (stessa etichetta storica usata in tutta l'app),
+// collaboratore con permesso lezioni -> 'istruttore', altrimenti 'collaboratore'.
 function ruoloDi(s: SocioAdmin): 'admin' | 'collaboratore' | 'istruttore' | null {
-  if (s.is_admin) return 'admin'
-  if (s.is_allenatore) return 'collaboratore'
-  if (s.e_allenatore) return 'istruttore'
+  if (s.ruolo === 'gestore') return 'admin'
+  if (s.ruolo === 'collaboratore') return s.puo_dare_lezioni ? 'istruttore' : 'collaboratore'
   return null
 }
 
@@ -538,20 +537,16 @@ function RigaSocio({
   const hasSport = !cancellato && !!socio.sport_preferito
   const haCancellazione = !!socio.richiesta_cancellazione
 
-  const ruoloNome = socio.is_admin
+  const ruoloNome = socio.ruolo === 'gestore'
     ? 'Admin'
-    : socio.is_allenatore
-      ? 'Collaboratore'
-      : socio.e_allenatore
-        ? 'Istruttore'
-        : null
-  const ruoloColore = socio.is_admin
+    : socio.ruolo === 'collaboratore'
+      ? (socio.puo_dare_lezioni ? 'Istruttore' : 'Collaboratore')
+      : null
+  const ruoloColore = socio.ruolo === 'gestore'
     ? '#c8972e'
-    : socio.is_allenatore
-      ? '#c8a83a'
-      : socio.e_allenatore
-        ? '#be5436'
-        : null
+    : socio.ruolo === 'collaboratore'
+      ? (socio.puo_dare_lezioni ? '#be5436' : '#c8a83a')
+      : null
 
   return (
     <div

@@ -1,10 +1,14 @@
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import { useCircolo } from '@/circolo/useCircolo'
 import { mancaRpc } from '@/lib/errori'
 
-// (Fase 8b) Gestione giocatori lato segreteria.
+// (Fase 9c) Gestione giocatori lato segreteria.
 // La scheda socio include anche i saldi (punti/crediti), che la tabella
-// `soci` mantiene aggiornati.
+// `soci` mantiene aggiornati. Il ruolo (`ruolo`/`puo_dare_lezioni`) vive
+// per-circolo in `soci_circoli`, non più come flag globali su `soci`
+// (is_admin/is_allenatore/e_allenatore, superati dalla Fase 9c) — si
+// assegna solo da `/piattaforma`.
 export interface SocioAdmin {
   id: string
   nome: string
@@ -16,9 +20,8 @@ export interface SocioAdmin {
   sport_preferito: string
   attivo: boolean
   sospeso: boolean | null
-  is_admin: boolean
-  is_allenatore: boolean | null
-  e_allenatore: boolean | null
+  ruolo: 'socio' | 'collaboratore' | 'gestore'
+  puo_dare_lezioni: boolean
   punti: number | null
   crediti: number | null
   punti_bloccati: boolean | null
@@ -27,18 +30,29 @@ export interface SocioAdmin {
   foto_url: string | null
 }
 
-// Tutti i soci (l'admin/collaboratore li legge grazie alle policy RLS).
+// Tutti i soci DEL CIRCOLO CORRENTE (l'admin/collaboratore li legge grazie
+// alle policy RLS). Prima leggeva l'intera tabella `soci` senza filtro:
+// un membro dello staff di 2+ circoli vedeva mescolati i soci di TUTTI i
+// circoli che gestisce, non solo quello che sta guardando — bug scoperto
+// durante la Fase 9c, corretto insieme al ruolo per-circolo.
 // `enabled` a false per l'istruttore semplice, che non ha questo permesso
 // RLS: evita una richiesta destinata a fallire quando riusa CardGiocatori
 // in sola lettura (vedi AreaClubSchede.tsx).
 export function useSoci(enabled = true) {
+  const circolo = useCircolo()
   return useQuery({
-    queryKey: ['soci'],
+    queryKey: ['soci', circolo.id],
     enabled,
     queryFn: async (): Promise<SocioAdmin[]> => {
-      const { data, error } = await supabase.from('soci').select('*')
+      const { data, error } = await supabase
+        .from('soci_circoli')
+        .select('ruolo, puo_dare_lezioni, soci(*)')
+        .eq('circolo_id', circolo.id)
       if (error) throw error
-      return (data ?? []) as SocioAdmin[]
+      type Riga = { ruolo: SocioAdmin['ruolo']; puo_dare_lezioni: boolean | null; soci: Record<string, unknown> | null }
+      return ((data ?? []) as unknown as Riga[])
+        .filter((r) => r.soci)
+        .map((r) => ({ ...(r.soci as object), ruolo: r.ruolo, puo_dare_lezioni: !!r.puo_dare_lezioni }) as SocioAdmin)
     },
   })
 }

@@ -166,9 +166,11 @@ export default function DettaglioGiocatore({
         </div>
 
         <div className="mt-2 flex flex-wrap gap-1.5">
-          {socio.is_admin && <span className="pill bg-ottone-100 text-ottone-700">Admin</span>}
-          {socio.is_allenatore && <span className="pill bg-verde-100 text-verde-700">Collaboratore</span>}
-          {socio.e_allenatore && !socio.is_allenatore && (
+          {socio.ruolo === 'gestore' && <span className="pill bg-ottone-100 text-ottone-700">Admin</span>}
+          {socio.ruolo === 'collaboratore' && !socio.puo_dare_lezioni && (
+            <span className="pill bg-verde-100 text-verde-700">Collaboratore</span>
+          )}
+          {socio.ruolo === 'collaboratore' && socio.puo_dare_lezioni && (
             <span className="pill bg-terra/10 text-terra">Istruttore</span>
           )}
           {!socio.attivo && !socio.sospeso && !cancellato && <span className="pill off">In attesa</span>}

@@ -2,6 +2,7 @@ import { useRef, useState, type ChangeEvent } from 'react'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import { useCircolo } from '@/circolo/useCircolo'
 import { classiErrore, classiOk } from '@/components/stili'
 import { leggiCsv, costruisciCsv, scaricaCsv } from '@/lib/csv'
 import { useSoci } from './datiSoci'
@@ -19,7 +20,7 @@ const PASSWORD_PROVVISORIA = '12345678'
 const ATTESA_MS = 11_000
 
 const COLONNE_OBBLIGATORIE = ['nome', 'cognome', 'email', 'data_nascita', 'genere', 'sport_preferito']
-const COLONNE_FACOLTATIVE = ['telefono', 'is_allenatore', 'e_allenatore']
+const COLONNE_FACOLTATIVE = ['telefono']
 
 interface DatiRigaValida {
   nome: string
@@ -29,8 +30,6 @@ interface DatiRigaValida {
   genere: 'M' | 'F' | 'altro'
   sport_preferito: 'padel' | 'calcio' | 'entrambi'
   telefono?: string
-  is_allenatore: boolean
-  e_allenatore: boolean
 }
 
 type StatoRiga = 'in_attesa' | 'in_corso' | 'ok' | 'errore'
@@ -69,10 +68,6 @@ function normalizzaSport(v: string): 'padel' | 'calcio' | 'entrambi' | null {
   return null
 }
 
-function normalizzaBooleano(v: string): boolean {
-  return ['si', 'sì', '1', 'true', 'x'].includes(v.trim().toLowerCase())
-}
-
 function validaRiga(
   grezza: Record<string, string>,
   emailViste: Set<string>,
@@ -99,22 +94,20 @@ function validaRiga(
   const sport_preferito = normalizzaSport(grezza.sport_preferito ?? '')
   if (!sport_preferito) return { dati: null, errore: 'Sport preferito non valido (padel, calcio o entrambi)' }
 
-  const is_allenatore = normalizzaBooleano(grezza.is_allenatore ?? '')
-  const e_allenatore = normalizzaBooleano(grezza.e_allenatore ?? '')
-  if (e_allenatore && sport_preferito === 'entrambi') {
-    return { dati: null, errore: 'Un istruttore deve avere sport_preferito padel o calcio, non entrambi' }
-  }
-
   const telefono = (grezza.telefono ?? '').trim()
   return {
-    dati: { nome, cognome, email, data_nascita, genere, sport_preferito, telefono: telefono || undefined, is_allenatore, e_allenatore },
+    dati: { nome, cognome, email, data_nascita, genere, sport_preferito, telefono: telefono || undefined },
     errore: null,
   }
 }
 
+// (Fase 9c) Ogni riga importata entra come semplice socio del circolo
+// corrente: nessun trigger automatico assegna più il circolo, va inserito
+// esplicitamente (senza, il giocatore non vedrebbe nulla).
 async function importaRiga(
   clientTemporaneo: SupabaseClient,
   dati: DatiRigaValida,
+  circoloId: string,
 ): Promise<{ ok: true } | { ok: false; messaggio: string }> {
   const { data, error } = await clientTemporaneo.auth.signUp({
     email: dati.email,
@@ -135,10 +128,14 @@ async function importaRiga(
     genere: dati.genere,
     sport_preferito: dati.sport_preferito,
     is_admin: false,
-    is_allenatore: dati.is_allenatore,
-    e_allenatore: dati.e_allenatore,
   })
   if (errIns) return { ok: false, messaggio: 'Account creato ma scheda non salvata: ' + errIns.message }
+
+  const { error: errCircolo } = await supabase
+    .from('soci_circoli')
+    .insert({ socio_id: data.user.id, circolo_id: circoloId, ruolo: 'socio' })
+  if (errCircolo) return { ok: false, messaggio: 'Account creato ma iscrizione al circolo non riuscita: ' + errCircolo.message }
+
   return { ok: true }
 }
 
@@ -156,8 +153,6 @@ function scaricaModello(): void {
       genere: 'M',
       sport_preferito: 'padel',
       telefono: '3331234567',
-      is_allenatore: '',
-      e_allenatore: '',
     },
   ])
   scaricaCsv('modello_giocatori.csv', csv)
@@ -172,6 +167,7 @@ function IconaStato({ stato }: { stato: StatoRiga }) {
 
 export default function ImportaGiocatoriCsv({ onChiudi }: { onChiudi: () => void }) {
   const queryClient = useQueryClient()
+  const circolo = useCircolo()
   const { data: soci } = useSoci()
   const fileRef = useRef<HTMLInputElement>(null)
   const fermaRef = useRef(false)
@@ -238,7 +234,7 @@ export default function ImportaGiocatoriCsv({ onChiudi }: { onChiudi: () => void
       setRighe((prev) => prev.map((x, idx) => (idx === i ? { ...x, stato: 'in_corso' } : x)))
 
       const dati = righe[i].dati as DatiRigaValida
-      const esito = await importaRiga(clientTemporaneo, dati)
+      const esito = await importaRiga(clientTemporaneo, dati, circolo.id)
 
       setRighe((prev) =>
         prev.map((x, idx) =>

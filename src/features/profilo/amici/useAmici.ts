@@ -8,9 +8,8 @@ import type { Ruolo } from '@/features/profilo/ruoloBadge'
 export interface SocioPubblico {
   id: string
   etichetta: string
-  e_allenatore: boolean
-  is_admin: boolean
-  is_allenatore: boolean
+  ruolo: 'socio' | 'collaboratore' | 'gestore'
+  puo_dare_lezioni: boolean
   punti: number
   sport_preferito: string | null
   data_iscrizione: string | null
@@ -49,9 +48,8 @@ export interface VoceStaff {
 }
 
 export function ruoloDa(s: SocioPubblico): Ruolo | null {
-  if (s.is_admin) return 'admin'
-  if (s.is_allenatore && !s.is_admin) return 'collaboratore'
-  if (s.e_allenatore && !s.is_allenatore && !s.is_admin) return 'istruttore'
+  if (s.ruolo === 'gestore') return 'admin'
+  if (s.ruolo === 'collaboratore') return s.puo_dare_lezioni ? 'istruttore' : 'collaboratore'
   return null
 }
 
@@ -97,14 +95,15 @@ export function useAmici(profiloId: string) {
     return m
   }, [sociQuery.data])
 
-  // Collaboratori e istruttori: sempre visibili come staff
+  // Collaboratori e istruttori: sempre visibili come staff (i gestori restano
+  // esclusi, coerente con l'esclusione già applicata server-side in soci_pubblici)
   const staff = useMemo<VoceStaff[]>(() => {
     return (sociQuery.data ?? [])
-      .filter((s) => (s.is_allenatore || s.e_allenatore) && !s.is_admin && s.id !== profiloId)
+      .filter((s) => s.ruolo === 'collaboratore' && s.id !== profiloId)
       .map((s) => ({
         id: s.id,
         etichetta: titleCase(s.etichetta),
-        ruolo: (s.is_allenatore ? 'collaboratore' : 'istruttore') as Ruolo,
+        ruolo: (s.puo_dare_lezioni ? 'istruttore' : 'collaboratore') as Ruolo,
         punti: s.punti,
         sport: s.sport_preferito ?? null,
         foto_url: s.foto_url ?? null,

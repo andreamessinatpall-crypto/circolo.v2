@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -8,26 +8,20 @@ import { useBloccaScrollBody } from '@/hooks/useBloccaScrollBody'
 import { classiInput, classiErrore } from '@/components/stili'
 import type { SocioAdmin } from './datiSoci'
 
-// (Fase 8b) Modifica dei dati e dei ruoli di un giocatore esistente.
-// Per scelta non si può promuovere/declassare ad AMMINISTRATORE dall'app
-// (come per l'iscrizione): si gestisce solo da Supabase.
+// (Fase 9c) Modifica dei dati di un giocatore esistente. Il ruolo
+// (collaboratore/gestore) non si tocca più da qui: si assegna solo da
+// `/piattaforma` (per scelta non si può promuovere/declassare dall'app,
+// come già per l'AMMINISTRATORE prima della Fase 9c).
 
-const schema = z
-  .object({
-    nome: z.string().trim().min(1, 'Il nome non può essere vuoto'),
-    cognome: z.string().trim().min(1, 'Il cognome non può essere vuoto'),
-    email: z.string().trim().email('Email non valida'),
-    genere: z.enum(['', 'M', 'F', 'altro']),
-    sport_preferito: z.enum(['padel', 'calcio', 'entrambi']),
-    telefono: z.string().trim().optional(),
-    data_nascita: z.string().optional(),
-    is_allenatore: z.boolean(),
-    e_allenatore: z.boolean(),
-  })
-  .refine((v) => !(v.e_allenatore && v.sport_preferito === 'entrambi'), {
-    message: 'Un istruttore deve essere esclusivo per Padel o per Calcio, non entrambi.',
-    path: ['sport_preferito'],
-  })
+const schema = z.object({
+  nome: z.string().trim().min(1, 'Il nome non può essere vuoto'),
+  cognome: z.string().trim().min(1, 'Il cognome non può essere vuoto'),
+  email: z.string().trim().email('Email non valida'),
+  genere: z.enum(['', 'M', 'F', 'altro']),
+  sport_preferito: z.enum(['padel', 'calcio', 'entrambi']),
+  telefono: z.string().trim().optional(),
+  data_nascita: z.string().optional(),
+})
 
 type DatiModifica = z.infer<typeof schema>
 
@@ -52,8 +46,6 @@ export default function ModificaGiocatore({
   const {
     register,
     handleSubmit,
-    watch,
-    setValue,
     formState: { errors, isSubmitting },
   } = useForm<DatiModifica>({
     resolver: zodResolver(schema),
@@ -67,20 +59,8 @@ export default function ModificaGiocatore({
         : 'entrambi') as DatiModifica['sport_preferito'],
       telefono: socio.telefono ?? '',
       data_nascita: socio.data_nascita ?? '',
-      is_allenatore: !!socio.is_allenatore,
-      e_allenatore: !!socio.e_allenatore,
     },
   })
-
-  // Un istruttore è sempre esclusivo per un solo sport: se si spunta la
-  // casella con "Padel e Calcio" già selezionato, si passa subito a Padel.
-  const eAllenatore = watch('e_allenatore')
-  const sportPreferito = watch('sport_preferito')
-  useEffect(() => {
-    if (eAllenatore && sportPreferito === 'entrambi') {
-      setValue('sport_preferito', 'padel')
-    }
-  }, [eAllenatore, sportPreferito, setValue])
 
   async function onSubmit(v: DatiModifica) {
     setErrore('')
@@ -94,8 +74,6 @@ export default function ModificaGiocatore({
         sport_preferito: v.sport_preferito,
         telefono: v.telefono || null,
         data_nascita: v.data_nascita || null,
-        is_allenatore: v.is_allenatore,
-        e_allenatore: v.e_allenatore,
       })
       .eq('id', socio.id)
     if (error) {
@@ -162,15 +140,12 @@ export default function ModificaGiocatore({
           <div>
             <label>Sport preferito</label>
             <select className={classiInput} {...register('sport_preferito')}>
-              {!eAllenatore && <option value="entrambi">Padel e Calcio</option>}
+              <option value="entrambi">Padel e Calcio</option>
               <option value="padel">Padel</option>
               <option value="calcio">Calcio</option>
             </select>
             {errors.sport_preferito && (
               <p className="mt-1 text-xs text-red-700">{errors.sport_preferito.message}</p>
-            )}
-            {eAllenatore && (
-              <p className="mt-1 text-xs text-ink-3">Un istruttore insegna un solo sport.</p>
             )}
           </div>
 
@@ -184,28 +159,9 @@ export default function ModificaGiocatore({
           </div>
         </div>
 
-        <div className="mt-4 flex flex-col gap-2.5">
-          <label className="flex items-center gap-2.5 text-sm text-ink-2">
-            <input
-              type="checkbox"
-              className="h-4 w-4 shrink-0 accent-verde-600"
-              {...register('is_allenatore')}
-            />
-            <span>
-              <strong>Collaboratore</strong> (può creare e gestire i tornei)
-            </span>
-          </label>
-          <label className="flex items-center gap-2.5 text-sm text-ink-2">
-            <input
-              type="checkbox"
-              className="h-4 w-4 shrink-0 accent-verde-600"
-              {...register('e_allenatore')}
-            />
-            <span>
-              <strong>Istruttore</strong> (selezionabile negli slot allenamento)
-            </span>
-          </label>
-        </div>
+        <p className="sub mt-4">
+          Il ruolo (collaboratore/gestore) si assegna solo dal pannello Piattaforma.
+        </p>
 
         {errore && <p className={`mt-4 ${classiErrore}`}>{errore}</p>}
 
