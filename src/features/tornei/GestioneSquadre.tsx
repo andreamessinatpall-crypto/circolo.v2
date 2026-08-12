@@ -5,6 +5,7 @@ import { eDuplicato, messaggioErrore } from '@/lib/errori'
 import { avviso, conferma } from '@/lib/dialoghi'
 import { logoDaFile } from '@/lib/immagini'
 import { useSociPubblici } from '@/features/prenotazioni/datiAmichevoli'
+import { MenuAmici } from '@/features/prenotazioni/MieAmichevoli'
 import { nomeSquadraElegante } from './gironi'
 import { annullaPuntiIscrizione, assegnaPuntiIscrizione } from './punti'
 import { formatNomeAmericano } from './americano'
@@ -565,29 +566,13 @@ function RigaSquadra({
 
       {!pieno && (
         <div className="aggiungi-part">
-          <select
-            value=""
-            onChange={(e) => {
-              const v = e.target.value
-              if (!v) return
-              // (Tappa 10) Voce "ospite": chiede il nome in una finestra a comparsa
-              // e aggiunge un giocatore non registrato (niente punti/crediti).
-              if (v === '__ospite__') {
-                const nome = window.prompt('Nome del giocatore non registrato:')
-                if (nome && nome.trim()) onAggiungiManuale(nome.trim(), prossimoRiserva)
-                return
-              }
-              onAggiungi(v, prossimoRiserva)
-            }}
-          >
-            <option value="">Aggiungi un giocatore</option>
-            <option value="__ospite__">+ Ospite</option>
-            {selezionabili.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.etichetta}
-              </option>
-            ))}
-          </select>
+          <MenuAmici
+            opzioni={selezionabili}
+            onScegli={(id) => onAggiungi(id, prossimoRiserva)}
+            onOspite={(nome) => onAggiungiManuale(nome, prossimoRiserva)}
+            ariaLabel="Aggiungi un giocatore alla squadra"
+            testoVuoto="Nessun giocatore trovato."
+          />
         </div>
       )}
     </div>

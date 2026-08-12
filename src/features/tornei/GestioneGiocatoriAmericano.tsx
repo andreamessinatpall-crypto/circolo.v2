@@ -9,6 +9,7 @@ import { supabase } from '@/lib/supabase'
 import { messaggioErrore } from '@/lib/errori'
 import { avviso } from '@/lib/dialoghi'
 import { useSociPubblici } from '@/features/prenotazioni/datiAmichevoli'
+import { MenuAmici } from '@/features/prenotazioni/MieAmichevoli'
 import { assegnaPuntiIscrizione, annullaPuntiIscrizione } from './punti'
 import { genereEffettivoComponente, validaIscrizioneMista } from './americano'
 import { ICO_WARN } from './icone'
@@ -163,29 +164,13 @@ export default function GestioneGiocatoriAmericano({
       )}
       {!pieno && (
         <div className="mb-3 flex items-center gap-3">
-          <select
-            value=""
-            onChange={(e) => {
-              const v = e.target.value
-              if (!v) return
-              if (v === '__ospite__') {
-                const nome = window.prompt('Nome del giocatore ospite:')
-                if (nome?.trim()) aggiungiOspite.mutate(nome.trim())
-                return
-              }
-              aggiungi.mutate(v)
-            }}
-            className="flex-1"
-            style={{ maxWidth: 320 }}
-          >
-            <option value="">Aggiungi</option>
-            <option value="__ospite__">＋ Ospite</option>
-            {selezionabili.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.etichetta}
-              </option>
-            ))}
-          </select>
+          <MenuAmici
+            opzioni={selezionabili}
+            onScegli={(id) => aggiungi.mutate(id)}
+            onOspite={(nome) => aggiungiOspite.mutate(nome)}
+            ariaLabel="Aggiungi un giocatore al torneo"
+            testoVuoto="Nessun giocatore trovato."
+          />
           <span className="sub" style={{ marginLeft: 'auto' }}>
             {limite != null
               ? `${giocatori.length}/${limite} giocatori`

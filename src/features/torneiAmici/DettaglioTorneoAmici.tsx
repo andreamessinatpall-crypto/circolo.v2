@@ -5,6 +5,7 @@ import { messaggioErrore } from '@/lib/errori'
 import { conferma } from '@/lib/dialoghi'
 import { titleCase, dataEstesa, inizialiDaEtichetta } from '@/lib/formato'
 import { oraLocale } from '@/features/prenotazioni/orari'
+import { MenuAmici } from '@/features/prenotazioni/MieAmichevoli'
 import { formattaSet, incontroDisputato, setVinti } from '@/features/tornei/calendario'
 import { unitaTorneo } from '@/features/tornei/gironi'
 import { nomeRoundDb, numDbRoundsAR, numTurniEliminazione } from '@/features/tornei/eliminazione'
@@ -173,6 +174,8 @@ function FormaSquadreCalcio({
   const aggiungiOspite = useAggiungiOspiteAmici(torneoId)
   const rimuoviOspite = useRimuoviOspiteAmici(torneoId)
 
+  const opzioniLiberi = liberi.map((p) => ({ id: String(p.id), etichetta: titleCase(nomiSoci.get(p.socio_id!) ?? '?') }))
+
   function handleCrea() {
     const nome = window.prompt('Nome della nuova squadra:')
     if (nome && nome.trim()) crea.mutate(nome.trim())
@@ -249,27 +252,13 @@ function FormaSquadreCalcio({
                 )}
 
                 <div className="aggiungi-part">
-                  <select
-                    value=""
-                    onChange={(e) => {
-                      const v = e.target.value
-                      if (!v) return
-                      if (v === '__ospite__') {
-                        const nome = window.prompt('Nome del giocatore non registrato:')
-                        if (nome && nome.trim()) aggiungiOspite.mutate({ squadraId: s.id, nome: nome.trim() })
-                        return
-                      }
-                      assegna.mutate({ partecipanteId: Number(v), squadraId: s.id })
-                    }}
-                  >
-                    <option value="">Aggiungi un giocatore</option>
-                    <option value="__ospite__">+ Ospite</option>
-                    {liberi.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {titleCase(nomiSoci.get(p.socio_id!) ?? '?')}
-                      </option>
-                    ))}
-                  </select>
+                  <MenuAmici
+                    opzioni={opzioniLiberi}
+                    onScegli={(id) => assegna.mutate({ partecipanteId: Number(id), squadraId: s.id })}
+                    onOspite={(nome) => aggiungiOspite.mutate({ squadraId: s.id, nome })}
+                    ariaLabel="Aggiungi un giocatore alla squadra"
+                    testoVuoto="Nessun giocatore trovato."
+                  />
                 </div>
               </div>
             )
