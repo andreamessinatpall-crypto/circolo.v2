@@ -8,6 +8,7 @@ import SchermataCaricamento from '@/components/SchermataCaricamento'
 import { classiErrore } from '@/components/stili'
 import { CircoloContext } from './CircoloContext'
 import { applicaTemaCircolo } from './temaCircolo'
+import { aggiornaUltimoAccesso } from './datiCircoloSocio'
 import OnboardingGestore from '@/features/onboarding/OnboardingGestore'
 import type { Circolo, RuoloCircolo } from '@/features/piattaforma/tipi'
 
@@ -57,6 +58,14 @@ export default function CircoloProvider({ children }: { children: ReactNode }) {
     applicaTemaCircolo(circolo?.colore_primario)
     return () => applicaTemaCircolo(null)
   }, [circolo?.colore_primario])
+
+  // Traccia "ultimo circolo visitato" per il carosello di scelta dopo il
+  // login (vedi SceltaCircoloPage.tsx). Fire-and-forget: un socio senza riga
+  // in soci_circoli (es. super-admin di passaggio) semplicemente non
+  // aggiorna nulla, nessun errore.
+  useEffect(() => {
+    if (circolo?.id && profilo?.id) aggiornaUltimoAccesso(circolo.id, profilo.id)
+  }, [circolo?.id, profilo?.id])
 
   if (caricoCircolo || caricoRuolo) return <SchermataCaricamento />
 

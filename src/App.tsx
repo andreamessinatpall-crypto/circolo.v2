@@ -76,12 +76,17 @@ function PremiRoute() {
   return <Navigate to={`/c/${circolo.slug}/prenotazioni`} replace />
 }
 
-// Qualsiasi percorso senza /c/:slug (link "vecchi" da prima della Fase 5,
-// notifiche salvate, bookmark, o semplicemente "/" dopo il login): se il
-// socio appartiene a un solo circolo lo mandiamo dritto lì mantenendo lo
-// stesso percorso; se ne ha 0 o più di uno, alla schermata di scelta (che
-// perde il percorso originale — semplificazione accettabile, un deep link
-// non ha comunque senso finché non si sa in quale circolo entrare).
+// Qualsiasi percorso senza /c/:slug: il caso più comune è l'atterraggio
+// appena dopo il login ("/" o "/login", il pathname resta "/login" finché
+// non viene sostituito dal redirect), che ora passa SEMPRE dal carosello di
+// scelta circolo (SceltaCircoloPage) — richiesta esplicita: il socio sceglie
+// dove entrare a ogni accesso, anche con un solo circolo. Un deep link
+// "vero" (link salvato in una notifica, bookmark su un percorso legacy
+// pre-Fase 5) con un solo circolo continua invece a entrare dritto lì
+// mantenendo il percorso, per non rompere quei link mid-sessione; con 0 o
+// più di un circolo va comunque al carosello (che perde il percorso
+// originale — semplificazione accettabile, un deep link non ha senso finché
+// non si sa in quale circolo entrare).
 function RedirezioneCircolo() {
   const { profilo } = useAuth()
   const { pathname, search } = useLocation()
@@ -89,12 +94,10 @@ function RedirezioneCircolo() {
 
   if (!profilo || isLoading) return <SchermataCaricamento />
 
-  if ((mieiCircoli ?? []).length === 1) {
+  const atterraggioPostLogin = pathname === '/' || pathname === '/login'
+  if (!atterraggioPostLogin && (mieiCircoli ?? []).length === 1) {
     const slug = mieiCircoli![0].circolo.slug
-    // pathname "/" non va appeso così com'è: darebbe "/c/slug/" con lo slash
-    // finale, che la route "*" nidificata sotto /c/:slug non intercetta.
-    const resto = pathname === '/' ? '' : pathname
-    return <Navigate to={`/c/${slug}${resto}${search}`} replace />
+    return <Navigate to={`/c/${slug}${pathname}${search}`} replace />
   }
 
   return <Navigate to="/scegli-circolo" replace />

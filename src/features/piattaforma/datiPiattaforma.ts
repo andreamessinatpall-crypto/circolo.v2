@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import { geocodificaIndirizzo } from '@/lib/geocoding'
 import type { Circolo, MembroCircolo, RuoloCircolo, SocioTrovato } from './tipi'
 
 // Salvataggi lato pannello piattaforma (solo super-admin, vedi RLS
@@ -66,6 +67,44 @@ export async function salvaOrariDefault(
     .from('circoli')
     .update({ apertura_default: apertura, chiusura_default: chiusura })
     .eq('id', id)
+  if (error) return { ok: false, mancaPermesso: mancaPermesso(error), messaggio: error.message }
+  return { ok: true }
+}
+
+// Geocodifica l'indirizzo (Nominatim) e salva testo + coordinate: servono al
+// carosello di scelta circolo per ordinare per vicinanza (vedi
+// circolo/datiCircoloSocio.ts). Se la geocodifica non trova nulla, salva
+// comunque il testo dell'indirizzo ma azzera le coordinate.
+export async function salvaIndirizzoCircolo(id: string, indirizzo: string): Promise<EsitoSalvataggio> {
+  const pulito = indirizzo.trim()
+  let coordinate: { lat: number; lon: number } | null = null
+  if (pulito) {
+    try {
+      coordinate = await geocodificaIndirizzo(pulito)
+    } catch (e) {
+      return { ok: false, messaggio: e instanceof Error ? e.message : 'Ricerca indirizzo non riuscita.' }
+    }
+    if (!coordinate) {
+      return { ok: false, messaggio: 'Indirizzo non trovato: prova a essere più preciso (via, città).' }
+    }
+  }
+  const { error } = await supabase
+    .from('circoli')
+    .update({
+      indirizzo: pulito || null,
+      latitudine: coordinate?.lat ?? null,
+      longitudine: coordinate?.lon ?? null,
+    })
+    .eq('id', id)
+  if (error) return { ok: false, mancaPermesso: mancaPermesso(error), messaggio: error.message }
+  return { ok: true }
+}
+
+// Aggiorna solo il logo (a differenza di aggiornaBranding, che richiede
+// anche nome e colore insieme): usata dal gestore in Impostazioni, dove non
+// ha senso fargli toccare nome/colore solo per cambiare il logo.
+export async function salvaLogoCircolo(id: string, logoUrl: string | null): Promise<EsitoSalvataggio> {
+  const { error } = await supabase.from('circoli').update({ logo_url: logoUrl }).eq('id', id)
   if (error) return { ok: false, mancaPermesso: mancaPermesso(error), messaggio: error.message }
   return { ok: true }
 }

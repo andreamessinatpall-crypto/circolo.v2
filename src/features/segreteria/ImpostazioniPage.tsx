@@ -5,15 +5,18 @@ import IntervalliCrediti from './IntervalliCrediti'
 import RigeneraPunti from './RigeneraPunti'
 import GestionePremi from './GestionePremi'
 import GestioneLivelli from './GestioneLivelli'
+import GestioneIndirizzo from './GestioneIndirizzo'
+import GestioneLogo from './GestioneLogo'
 
 // "Annunci" non è più una scheda qui: si gestisce da "Il tuo club" nel menu
 // profilo (MenuUtente.tsx), insieme alle altre voci di gestione del circolo.
-type Scheda = 'campi' | 'punti' | 'premi'
+type Scheda = 'campi' | 'punti' | 'premi' | 'circolo'
 
 const SCHEDE: { id: Scheda; label: string }[] = [
   { id: 'campi', label: 'Campi e regole' },
   { id: 'punti', label: 'Punti e crediti' },
   { id: 'premi', label: 'Premi' },
+  { id: 'circolo', label: 'Circolo' },
 ]
 
 export default function ImpostazioniPage() {
@@ -44,6 +47,12 @@ export default function ImpostazioniPage() {
         </>
       )}
       {scheda === 'premi' && <GestionePremi />}
+      {scheda === 'circolo' && (
+        <>
+          <GestioneLogo />
+          <GestioneIndirizzo />
+        </>
+      )}
     </div>
   )
 }

@@ -11,6 +11,9 @@ export interface Circolo {
   chiusura_default: string
   attivo: boolean
   creato_il: string
+  indirizzo: string | null
+  latitudine: number | null
+  longitudine: number | null
 }
 
 export interface MembroCircolo {

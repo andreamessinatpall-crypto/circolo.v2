@@ -107,6 +107,7 @@ export default function AppShell() {
       {/* Barra superiore: marchio e utente */}
       <header className="app-header">
         <div className="brand" aria-label={circolo.nome}>
+          {circolo.logo_url && <img src={circolo.logo_url} alt="" className="brand-logo" aria-hidden="true" />}
           <span aria-hidden="true" className="max-w-[10rem] truncate align-bottom sm:max-w-[16rem]">
             {circolo.nome}
           </span>

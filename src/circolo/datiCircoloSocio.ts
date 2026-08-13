@@ -4,6 +4,7 @@ import type { Circolo, RuoloCircolo } from '@/features/piattaforma/tipi'
 
 export interface MioCircolo {
   ruolo: RuoloCircolo
+  ultimo_accesso: string | null
   circolo: Circolo
 }
 
@@ -17,13 +18,29 @@ export function useMieCircoli(socioId: string | undefined) {
     queryFn: async (): Promise<MioCircolo[]> => {
       const { data, error } = await supabase
         .from('soci_circoli')
-        .select('ruolo, circolo:circoli(*)')
+        .select('ruolo, ultimo_accesso, circolo:circoli(*)')
         .eq('socio_id', socioId as string)
         .order('creato_il')
       if (error) throw error
       return (data ?? []) as unknown as MioCircolo[]
     },
   })
+}
+
+// Aggiorna il timestamp di ultimo accesso del socio al circolo (usato dal
+// carosello di scelta per mostrare per primo l'ultimo circolo visitato).
+// Fire-and-forget: chiamata da CircoloProvider al montaggio, non deve mai
+// bloccare il render dell'app (vedi lezione su fetch senza timeout in
+// project_bug_freeze_rete_lenta).
+export function aggiornaUltimoAccesso(circoloId: string, socioId: string): void {
+  void supabase
+    .from('soci_circoli')
+    .update({ ultimo_accesso: new Date().toISOString() })
+    .eq('circolo_id', circoloId)
+    .eq('socio_id', socioId)
+    .then(({ error }) => {
+      if (error) console.error('Aggiornamento ultimo accesso non riuscito:', error.message)
+    })
 }
 
 // Circoli attivi a cui il socio NON è ancora iscritto, da proporre nella
