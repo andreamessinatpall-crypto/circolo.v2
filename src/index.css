@@ -1572,42 +1572,43 @@
     display: flex;
     flex-direction: column;
   }
-  /* Banner rettangolare in alto: colore FISSO uguale per ogni circolo
-     (non più il colore_primario del singolo circolo) — così il contrasto
-     col logo/testo è sempre garantito, invece di rischiare bianco-su-chiaro
-     se un circolo avesse scelto un colore_primario pastello. */
+  /* Banner rettangolare in alto: sfondo bianco fisso (uguale per ogni
+     circolo, non il colore_primario) così il logo — spesso su fondo
+     trasparente o chiaro — resti sempre leggibile e grande. Sotto, il corpo
+     della card è blu con testo bianco: coppia di sfondi a forte contrasto
+     invece di un'unica card tutta chiara. */
   .circolo-card-banner {
-    aspect-ratio: 2.4 / 1;
+    aspect-ratio: 2 / 1;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--v800);
-    color: #fff;
+    background: #fff;
     overflow: hidden;
   }
   .circolo-card-banner img {
-    max-width: 78%;
-    max-height: 68%;
+    max-width: 90%;
+    max-height: 82%;
     object-fit: contain;
   }
   .circolo-card-banner-iniziale {
     font-family: var(--font-display);
     font-weight: 700;
-    font-size: 2.4rem;
+    font-size: 3.4rem;
+    color: var(--v800);
   }
   .circolo-card-nome {
     margin: 0;
     font-size: 1.2rem;
     font-weight: 700;
     line-height: 1.25;
-    color: var(--ink);
+    color: #fff;
   }
   .circolo-card-body {
     padding: 16px 20px 20px;
     display: flex;
     flex-direction: column;
     gap: 10px;
-    background: var(--surface);
+    background: var(--v800);
   }
   .circolo-card-badge {
     align-self: flex-start;
@@ -1615,14 +1616,14 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    color: var(--v700);
-    background: var(--v050);
+    color: var(--v800);
+    background: #fff;
     padding: 3px 9px;
     border-radius: 999px;
   }
   .circolo-card-meta {
     font-size: 0.85rem;
-    color: var(--ink);
+    color: #fff;
     display: flex;
     align-items: center;
     gap: 6px;
