@@ -113,23 +113,6 @@ export default function AppShell() {
         </div>
 
         <div className="header-utente flex items-center gap-1.5 text-sm">
-          {profilo.is_super_admin && (
-            <NavLink
-              to={`${basePercorso}/piattaforma`}
-              title="Piattaforma"
-              className={({ isActive }) =>
-                'flex items-center rounded-lg p-1.5 text-white/60 transition hover:bg-white/10 hover:text-white' +
-                (isActive ? ' bg-white/10 text-white' : '')
-              }
-            >
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <rect x="3" y="3" width="7" height="7" rx="1" />
-                <rect x="14" y="3" width="7" height="7" rx="1" />
-                <rect x="3" y="14" width="7" height="7" rx="1" />
-                <rect x="14" y="14" width="7" height="7" rx="1" />
-              </svg>
-            </NavLink>
-          )}
           {eGestore && (
             <NavLink
               to={`${basePercorso}/impostazioni`}

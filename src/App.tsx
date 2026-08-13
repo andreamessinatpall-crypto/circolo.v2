@@ -26,8 +26,7 @@ import SociPage from '@/features/segreteria/SociPage'
 import ImpostazioniPage from '@/features/segreteria/ImpostazioniPage'
 import GestionePrenotazioni from '@/features/segreteria/GestionePrenotazioni'
 import StatistichePage from '@/features/segreteria/StatistichePage'
-import PiattaformaPage from '@/features/piattaforma/PiattaformaPage'
-import { puoGestirePiattaforma } from '@/auth/ruoli'
+import AdminPage from '@/features/admin/AdminPage'
 import CookieBanner from '@/components/legale/CookieBanner'
 import { DialogoHost } from '@/lib/dialoghi'
 import CircoloProvider from '@/circolo/CircoloProvider'
@@ -91,7 +90,12 @@ function RedirezioneCircolo() {
   const { pathname, search } = useLocation()
   const { data: mieiCircoli, isLoading } = useMieCircoli(profilo?.id)
 
-  if (!profilo || isLoading) return <SchermataCaricamento />
+  if (!profilo) return <SchermataCaricamento />
+  // Il super-admin non è mai socio/gestore di un circolo (vedi
+  // mt14-superadmin-puro.sql): lo mandiamo dritto al suo pannello dedicato,
+  // senza nemmeno aspettare useMieCircoli (per lui sarà comunque vuoto).
+  if (profilo.is_super_admin) return <Navigate to="/admin" replace />
+  if (isLoading) return <SchermataCaricamento />
 
   const atterraggioPostLogin = pathname === '/' || pathname === '/login'
   if (!atterraggioPostLogin && (mieiCircoli ?? []).length === 1) {
@@ -104,7 +108,7 @@ function RedirezioneCircolo() {
 
 // Mostra la schermata giusta in base allo stato di autenticazione.
 function App() {
-  const { stato, profilo } = useAuth()
+  const { stato } = useAuth()
   const { pathname } = useLocation()
 
   if (stato === 'caricamento') return <SchermataCaricamento />
@@ -135,6 +139,7 @@ function App() {
     <DialogoHost />
     <Routes>
       <Route path="/scegli-circolo" element={<SceltaCircoloPage />} />
+      <Route path="/admin" element={<AdminPage />} />
       <Route path="/c/:slug" element={<CircoloProvider><AppShell /></CircoloProvider>}>
         <Route index element={<RedirezioneIniziale />} />
         <Route path="profilo" element={<ProfiloPage />} />
@@ -192,9 +197,6 @@ function App() {
             </RichiedeRuolo>
           }
         />
-        {profilo && puoGestirePiattaforma(profilo) && (
-          <Route path="piattaforma" element={<PiattaformaPage />} />
-        )}
         <Route path="*" element={<RedirezioneIniziale />} />
       </Route>
       <Route path="*" element={<RedirezioneCircolo />} />

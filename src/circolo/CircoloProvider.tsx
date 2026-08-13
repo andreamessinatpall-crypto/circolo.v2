@@ -41,7 +41,6 @@ export default function CircoloProvider({ children }: { children: ReactNode }) {
     queryKey: ['mio-ruolo', circolo?.id, profilo?.id],
     enabled: !!circolo && !!profilo,
     queryFn: async (): Promise<{ ruolo: RuoloCircolo; puoDareLezioni: boolean }> => {
-      if (profilo!.is_super_admin) return { ruolo: 'gestore', puoDareLezioni: true }
       const { data, error } = await supabase
         .from('soci_circoli')
         .select('ruolo, puo_dare_lezioni')
@@ -91,10 +90,11 @@ export default function CircoloProvider({ children }: { children: ReactNode }) {
 
   // Un circolo appena creato nasce non attivo (vedi creaCircolo in
   // datiPiattaforma.ts): lo diventa solo quando il suo gestore completa il
-  // questionario di primo accesso. I super-admin sono sempre "gestore"
-  // forzato ovunque per la Piattaforma, ma non sono loro il gestore reale
-  // da guidare nel questionario, quindi non vengono bloccati qui.
-  if (!circolo.attivo && !profilo?.is_super_admin) {
+  // questionario di primo accesso. Il super-admin non entra mai in un
+  // circolo come membro (non può esserlo, vedi migrazione
+  // mt14-superadmin-puro.sql), quindi non serve un'esenzione qui: gestisce
+  // circoli/giocatori dal pannello dedicato /admin.
+  if (!circolo.attivo) {
     if (ruolo !== 'gestore') {
       return (
         <div className="mx-auto max-w-md p-6 text-center">
