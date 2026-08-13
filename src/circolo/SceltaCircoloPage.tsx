@@ -24,7 +24,7 @@ export default function SceltaCircoloPage() {
   const { data: mieiCircoli, isLoading: caricoMiei } = useMieCircoli(profilo?.id)
   const idGiaMembro = (mieiCircoli ?? []).map((m) => m.circolo.id)
   const { data: daScoprire, isLoading: caricoScoprire } = useCircoliDaScoprire(idGiaMembro)
-  const { stato: statoPosizione, posizione } = useGeolocalizzazione()
+  const { posizione } = useGeolocalizzazione()
 
   const iscriviti = useMutation({
     mutationFn: async (circolo: Circolo) => {
@@ -51,14 +51,7 @@ export default function SceltaCircoloPage() {
         <AuthHero />
 
         <div className="card auth-card">
-          <h1 className="mb-1 text-center text-2xl">Scegli il tuo circolo</h1>
-          <p className="sub mb-1 text-center">
-            {statoPosizione === 'in-corso'
-              ? 'Ricerca della tua posizione…'
-              : statoPosizione === 'concessa'
-                ? 'Ordinati per vicinanza a te.'
-                : 'Attiva la posizione dal browser per vederli ordinati per vicinanza.'}
-          </p>
+          <h1 className="mb-1 text-center text-2xl">Cerca il tuo club</h1>
 
           {caricamento ? (
             <p className="mt-4 text-center text-ink-2">Caricamento…</p>
@@ -189,17 +182,18 @@ function CircoloCard({
   const { circolo, isMembro, ultimoAccesso, distanzaKm } = item
   return (
     <div className="circolo-card">
-      <div className="circolo-card-banner" style={{ background: circolo.colore_primario ?? 'var(--v700)' }}>
-        <div className="circolo-card-logo">
-          {circolo.logo_url ? (
-            <img src={circolo.logo_url} alt="" />
-          ) : (
-            circolo.nome.charAt(0).toUpperCase()
-          )}
-        </div>
-        <h2 className="circolo-card-nome">{circolo.nome}</h2>
+      {/* Colore del banner sempre lo stesso per ogni circolo (non il
+          colore_primario, che un circolo potrebbe aver scelto molto chiaro):
+          garantisce contrasto forte col logo/iniziale bianchi in ogni caso. */}
+      <div className="circolo-card-banner">
+        {circolo.logo_url ? (
+          <img src={circolo.logo_url} alt={circolo.nome} />
+        ) : (
+          <span className="circolo-card-banner-iniziale">{circolo.nome.charAt(0).toUpperCase()}</span>
+        )}
       </div>
       <div className="circolo-card-body">
+        <h2 className="circolo-card-nome">{circolo.nome}</h2>
         {ultimoAccesso && <span className="circolo-card-badge">Ultimo circolo</span>}
         {(circolo.indirizzo || distanzaKm != null) && (
           <p className="circolo-card-meta">
