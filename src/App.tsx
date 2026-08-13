@@ -19,7 +19,6 @@ import StaffClubPagina from '@/features/profilo/pagine/StaffClubPagina'
 import IstruttoriPagina from '@/features/profilo/pagine/IstruttoriPagina'
 import GestioneLezioniPagina from '@/features/profilo/pagine/GestioneLezioniPagina'
 import PrenotaPage from '@/features/prenotazioni/PrenotaPage'
-import HomePage from '@/features/profilo/HomePage'
 import TorneiPage from '@/features/tornei/TorneiPage'
 import PremiPage from '@/features/premi/PremiPage'
 import GestionePremi from '@/features/segreteria/GestionePremi'
@@ -54,7 +53,7 @@ function RedirezioneIniziale() {
   const circolo = useCircolo()
   const { puoGestire } = useMioRuolo()
   if (puoGestire) return <Navigate to={`/c/${circolo.slug}/prenotazioni`} replace />
-  return <Navigate to={`/c/${circolo.slug}/home`} replace />
+  return <Navigate to={`/c/${circolo.slug}/prenota`} replace />
 }
 
 // "/premi": ogni ruolo vede una vista diversa (il gestore gestisce i premi
@@ -70,7 +69,7 @@ function PremiRoute() {
   if (ruolo === 'collaboratore') return <GestionePremi />
   if (ruolo === 'socio') {
     if (isLoading) return null
-    if (!modalitaPremi) return <Navigate to={`/c/${circolo.slug}/home`} replace />
+    if (!modalitaPremi) return <Navigate to={`/c/${circolo.slug}/prenota`} replace />
     return <PremiPage />
   }
   return <Navigate to={`/c/${circolo.slug}/prenotazioni`} replace />
@@ -138,7 +137,6 @@ function App() {
       <Route path="/scegli-circolo" element={<SceltaCircoloPage />} />
       <Route path="/c/:slug" element={<CircoloProvider><AppShell /></CircoloProvider>}>
         <Route index element={<RedirezioneIniziale />} />
-        <Route path="home" element={<HomePage />} />
         <Route path="profilo" element={<ProfiloPage />} />
         <Route path="profilo/mie-prenotazioni" element={<GestioneAttivitaPagina />} />
         <Route path="profilo/attivita-in-programma" element={<Navigate to="../mie-prenotazioni" replace />} />
@@ -151,7 +149,7 @@ function App() {
         <Route path="profilo/annunci" element={<AnnunciPagina />} />
         <Route path="profilo/staff" element={<StaffClubPagina />} />
         <Route path="profilo/lezioni" element={<IstruttoriPagina />} />
-        <Route path="profilo/prenota" element={<PrenotaPage />} />
+        <Route path="prenota" element={<PrenotaPage />} />
         <Route path="tornei" element={<TorneiPage />} />
         <Route path="premi" element={<PremiRoute />} />
         <Route

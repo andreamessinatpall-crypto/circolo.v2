@@ -12,7 +12,6 @@ import {
   IconaPrenota,
   IconaTornei,
   IconaAreaClub,
-  IconaHome,
 } from '@/components/IconeMenu'
 
 interface Voce {
@@ -35,7 +34,7 @@ function vociMenu(puoGestire: boolean): Voce[] {
   }
 
   return [
-    { path: '/home', label: 'Home', Icona: IconaHome },
+    { path: '/prenota', label: 'Prenota', Icona: IconaPrenota },
     { path: '/profilo', label: 'Area Club', Icona: IconaAreaClub },
     { path: '/tornei', label: 'Tornei', Icona: IconaTornei },
   ]
@@ -97,7 +96,7 @@ export default function AppShell() {
   // Sfondo a macchie sfumate colorate dietro le schede "vetro" (Attività,
   // prossima attività, cerca partita): solo nelle tre sezioni che le usano,
   // non ovunque (Segreteria/admin restano sullo sfondo piatto di sempre).
-  const sezioniArcobaleno = ['/home', '/profilo', '/tornei']
+  const sezioniArcobaleno = ['/prenota', '/profilo', '/tornei']
   const sfondoArcobaleno = sezioniArcobaleno.some(
     (p) => sottoPercorso === p || sottoPercorso.startsWith(p + '/'),
   )

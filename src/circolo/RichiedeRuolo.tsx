@@ -15,6 +15,6 @@ export default function RichiedeRuolo({ richiede, children }: { richiede: Requis
   const { eGestore, puoGestire, puoDareLezioni } = useMioRuolo()
   const circolo = useCircolo()
   const ok = richiede === 'gestore' ? eGestore : richiede === 'staff' ? puoGestire : puoDareLezioni
-  if (!ok) return <Navigate to={`/c/${circolo.slug}/home`} replace />
+  if (!ok) return <Navigate to={`/c/${circolo.slug}/prenota`} replace />
   return <>{children}</>
 }

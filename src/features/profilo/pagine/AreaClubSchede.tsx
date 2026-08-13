@@ -142,26 +142,6 @@ function TestataSezione({ titolo, to, azione = 'Vedi tutti' }: { titolo: string;
   )
 }
 
-// ── Prenota: punto d'accesso primario al wizard di prenotazione (calendario
-// → sport → orari liberi → campo → conferma, PrenotaWizard.tsx), da quando
-// la prenotazione non è più una scheda di primo livello ma vive dentro Area
-// Club, insieme al resto della vita da socio. ────────────────────────────
-function CardPrenota() {
-  return (
-    <div className="club-col">
-      <TestataSezione titolo="Prenota" to="/profilo/prenota" azione="Prenota ora" />
-      <Link to="/profilo/prenota" className="club-tile club-tile-hero">
-        <div className="prossima-wow-fascia">
-          <span className="prossima-wow-sport">
-            <IcoCalendarioMini /> Campo o lezione
-          </span>
-        </div>
-        <p className="club-tile-testo-anteprima">Scegli sport, data e orario per prenotare.</p>
-      </Link>
-    </div>
-  )
-}
-
 // ── Attività (Le mie prenotazioni + Attività in programma unite): scheda
 // "wow" con sfondo verde sfumato scuro, stesso linguaggio visivo dell'hero
 // account (.riep-wow) e delle card torneo in evidenza (.torneo-club-card.verde)
@@ -233,7 +213,7 @@ function CardAttivita() {
       ) : (
         <div className="club-tile club-tile-hero club-tile-vuota cerca-vuota">
           <span className="cerca-vuota-titolo-grande">Prenota la tua prossima partita</span>
-          <Link to="/profilo/prenota" className="cerca-vuota-bottone">
+          <Link to="/prenota" className="cerca-vuota-bottone">
             Clicca qui
           </Link>
         </div>
@@ -911,7 +891,6 @@ export default function AreaClubSchede({
       )}
       {!isAdmin && !isCollaboratore && !isIstruttore && (
         <>
-          <CardPrenota />
           <CardAttivita />
           <CardCercaPartita />
           <CardAmici />
