@@ -1602,6 +1602,15 @@
     font-weight: 700;
     line-height: 1.25;
     color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+  /* Sostituisce il vecchio badge testuale "Ultimo circolo": una stella
+     accanto al nome, colore oro per risaltare sul corpo blu della card. */
+  .circolo-card-stella {
+    color: #f4b942;
+    flex-shrink: 0;
   }
   .circolo-card-body {
     padding: 16px 20px 20px;
@@ -1609,17 +1618,6 @@
     flex-direction: column;
     gap: 10px;
     background: var(--v800);
-  }
-  .circolo-card-badge {
-    align-self: flex-start;
-    font-size: 0.68rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    color: var(--v800);
-    background: #fff;
-    padding: 3px 9px;
-    border-radius: 999px;
   }
   .circolo-card-meta {
     font-size: 0.85rem;

@@ -193,8 +193,10 @@ function CircoloCard({
         )}
       </div>
       <div className="circolo-card-body">
-        <h2 className="circolo-card-nome">{circolo.nome}</h2>
-        {ultimoAccesso && <span className="circolo-card-badge">Ultimo circolo</span>}
+        <h2 className="circolo-card-nome">
+          {circolo.nome}
+          {ultimoAccesso && <IconaStella titolo="Ultimo circolo" />}
+        </h2>
         {(circolo.indirizzo || distanzaKm != null) && (
           <p className="circolo-card-meta">
             📍 {circolo.indirizzo ?? 'Distanza stimata'}
@@ -211,5 +213,23 @@ function CircoloCard({
         </button>
       </div>
     </div>
+  )
+}
+
+// Sostituisce il badge testuale "Ultimo circolo": una stella piena accanto
+// al nome, più leggera visivamente in una card già densa di testo.
+function IconaStella({ titolo }: { titolo: string }) {
+  return (
+    <svg
+      className="circolo-card-stella"
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      role="img"
+    >
+      <title>{titolo}</title>
+      <path d="M12 2.5l2.9 6.16 6.6.74-4.9 4.6 1.28 6.6L12 17.4l-5.88 3.2 1.28-6.6-4.9-4.6 6.6-.74z" />
+    </svg>
   )
 }
