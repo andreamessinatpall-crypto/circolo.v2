@@ -109,6 +109,16 @@ export async function salvaLogoCircolo(id: string, logoUrl: string | null): Prom
   return { ok: true }
 }
 
+// Aggiorna solo il colore (a differenza di aggiornaBranding, che richiede
+// anche nome e logo insieme). null = torna al colore predefinito uguale per
+// tutti i circoli (vedi applicaTemaCircolo, che senza colore_primario non
+// sovrascrive nulla e lascia la palette di base dell'app).
+export async function salvaColoreCircolo(id: string, colorePrimario: string | null): Promise<EsitoSalvataggio> {
+  const { error } = await supabase.from('circoli').update({ colore_primario: colorePrimario }).eq('id', id)
+  if (error) return { ok: false, mancaPermesso: mancaPermesso(error), messaggio: error.message }
+  return { ok: true }
+}
+
 export interface PatchBranding {
   nome: string
   logo_url: string | null

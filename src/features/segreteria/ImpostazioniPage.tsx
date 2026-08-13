@@ -7,6 +7,7 @@ import GestionePremi from './GestionePremi'
 import GestioneLivelli from './GestioneLivelli'
 import GestioneIndirizzo from './GestioneIndirizzo'
 import GestioneLogo from './GestioneLogo'
+import GestioneColore from './GestioneColore'
 
 // "Annunci" non è più una scheda qui: si gestisce da "Il tuo club" nel menu
 // profilo (MenuUtente.tsx), insieme alle altre voci di gestione del circolo.
@@ -50,6 +51,7 @@ export default function ImpostazioniPage() {
       {scheda === 'circolo' && (
         <>
           <GestioneLogo />
+          <GestioneColore />
           <GestioneIndirizzo />
         </>
       )}
